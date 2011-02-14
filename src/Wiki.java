@@ -600,7 +600,7 @@ public class Wiki implements Serializable
      */
     public Wiki(String domain)
     {
-        if (domain == null || domain.equals(""))
+        if (domain == null || domain.isEmpty())
             domain = "en.wikipedia.org";
         this.domain = domain;
 
@@ -706,6 +706,7 @@ public class Wiki implements Serializable
      *  @return whether this wiki is equal to such object
      *  @since 0.10
      */
+    @Override
     public boolean equals(Object obj)
     {
         if (!(obj instanceof Wiki))
@@ -718,6 +719,7 @@ public class Wiki implements Serializable
      *  @return a hash code
      *  @since 0.12
      */
+    @Override
     public int hashCode()
     {
         return domain.hashCode() * maxlag - throttle;
@@ -728,6 +730,7 @@ public class Wiki implements Serializable
      *   @return a string representation of this Wiki.
      *   @since 0.10
      */
+    @Override
     public String toString()
     {
         try
@@ -877,7 +880,7 @@ public class Wiki implements Serializable
         // available through prop=info !
         String blah = fetch(base + "Special:Userlogin", "login", true);
         int a = blah.indexOf("wpLoginToken") + 21;
-        int b = blah.indexOf("\"", a);
+        int b = blah.indexOf('\"', a);
         String wpLoginToken = blah.substring(a, b);
 
         // sanitize
@@ -1016,7 +1019,7 @@ public class Wiki implements Serializable
         String text = parseAndCleanup("{{NUMBEROFARTICLES:R}} {{NUMBEROFPAGES:R}} {{NUMBEROFFILES:R}} {{NUMBEROFEDITS:R}} " +
                 "{{NUMBEROFUSERS:R}} {{NUMBEROFADMINS:R}}");
         String[] values = text.split("\\s");
-        HashMap<String, Integer> ret = new HashMap<String, Integer>();
+        HashMap<String, Integer> ret = new HashMap<String, Integer>(12);
         String[] keys =
         {
            "articles", "pages", "files", "edits", "users", "admins"
@@ -1076,7 +1079,7 @@ public class Wiki implements Serializable
         StringBuilder text = new StringBuilder(100000);
         while ((line = in.readLine()) != null)
         {
-            int y = line.indexOf(">", line.indexOf("<text")) + 1;
+            int y = line.indexOf('>', line.indexOf("<text")) + 1;
             int z = line.indexOf("</text>");
             if (y != -1)
             {
@@ -1152,7 +1155,7 @@ public class Wiki implements Serializable
 
         // parse
         int a = line.indexOf("title=\"") + 7;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         return line.substring(a, b);
     }
 
@@ -1188,7 +1191,7 @@ public class Wiki implements Serializable
             // skip any containing new lines or double letters
             if (token.contains("\n"))
                 continue;
-            if (token.equals(""))
+            if (token.isEmpty())
                 continue;
 
             // trim the starting colon, if present
@@ -1413,7 +1416,7 @@ public class Wiki implements Serializable
                 int y = line.indexOf("</ns>");
                 String working = line.substring(x + 8, y);
                 int ns = Integer.parseInt(working.substring(0, working.indexOf('"')));
-                String name = working.substring(working.indexOf(">") + 1);
+                String name = working.substring(working.indexOf('>') + 1);
                 namespaces.put(name, new Integer(ns));
                 line = line.substring(y + 5);
             }
@@ -1604,7 +1607,7 @@ public class Wiki implements Serializable
 
         // find the edit token
         int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         String wpEditToken = line.substring(a, b);
 
         // fetch the appropriate URL
@@ -1773,7 +1776,7 @@ public class Wiki implements Serializable
         while (line.contains("title=\"File:"))
         {
             int a = line.indexOf("title=\"File:") + 7;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             images.add(decode(line.substring(a, b)));
             line = line.substring(b);
         }
@@ -1802,7 +1805,7 @@ public class Wiki implements Serializable
         while (line.contains("title=\"Category:"))
         {
             int a = line.indexOf("title=\"Category:") + 7;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             categories.add(line.substring(a, b));
             line = line.substring(b);
         }
@@ -1850,7 +1853,7 @@ public class Wiki implements Serializable
         while (line.contains("title=\""))
         {
             int a = line.indexOf("title=\"") + 7;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             templates.add(line.substring(a, b));
             line = line.substring(b);
         }
@@ -1879,10 +1882,10 @@ public class Wiki implements Serializable
         while (line.contains("lang=\""))
         {
             int a = line.indexOf("lang=\"") + 6;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             String language = line.substring(a, b);
-            a = line.indexOf(">", a) + 1;
-            b = line.indexOf("<", a);
+            a = line.indexOf('>', a) + 1;
+            b = line.indexOf('<', a);
             String page = decode(line.substring(a, b));
             interwikis.put(language, page);
             line = line.substring(b);
@@ -1914,17 +1917,17 @@ public class Wiki implements Serializable
         String line = fetch(url, "getSectionMap", false);
 
         // expected format: <s toclevel="1" level="2" line="How to nominate" number="1" />
-        LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+        LinkedHashMap<String, String> map = new LinkedHashMap<String, String>(30);
         while (line.contains("<s "))
         {
             // section title
             int a = line.indexOf("line=\"") + 6;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             String title = decode(line.substring(a, b));
 
             // section number
             a = line.indexOf("number=") + 8;
-            b = line.indexOf("\"", a);
+            b = line.indexOf('\"', a);
             String number = line.substring(a, b);
 
             map.put(number, title);
@@ -1947,7 +1950,7 @@ public class Wiki implements Serializable
         String url = query + "action=query&prop=revisions&rvlimit=1&rvdir=newer&titles=" + URLEncoder.encode(title, "UTF-8");
         String line = fetch(url, "getPageCreator", false);
         int a = line.indexOf("user=\"") + 6;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         return line.substring(a, b);
     }
 
@@ -2008,7 +2011,7 @@ public class Wiki implements Serializable
             if (line.contains("rvstartid=\""))
             {
                 int a = line.indexOf("rvstartid") + 11;
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 rvstart = line.substring(a, b);
             }
             else
@@ -2107,7 +2110,7 @@ public class Wiki implements Serializable
 
         // find the move token
         int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         String wpMoveToken = line.substring(a, b);
 
         // check target
@@ -2282,7 +2285,7 @@ public class Wiki implements Serializable
 
         // get the rollback token
         int a = line.indexOf("rollbacktoken=\"") + 15;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         String token = URLEncoder.encode(line.substring(a, b), "UTF-8");
 
         // perform the rollback. Although it's easier through the human interface, we want
@@ -2304,7 +2307,7 @@ public class Wiki implements Serializable
         out.write(token);
         if (bot)
             out.write("&markbot=1");
-        if (!reason.equals(""))
+        if (!reason.isEmpty())
         {
             out.write("&summary=");
             out.write(reason);
@@ -2426,7 +2429,7 @@ public class Wiki implements Serializable
 
         // find the edit token
         int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         String wpEditToken = line.substring(a, b);
 
         // connect
@@ -2441,7 +2444,7 @@ public class Wiki implements Serializable
         PrintWriter out = new PrintWriter(connection.getOutputStream());
         out.write("title=");
         out.write(rev.getPage());
-        if (!reason.equals(""))
+        if (!reason.isEmpty())
             out.write("&summary=" + reason);
         out.write("&undo=" + rev.getRevid());
         if (to != null)
@@ -2514,19 +2517,19 @@ public class Wiki implements Serializable
     {
         // oldid
         int a = xml.indexOf("revid=\"") + 7;
-        int b = xml.indexOf("\"", a);
+        int b = xml.indexOf('\"', a);
         long oldid = Long.parseLong(xml.substring(a, b));
 
         // timestamp
         a = xml.indexOf("timestamp=\"") + 11;
-        b = xml.indexOf("\"", a);
+        b = xml.indexOf('\"', a);
         Calendar timestamp = timestampToCalendar(convertTimestamp(xml.substring(a, b)));
 
         // title
-        if (title.equals(""))
+        if (title.isEmpty())
         {
             a = xml.indexOf("title=\"") + 7;
-            b = xml.indexOf("\"", a);
+            b = xml.indexOf('\"', a);
             title = xml.substring(a, b);
         }
 
@@ -2537,7 +2540,7 @@ public class Wiki implements Serializable
         else
         {
             a = xml.indexOf("comment=\"") + 9;
-            b = xml.indexOf("\"", a);
+            b = xml.indexOf('\"', a);
             summary = (a == 8) ? "" : decode(xml.substring(a, b));
         }
 
@@ -2546,7 +2549,7 @@ public class Wiki implements Serializable
         if (xml.contains("user=\""))
         {
             a = xml.indexOf("user=\"") + 6;
-            b = xml.indexOf("\"", a);
+            b = xml.indexOf('\"', a);
             user2 = xml.substring(a, b);
         }
 
@@ -2696,7 +2699,7 @@ public class Wiki implements Serializable
         url.append(height);
         String line = fetch(url.toString(), "getImage", false);
         int a = line.indexOf("url=\"") + 5;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         String url2 = line.substring(a, b);
 
         // then we use ImageIO to read from it
@@ -2729,30 +2732,30 @@ public class Wiki implements Serializable
         // fetch
         String url = query + "action=query&prop=imageinfo&iiprop=size|mime|metadata&titles=File:" + URLEncoder.encode(file, "UTF-8");
         String line = fetch(url, "getFileMetadata", false);
-        HashMap<String, Object> metadata = new HashMap<String, Object>();
+        HashMap<String, Object> metadata = new HashMap<String, Object>(30);
 
         // size, width, height, mime type
         int a = line.indexOf("size=\"") + 6;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         metadata.put("size", new Integer(line.substring(a, b)));
         a = line.indexOf("width=\"") + 7;
-        b = line.indexOf("\"", a);
+        b = line.indexOf('\"', a);
         metadata.put("width", new Integer(line.substring(a, b)));
         a = line.indexOf("height=\"") + 8;
-        b = line.indexOf("\"", a);
+        b = line.indexOf('\"', a);
         metadata.put("height", new Integer(line.substring(a, b)));
         a = line.indexOf("mime=\"") + 6;
-        b = line.indexOf("\"", a);
+        b = line.indexOf('\"', a);
         metadata.put("mime", line.substring(a, b));
 
         // exif
         while (line.contains("metadata name=\""))
         {
             a = line.indexOf("name=\"") + 6;
-            b = line.indexOf("\"", a);
+            b = line.indexOf('\"', a);
             String name = line.substring(a, b);
             a = line.indexOf("value=\"") + 7;
-            b = line.indexOf("\"", a);
+            b = line.indexOf('\"', a);
             String value = line.substring(a, b);
             metadata.put(name, value);
             line = line.substring(b);
@@ -2777,11 +2780,11 @@ public class Wiki implements Serializable
 
         // do the parsing
         // Expected format: <df name="Star-spangled_banner_002.ogg" other stuff >
-        ArrayList<String> duplicates = new ArrayList<String>();
+        ArrayList<String> duplicates = new ArrayList<String>(10);
         while (line.contains("<df "))
         {
             int a = line.indexOf("name=") + 6;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             duplicates.add("File:" + line.substring(a, b));
             line = line.substring(b);
         }
@@ -2808,7 +2811,7 @@ public class Wiki implements Serializable
         while (line.contains("<ii "))
         {
             int a = line.indexOf("<ii");
-            int b = line.indexOf(">", a);
+            int b = line.indexOf('>', a);
             LogEntry entry = parseLogEntry(line.substring(a, b), 2);
             entry.target = title;
             history.add(entry);
@@ -2847,20 +2850,20 @@ public class Wiki implements Serializable
         while (line.contains("<ii "))
         {
             int a = line.indexOf("timestamp=") + 11;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             String timestamp = convertTimestamp(line.substring(a, b));
             if (timestamp.equals(calendarToTimestamp(entry.getTimestamp())))
             {
                 // this is it
                 a = line.indexOf(" url=\"") + 6; // the space is important!
-                b = line.indexOf("\"", a);
+                b = line.indexOf('\"', a);
                 url = line.substring(a, b);
                 logurl(url, "getOldImage");
                 BufferedImage image = ImageIO.read(new URL(url));
 
                 // scrape archive name for logging purposes
                 a = line.indexOf("archivename=\"") + 13;
-                b = line.indexOf("\"", a);
+                b = line.indexOf('\"', a);
                 String archive = line.substring(a, b);
                 log(Level.INFO, "Successfully retrieved old image \"" + archive + "\"", "getImage");
                 return image;
@@ -3106,7 +3109,7 @@ public class Wiki implements Serializable
         }
         // scrape token
         int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf("\"", a);
+        int b = line.indexOf('\"', a);
         String wpEditToken = line.substring(a, b);
 
         // prepare MIME type
@@ -3139,7 +3142,7 @@ public class Wiki implements Serializable
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
         // reason (awaiting scap)
-        if (!reason.equals(""))
+        if (!reason.isEmpty())
         {
             out.writeBytes("Content-Disposition: form-data; name=\"comment\"\r\n\r\n");
             out.writeBytes(URLEncoder.encode(reason, "UTF-8"));
@@ -3334,7 +3337,7 @@ public class Wiki implements Serializable
     public Revision[] rangeContribs(String range) throws IOException
     {
         // sanitize range
-        int a = range.indexOf("/");
+        int a = range.indexOf('/');
         if (a < 7)
             throw new NumberFormatException("Not a valid CIDR range!");
         int size = Integer.parseInt(range.substring(a + 1));
@@ -3373,7 +3376,7 @@ public class Wiki implements Serializable
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
         temp.append("action=query&list=usercontribs&ucprop=title|timestamp|flags|comment|ids&uclimit=max&");
-        if (prefix.equals(""))
+        if (prefix.isEmpty())
         {
             temp.append("ucuser=");
             temp.append(URLEncoder.encode(user, "UTF-8"));
@@ -3403,7 +3406,7 @@ public class Wiki implements Serializable
                 ucstart = "done"; // depleted list
             else
             {
-                int bb = line.indexOf("\"", aa);
+                int bb = line.indexOf('\"', aa);
                 ucstart = line.substring(aa, bb);
             }
             // parse revisions
@@ -3418,7 +3421,7 @@ public class Wiki implements Serializable
         while (!ucstart.equals("done"));
 
         // clean up
-        log(Level.INFO, "Successfully retrived contributions for " + (prefix.equals("") ? user : prefix) + " (" + revisions.size() + " edits)", "contribs");
+        log(Level.INFO, "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + revisions.size() + " edits)", "contribs");
         return revisions.toArray(new Revision[0]);
     }
 
@@ -3532,7 +3535,7 @@ public class Wiki implements Serializable
             int a = line.indexOf("wrcontinue=\"") + 12;
             if (a > 12)
             {
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 wrcontinue = "&wrcontinue=" + URLEncoder.encode(line.substring(a, b), "UTF-8");
             }
             else
@@ -3541,7 +3544,7 @@ public class Wiki implements Serializable
             while (line.contains("<wr "))
             {
                 a = line.indexOf("title=\"") + 7;
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 String title = line.substring(a, b);
                 // is this supposed to not retrieve talk pages?
                 if (namespace(title) % 2 == 0)
@@ -3622,7 +3625,7 @@ public class Wiki implements Serializable
             while (line.contains("title=\""))
             {
                 int a = line.indexOf("title=\"") + 7;
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 results.add(line.substring(a, b));
                 line = line.substring(b);
             }
@@ -3759,7 +3762,7 @@ public class Wiki implements Serializable
             if (line.contains("blcontinue"))
             {
                 int a = line.indexOf("blcontinue=\"") + 12;
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 next = "&blcontinue=" + line.substring(a, b);
             }
             else
@@ -3821,7 +3824,7 @@ public class Wiki implements Serializable
             if (line.contains("eicontinue"))
             {
                 int a = line.indexOf("eicontinue=\"") + 12;
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 next = "&eicontinue=" + line.substring(a, b);
             }
             else
@@ -4056,7 +4059,7 @@ public class Wiki implements Serializable
             urlBase.append("&bkend=");
             urlBase.append(calendarToTimestamp(end));
         }
-        if (!user.equals(""))
+        if (!user.isEmpty())
         {
             urlBase.append("&bkusers=");
             urlBase.append(user);
@@ -4075,7 +4078,7 @@ public class Wiki implements Serializable
             if (line.contains("bkstart"))
             {
                 int a = line.indexOf("bkstart=\"") + 9;
-                bkstart = line.substring(a, line.indexOf("\"", a));
+                bkstart = line.substring(a, line.indexOf('\"', a));
             }
             else
                 bkstart = "done";
@@ -4094,7 +4097,7 @@ public class Wiki implements Serializable
 
         // log statement
         StringBuilder logRecord = new StringBuilder("Successfully fetched IP block list ");
-        if (!user.equals(""))
+        if (!user.isEmpty())
         {
             logRecord.append(" for ");
             logRecord.append(user);
@@ -4266,7 +4269,7 @@ public class Wiki implements Serializable
         }
 
         // check for target
-        if (!target.equals(""))
+        if (!target.isEmpty())
         {
             url.append("&letitle=");
             url.append(URLEncoder.encode(target, "UTF-8"));
@@ -4285,7 +4288,7 @@ public class Wiki implements Serializable
         {
             if (end != null && start.before(end)) //aargh
                 throw new IllegalArgumentException("Specified start date is before specified end date!");
-            lestart = new String(calendarToTimestamp(start));
+            lestart = calendarToTimestamp(start).toString();
             console.append("from ");
             console.append(start.getTime().toString());
             console.append(" ");
@@ -4309,7 +4312,7 @@ public class Wiki implements Serializable
             if (line.contains("lestart=\""))
             {
                 int ab = line.indexOf("lestart=\"") + 9;
-                lestart = line.substring(ab, line.indexOf("\"", ab));
+                lestart = line.substring(ab, line.indexOf('\"', ab));
             }
             else
                 lestart = "done";
@@ -4392,7 +4395,7 @@ public class Wiki implements Serializable
         else
         {
             int a = caller == 1 ? xml.indexOf("reason=\"") + 8 : xml.indexOf("comment=\"") + 9;
-            int b = xml.indexOf("\"", a);
+            int b = xml.indexOf('\"', a);
             reason = decode(xml.substring(a, b));
         }
 
@@ -4403,7 +4406,7 @@ public class Wiki implements Serializable
         {
             // performer
             int a = xml.indexOf("by=\"") + 4;
-            int b = xml.indexOf("\"", a);
+            int b = xml.indexOf('\"', a);
             performer = new User(xml.substring(a, b));
 
             // target
@@ -4463,7 +4466,7 @@ public class Wiki implements Serializable
             int c = caller == 1 ? s.indexOf("expiry=") + 8 : s.indexOf("duration=") + 10;
             if (c > 10) // not an unblock
             {
-                int d = s.indexOf("\"", c);
+                int d = s.indexOf('\"', c);
                 details = new Object[]
                 {
                     s.contains("anononly"), // anon-only
@@ -4512,7 +4515,7 @@ public class Wiki implements Serializable
         else if (type.equals(USER_RIGHTS_LOG))
         {
             a = xml.indexOf("new=\"") + 5;
-            b = xml.indexOf("\"", a);
+            b = xml.indexOf('\"', a);
             String z = xml.substring(a, b);
             int rights = 1; // no ips in user rights log
             rights += (z.contains("sysop") ? ADMIN : 0); // sysop
@@ -4644,12 +4647,12 @@ public class Wiki implements Serializable
         // @revised 0.15 to add short/long pages
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=allpages&aplimit=max");
-        if (!prefix.equals("")) // prefix
+        if (!prefix.isEmpty()) // prefix
         {
             // cull the namespace prefix
             namespace = namespace(prefix);
             if (prefix.contains(":") && namespace != MAIN_NAMESPACE)
-                prefix = prefix.substring(prefix.indexOf(":") + 1);
+                prefix = prefix.substring(prefix.indexOf(':') + 1);
             url.append("&apprefix=");
             url.append(URLEncoder.encode(prefix, "UTF-8"));
         }
@@ -4694,18 +4697,18 @@ public class Wiki implements Serializable
         {
             // connect and read
             String s = url.toString();
-            if (!next.equals(""))
+            if (!next.isEmpty())
                 s += ("&apfrom=" + next);
             String line = fetch(s, "listPages", false);
 
             // don't set a continuation if no max, min, prefix or protection level
-            if (maximum < 0 && minimum < 0 && prefix.equals("") && level == NO_PROTECTION)
+            if (maximum < 0 && minimum < 0 && prefix.isEmpty() && level == NO_PROTECTION)
                 next = "done";
             // find next value
             else if (line.contains("apfrom="))
             {
                 int a = line.indexOf("apfrom=\"") + 8;
-                int b = line.indexOf("\"", a);
+                int b = line.indexOf('\"', a);
                 next = URLEncoder.encode(line.substring(a, b), "UTF-8");
             }
             else
@@ -4813,14 +4816,14 @@ public class Wiki implements Serializable
 
             // set continuation parameter
             int a = line.indexOf("rcstart=\"") + 9;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             rcstart = line.substring(a, b);
 
             while (line.contains("title="))
             {
                 // typical form <rc type="new" ns="0" title="Article" />
                 a = line.indexOf("title=\"") + 7;
-                b = line.indexOf("\"", a);
+                b = line.indexOf('\"', a);
                 pages.add(line.substring(a, b));
                 line = line.substring(b);
             }
@@ -4891,7 +4894,7 @@ public class Wiki implements Serializable
             String line = fetch(url, "User.userRights", false);
 
             // parse
-            ArrayList<String> members = new ArrayList<String>();
+            ArrayList<String> members = new ArrayList<String>(10);
             while (line.contains("<g>"))
             {
                 int x = line.indexOf("<g>");
@@ -4965,7 +4968,7 @@ public class Wiki implements Serializable
             String url = query + "action=query&list=users&usprop=editcount&ususers=" + URLEncoder.encode(username, "UTF-8");
             String line = fetch(url, "User.countEdits", false);
             int a = line.indexOf("editcount=\"") + 11;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             return Integer.parseInt(line.substring(a, b));
         }
 
@@ -4995,6 +4998,7 @@ public class Wiki implements Serializable
          *  @return the copy
          *  @since 0.08
          */
+        @Override
         public User clone()
         {
             try
@@ -5012,6 +5016,7 @@ public class Wiki implements Serializable
          *   @return whether the users are equal
          *   @since 0.08
          */
+        @Override
         public boolean equals(Object x)
         {
             return x instanceof User && username.equals(((User)x).username);
@@ -5022,6 +5027,7 @@ public class Wiki implements Serializable
          *  @return see above
          *  @since 0.17
          */
+        @Override
         public String toString()
         {
             return "User[username=" + username + ",rights=" + (rights == -484 ? "unset" : rights) + "]";
@@ -5032,6 +5038,7 @@ public class Wiki implements Serializable
          *  @return see above
          *  @since 0.19
          */
+        @Override
         public int hashCode()
         {
             return username.hashCode() * 2 + 1;
@@ -5187,6 +5194,7 @@ public class Wiki implements Serializable
          *  @return a string representation of this object
          *  @since 0.08
          */
+        @Override
         public String toString()
         {
             // @revised 0.17 to a more traditional Java approach
@@ -5319,7 +5327,7 @@ public class Wiki implements Serializable
             String line = fetch(url, "Revision.isTop", false);
             // fetch the oldid
             int a = line.indexOf("revid=\"") + 7;
-            int b = line.indexOf("\"", a);
+            int b = line.indexOf('\"', a);
             long oldid2 = Long.parseLong(line.substring(a, b));
             return revid == oldid2;
         }
@@ -5397,7 +5405,7 @@ public class Wiki implements Serializable
             StringBuilder diff = new StringBuilder(100000);
             while ((line = in.readLine()) != null)
             {
-                int y = line.indexOf(">", line.indexOf("<diff")) + 1;
+                int y = line.indexOf('>', line.indexOf("<diff")) + 1;
                 int z = line.indexOf("</diff>");
                 if (y != -1)
                 {
@@ -5425,6 +5433,7 @@ public class Wiki implements Serializable
          *  @return whether o is equal to this object
          *  @since 0.17
          */
+        @Override
         public boolean equals(Object o)
         {
             if (!(o instanceof Revision))
@@ -5437,6 +5446,7 @@ public class Wiki implements Serializable
          *  @return a hash code
          *  @since 0.17
          */
+        @Override
         public int hashCode()
         {
             return (int)revid * 2 - Wiki.this.hashCode();
@@ -5513,6 +5523,7 @@ public class Wiki implements Serializable
          *  @return see above
          *  @since 0.17
          */
+        @Override
         public String toString()
         {
             StringBuilder sb = new StringBuilder("Revision[oldid=");
@@ -5695,7 +5706,7 @@ public class Wiki implements Serializable
     {
         // System.out.println(line);
         // empty response from server
-        if (line.equals(""))
+        if (line.isEmpty())
             throw new UnknownError("Received empty response from server!");
         // successful
         if (line.contains("result=\"Success\""))
@@ -5746,19 +5757,6 @@ public class Wiki implements Serializable
         in = in.replace("&quot;", "\"");
         in = in.replace("&#039;", "'");
         return in;
-    }
-
-    /**
-     *  Finalizes the object on garbage collection.
-     *  @since 0.14
-     */
-    protected void finalize()
-    {
-        // I have no idea why this is called when we are still using
-        // this Wiki object. Silly Java.
-//        Thread.dumpStack();
-//        logout();
-//        namespaces = null;
     }
 
     // user rights methods
@@ -5880,9 +5878,9 @@ public class Wiki implements Serializable
                 if (cookie.contains("_session") && map == cookies)
                     continue;
 
-                cookie = cookie.substring(0, cookie.indexOf(";"));
-                String name = cookie.substring(0, cookie.indexOf("="));
-                String value = cookie.substring(cookie.indexOf("=") + 1, cookie.length());
+                cookie = cookie.substring(0, cookie.indexOf(';'));
+                String name = cookie.substring(0, cookie.indexOf('='));
+                String value = cookie.substring(cookie.indexOf('=') + 1, cookie.length());
                 map.put(name, value);
             }
     }
@@ -5930,7 +5928,7 @@ public class Wiki implements Serializable
      */
     protected final String calendarToTimestamp(Calendar c)
     {
-        StringBuilder x = new StringBuilder();
+        StringBuilder x = new StringBuilder(16);
         x.append(c.get(Calendar.YEAR));
         int i = c.get(Calendar.MONTH) + 1; // January == 0!
         if (i < 10)
