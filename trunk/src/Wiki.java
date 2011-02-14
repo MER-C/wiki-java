@@ -895,13 +895,13 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send
-        PrintWriter out = new PrintWriter(connection.getOutputStream());
-        out.print("lgname=");
-        out.print(username);
-        out.print("&lgpassword=");
-        out.print(password);
-        out.print("&lgtoken=");
-        out.print(URLEncoder.encode(wpLoginToken, "UTF-8"));
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        out.write("lgname=");
+        out.write(username);
+        out.write("&lgpassword=");
+        out.write(password);
+        out.write("&lgtoken=");
+        out.write(URLEncoder.encode(wpLoginToken, "UTF-8"));
         out.close();
 
         // get the cookies
@@ -1068,9 +1068,9 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send
-        PrintWriter out = new PrintWriter(connection.getOutputStream());
-        out.print("prop=text&text=");
-        out.print(URLEncoder.encode(markup, "UTF-8"));
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        out.write("prop=text&text=");
+        out.write(URLEncoder.encode(markup, "UTF-8"));
         out.close();
 
         // parse
@@ -1619,8 +1619,8 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send the data
-        PrintWriter out = new PrintWriter(connection.getOutputStream());
-        // PrintWriter out = new PrintWriter(System.out); // debug version
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        // OutputStreamWriter out = new OutputStreamWriter(System.out, "UTF-8"); // debug version
         out.write("title=");
         out.write(title2);
         out.write("&text=");
@@ -1751,7 +1751,7 @@ public class Wiki implements Serializable
                 log.append("\" }");
         }
         fetch(url.toString(), "purge", false);
-        // System.out.println(fetch(url.toString(), "purge", false)); // for debugging purposes
+        // System.out.writeln(fetch(url.toString(), "purge", false)); // for debugging purposes
         log(Level.INFO, log.toString(), "purge"); // done, log
     }
 
@@ -2130,8 +2130,8 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send the data
-        PrintWriter out = new PrintWriter(connection.getOutputStream());
-        // PrintWriter out = new PrintWriter(System.out); // debug version
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        // OutputStreamWriter out = new OutputStreamWriter(System.out); // debug version
         out.write("from=");
         out.write(title2);
         out.write("&to=");
@@ -2298,7 +2298,7 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send data
-        PrintWriter out = new PrintWriter(connection.getOutputStream());
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
         out.write("title=");
         out.write(revision.getPage());
         out.write("&user=");
@@ -2441,7 +2441,7 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send data
-        PrintWriter out = new PrintWriter(connection.getOutputStream());
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
         out.write("title=");
         out.write(rev.getPage());
         if (!reason.isEmpty())
@@ -3005,7 +3005,7 @@ public class Wiki implements Serializable
 //            in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
             in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             line = in.readLine();
-//            while ((line = in.readLine()) != null) System.out.println(line);
+//            while ((line = in.readLine()) != null) System.out.writeln(line);
             in.close();
 
         }
@@ -5377,7 +5377,7 @@ public class Wiki implements Serializable
             setCookies(connection, cookies);
             connection.setDoOutput(true);
             connection.connect();
-            PrintWriter out = new PrintWriter(connection.getOutputStream());
+            OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
             out.write("action=query&prop=revisions&revids=" + revid);
 
             // no switch for longs? WTF?
@@ -5704,7 +5704,7 @@ public class Wiki implements Serializable
      */
     protected void checkErrors(String line, String caller) throws IOException, LoginException
     {
-        // System.out.println(line);
+        // System.out.writeln(line);
         // empty response from server
         if (line.isEmpty())
             throw new UnknownError("Received empty response from server!");
