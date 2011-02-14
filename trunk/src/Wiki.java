@@ -78,6 +78,10 @@ import javax.security.auth.login.*; // useful exception types
  *  {
  *      // deal with trying to do something we can't
  *  }
+ *  catch (CredentialExpiredException ex)
+ *  {
+ *      // deal with the expiry of the cookies
+ *  }
  *  catch (AccountLockedException ex)
  *  {
  *      // deal with being blocked
@@ -816,7 +820,7 @@ public class Wiki implements Serializable
      *  Sets the assertion mode. See [[mw:Extension:Assert Edit]] for what this
      *  functionality this mimics. Assertion modes are bitmasks. Default is
      *  <tt>ASSERT_NONE</tt>.
-     *  @param mode assertion mode
+     *  @param mode an assertion mode
      *  @see #getAssertionMode
      *  @since 0.11
      */
@@ -1034,8 +1038,8 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the version of MediaWiki this wiki runs e.g. 1.13 alpha (r31567).
-     *  The r number corresponds to a revision in MediaWiki subversion
-     *  (http://svn.wikimedia.org/viewvc/mediawiki/).
+     *  The r number corresponds to a revision in { @link
+     *  http://svn.wikimedia.org/viewvc/mediawiki/ MediaWiki subversion }.
      *  @return the version of MediaWiki used
      *  @throws IOException if a network error occurs
      *  @since 0.14
@@ -1442,7 +1446,7 @@ public class Wiki implements Serializable
     public boolean[] exists(String... titles) throws IOException
     {
         // @revised 0.15 optimized for multiple queries, now up to 500x faster!
-
+        // TODO: remove dependence on ParserFunctions
         StringBuilder wikitext = new StringBuilder(15000);
         StringBuilder parsed = new StringBuilder(1000);
         for (int i = 0; i < titles.length; i++)
@@ -1560,6 +1564,7 @@ public class Wiki implements Serializable
      *  -2 to disable section editing.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws UnsupportedOperationException if you try to edit a Special: or
      *  Media: page
@@ -1693,6 +1698,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws UnsupportedOperationException if you try to edit a Special: or
      *  Media: page
      *  @since 0.17
@@ -1712,6 +1718,7 @@ public class Wiki implements Serializable
      *  @param minor whether the edit is minor
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws UnsupportedOperationException if you try to retrieve the text
      *  of a Special: page or a Media: page
      *  @throws IOException if a network error occurs
@@ -2044,6 +2051,7 @@ public class Wiki implements Serializable
      *  these pages.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't move it
      *  @since 0.16
      */
@@ -2067,6 +2075,7 @@ public class Wiki implements Serializable
      *  these pages.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't move it
      *  @since 0.16
      */
@@ -2238,6 +2247,7 @@ public class Wiki implements Serializable
      *  be true for the rollback to succeed
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if the user is not an admin
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if the user is blocked
      *  @since 0.19
      */
@@ -2260,6 +2270,7 @@ public class Wiki implements Serializable
      *  @param reason (optional) a reason for the rollback. Use "" for the
      *  default ([[MediaWiki:Revertpage]]).
      *  @throws IOException if a network error occurs
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialNotFoundException if the user is not an admin
      *  @throws AccountLockedException if the user is blocked
      *  @since 0.19
@@ -2383,6 +2394,7 @@ public class Wiki implements Serializable
      *  @param minor whether this is a minor edit
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws IllegalArgumentException if the revisions are not on the same
      *  page.
@@ -2883,6 +2895,7 @@ public class Wiki implements Serializable
      *  @param filename the target file name (Example.png, not File:Example.png)
      *  @param contents the contents of the image description page
      *  @throws CredentialNotFoundException if not logged in
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't upload
      *  @throws IOException if a network/local filesystem error occurs
      *  @throws AccountLockedException if user is blocked
@@ -3055,6 +3068,7 @@ public class Wiki implements Serializable
      *  to not specify one)
      *  @throws CredentialNotFoundException if not logged in
      *  @throws CredentialException if page is protected and we can't upload
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws IOException if a network/local filesystem error occurs
      *  @throws AccountLockedException if user is blocked
      *  @since 0.21
@@ -5586,6 +5600,7 @@ public class Wiki implements Serializable
          *  @throws IOException if a network error occurs
          *  @throws CredentialNotFoundException if not logged in or user is not
          *  an admin
+         *  @throws CredentialExpiredException if cookies have expired
          *  @throws AccountLockedException if the user is blocked
          *  @since 0.19
          */
@@ -5602,6 +5617,7 @@ public class Wiki implements Serializable
          *  @throws IOException if a network error occurs
          *  @throws CredentialNotFoundException if not logged in or user is not
          *  an admin
+         *  @throws CredentialExpiredException if cookies have expired
          *  @throws AccountLockedException if the user is blocked
          *  @since 0.19
          */
@@ -5798,18 +5814,20 @@ public class Wiki implements Serializable
      *  @throws AssertionError if any assertions are false
      *  @throws AccountLockedException if the user is blocked
      *  @throws IOException if a network error occurs
+     *  @throws CredentialExpiredException if our cookies have expired
      *  @see #setAssertionMode
      *  @since 0.11
      */
-    protected void statusCheck() throws IOException, AccountLockedException
+    protected void statusCheck() throws IOException, CredentialException
     {
         // @revised 0.18 was assertions(), put some more stuff in here
 
         // check if MediaWiki hasn't logged us out
-        if (cookies != null && !cookies.containsValue(user.getUsername()))
+        if (user == null || !fetch(query + "action=query&meta=userinfo", "stausCheck", false).contains(user.getUsername()))
         {
             log(Level.WARNING, "Cookies expired", "statusCheck");
             logout();
+            throw new CredentialExpiredException("Cookies expired.");
         }
 
         // perform various status checks every 100 or so edits
