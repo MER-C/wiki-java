@@ -1,6 +1,6 @@
 /**
  *  @(#)Wiki.java 0.22 18/02/2010
- *  Copyright (C) 2007 - 2010 MER-C
+ *  Copyright (C) 2007 - 2011 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -2283,6 +2283,13 @@ public class Wiki implements Serializable
         statusCheck();
         String url = query + "action=query&prop=revisions&titles=" + revision.getPage() + "&rvlimit=1&rvtoken=rollback";
         String line = fetch(url, "rollback", true);
+        // check if cookies have expired
+        if (cookies2.isEmpty())
+        {
+            logger.log(Level.SEVERE, "Cookies have expired.");
+            logout();
+            throw new CredentialExpiredException("Cookies have expired.");
+        }
 
         // check whether we are "on top".
         Revision top = parseRevision(line, revision.getPage());
@@ -5281,7 +5288,7 @@ public class Wiki implements Serializable
             this.summary = summary;
             this.minor = minor;
             this.user = user;
-			this.title = title;
+            this.title = title;
         }
 
         /**
@@ -5352,8 +5359,8 @@ public class Wiki implements Serializable
          *  @param other another revision on the same page. NEXT_REVISION,
          *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
          *  effect.
-         *  @return the difference between this and the other revision. See
-         *  http://en.wikipedia.org/w/index.php?diff=343490272 for an example.
+         *  @return the difference between this and the other revision
+         *  ({ @link http://en.wikipedia.org/w/index.php?diff=343490272 example }).
          *  @throws IOException if a network error occurs
          *  @since 0.21
          */
@@ -5785,12 +5792,21 @@ public class Wiki implements Serializable
      *  @param move whether the action is a move
      *  @return whether the user can perform the specified action
      *  @throws IOException if we can't get the user rights
+     *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
      *  @throws AssertionError if any defined assertions are false
      *  @since 0.10
      */
-    private boolean checkRights(int level, boolean move) throws IOException, AccountLockedException
+    private boolean checkRights(int level, boolean move) throws IOException, CredentialException
     {
+        // check if we are logged out
+        if (cookies2.isEmpty())
+        {
+            logger.log(Level.SEVERE, "Cookies have expired");
+            logout();
+            throw new CredentialExpiredException("Cookies have expired.");
+        }
+
         // admins can do anything, this also covers FULL_PROTECTION
         if ((user.userRights() & ADMIN)  == ADMIN)
             return true;
@@ -5814,21 +5830,12 @@ public class Wiki implements Serializable
      *  @throws AssertionError if any assertions are false
      *  @throws AccountLockedException if the user is blocked
      *  @throws IOException if a network error occurs
-     *  @throws CredentialExpiredException if our cookies have expired
      *  @see #setAssertionMode
      *  @since 0.11
      */
     protected void statusCheck() throws IOException, CredentialException
     {
         // @revised 0.18 was assertions(), put some more stuff in here
-
-        // check if MediaWiki hasn't logged us out
-        if (user == null || !fetch(query + "action=query&meta=userinfo", "stausCheck", false).contains(user.getUsername()))
-        {
-            log(Level.WARNING, "Cookies expired", "statusCheck");
-            logout();
-            throw new CredentialExpiredException("Cookies expired.");
-        }
 
         // perform various status checks every 100 or so edits
         if (statuscounter > statusinterval)
