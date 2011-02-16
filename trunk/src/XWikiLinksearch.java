@@ -38,7 +38,7 @@ public class XWikiLinksearch
         {
             Wiki wiki = new Wiki(wikis[i] + ".wikipedia.org");
             wiki.setMaxLag(0);
-            ArrayList[] temp = wiki.spamsearch("*." + domain);
+            ArrayList[] temp = wiki.linksearch("*." + domain);
             out.write("Results for " + wikis[i] + ".wikipedia.org:\n<ol>");
             for (int j = 0; j < temp[0].size(); j++)
             {

@@ -124,8 +124,8 @@ import javax.security.auth.login.*; // useful exception types
  *  or -ea to enable assertions, example: <tt>java -ea Mybot</tt>.
  *
  *  <p>
- *  Please file bug reports at [[User talk:MER-C/Wiki.java]]. Revision
- *  history is on the same page.
+ *  Please file bug reports at [[User talk:MER-C]] (fast) or the Google
+ *  code bug tracker (slow).
  *  <!-- all wikilinks are relative to the English Wikipedia -->
  *
  *  @author MER-C
@@ -368,14 +368,6 @@ public class Wiki implements Serializable
      *  @since 0.06
      */
     public static final String USER_RENAME_LOG = "renameuser";
-
-    /**
-     *  Denotes the bot status log.
-     *  @since 0.08
-     *  @deprecated [[Special:Makebot]] is deprecated, use
-     *  <tt>USER_RIGHTS_LOG</tt> instead.
-     */
-    public static final String BOT_STATUS_LOG = "makebot";
 
     /**
      *  Denotes the page importation log.
@@ -1124,10 +1116,6 @@ public class Wiki implements Serializable
         int a = output.indexOf("<!--");
         return output.substring(0, a);
     }
-
-    /**
-     *  Returns a diff of the
-     */
 
     /**
      *  Fetches a random page in the main namespace. Equivalent to
@@ -3944,9 +3932,9 @@ public class Wiki implements Serializable
      *  the list of urls (instance of <tt>java.net.URL</tt>)
      *  @since 0.06
      */
-    public ArrayList[] spamsearch(String pattern) throws IOException
+    public ArrayList[] linksearch(String pattern) throws IOException
     {
-        return spamsearch(pattern, ALL_NAMESPACES);
+        return linksearch(pattern, ALL_NAMESPACES);
     }
 
     /**
@@ -3965,7 +3953,7 @@ public class Wiki implements Serializable
      *  the list of urls (instance of <tt>java.net.URL</tt>)
      *  @since 0.06
      */
-    public ArrayList[] spamsearch(String pattern, int namespace) throws IOException
+    public ArrayList[] linksearch(String pattern, int namespace) throws IOException
     {
         // set it up
         StringBuilder url = new StringBuilder(query);
@@ -3981,7 +3969,7 @@ public class Wiki implements Serializable
 
         // some variables we need later
         boolean done = false;
-        ArrayList[] ret = new ArrayList[] // no reason for more than 500 spamlinks
+        ArrayList[] ret = new ArrayList[] // no reason for more than 500 links
         {
             new ArrayList<String>(667), // page titles
             new ArrayList<URL>(667) // urls
@@ -3991,7 +3979,7 @@ public class Wiki implements Serializable
         while (!done)
         {
             // if this is the last page of results then there is no euoffset parameter
-            String line = fetch(url.toString() + ret[0].size(), "spamsearch", false);
+            String line = fetch(url.toString() + ret[0].size(), "linksearch", false);
             if (!line.contains("euoffset=\""))
                 done = true;
 
@@ -4012,7 +4000,7 @@ public class Wiki implements Serializable
         }
 
         // return value
-        log(Level.INFO, "Successfully returned instances of external link " + pattern + " (" + ret[0].size() + " links)", "spamsearch");
+        log(Level.INFO, "Successfully returned instances of external link " + pattern + " (" + ret[0].size() + " links)", "linksearch");
         return ret;
     }
 
@@ -4270,8 +4258,6 @@ public class Wiki implements Serializable
             console.append("user rights");
         else if (log.equals(USER_RENAME_LOG))
             console.append("user rename");
-        else if (log.equals(BOT_STATUS_LOG))
-            console.append("bot status");
         else
         {
             console.append(" ");
