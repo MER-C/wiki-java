@@ -52,7 +52,7 @@ public class XWikiLinksearch
                 out.write(temp[1].get(j).toString());
                 out.write("\">");
                 out.write(temp[1].get(j).toString());
-                out.write("</a><br>");
+                out.write("</a><br>\n");
             }
             out.write("</ol>\n");
         }

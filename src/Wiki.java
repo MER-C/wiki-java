@@ -3905,12 +3905,11 @@ public class Wiki implements Serializable
                 next = "done";
 
             // parse
-            while (line.contains("title"))
+            for (int x = line.indexOf("title=\""); x >= 0; x = line.indexOf("title=\"", x))
             {
-                int x = line.indexOf("title=\"");
                 int y = line.indexOf("\" />", x);
                 members.add(decode(line.substring(x + 7, y)));
-                line = line.substring(y + 4);
+                x = y + 4;
             }
         }
         while (!next.equals("done"));
@@ -3985,17 +3984,16 @@ public class Wiki implements Serializable
 
             // parse
             // typical form: <eu ns="0" title="Main Page" url="http://example.com" />
-            while (line.contains("<eu "))
+            for (int x = line.indexOf("title=\""); x >= 0; x = line.indexOf("title=\"", x))
             {
-                int x = line.indexOf("title=\"");
-                int y = line.indexOf("\" url=\"");
+                int y = line.indexOf("\" url=\"", x);
                 int z = line.indexOf("\" />", y);
 
                 String title = line.substring(x + 7, y);
                 String link = line.substring(y + 7, z);
                 ret[0].add(decode(title));
                 ret[1].add(new URL(link));
-                line = line.substring(z + 3);
+                x = z + 3;
             }
         }
 
