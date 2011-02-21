@@ -558,6 +558,7 @@ public class Wiki implements Serializable
     private int assertion = 0; // assertion mode
     private int statusinterval = 100; // status check
     private String useragent = "Wiki.java " + version;
+    private boolean zipped = true;
 
     // retry flag
     private boolean retry = true;
@@ -694,6 +695,27 @@ public class Wiki implements Serializable
     public String getUserAgent()
     {
         return useragent;
+    }
+
+    /**
+     *  Enables/disables GZip compression for GET requests. Default: true.
+     *  @param zipped whether we use GZip compression
+     *  @since 0.23
+     */
+    public void setUsingCompressedRequests(boolean zipped)
+    {
+        this.zipped = zipped;
+    }
+
+    /**
+     *  Checks whether we are using GZip compression for GET requests.
+     *  Default: true.
+     *  @return (see above)
+     *  @since 0.23
+     */
+    public boolean isUsingCompressedRequests()
+    {
+        return zipped;
     }
 
     /**
@@ -1739,7 +1761,7 @@ public class Wiki implements Serializable
             log.append(titles[i]);
             if (i != titles.length - 1)
             {
-                url.append("|");
+                url.append("%7C");
                 log.append("\", ");
             }
             else
@@ -2216,7 +2238,7 @@ public class Wiki implements Serializable
     public Revision getRevision(long oldid) throws IOException
     {
         // build url and connect
-        String url = query + "action=query&prop=revisions&rvprop=ids|timestamp|user|comment|flags&revids=" + oldid;
+        String url = query + "action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags&revids=" + oldid;
         String line = fetch(url, "getRevision", false);
         // check for deleted revisions
         if (line.contains("<badrevids>"))
@@ -2360,7 +2382,7 @@ public class Wiki implements Serializable
         retry = true;
     }
 
-     /**
+    /**
      *  Undoes revisions, equivalent to the "undo" button in the GUI page
      *  history. A quick explanation on how this might work - suppose the edit
      *  history was as follows:
@@ -2737,7 +2759,7 @@ public class Wiki implements Serializable
         // This seems a good candidate for bulk queries.
 
         // fetch
-        String url = query + "action=query&prop=imageinfo&iiprop=size|mime|metadata&titles=File:" + URLEncoder.encode(file, "UTF-8");
+        String url = query + "action=query&prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=File:" + URLEncoder.encode(file, "UTF-8");
         String line = fetch(url, "getFileMetadata", false);
         HashMap<String, Object> metadata = new HashMap<String, Object>(30);
 
@@ -2812,7 +2834,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getImageHistory(String title) throws IOException
     {
-        String url = query + "action=query&prop=imageinfo&iiprop=timestamp|user|comment&iilimit=max&titles=File:" + title;
+        String url = query + "action=query&prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" + title;
         String line = fetch(url, "getImageHistory", false);
         ArrayList<LogEntry> history = new ArrayList<LogEntry>(40);
         while (line.contains("<ii "))
@@ -2850,7 +2872,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("You must provide an upload log entry!");
         // no thumbnails for image history, sorry.
         String title = entry.getTarget();
-        String url = query + "action=query&prop=imageinfo&iilimit=max&iiprop=timestamp|url|archivename&titles=File:" + title;
+        String url = query + "action=query&prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=File:" + title;
         String line = fetch(url, "getOldImage", false);
 
         // find the correct log entry by comparing timestamps
@@ -3384,7 +3406,7 @@ public class Wiki implements Serializable
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
-        temp.append("action=query&list=usercontribs&ucprop=title|timestamp|flags|comment|ids&uclimit=max&");
+        temp.append("action=query&list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids&uclimit=max&");
         if (prefix.isEmpty())
         {
             temp.append("ucuser=");
@@ -3612,7 +3634,7 @@ public class Wiki implements Serializable
         {
             url.append(namespaces[i]);
             if (i != namespaces.length - 1)
-                url.append("|");
+                url.append("%7C");
         }
         url.append("&sroffset=");
 
@@ -3956,7 +3978,7 @@ public class Wiki implements Serializable
     {
         // set it up
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&list=exturlusage&euprop=title|url&euquery=");
+        url.append("action=query&list=exturlusage&euprop=title%7curl&euquery=");
         url.append(pattern);
         url.append("&eulimit=max");
         if (namespace != ALL_NAMESPACES)
@@ -4231,7 +4253,7 @@ public class Wiki implements Serializable
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&list=logevents&leprop=title|type|user|timestamp|comment|details");
+        url.append("action=query&list=logevents&leprop=title%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails");
         StringBuilder console = new StringBuilder("Successfully retrieved "); // logger statement
 
         // check for amount
@@ -4797,17 +4819,17 @@ public class Wiki implements Serializable
         {
             url.append("&rcshow=");
             if ((rcoptions & HIDE_ANON) == HIDE_ANON)
-                url.append("!anon|");
+                url.append("!anon%7C");
             if ((rcoptions & HIDE_SELF) == HIDE_SELF)
-                url.append("!self|");
+                url.append("!self%7C");
             if ((rcoptions & HIDE_MINOR) == HIDE_MINOR)
-                url.append("!minor|");
+                url.append("!minor%7C");
             if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED)
-                url.append("!patrolled|");
+                url.append("!patrolled%7C");
             if ((rcoptions & HIDE_BOT) == HIDE_BOT)
                 url.append("!bot");
             // chop off last |
-            url.deleteCharAt(url.length() - 1);
+            url.delete(url.length() - 3, url.length());
         }
 
         // fetch, parse
@@ -5328,7 +5350,7 @@ public class Wiki implements Serializable
          */
         public boolean isTop() throws IOException
         {
-            String url = query + "action=query&prop=revisions&titles=" + URLEncoder.encode(title, "UTF-8") + "&rvlimit=1&rvprop=timestamp|ids";
+            String url = query + "action=query&prop=revisions&titles=" + URLEncoder.encode(title, "UTF-8") + "&rvlimit=1&rvprop=timestamp%7Cids";
             String line = fetch(url, "Revision.isTop", false);
             // fetch the oldid
             int a = line.indexOf("revid=\"") + 7;
@@ -5678,7 +5700,8 @@ public class Wiki implements Serializable
         URLConnection connection = new URL(url).openConnection();
         setCookies(connection, cookies);
         connection.connect();
-        BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
 
         // get the cookies
         if (write)
