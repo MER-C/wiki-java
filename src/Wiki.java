@@ -3284,12 +3284,14 @@ public class Wiki implements Serializable
             // parse
             int a = line.indexOf("aufrom=\"") + 8;
             next = line.substring(a, line.indexOf("\" />", a));
-            while (line.contains("<u ") && members.size() < number)
+            // FIXME: MediaWiki bug: return to me!
+            for (int w = line.indexOf("<u "); w >= 0 && members.size() < number; w = line.indexOf("<u ", w))
+            //while (line.contains("<u ") && members.size() < number)
             {
-                int x = line.indexOf("name=");
-                int y = line.indexOf(" />", x);
-                members.add(line.substring(x + 6, y - 1));
-                line = line.substring(y + 2);
+                int x = line.indexOf("name=\"", w) + 6;
+                int y = line.indexOf("\"", x);
+                members.add(line.substring(x, y));
+                w = y;
             }
         }
         while (members.size() < number);
@@ -3931,7 +3933,7 @@ public class Wiki implements Serializable
             {
                 int y = line.indexOf("\" />", x);
                 members.add(decode(line.substring(x + 7, y)));
-                x = y + 4;
+                x = y;
             }
         }
         while (!next.equals("done"));
@@ -4015,7 +4017,7 @@ public class Wiki implements Serializable
                 String link = line.substring(y + 7, z);
                 ret[0].add(decode(title));
                 ret[1].add(new URL(link));
-                x = z + 3;
+                x = z;
             }
         }
 
@@ -5887,7 +5889,8 @@ public class Wiki implements Serializable
         u.setRequestProperty("Cookie", cookie.toString());
 
         // enable gzip compression
-        u.setRequestProperty("Accept-encoding", "gzip");
+        if (zipped)
+            u.setRequestProperty("Accept-encoding", "gzip");
         u.setRequestProperty("User-Agent", useragent);
     }
 

@@ -65,20 +65,13 @@ public class XWikiLinksearch extends HttpServlet
 
         // form for input
         out.write("<form action=\"./linksearch.jsp\" method=GET>\n<p>Domain to search: "
-            + "<input type=text name=link>\n<input type=submit value=submit>\n</form>\n");
+            + "<input type=text name=link>\n<input type=submit value=\"Search\">\n</form>\n");
         String domain = request.getParameter("link");
         if (domain != null)
             linksearch(domain, out);
 
         // put a footer
-        out.write("<hr>\n<p>Cross-wiki linksearch tool: Copyright (C) MER-C 2007-2011. "
-            + "This tool is free software: you can redistribute it and/or modify it\n"
-            + "under the terms of the GNU General Public License as published by the "
-            + "Free Software Foundation, either version 3 of the License, or (at your\n"
-            + "option) any later version.\n<p>Source code is available <a href=\""
-            + "http://code.google.com/p/wiki-java\">here</a>. Report bugs at <a "
-            + "href=\"http://en.wikipedia.org/wiki/User_talk:MER-C\">my talk page</a>\n"
-            + "(fast) or the tracker associated with the source (slow).\n\n</body>\n</html>");
+        out.write(ServletUtils.generateFooter("Cross-wiki linksearch tool"));
         out.close();
     }
 
