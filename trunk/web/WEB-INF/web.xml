@@ -6,14 +6,23 @@
         <servlet-name>Linksearch</servlet-name>
         <servlet-class>XWikiLinksearch</servlet-class>
     </servlet>
+    <servlet>
+        <description>Image contribution surveyor</description>
+        <servlet-name>ImageCCI</servlet-name>
+        <servlet-class>ImageCCI</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>Linksearch</servlet-name>
         <url-pattern>/linksearch.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ImageCCI</servlet-name>
+        <url-pattern>/imagecci.jsp</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>
     </session-config>
     <welcome-file-list>
-        <welcome-file>index.jsp</welcome-file>
+        <welcome-file>index.html</welcome-file>
     </welcome-file-list>
 </web-app>
