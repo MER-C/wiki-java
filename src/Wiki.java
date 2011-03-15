@@ -2545,7 +2545,7 @@ public class Wiki implements Serializable
     protected Revision parseRevision(String xml, String title)
     {
         // oldid
-        int a = xml.indexOf("revid=\"") + 7;
+        int a = xml.indexOf(" revid=\"") + 8;
         int b = xml.indexOf('\"', a);
         long oldid = Long.parseLong(xml.substring(a, b));
 
@@ -2584,13 +2584,14 @@ public class Wiki implements Serializable
 
         // minor
         boolean minor = xml.contains("minor=\"\"");
+        boolean bot = xml.contains("bot=\"\"");
 
-        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor);
+        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot);
         if (xml.contains("rcid=\""))
         {
             // set rcid
             a = xml.indexOf("rcid=\"") + 6;
-            b = xml.indexOf(xml);
+            b = xml.indexOf('\"', a);
             revision.setRcid(Long.parseLong(xml.substring(a, b)));
         }
         return revision;
@@ -3172,6 +3173,11 @@ public class Wiki implements Serializable
         out.writeBytes(filename2);
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
+        // edit token
+        out.writeBytes("Content-Disposition: form-data; name=\"token\"\r\n\r\n");
+        out.writeBytes(URLEncoder.encode(wpEditToken, "UTF-8"));
+        out.writeBytes("\r\n");
+        out.writeBytes(boundary);
         // reason (awaiting scap)
         if (!reason.isEmpty())
         {
@@ -3184,11 +3190,6 @@ public class Wiki implements Serializable
         out.writeBytes("Content-Disposition: form-data; name=\"text\"\r\n");
         out.writeBytes("Content-Type: text/plain\r\n\r\n");
         out.writeBytes(contents);
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        // edit token
-        out.writeBytes("Content-Disposition: form-data; name=\"token\"\r\n\r\n");
-        out.writeBytes(URLEncoder.encode(wpEditToken, "UTF-8"));
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
         // the actual file
@@ -4765,14 +4766,14 @@ public class Wiki implements Serializable
      *  for about a month. It is not possible to retrieve changes before then.
      *
      *  @param amount the number of pages to fetch
-     *  @return the titles of recently created pages that satisfy requirements
+     *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
-    public String[] newPages(int amount) throws IOException
+    public Revision[] newPages(int amount) throws IOException
     {
-        return newPages(amount, MAIN_NAMESPACE, 0);
+        return recentChanges(amount, MAIN_NAMESPACE, 0, true);
     }
 
     /**
@@ -4785,14 +4786,14 @@ public class Wiki implements Serializable
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. exclude patrolled pages => rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get
-     *  @return the titles of recently created pages that satisfy requirements
+     *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
-    public String[] newPages(int amount, int rcoptions) throws IOException
+    public Revision[] newPages(int amount, int rcoptions) throws IOException
     {
-        return newPages(amount, MAIN_NAMESPACE, rcoptions);
+        return recentChanges(amount, MAIN_NAMESPACE, rcoptions, true);
     }
 
     /**
@@ -4806,16 +4807,101 @@ public class Wiki implements Serializable
      *  we return (e.g. exclude patrolled pages => rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get
      *  @param namespace the namespace to search (not ALL_NAMESPACES)
-     *  @return the titles of recently created pages that satisfy requirements
+     *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
-    public String[] newPages(int amount, int namespace, int rcoptions) throws IOException
+    public Revision[] newPages(int amount, int namespace, int rcoptions) throws IOException
+    {
+        // @revised 0.23 move code to recent changes
+        return recentChanges(amount, namespace, rcoptions, true);
+    }
+
+    /**
+     *  Fetches the <tt>amount</tt> most recent changes in the main namespace.
+     *  WARNING: The recent changes table only stores new pages for about a
+     *  month. It is not possible to retrieve changes before then. Equivalent
+     *  to [[Special:Recentchanges]].
+     *  <p>
+     *  Note: Log entries in recent changes have a revid of 0!
+     *
+     *  @param amount the number of entries to return
+     *  @return the recent changes that satisfy these criteria
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    public Revision[] recentChanges(int amount) throws IOException
+    {
+        return recentChanges(amount, MAIN_NAMESPACE, 0, false);
+    }
+
+    /**
+     *  Fetches the <tt>amount</tt> most recent changes in the specified
+     *  namespace. WARNING: The recent changes table only stores new pages for
+     *  about a month. It is not possible to retrieve changes before then.
+     *  Equivalent to [[Special:Recentchanges]].
+     *  <p>
+     *  Note: Log entries in recent changes have a revid of 0!
+     *
+     *  @param amount the number of entries to return
+     *  @param namespace the namespace to search
+     *  @return the recent changes that satisfy these criteria
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    public Revision[] recentChanges(int amount, int namespace) throws IOException
+    {
+        return recentChanges(amount, namespace, 0, false);
+    }
+
+    /**
+     *  Fetches the <tt>amount</tt> most recent changes in the specified
+     *  namespace subject to the specified constraints. WARNING: The recent
+     *  changes table only stores new pages for about a month. It is not
+     *  possible to retrieve changes before then. Equivalent to
+     *  [[Special:Recentchanges]].
+     *  <p>
+     *  Note: Log entries in recent changes have a revid of 0!
+     *
+     *  @param amount the number of entries to return
+     *  @param namespace the namespace to search
+     *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
+     *  we return.
+     *  @return the recent changes that satisfy these criteria
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    public Revision[] recentChanges(int amount, int namespace, int rcoptions) throws IOException
+    {
+        return recentChanges(amount, namespace, rcoptions, false);
+    }
+
+    /**
+     *  Fetches the <tt>amount</tt> most recent changes in the specified 
+     *  namespace subject to the specified constraints. WARNING: The recent
+     *  changes table only stores new pages for about a month. It is not
+     *  possible to retrieve changes before then. Equivalent to
+     *  [[Special:Recentchanges]].
+     *  <p>
+     *  Note: Log entries in recent changes have a revid of 0!
+     *
+     *  @param amount the number of entries to return
+     *  @param namespace the namespace to search
+     *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
+     *  we return.
+     *  @param newpages show new pages only
+     *  @return the recent changes that satisfy these criteria
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    protected Revision[] recentChanges(int amount, int namespace, int rcoptions, boolean newpages) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&list=recentchanges&rctype=new&rcprop=title&rclimit=max&rcnamespace=");
+        url.append("action=query&list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment&rclimit=max&rcnamespace=");
         url.append(namespace);
+        if (newpages)
+            url.append("&rctype=new");
         // rc options
         if (rcoptions > 0)
         {
@@ -4837,28 +4923,29 @@ public class Wiki implements Serializable
         // fetch, parse
         url.append("&rcstart=");
         String rcstart = calendarToTimestamp(new GregorianCalendar());
-        ArrayList<String> pages = new ArrayList<String>(750);
+        ArrayList<Revision> revisions = new ArrayList<Revision>(750);
         do
         {
             String temp = url.toString();
-            String line = fetch(temp + rcstart, "newPages", false);
+            String line = fetch(temp + rcstart, newpages ? "newPages" : "recentChanges", false);
 
             // set continuation parameter
             int a = line.indexOf("rcstart=\"") + 9;
             int b = line.indexOf('\"', a);
             rcstart = line.substring(a, b);
 
-            while (line.contains("title="))
+            // typical form <rc type="edit" ns="0" title="List of township-level divisions of Xinjiang" 
+            // rcid="431225307" pageid="26261623" revid="418906444" old_revid="418906338" user="Visik"
+            // comment="/* Turpan City */ fixed up" />
+            for (int i = line.indexOf("<rc "); i >= 0 && revisions.size() < amount; i = line.indexOf("<rc ", i))
             {
-                // typical form <rc type="new" ns="0" title="Article" />
-                a = line.indexOf("title=\"") + 7;
-                b = line.indexOf('\"', a);
-                pages.add(line.substring(a, b));
-                line = line.substring(b);
+                int j = line.indexOf("/>", i);
+                revisions.add(parseRevision(line.substring(i, j), ""));
+                i = j;
             }
         }
-        while (pages.size() < amount);
-        return pages.toArray(new String[0]);
+        while (revisions.size() < amount);
+        return revisions.toArray(new Revision[0]);
     }
 
     // INNER CLASSES
@@ -5269,7 +5356,7 @@ public class Wiki implements Serializable
      */
     public class Revision implements Comparable<Revision>
     {
-        private boolean minor;
+        private boolean minor, bot;
         private String summary;
         private long revid, rcid = -1;
         private Calendar timestamp;
@@ -5287,9 +5374,10 @@ public class Wiki implements Serializable
          *  @param user the user making this revision (may be anonymous, if not
          *  use <tt>User.getUsername()</tt>)
          *  @param minor whether this was a minor edit
+         *  @param bot whether this was a bot edit
          *  @since 0.17
          */
-        protected Revision(long revid, Calendar timestamp, String title, String summary, String user, boolean minor)
+        protected Revision(long revid, Calendar timestamp, String title, String summary, String user, boolean minor, boolean bot)
         {
             this.revid = revid;
             this.timestamp = timestamp;
@@ -5297,6 +5385,7 @@ public class Wiki implements Serializable
             this.minor = minor;
             this.user = user;
             this.title = title;
+            this.bot = bot;
         }
 
         /**
@@ -5437,10 +5526,7 @@ public class Wiki implements Serializable
                 int y = line.indexOf('>', line.indexOf("<diff")) + 1;
                 int z = line.indexOf("</diff>");
                 if (y != -1)
-                {
                     diff.append(line.substring(y + 6));
-                    diff.append("\n");
-                }
                 else if (z != -1)
                 {
                     diff.append(line.substring(0, z));
@@ -5448,10 +5534,8 @@ public class Wiki implements Serializable
                     break; // done
                 }
                 else
-                {
                     diff.append(line);
-                    diff.append("\n");
-                }
+                diff.append("\n");
             }
             return decode(diff.toString());
         }
@@ -5491,6 +5575,16 @@ public class Wiki implements Serializable
         public boolean isMinor()
         {
             return minor;
+        }
+
+        /**
+         *  Determines whether this revision was made by a bot.
+         *  @return (see above)
+         *  @since 0.23
+         */
+        public boolean isBot()
+        {
+            return bot;
         }
 
         /**
@@ -5567,6 +5661,8 @@ public class Wiki implements Serializable
             sb.append(summary == null ? "[hidden]" : summary);
             sb.append("\",minor=");
             sb.append(minor);
+            sb.append(",bot=");
+            sb.append(bot);
             sb.append(",rcid=");
             sb.append(rcid == -1 ? "unset" : rcid);
             sb.append("]");
@@ -5863,7 +5959,7 @@ public class Wiki implements Serializable
 
         // do some more assertions
         if ((assertion & ASSERT_LOGGED_IN) == ASSERT_LOGGED_IN)
-            assert (user != null) : "Not logged in";
+            assert (user != null) : "Not logged in"; // Does this ever happen?
         if ((assertion & ASSERT_BOT) == ASSERT_BOT)
             assert (user.userRights() & BOT) == BOT : "Not a bot";
     }
