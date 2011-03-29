@@ -1,5 +1,5 @@
 /**
- *  @(#)Wiki.java 0.22 18/02/2010
+ *  @(#)Wiki.java 0.23 26/03/2011
  *  Copyright (C) 2007 - 2011 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@ import javax.security.auth.login.*; // useful exception types
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.5 (5.0) or greater. Uses the [[mw:API|MediaWiki API]] for
  *  most operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.14), otherwise some functions may not work.
+ *  of MediaWiki (1.18), otherwise some functions may not work.
  *
  *  <p>
  *  A typical program would go something like this:
@@ -129,7 +129,7 @@ import javax.security.auth.login.*; // useful exception types
  *  <!-- all wikilinks are relative to the English Wikipedia -->
  *
  *  @author MER-C
- *  @version 0.22
+ *  @version 0.23
  */
 public class Wiki implements Serializable
 {
@@ -533,7 +533,7 @@ public class Wiki implements Serializable
      */
     public static final long PREVIOUS_REVISION = -3L;
 
-    private static final String version = "0.22";
+    private static final String version = "0.23";
 
     // the domain of the wiki
     private String domain, query, base;
@@ -1164,8 +1164,8 @@ public class Wiki implements Serializable
     {
         // fetch
         String url = query + "action=query&list=random";
-		url += (namespace == ALL_NAMESPACES ? "" : "&rnnamespace=" + namespace);
-		String line = fetch(url, "random", false);
+        url += (namespace == ALL_NAMESPACES ? "" : "&rnnamespace=" + namespace);
+        String line = fetch(url, "random", false);
 
         // parse
         int a = line.indexOf("title=\"") + 7;
@@ -1352,9 +1352,104 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the protection status of a page. WARNING: returns NO_PROTECTION
-     *  for pages that are protected through the cascading mechanism, e.g.
-     *  [[Talk:W/w/index.php]].
+     *  Gets various page info. Returns:
+     *  <pre>
+     *  {
+     *      { "displaytitle" => "iPod"         }, // the title of the page that is actually displayed (String)
+     *      { "protection"   => NO_PROTECTION  }, // the protection level of the page (Integer)
+     *      { "token"        => "\+"           }, // an edit token for the page, must be logged
+     *                                            // in to be non-trivial (String)
+     *      { "exists"       => true           }, // whether the page exists (Boolean)
+     *      { "lastpurged"   => 20110101000000 }, // when the page was last purged (Calendar), null if the
+     *                                            // page does not exist
+     *      { "lastrevid"    => 123456789L     }, // the revid of the top revision (Long), -1L if the page
+     *                                            // does not exist
+     *      { "size"         => 5000           }, // the size of the page (Integer), -1 if the page does
+     *                                            // not exist
+     *      { "cascade"      => false          }  // whether this page is cascade protected (Boolean)
+     *  }
+     *  </pre>
+     *  @param page the page to get info for
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    public HashMap<String, Object> getPageInfo(String page) throws IOException
+    {
+        // fetch
+        // As we are going to call this from edit() and friends, we need to populate cookies2
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&prop=info&intoken=edit&inprop=protection%7Cdisplaytitle&titles=");
+        url.append(URLEncoder.encode(page, "UTF-8"));
+        String line = fetch(url.toString(), "getPageInfo", true);
+        HashMap<String, Object> info = new HashMap<String, Object>(15);
+
+        // does the page exist?
+        boolean exists = !line.contains("missing=\"\"");
+        info.put("exists", exists);
+        if (exists)
+        {
+            // last edit time
+            int a = line.indexOf("touched=\"") + 9;
+            int b = line.indexOf('\"', a);
+            info.put("lastpurged", timestampToCalendar(convertTimestamp(line.substring(a, b))));
+
+            // last revid
+            a = line.indexOf("lastrevid=\"") + 11;
+            b = line.indexOf('\"', a);
+            info.put("lastrevid", Long.parseLong(line.substring(a, b)));
+
+            // size
+            a = line.indexOf("length=\"") + 8;
+            b = line.indexOf('\"', a);
+            info.put("size", Integer.parseInt(line.substring(a, b)));
+
+            // parse protection level
+            // FIXME: this probably needs to be rewritten
+            int z = line.indexOf("type=\"edit\"");
+            if (z != -1)
+            {
+                String s = line.substring(z, z + 30);
+                if (s.contains("sysop"))
+                    info.put("protection", FULL_PROTECTION);
+                else
+                {
+                    s = line.substring(z + 30); // cut out edit tag
+                    info.put("protection", line.contains("level=\"sysop\"") ? SEMI_AND_MOVE_PROTECTION : SEMI_PROTECTION);
+                }
+            }
+            else
+                info.put("protection", line.contains("type=\"move\"") ? MOVE_PROTECTION : NO_PROTECTION);
+        }
+        else
+        {
+            info.put("lastedited", null);
+            info.put("lastrevid", -1L);
+            info.put("size", -1);
+            // is the page create protected?
+            if(line.contains("type=\"create\""))
+                info.put("protection", PROTECTED_DELETED_PAGE);
+        }
+
+        // cascade protection
+        info.put("cascade", line.contains("cascade=\"\""));
+
+        // displaytitle
+        int a = line.indexOf("displaytitle=\"") + 14;
+        int b = line.indexOf('\"', a);
+        info.put("displaytitle", line.substring(a, b));
+
+        // edit/move/upload/protect/delete token
+        a = line.indexOf("token=\"") + 7;
+        b = line.indexOf('\"', a);
+        info.put("token", line.substring(a, b));
+
+        log(Level.INFO, "Successfully retrieved page info for " + page, "getPageInfo");
+        return info;
+    }
+
+    /**
+     *  Gets the protection status of a page. 
      *
      *  @param title the title of the page
      *  @return one of the various protection levels (i.e,. NO_PROTECTION,
@@ -1365,27 +1460,10 @@ public class Wiki implements Serializable
      */
     public int getProtectionLevel(String title) throws IOException
     {
-        // fetch
-        String url = query + "action=query&prop=info&inprop=protection&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getProtectionLevel", false);
-
-        // parse
-        int z = line.indexOf("type=\"edit\"");
-        if (z != -1)
-        {
-            String s = line.substring(z, z + 30);
-            if (s.contains("sysop"))
-                return FULL_PROTECTION;
-            s = line.substring(z + 30); // cut out edit tag
-            if (line.contains("level=\"sysop\""))
-                return SEMI_AND_MOVE_PROTECTION;
-            return SEMI_PROTECTION;
-        }
-        if (line.contains("type=\"move\""))
-            return MOVE_PROTECTION;
-        if (line.contains("type=\"create\""))
-            return PROTECTED_DELETED_PAGE;
-        return NO_PROTECTION;
+        HashMap<String, Object> info = getPageInfo(title);
+        if ((Boolean)info.get("cascade"))
+            return FULL_PROTECTION;
+        return (Integer)info.get("protection");
     }
 
     /**
@@ -1591,42 +1669,20 @@ public class Wiki implements Serializable
         // sanitize some params
         String title2 = URLEncoder.encode(title, "UTF-8");
 
-        // Check the protection level. We don't use getProtectionLevel(title), as we
-        // can fetch a move token at the same time!
-        String url = query + "action=query&prop=info&inprop=protection&intoken=edit&titles=" + title2;
-        String line = fetch(url, "edit", true);
-
-        // parse the page
-        int level = NO_PROTECTION;
-        int z = line.indexOf("type=\"edit\"");
-        if (z != -1)
-        {
-            String s = line.substring(z, z + 30);
-            if (s.contains("sysop"))
-                level = FULL_PROTECTION;
-            s = line.substring(z + 30); // cut out edit tag
-            if (line.contains("level=\"sysop\""))
-                level = SEMI_AND_MOVE_PROTECTION;
-            level = SEMI_PROTECTION;
-        }
-        else if (line.contains("type=\"create\""))
-            level = PROTECTED_DELETED_PAGE;
-
-        // do the check
+        // protection and token
+        HashMap<String, Object> info = getPageInfo(title);
+        int level = (Integer)info.get("protection");
+        // check protection level
         if (!checkRights(level, false))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
             logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
             throw ex;
         }
-
-        // find the edit token
-        int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf('\"', a);
-        String wpEditToken = line.substring(a, b);
+        String wpEditToken = (String)info.get("token");
 
         // fetch the appropriate URL
-        url = query + "action=edit";
+        String url = query + "action=edit";
         logurl(url, "edit");
         URLConnection connection = new URL(url).openConnection();
         setCookies(connection, cookies2);
@@ -2111,37 +2167,23 @@ public class Wiki implements Serializable
         // sanitize some params
         String title2 = URLEncoder.encode(title, "UTF-8");
 
-        // fetch page info
-        String url = query + "action=query&prop=info&inprop=protection&intoken=move&titles=" + title2;
-        String line = fetch(url, "move", true);
-
+        // protection and token
+        HashMap<String, Object> info = getPageInfo(title);
         // determine whether the page exists
-        if (line.contains("missing=\"\""))
+        if (!(Boolean)info.get("exists"))
             throw new IllegalArgumentException("Tried to move a non-existant page!");
-
+        int level = (Integer)info.get("protection");
         // check protection level
-        if (line.contains("type=\"move\" level=\"sysop\"") && (user.userRights() & ADMIN) == 0)
+        if (!checkRights(level, true))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "move()", "[" + getDomain() + "] Cannot move - permission denied.", ex);
+            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
             throw ex;
         }
-
-        // find the move token
-        int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf('\"', a);
-        String wpMoveToken = line.substring(a, b);
-
-        // check target
-        if (!checkRights(getProtectionLevel(newTitle), true))
-        {
-            CredentialException ex = new CredentialException("Permission denied: target page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "move()", "[" + getDomain() + "] Cannot move - permission denied.", ex);
-            throw ex;
-        }
+        String wpMoveToken = (String)info.get("token");
 
         // fetch the appropriate URL
-        url = query + "action=move";
+        String url = query + "action=move";
         logurl(url, "move");
         URLConnection connection = new URL(url).openConnection();
         setCookies(connection, cookies2);
@@ -2427,42 +2469,20 @@ public class Wiki implements Serializable
         if (to != null && !rev.getPage().equals(to.getPage()))
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
-        // Check the protection level. We don't use getProtectionLevel(title), as we
-        // can fetch a move token at the same time!
-        String url = query + "action=query&prop=info&inprop=protection&intoken=edit&titles=" + rev.getPage();
-        String line = fetch(url, "edit", true);
-
-        // parse the page
-        int level = NO_PROTECTION;
-        int z = line.indexOf("type=\"edit\"");
-        if (z != -1)
-        {
-            String s = line.substring(z, z + 30);
-            if (s.contains("sysop"))
-                level = FULL_PROTECTION;
-            s = line.substring(z + 30); // cut out edit tag
-            if (line.contains("level=\"sysop\""))
-                level = SEMI_AND_MOVE_PROTECTION;
-            level = SEMI_PROTECTION;
-        }
-        else if (line.contains("type=\"create\""))
-            level = PROTECTED_DELETED_PAGE;
-
-        // do the check
+        // protection and token
+        HashMap<String, Object> info = getPageInfo(rev.getPage());
+        int level = (Integer)info.get("protection");
+        // check protection level
         if (!checkRights(level, false))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "undo()", "[" + getDomain() + "] Cannot undo - permission denied.", ex);
+            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
             throw ex;
         }
-
-        // find the edit token
-        int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf('\"', a);
-        String wpEditToken = line.substring(a, b);
+        String wpEditToken = (String)info.get("token");
 
         // connect
-        url = query + "action=edit";
+        String url = query + "action=edit";
         logurl(url, "undo");
         URLConnection connection = new URL(url).openConnection();
         connection.setDoOutput(true);
@@ -3110,39 +3130,17 @@ public class Wiki implements Serializable
         }
         statusCheck();
 
-        // Check the protection level. We don't use getProtectionLevel(title), as we
-        // can fetch a move token at the same time!
-        String url = query + "action=query&prop=info&inprop=protection&intoken=edit&titles=File:" + filename2;
-        String line = fetch(url, "upload", true);
-
-        // parse the page
-        // FIXME: upload protection; awaiting scap
-        int level = NO_PROTECTION;
-        int z = line.indexOf("type=\"edit\"");
-        if (z != -1)
-        {
-            String s = line.substring(z, z + 30);
-            if (s.contains("sysop"))
-                level = FULL_PROTECTION;
-            s = line.substring(z + 30); // cut out edit tag
-            if (line.contains("level=\"sysop\""))
-                level = SEMI_AND_MOVE_PROTECTION;
-            level = SEMI_PROTECTION;
-        }
-        else if (line.contains("type=\"create\""))
-            level = PROTECTED_DELETED_PAGE;
-
-        // do the check
+        // protection and token
+        HashMap<String, Object> info = getPageInfo("File:" + filename);
+        int level = (Integer)info.get("protection");
+        // check protection level
         if (!checkRights(level, false))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "upload()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
+            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
             throw ex;
         }
-        // scrape token
-        int a = line.indexOf("token=\"") + 7;
-        int b = line.indexOf('\"', a);
-        String wpEditToken = line.substring(a, b);
+        String wpEditToken = (String)info.get("token");
 
         // prepare MIME type
         String extension = filename2.substring(filename2.length() - 3).toUpperCase().toLowerCase();
@@ -3154,7 +3152,7 @@ public class Wiki implements Serializable
         // upload the image
         // this is how we do multipart post requests, by the way
         // see also: http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
-        url = query + "action=upload";
+        String url = query + "action=upload";
         logurl(url, "upload");
         URLConnection connection = new URL(url).openConnection();
         String boundary = "----------NEXT PART----------";
@@ -3328,7 +3326,7 @@ public class Wiki implements Serializable
      *  Gets the contributions of a user. Equivalent to
      *  [[Special:Contributions]] Be careful when using this method because
      *  the user may have a high edit count e.g. <tt>
-     *  enWiki.contribs("MER-C").length</tt> > 90000.
+     *  enWiki.contribs("MER-C").length</tt> > 150000.
      *
      *  @param user the user or IP to get contributions for
      *  @return the contributions of the user
@@ -3979,6 +3977,9 @@ public class Wiki implements Serializable
      */
     public ArrayList[] linksearch(String pattern, int namespace) throws IOException
     {
+        // FIXME: Change return type to ArrayList<Object[]> or Object[][]
+        // First index refers to item number, linksearch()[x][0] = page title
+        
         // set it up
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=exturlusage&euprop=title%7curl&euquery=");
@@ -4102,7 +4103,7 @@ public class Wiki implements Serializable
 
         // connection
         ArrayList<LogEntry> entries = new ArrayList<LogEntry>(1333);
-		do
+        do
         {
             String line = fetch(urlBase.toString() + bkstart, "getIPBlockList", false);
 
@@ -4712,12 +4713,12 @@ public class Wiki implements Serializable
         if (minimum != -1)
         {
             url.append("&apminsize=");
-			url.append(minimum);
+            url.append(minimum);
         }
         if (maximum != -1)
         {
             url.append("&apmaxsize=");
-			url.append(maximum);
+            url.append(maximum);
         }
 
         // parse
@@ -4806,7 +4807,7 @@ public class Wiki implements Serializable
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. exclude patrolled pages => rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get
-     *  @param namespace the namespace to search (not ALL_NAMESPACES)
+     *  @param namespace the namespace to search
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
@@ -4898,8 +4899,12 @@ public class Wiki implements Serializable
     protected Revision[] recentChanges(int amount, int namespace, int rcoptions, boolean newpages) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment&rclimit=max&rcnamespace=");
-        url.append(namespace);
+        url.append("action=query&list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment&rclimit=max");
+        if (namespace != ALL_NAMESPACES)
+        {
+            url.append("&rcnamespace=");
+            url.append(namespace);
+        }
         if (newpages)
             url.append("&rctype=new");
         // rc options
@@ -4946,6 +4951,129 @@ public class Wiki implements Serializable
         }
         while (revisions.size() < amount);
         return revisions.toArray(new Revision[0]);
+    }
+
+    /**
+     *  Fetches all pages that use interwiki links to the specified wiki and the
+     *  page on that wiki that is linked to. For example, <tt>
+     *  getInterWikiBacklinks("testwiki")</tt> may return:
+     *  <pre>
+     *  {
+     *      { "Spam", "testwiki:Blah" },
+     *      { "Test", "testwiki:Main_Page" }
+     *  }
+     *  </pre>
+     *  <p>
+     *  Here the page [[Spam]] contains the interwiki link [[testwiki:Blah]] and
+     *  the page [[Test]] contains the interwiki link [[testwiki:Main_Page]].
+     *  This does not resolve nested interwiki prefixes, e.g. [[wikt:fr:Test]].
+     *
+     * 
+     *  <p>
+     *  For WMF wikis, see {@link http://meta.wikimedia.org/wiki/Interwiki_map}
+     *  for where some prefixes link to.
+     *
+     *  @param prefix the interwiki prefix that denotes a wiki
+     *  @return all pages that contain interwiki links to said wiki
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    public String[][] getInterWikiBacklinks(String prefix) throws IOException
+    {
+        return getInterWikiBacklinks(prefix, "|");
+    }
+
+    /**
+     *  Fetches all pages that use interwiki links with a certain <tt>prefix</tt>
+     *  and <tt>title</tt>. <tt>prefix</tt> refers to the wiki being linked to
+     *  and <tt>title</tt> refers to the page on said wiki being linked to. In
+     *  wiki syntax, this is [[prefix:title]]. This does not resolve nested
+     *  prefixes, e.g. [[wikt:fr:Test]].
+     *
+     *  <p>
+     *  Example: If [[Test]] and [[Spam]] both contain the interwiki link
+     *  [[testwiki:Blah]] then <tt>getInterWikiBacklinks("testwiki", "Blah");
+     *  </tt> will return (sorted by <tt>title</tt>)
+     *  <pre>
+     *  {
+     *      { "Spam", "testwiki:Blah" },
+     *      { "Test", "testwiki:Blah" }
+     *  }
+     *  </pre>
+     * 
+     *  <p>
+     *  For WMF wikis, see {@link http://meta.wikimedia.org/wiki/Interwiki_map}
+     *  for where some prefixes link to.
+     *
+     *  @param prefix the interwiki prefix to search
+     *  @param title the title of the page on the other wiki to search for
+     *  (optional, use "|" to not specify one). Warning: "" is a valid interwiki
+     *  target!
+     *  @return a list of all pages that use interwiki links satisfying the
+     *  parameters given
+     *  @throws IOException if a network error occurs
+     *  @throws IllegalArgumentException if a title is specified without a
+     *  prefix (the MediaWiki API doesn't like this)
+     *  @since 0.23
+     */
+    public String[][] getInterWikiBacklinks(String prefix, String title) throws IOException
+    {
+        // WARNING: do not use on WMF sites until r84257 goes live!
+        
+        // must specify a prefix
+        if (title.equals("|") && prefix.isEmpty())
+            throw new IllegalArgumentException("Interwiki backlinks: title specified without prefix!");
+
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=iwbacklinks&iwbllimit=max&iwblprefix=");
+        url.append(prefix);
+        if (!title.equals("|"))
+        {
+            url.append("&iwbltitle=");
+            url.append(title);
+        }
+        url.append("&iwblprop=iwtitle%7Ciwprefix");
+        
+        String iwblcontinue = "";
+        ArrayList<String[]> links = new ArrayList<String[]>(500);
+        do
+        {
+            String line = "";
+            if (iwblcontinue.isEmpty())
+                line = fetch(url.toString(), "getInterWikiBacklinks", false);
+            else
+                line = fetch(url.toString() + "&iwblcontinue=" + iwblcontinue, "getInterWikiBacklinks", false);
+
+            // set continuation parameter
+            if(line.contains("iwblcontinue"))
+            {
+                int a = line.indexOf("iwblcontinue=\"") + 14;
+                int b = line.indexOf('\"', a);
+                iwblcontinue = line.substring(a, b);
+            }
+            else
+                iwblcontinue = "";
+            // parse
+            // form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wrocław" iwprefix="pl" iwtitle="Main_Page" />
+            for (int x = line.indexOf("<iw "); x >= 0;  x = line.indexOf("<iw ", x))
+            {
+                int a = line.indexOf("title=\"", x) + 7;
+                int b = line.indexOf('\"', a);
+                int c = line.indexOf("iwprefix=\"", x) + 10;
+                int d = line.indexOf('\"', c);
+                int e = line.indexOf("iwtitle=\"", x) + 9;
+                int f = line.indexOf('\"', e);
+                links.add(new String[]
+                {
+                    line.substring(a, b),
+                    line.substring(c, d) + ':' + line.substring(e, f)
+                });
+                x = f;
+            }
+        }
+        while(!iwblcontinue.isEmpty());
+        log(Level.INFO, "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)", "getInterWikiBacklinks");
+        return links.toArray(new String[0][0]);
     }
 
     // INNER CLASSES
@@ -5399,7 +5527,7 @@ public class Wiki implements Serializable
         public String getText() throws IOException
         {
             // logs have no content
-            if (revid == -1L)
+            if (revid == 0L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
             // go for it
@@ -5421,7 +5549,7 @@ public class Wiki implements Serializable
         public String getRenderedText() throws IOException
         {
             // logs have no content
-            if (revid == -1L)
+            if (revid == 0L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
             // go for it
