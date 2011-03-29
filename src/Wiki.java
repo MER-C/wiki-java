@@ -2177,7 +2177,7 @@ public class Wiki implements Serializable
         if (!checkRights(level, true))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
+            logger.logp(Level.WARNING, "Wiki", "move()", "[" + getDomain() + "] Cannot move - permission denied.", ex);
             throw ex;
         }
         String wpMoveToken = (String)info.get("token");
@@ -2476,7 +2476,7 @@ public class Wiki implements Serializable
         if (!checkRights(level, false))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
+            logger.logp(Level.WARNING, "Wiki", "undo()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
             throw ex;
         }
         String wpEditToken = (String)info.get("token");
@@ -3137,7 +3137,7 @@ public class Wiki implements Serializable
         if (!checkRights(level, false))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
+            logger.logp(Level.WARNING, "Wiki", "upload()", "[" + getDomain() + "] Cannot upload - permission denied.", ex);
             throw ex;
         }
         String wpEditToken = (String)info.get("token");

@@ -82,5 +82,11 @@
                 <attribute name="Main-Class" value="XWikiLinksearch" />
             </manifest>
         </jar>
+        <jar destfile="${dist.dir}/allwikilinksearch.jar" basedir="${build.classes.dir}" compress="true"
+        includes="Wiki*class AllWikiLinksearch*class">
+            <manifest>
+                <attribute name="Main-Class" value="AllWikiLinksearch" />
+            </manifest>
+        </jar>
     </target>
 </project>
