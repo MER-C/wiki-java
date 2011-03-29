@@ -64,9 +64,12 @@ public class XWikiLinksearch extends HttpServlet
             + "or http://example.com) below. This process takes up to 20 seconds.\n");
 
         // form for input
-        out.write("<form action=\"./linksearch.jsp\" method=GET>\n<p>Domain to search: "
-            + "<input type=text name=link>\n<input type=submit value=\"Search\">\n</form>\n");
         String domain = request.getParameter("link");
+        out.write("<form action=\"./linksearch.jsp\" method=GET>\n<p>Domain to search: "
+            + "<input type=text name=link");
+        if (domain != null)
+            out.write(" value=\"" + domain + "\"");
+        out.write(">\n<input type=submit value=\"Search\">\n</form>\n");
         if (domain != null)
             linksearch(domain, out);
 
@@ -79,14 +82,14 @@ public class XWikiLinksearch extends HttpServlet
     {
         String[] wikis = { "en", "de", "fr", "pl", "it", "ja", "es", "nl", "pt", "ru",
             "sv", "zh", "ca", "no", "fi", "uk", "hu", "cs", "ro" };
-        out.write("<hr>\n<p>Searching for links to " + domain + ".\n");
+        out.write("<hr>\n<h2>Searching for links to " + domain + ".\n");
         for (int i = 0; i < wikis.length; i++)
         {
             Wiki wiki = new Wiki(wikis[i] + ".wikipedia.org");
             wiki.setUsingCompressedRequests(false); // This is Google's fault.
             wiki.setMaxLag(0);
             ArrayList[] temp = wiki.linksearch("*." + domain);
-            out.write("<h3>Results for " + wikis[i] + ".wikipedia.org:</h3>\n<ol>\n");
+            out.write("<h3>Results for " + wikis[i] + ".wikipedia.org:</h3>\n<p><ol>\n");
             for (int j = 0; j < temp[0].size(); j++)
             {
                 out.write("<li><a href=\"http://");
@@ -103,7 +106,9 @@ public class XWikiLinksearch extends HttpServlet
             }
             out.write("</ol>\n<p>");
             out.write(temp[0].isEmpty() ? "0" : "" + temp[0].size());
-            out.write(" links found.\n");
+            out.write(" links found. (<a href=\"http://" + wikis[i]);
+            out.write(".wikipedia.org/wiki/Special:Linksearch/*." + domain);
+            out.write("\">Linksearch</a>)\n");
         }
     }
 }
