@@ -4,12 +4,12 @@
     <display-name>Some Wikipedia related tools</display-name>
     <servlet>
         <servlet-name>Linksearch</servlet-name>
-        <servlet-class>XWikiLinksearch</servlet-class>
+        <servlet-class>org.wikipedia.servlets.XWikiLinksearch</servlet-class>
     </servlet>
     <servlet>
         <description>Image contribution surveyor</description>
         <servlet-name>ImageCCI</servlet-name>
-        <servlet-class>ImageCCI</servlet-class>
+        <servlet-class>org.wikipedia.servlets.ImageCCI</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>Linksearch</servlet-name>

@@ -17,6 +17,8 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+package org.wikipedia.servlets;
+
 /**
  *  Common servlet code so that I can maintain it easier.
  *  @author MER-C

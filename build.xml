@@ -71,19 +71,19 @@
     <target name="-pre-dist">
         <mkdir dir="${dist.dir}" />
         <jar destfile="${dist.dir}/imagecci.jar" basedir="${build.classes.dir}" compress="true"
-        includes="Wiki*class ImageCCI.class">
+        includes="org/wikipedia/Wiki*.class org/wikipedia/servlets/ImageCCI.class">
             <manifest>
                 <attribute name="Main-Class" value="ImageCCI" />
             </manifest>
         </jar>
         <jar destfile="${dist.dir}/xwikilinksearch.jar" basedir="${build.classes.dir}" compress="true"
-        includes="Wiki*class XWikiLinksearch.class">
+        includes="org/wikipedia/Wiki*.class org/wikipedia/servlets/XWikiLinksearch.class">
             <manifest>
                 <attribute name="Main-Class" value="XWikiLinksearch" />
             </manifest>
         </jar>
         <jar destfile="${dist.dir}/allwikilinksearch.jar" basedir="${build.classes.dir}" compress="true"
-        includes="Wiki*class AllWikiLinksearch*class">
+        includes="org/wikipedia/*.class org/wikipedia/tools/AllWikiLinksearch*.class">
             <manifest>
                 <attribute name="Main-Class" value="AllWikiLinksearch" />
             </manifest>
