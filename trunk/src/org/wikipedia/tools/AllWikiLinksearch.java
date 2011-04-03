@@ -18,10 +18,13 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+package org.wikipedia.tools;
+
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.*;
+import org.wikipedia.*;
 
 /**
  *  Searches all Wikimedia wikis for a given external link. Consider:

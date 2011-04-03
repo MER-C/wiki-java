@@ -17,11 +17,14 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+package org.wikipedia.servlets;
+
 import java.io.*;
 import java.util.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
 import javax.servlet.http.*;
+import org.wikipedia.Wiki;
 
 /**
  *  A crude replacement for Eagle's cross-wiki linksearch tool. 
