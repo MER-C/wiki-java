@@ -60,5 +60,9 @@ public class WikiTests
         String[][] blah2 = enWiki.getInterWikiBacklinks("de", "");
         for (String[] entry : blah2)
             System.out.println(entry[0] + " => " + entry[1]);
+
+        // getLinksOnPage
+        for (String link : enWiki.getLinksOnPage("List of craters on Venus"))
+            System.out.println(link);
     }
 }

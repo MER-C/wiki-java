@@ -43,10 +43,10 @@ public class LoggedInTests
         dialog.add(login, BorderLayout.CENTER);
         login.setLayout(new GridLayout(2, 2));
         login.add(new JLabel("Username"));
-        final JTextField username = new JTextField();
+        final JTextField username = new JTextField(10);
         login.add(username);
         login.add(new JLabel("Password"));
-        final JPasswordField password = new JPasswordField();
+        final JPasswordField password = new JPasswordField(10);
         login.add(password);
 
         // buttons
@@ -97,5 +97,8 @@ public class LoggedInTests
         // watchlist
         for (String page : wiki.getRawWatchlist())
             System.out.println(page);
+
+        // email
+        wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
     }
 }

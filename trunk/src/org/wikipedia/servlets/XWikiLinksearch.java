@@ -41,7 +41,9 @@ public class XWikiLinksearch extends HttpServlet
     {
         OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("results.html"), "UTF-8");
         String domain = JOptionPane.showInputDialog(null, "Enter domain to search");
-        linksearch(domain, out);
+        StringBuilder builder = new StringBuilder(10000);
+        linksearch(domain, builder);
+        out.write(builder.toString());
         out.close();
     }
 
@@ -59,59 +61,71 @@ public class XWikiLinksearch extends HttpServlet
     {
         response.setContentType("text/html; charset=UTF-8");
         PrintWriter out = response.getWriter();
+        StringBuilder buffer = new StringBuilder(10000);
 
         // header
-        out.write("<!doctype html>\n<html>\n<head>\n<title>Cross-wiki linksearch"
-            + "</title>\n</head>\n\n<body>\n<p>This tool searches the top 20 Wikipedias "
-            + "for a specific link. Enter a domain name (example.com, not *.example.com "
-            + "or http://example.com) below. This process takes up to 20 seconds.\n");
+        buffer.append("<!doctype html>\n<html>\n<head>\n<title>Cross-wiki linksearch</title>");
+        buffer.append("\n</head>\n\n<body>\n<p>This tool searches the top 20 Wikipedias for a ");
+        buffer.append("specific link. Enter a domain name (example.com, not *.example.com or ");
+        buffer.append("http://example.com) below. This process takes up to 20 seconds.\n");
 
         // form for input
         String domain = request.getParameter("link");
-        out.write("<form action=\"./linksearch.jsp\" method=GET>\n<p>Domain to search: "
-            + "<input type=text name=link");
+        buffer.append("<form action=\"./linksearch.jsp\" method=GET>\n<p>Domain to search: ");
+        buffer.append("<input type=text name=link");
         if (domain != null)
-            out.write(" value=\"" + domain + "\"");
-        out.write(">\n<input type=submit value=\"Search\">\n</form>\n");
+        {
+            buffer.append(" value=\"");
+            buffer.append(domain);
+            buffer.append("\"");
+        }
+        buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
         if (domain != null)
-            linksearch(domain, out);
+            linksearch(domain, buffer);
 
         // put a footer
-        out.write(ServletUtils.generateFooter("Cross-wiki linksearch tool"));
+        buffer.append(ServletUtils.generateFooter("Cross-wiki linksearch tool"));
+        out.write(buffer.toString());
         out.close();
     }
 
-    public static void linksearch(String domain, Writer out) throws IOException
+    public static void linksearch(String domain, StringBuilder buffer) throws IOException
     {
         String[] wikis = { "en", "de", "fr", "pl", "it", "ja", "es", "nl", "pt", "ru",
             "sv", "zh", "ca", "no", "fi", "uk", "hu", "cs", "ro" };
-        out.write("<hr>\n<h2>Searching for links to " + domain + ".\n");
+        buffer.append("<hr>\n<h2>Searching for links to ");
+        buffer.append(domain);
+        buffer.append(".\n");
         for (int i = 0; i < wikis.length; i++)
         {
             Wiki wiki = new Wiki(wikis[i] + ".wikipedia.org");
             wiki.setUsingCompressedRequests(false); // This is Google's fault.
             wiki.setMaxLag(0);
             ArrayList[] temp = wiki.linksearch("*." + domain);
-            out.write("<h3>Results for " + wikis[i] + ".wikipedia.org:</h3>\n<p><ol>\n");
+            buffer.append("<h3>Results for ");
+            buffer.append(wikis[i]);
+            buffer.append(".wikipedia.org:</h3>\n<p><ol>\n");
             for (int j = 0; j < temp[0].size(); j++)
             {
-                out.write("<li><a href=\"http://");
-                out.write(wikis[i]);
-                out.write(".wikipedia.org/wiki/");
-                out.write((String)temp[0].get(j));
-                out.write("\">");
-                out.write((String)temp[0].get(j));
-                out.write("</a> uses link <a href=\"");
-                out.write(temp[1].get(j).toString());
-                out.write("\">");
-                out.write(temp[1].get(j).toString());
-                out.write("</a>\n");
+                buffer.append("<li><a href=\"http://");
+                buffer.append(wikis[i]);
+                buffer.append(".wikipedia.org/wiki/");
+                buffer.append((String)temp[0].get(j));
+                buffer.append("\">");
+                buffer.append((String)temp[0].get(j));
+                buffer.append("</a> uses link <a href=\"");
+                buffer.append(temp[1].get(j).toString());
+                buffer.append("\">");
+                buffer.append(temp[1].get(j).toString());
+                buffer.append("</a>\n");
             }
-            out.write("</ol>\n<p>");
-            out.write(temp[0].isEmpty() ? "0" : "" + temp[0].size());
-            out.write(" links found. (<a href=\"http://" + wikis[i]);
-            out.write(".wikipedia.org/wiki/Special:Linksearch/*." + domain);
-            out.write("\">Linksearch</a>)\n");
+            buffer.append("</ol>\n<p>");
+            buffer.append(temp[0].isEmpty() ? "0" : "" + temp[0].size());
+            buffer.append(" links found. (<a href=\"http://");
+            buffer.append(wikis[i]);
+            buffer.append(".wikipedia.org/wiki/Special:Linksearch/*.");
+            buffer.append(domain);
+            buffer.append("\">Linksearch</a>)\n");
         }
     }
 }

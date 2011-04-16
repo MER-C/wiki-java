@@ -1,6 +1,6 @@
 /**
  *  @(#)Wiki.java 0.23 26/03/2011
- *  Copyright (C) 2007 - 2011 MER-C
+ *  Copyright (C) 2007 - 2011 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -31,9 +31,10 @@ import javax.security.auth.login.*; // useful exception types
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
- *  Requires JDK 1.5 (5.0) or greater. Uses the [[mw:API|MediaWiki API]] for
- *  most operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.18), otherwise some functions may not work.
+ *  Requires JDK 1.5 (5.0) or greater. Uses the <a 
+ *  href="http://mediawiki.org/wiki/API">MediaWiki API</a> for most operations.
+ *  It is recommended that the server runs the latest version of MediaWiki
+ *  (1.18 SVN), otherwise some functions may not work.
  *
  *  <p>
  *  A typical program would go something like this:
@@ -116,9 +117,9 @@ import javax.security.auth.login.*; // useful exception types
  *  by [[mw:Extension:Assert Edit]]. The extension need not be installed
  *  for these assertions to work. Use <tt>setAssertionMode(int mode)</tt>
  *  to set the assertion mode. Checking for login, bot flag or new messages is
- *  supported by default. Other assertions can easily be defined, see {@link
- *  http://java.sun.com/j2se/1.4.2/docs/guide/lang/assert.html Programming
- *  With Assertions}. Assertions are applied on write methods only and are
+ *  supported by default. Other assertions can easily be defined, see <a
+ *  href="http://java.sun.com/j2se/1.4.2/docs/guide/lang/assert.html">Programming
+ *  With Assertions</a>. Assertions are applied on write methods only and are
  *  disabled by default.
  *
  *  <p>
@@ -130,7 +131,7 @@ import javax.security.auth.login.*; // useful exception types
  *  code bug tracker (slow).
  *  <!-- all wikilinks are relative to the English Wikipedia -->
  *
- *  @author MER-C
+ *  @author MER-C and contributors
  *  @version 0.23
  */
 public class Wiki implements Serializable
@@ -1054,8 +1055,8 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the version of MediaWiki this wiki runs e.g. 1.13 alpha (r31567).
-     *  The r number corresponds to a revision in { @link
-     *  http://svn.wikimedia.org/viewvc/mediawiki/ MediaWiki subversion }.
+     *  The r number corresponds to a revision in <a
+     *  href="http://svn.wikimedia.org/viewvc/mediawiki/">MediaWiki subversion</a>.
      *  @return the version of MediaWiki used
      *  @throws IOException if a network error occurs
      *  @since 0.14
@@ -1719,7 +1720,8 @@ public class Wiki implements Serializable
         try
         {
             // it's somewhat strange that the edit only sticks when you start reading the response...
-            BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
             checkErrors(in.readLine(), "edit");
             in.close();
         }
@@ -1948,7 +1950,7 @@ public class Wiki implements Serializable
      */
     public HashMap<String, String> getInterwikiLinks(String title) throws IOException
     {
-        String url = query + "action=parse&prop=langlinks&page=" + URLEncoder.encode(title, "UTF-8");
+        String url = query + "action=parse&prop=langlinks&llimit=max&page=" + URLEncoder.encode(title, "UTF-8");
         String line = fetch(url, "getInterwikiLinks", false);
 
         // parse the list
@@ -1967,6 +1969,57 @@ public class Wiki implements Serializable
         }
         log(Level.INFO, "Successfully retrieved categories used on " + title, "getCategories");
         return interwikis;
+    }
+
+    /**
+     *  Gets the list of links used on a particular page.
+     *
+     *  @param title a page
+     *  @return the list of links used in the page
+     *  @throws IOException if a network error occurs
+     *  @since 0.24
+     *  @author Patch somewhat by wim.jongman
+     */
+    public String[] getLinksOnPage(String title) throws IOException
+    {
+    	StringBuilder url = new StringBuilder(query);
+        url.append("action=query&prop=links&pllimit=max&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        String plcontinue = "";
+        ArrayList<String> links = new ArrayList<String>(750);
+        do
+        {
+            if (!plcontinue.isEmpty())
+            {
+                url.append("&plcontinue=");
+                url.append(plcontinue);
+            }
+
+            String line = fetch(url.toString(), "getLinksOnPage", false);
+
+            // strip continuation
+            if (line.contains("plcontinue"))
+            {
+                int x = line.indexOf("plcontinue=\"") + 12;
+                int y = line.indexOf('\"', x);
+                plcontinue = URLEncoder.encode(line.substring(x, y), "UTF-8");
+            }
+            else
+                plcontinue = "";
+            
+            // parse the list
+            // typical form: <pl ns="6" title="page name" />
+            for (int a = line.indexOf("title=\""); a >= 0; a = line.indexOf("title=\"", a))
+            {
+                int b = line.indexOf("\" ", a); // important space!
+                links.add(decode(line.substring(a + 7, b)));
+                a = b;
+            }
+        }
+        while (!plcontinue.isEmpty());
+        links.remove(0); // remove the first one, as that is an artifact of the parsing process
+    	log(Level.INFO, "Successfully retrieved links used on " + title + " (" + links.size() + " links)", "getLinksOnPage");
+    	return links.toArray(new String[0]);
     }
 
     /**
@@ -3457,6 +3510,81 @@ public class Wiki implements Serializable
         // clean up
         log(Level.INFO, "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + revisions.size() + " edits)", "contribs");
         return revisions.toArray(new Revision[0]);
+    }
+
+    /**
+     *  Sends an email message to a user in a similar manner to [[Special:Emailuser]].
+     *  You and the target user must have a confirmed email address and the
+     *  target user must have email contact enabled. Messages are sent in plain
+     *  text (no wiki markup or HTML).
+     *
+     *  @param user a Wikipedia user with email enabled
+     *  @param subject the subject of the message
+     *  @param message the plain text message
+     *  @param emailme whether to send a copy of the message to your email address
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @since 0.24
+     */
+    public synchronized void emailUser(User user, String message, String subject, boolean emailme) throws IOException, CredentialException
+    {
+        long start = System.currentTimeMillis();
+
+        // check if blocked, logged in
+        if (this.user == null)
+            throw new CredentialNotFoundException("Permission denied: You need to be logged in to email.");
+
+        // TODO: bundle userRights(), countEdits() and emailable into a getUserInfo method
+        // edit/email token
+        String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
+        if (cookies2.isEmpty())
+        {
+            logger.log(Level.SEVERE, "Cookies have expired.");
+            logout();
+            throw new CredentialExpiredException("Cookies have expired.");
+        }
+
+        // post email
+        String url = query + "action=emailuser";
+        logurl(url, "emailUser");
+        URLConnection connection = new URL(url).openConnection();
+        connection.setDoOutput(true);
+        setCookies(connection, cookies2);
+        connection.connect();
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        StringBuilder buffer = new StringBuilder(20000);
+        buffer.append("token=");
+        buffer.append(URLEncoder.encode(token, "UTF-8"));
+        buffer.append("&target=");
+        buffer.append(URLEncoder.encode(user.getUsername(), "UTF-8"));
+        if (emailme)
+            buffer.append("&ccme=true");
+        buffer.append("&text=");
+        buffer.append(URLEncoder.encode(message, "UTF-8"));
+        buffer.append("&subject=");
+        buffer.append(URLEncoder.encode(subject, "UTF-8"));
+        out.write(buffer.toString());
+        out.close();
+
+        // done, read the response
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
+        String response = in.readLine();
+        // something
+
+        // throttle
+        try
+        {
+            long time = throttle - System.currentTimeMillis() + start;
+            if (time > 0)
+                Thread.sleep(time);
+        }
+        catch (InterruptedException e)
+        {
+            // nobody cares
+        }
+
+        log(Level.INFO, "Successfully emailed " + user.getUsername() + ".", "emailUser");
     }
 
     // WATCHLIST METHODS
@@ -4969,11 +5097,10 @@ public class Wiki implements Serializable
      *  Here the page [[Spam]] contains the interwiki link [[testwiki:Blah]] and
      *  the page [[Test]] contains the interwiki link [[testwiki:Main_Page]].
      *  This does not resolve nested interwiki prefixes, e.g. [[wikt:fr:Test]].
-     *
      * 
      *  <p>
-     *  For WMF wikis, see {@link http://meta.wikimedia.org/wiki/Interwiki_map}
-     *  for where some prefixes link to.
+     *  For WMF wikis, see <a href="http://meta.wikimedia.org/wiki/Interwiki_map">
+     *  the interwiki map</a>for where some prefixes link to.
      *
      *  @param prefix the interwiki prefix that denotes a wiki
      *  @return all pages that contain interwiki links to said wiki
@@ -5004,8 +5131,8 @@ public class Wiki implements Serializable
      *  </pre>
      * 
      *  <p>
-     *  For WMF wikis, see {@link http://meta.wikimedia.org/wiki/Interwiki_map}
-     *  for where some prefixes link to.
+     *  For WMF wikis, see <a href="http://meta.wikimedia.org/wiki/Interwiki_map">
+     *  the interwiki map</a>for where some prefixes link to.
      *
      *  @param prefix the interwiki prefix to search
      *  @param title the title of the page on the other wiki to search for
@@ -5587,7 +5714,7 @@ public class Wiki implements Serializable
          *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
          *  effect.
          *  @return the difference between this and the other revision
-         *  ({ @link http://en.wikipedia.org/w/index.php?diff=343490272 example }).
+         *  (<a href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>).
          *  @throws IOException if a network error occurs
          *  @since 0.21
          */
