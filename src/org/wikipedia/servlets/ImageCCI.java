@@ -41,8 +41,10 @@ public class ImageCCI extends HttpServlet
     {
         String user = JOptionPane.showInputDialog(null, "Enter user to survey");
         OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(user + ".txt"), "UTF-8");
-        conductCCI("en.wikipedia.org", user, out);
-        conductCCI("commons.wikimedia.org", user, out);
+        StringBuilder buffer = new StringBuilder(10000);
+        conductCCI("en.wikipedia.org", user, buffer);
+        conductCCI("commons.wikimedia.org", user, buffer);
+        out.write(buffer.toString());
         out.close();
         System.exit(0);
     }
@@ -60,32 +62,34 @@ public class ImageCCI extends HttpServlet
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         String user = request.getParameter("user");
+        StringBuilder buffer = new StringBuilder(10000);
+        PrintWriter out;
         if (user != null)
         {
             response.setContentType("text/plain; charset=utf-8");
             // create a download prompt
             response.setHeader("Content-Disposition", "attachment; filename=" + user + ".txt");
-            PrintWriter out = response.getWriter();
-            conductCCI("en.wikipedia.org", user, out);
-            conductCCI("commons.wikimedia.org", user, out);
-            out.close();
+            out = response.getWriter();
+            conductCCI("en.wikipedia.org", user, buffer);
+            conductCCI("commons.wikimedia.org", user, buffer);
         }
         else
         {
             response.setContentType("text/html; charset=utf-8");
-            PrintWriter out = response.getWriter();
-            out.write("<!doctype html>\n<html>\n<head>\n<title>Image contribution surveyor"
-                + "</title>\n</head>\n\n<body>\n<p>This tool generates a listing of a user's "
-                + "image uploads (regardless of whether they are deleted) for use at\n"
-                + "<a href=\"http://en.wikipedia.org/wiki/WP:CCI\">Contributor copyright "
-                + "investigations.</a>\n");
+            out = response.getWriter();
+            buffer.append("<!doctype html>\n<html>\n<head>\n<title>Image contribution surveyor");
+            buffer.append( "</title>\n</head>\n\n<body>\n<p>This tool generates a listing of a user's ");
+            buffer.append("image uploads (regardless of whether they are deleted) for use at\n");
+            buffer.append("<a href=\"http://en.wikipedia.org/wiki/WP:CCI\">Contributor copyright ");
+            buffer.append("investigations.</a>\n");
             // build HTML form
-            out.write("<form action=\"./imagecci.jsp\" method=GET>\n<p>User to survey: "
-            + "<input type=text name=user>\n<input type=submit value=\"Survey user\">\n</form>\n");
+            buffer.append("<form action=\"./imagecci.jsp\" method=GET>\n<p>User to survey: ");
+            buffer.append("<input type=text name=user>\n<input type=submit value=\"Survey user\">\n</form>\n");
             // footer
-            out.write(ServletUtils.generateFooter("Image contribution surveyor"));
-            out.close();
+            buffer.append(ServletUtils.generateFooter("Image contribution surveyor"));
         }
+        out.write(buffer.toString());
+        out.close();
     }
 
     /**
@@ -94,7 +98,7 @@ public class ImageCCI extends HttpServlet
      *  @param out the output stream to write the results to
      *  @throws IOException
      */
-    public static void conductCCI(String w, String u, Writer out) throws IOException
+    public static void conductCCI(String w, String u, StringBuilder buffer) throws IOException
     {
         Wiki wiki = new Wiki(w);
         wiki.setMaxLag(0);
@@ -105,19 +109,31 @@ public class ImageCCI extends HttpServlet
         for (int i = 0; i < entries.length; i++)
         {
             if (i == 0)
-                out.write("===Uploads on " + w + " ===\n");
+            {
+                buffer.append("===Uploads on ");
+                buffer.append(w);
+                buffer.append(" ===\n");
+            }
             int size = list.size();
             String page = entries[i].getTarget();
             if (size % 20 == 0 && !list.contains(page))
-                out.write("\n====Files " + (size + 1) + " to " + (size + 21) + " ====\n");
+            {
+                buffer.append("\n====Files ");
+                buffer.append(size + 1);
+                buffer.append(" to ");
+                buffer.append(size + 21);
+                buffer.append(" ====\n");
+            }
             // remove duplicates
             if (!list.contains(page))
             {
-                out.write("*[[:" + page + "]]\n");
+                buffer.append("*[[:");
+                buffer.append(page);
+                buffer.append("]]\n");
                 list.add(page);
             }
         }
         list.clear();
-        out.write("\n");
+        buffer.append("\n");
     }
 }

@@ -82,15 +82,19 @@ public class AllWikiLinksearch
                             builder.append("# [http://");
                             builder.append(wiki.getDomain());
                             builder.append("/wiki/");
-                            builder.append(links[0].get(i));
+                            builder.append(((String)links[0].get(i)).replace(' ', '_'));
                             builder.append(" ");
                             builder.append(links[0].get(i));
-                            builder.append("] uses link ");
+                            builder.append("] uses link <nowiki>");
                             builder.append(links[1].get(i));
-                            builder.append("\n");
+                            builder.append("</nowiki>\n");
                         }
                         builder.append(linknumber);
-                        builder.append(" links found.");
+                        builder.append(" links found. ([http://");
+                        builder.append(wiki.getDomain());
+                        builder.append("/wiki/Special:Linksearch/*.");
+                        builder.append(domain);
+                        builder.append(" Linksearch])");
                     }
                 }
                 catch (IOException ex)
@@ -139,7 +143,8 @@ public class AllWikiLinksearch
 
         // do the searching
         out = new FileWriter(domain + ".wiki");
-        writeOutput("Searching " + queue.size() + " wikis at " + new Date().toString() + "\n\n");
+        writeOutput("*{{LinkSummary|" + domain + "}}\nSearching " + queue.size() + " wikis at "
+            + new Date().toString() + ".\n\n");
         // TODO: perhaps make number of threads configurable
         for (int i = 0; i < 3; i++)
             new LinksearchThread(domain).start();
