@@ -20,13 +20,11 @@
 
 package org.wikipedia;
 
-import java.awt.image.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.logging.*;
-import java.util.zip.*;
-import javax.imageio.*;
+import java.util.zip.GZIPInputStream;
 import javax.security.auth.login.*; // useful exception types
 
 /**
@@ -925,12 +923,12 @@ public class Wiki implements Serializable
         out.write(URLEncoder.encode(wpLoginToken, "UTF-8"));
         out.close();
 
-        // get the cookies
+        // get the cookies. Note: no post() here because of this line!
         grabCookies(connection, cookies);
 
         // determine success
-        BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-        String line = in.readLine();
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));String line = in.readLine();
         boolean success = line.contains("result=\"Success\"");
         in.close();
         if (success)
@@ -1094,9 +1092,9 @@ public class Wiki implements Serializable
         out.write(URLEncoder.encode(markup, "UTF-8"));
         out.close();
 
-        // parse
-        BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-        String line;
+        // parse. No post() here because we need this extra input!
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));String line;
         StringBuilder text = new StringBuilder(100000);
         while ((line = in.readLine()) != null)
         {
@@ -1684,46 +1682,33 @@ public class Wiki implements Serializable
         }
         String wpEditToken = (String)info.get("token");
 
-        // fetch the appropriate URL
-        String url = query + "action=edit";
-        logurl(url, "edit");
-        URLConnection connection = new URL(url).openConnection();
-        setCookies(connection, cookies2);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send the data
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        // OutputStreamWriter out = new OutputStreamWriter(System.out, "UTF-8"); // debug version
-        out.write("title=");
-        out.write(title2);
-        out.write("&text=");
-        out.write(URLEncoder.encode(text, "UTF-8"));
-        out.write("&summary=");
-        out.write(URLEncoder.encode(summary, "UTF-8"));
-        out.write("&token=");
-        out.write(URLEncoder.encode(wpEditToken, "UTF-8"));
+        // post data
+        StringBuilder buffer = new StringBuilder(300000);
+        buffer.append("title=");
+        buffer.append(title2);
+        buffer.append("&text=");
+        buffer.append(URLEncoder.encode(text, "UTF-8"));
+        buffer.append("&summary=");
+        buffer.append(URLEncoder.encode(summary, "UTF-8"));
+        buffer.append("&token=");
+        buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
         if (minor)
-            out.write("&minor=1");
+            buffer.append("&minor=1");
         if (section == -1)
-            out.write("&section=new");
+            buffer.append("&section=new");
         else if (section != -2)
         {
-            out.write("&section=");
-            out.write("" + section);
+            buffer.append("&section=");
+            buffer.append(section);
         }
         if ((user.userRights() & BOT) == BOT)
-            out.write("&bot=1");
-        out.close();
+            buffer.append("&bot=1");
+        String response = post(query + "action=edit", buffer.toString(), "edit");
 
         // done
         try
         {
-            // it's somewhat strange that the edit only sticks when you start reading the response...
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-            checkErrors(in.readLine(), "edit");
-            in.close();
+            checkErrors(response, "edit");
         }
         catch (IOException e)
         {
@@ -1850,13 +1835,13 @@ public class Wiki implements Serializable
         // parse the list
         // typical form: <im ns="6" title="File:Example.jpg" />
         ArrayList<String> images = new ArrayList<String>(750);
-        while (line.contains("title=\"File:"))
+        for (int a = line.indexOf("title=\""); a >= 0; a = line.indexOf("title=\"", a))
         {
-            int a = line.indexOf("title=\"File:") + 7;
-            int b = line.indexOf('\"', a);
-            images.add(decode(line.substring(a, b)));
-            line = line.substring(b);
+            int b = line.indexOf("\" ", a); // important space!
+            images.add(decode(line.substring(a + 7, b)));
+            a = b;
         }
+        images.remove(0); // artifact of parsing process
         log(Level.INFO, "Successfully retrieved images used on " + title + " (" + images.size() + " images)", "getImagesOnPage");
         return images.toArray(new String[0]);
     }
@@ -2237,43 +2222,28 @@ public class Wiki implements Serializable
         }
         String wpMoveToken = (String)info.get("token");
 
-        // fetch the appropriate URL
-        String url = query + "action=move";
-        logurl(url, "move");
-        URLConnection connection = new URL(url).openConnection();
-        setCookies(connection, cookies2);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send the data
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        // OutputStreamWriter out = new OutputStreamWriter(System.out); // debug version
-        out.write("from=");
-        out.write(title2);
-        out.write("&to=");
-        out.write(URLEncoder.encode(newTitle, "UTF-8"));
-        out.write("&reason=");
-        out.write(URLEncoder.encode(reason, "UTF-8"));
-        out.write("&token=");
-        out.write(URLEncoder.encode(wpMoveToken, "UTF-8"));
+        // post data
+        StringBuilder buffer = new StringBuilder(10000);
+        buffer.append("from=");
+        buffer.append(title2);
+        buffer.append("&to=");
+        buffer.append(URLEncoder.encode(newTitle, "UTF-8"));
+        buffer.append("&reason=");
+        buffer.append(URLEncoder.encode(reason, "UTF-8"));
+        buffer.append("&token=");
+        buffer.append(URLEncoder.encode(wpMoveToken, "UTF-8"));
         if (movetalk)
-            out.write("&movetalk=1");
+            buffer.append("&movetalk=1");
         if (noredirect && (user.userRights() & ADMIN) == ADMIN)
-            out.write("&noredirect=1");
-        out.close();
+            buffer.append("&noredirect=1");
+        String response = post(query + "action=move", buffer.toString(), "move");
 
         // done
         try
         {
-            // it's somewhat strange that the edit only sticks when you start reading the response...
-            BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-            String temp = in.readLine();
-
             // success
-            if (temp.contains("move from"))
-                in.close();
-            // failure
-            checkErrors(temp, "move");
+            if (!response.contains("move from"))
+                checkErrors(response, "move");
         }
         catch (IOException e)
         {
@@ -2413,51 +2383,35 @@ public class Wiki implements Serializable
         int b = line.indexOf('\"', a);
         String token = URLEncoder.encode(line.substring(a, b), "UTF-8");
 
-        // perform the rollback. Although it's easier through the human interface, we want
+        // Perform the rollback. Although it's easier through the human interface, we want
         // to make sense of any resulting errors.
-        url = query + "action=rollback";
-        logurl(url, "rollback");
-        URLConnection connection = new URL(url).openConnection();
-        setCookies(connection, cookies2);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send data
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        out.write("title=");
-        out.write(revision.getPage());
-        out.write("&user=");
-        out.write(revision.getUser());
-        out.write("&token=");
-        out.write(token);
+        StringBuilder buffer = new StringBuilder(10000);
+        buffer.append("title=");
+        buffer.append(revision.getPage());
+        buffer.append("&user=");
+        buffer.append(revision.getUser());
+        buffer.append("&token=");
+        buffer.append(token);
         if (bot)
-            out.write("&markbot=1");
+            buffer.append("&markbot=1");
         if (!reason.isEmpty())
         {
-            out.write("&summary=");
-            out.write(reason);
+            buffer.append("&summary=");
+            buffer.append(reason);
         }
-        out.close();
+        String response = post(query + "action=rollback", buffer.toString(), "rollback");
 
         // done
         try
         {
-            // read the response
-            BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-            String temp = in.readLine();
-
-            // success
-            if (temp.contains("rollback title="))
-                in.close();
             // ignorable errors
-            else if (temp.contains("alreadyrolled"))
+            if (response.contains("alreadyrolled"))
                 log(Level.INFO, "Edit has already been rolled back.", "rollback");
-            else if (temp.contains("onlyauthor"))
+            else if (response.contains("onlyauthor"))
                 log(Level.INFO, "Cannot rollback as the page only has one author.", "rollback");
-            // probably not ignorable
-            else
-                checkErrors(temp, "rollback");
-            in.close();
+            // probably not ignorable (otherwise success)
+            else if (!response.contains("rollback title="))
+                checkErrors(response, "rollback");
         }
         catch (IOException e)
         {
@@ -2536,35 +2490,32 @@ public class Wiki implements Serializable
         }
         String wpEditToken = (String)info.get("token");
 
-        // connect
-        String url = query + "action=edit";
-        logurl(url, "undo");
-        URLConnection connection = new URL(url).openConnection();
-        connection.setDoOutput(true);
-        setCookies(connection, cookies2);
-        connection.connect();
-
         // send data
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        out.write("title=");
-        out.write(rev.getPage());
+        StringBuilder buffer = new StringBuilder(10000);
+        buffer.append("title=");
+        buffer.append(rev.getPage());
         if (!reason.isEmpty())
-            out.write("&summary=" + reason);
-        out.write("&undo=" + rev.getRevid());
+        {
+            buffer.append("&summary=");
+            buffer.append(reason);
+        }
+        buffer.append("&undo=");
+        buffer.append(rev.getRevid());
         if (to != null)
-            out.write("&undoafter=" + to.getRevid());
+        {
+            buffer.append("&undoafter=");
+            buffer.append(to.getRevid());
+        }
         if (minor)
-            out.write("&minor=1");
-        out.write("&token=");
-        out.write(URLEncoder.encode(wpEditToken, "UTF-8"));
-        out.close();
+            buffer.append("&minor=1");
+        buffer.append("&token=");
+        buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
+        String response = post(query + "action=edit", buffer.toString(), "undo");
 
         // done
         try
         {
-            BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-            checkErrors(in.readLine(), "undo");
-            in.close();
+            checkErrors(response, "undo");
         }
         catch (IOException e)
         {
@@ -2758,39 +2709,38 @@ public class Wiki implements Serializable
     // IMAGE METHODS
 
     /**
-     *  Fetches a raster image file. This method uses <tt>ImageIO.read()</tt>,
-     *  and as such only JPG, PNG, GIF and BMP formats are supported. SVG
-     *  images are supported only if a thumbnail width and height are
-     *  specified. Animated GIFs have not been tested yet.
+     *  Fetches an image file and returns the image data in a <tt>byte[]</tt>.
+     *  To recover the old behavior (BufferedImage), use
+     *  <tt>ImageIO.read(new ByteArrayInputStream(getImage("Example.jpg")));</tt>
      *
      *  @param title the title of the image (i.e. Example.jpg, not
      *  File:Example.jpg)
-     *  @return the image, encapsulated in a BufferedImage
+     *  @return the image data
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    public BufferedImage getImage(String title) throws IOException
+    public byte[] getImage(String title) throws IOException
     {
         return getImage(title, -1, -1);
     }
 
     /**
-     *  Fetches a thumbnail of a raster image file. This method uses
-     *  <tt>ImageIO.read()</tt>, and as such only JPG, PNG, GIF and BMP
-     *  formats are supported. SVG images are supported only if a thumbnail
-     *  width and height are specified. Animated GIFs have not been tested yet.
+     *  Fetches a thumbnail of an image file and returns the image data
+     *  in a <tt>byte[]</tt>. To recover the old behavior (BufferedImage), use
+     *  <tt>ImageIO.read(new ByteArrayInputStream(getImage("Example.jpg")));</tt>
      *
      *  @param title the title of the image without the File: prefix (i.e.
      *  Example.jpg, not File:Example.jpg)
      *  @param width the width of the thumbnail (use -1 for actual width)
      *  @param height the height of the thumbnail (use -1 for actual height)
-     *  @return the image, encapsulated in a BufferedImage, null if we cannot
-     *  read the image
+     *  @return the image data
      *  @throws IOException if a network error occurs
      *  @since 0.13
      */
-    public BufferedImage getImage(String title, int width, int height) throws IOException
+    public byte[] getImage(String title, int width, int height) throws IOException
     {
+        // @revised 0.24 BufferedImage => byte[]
+
         // sanitise the title
         title = URLEncoder.encode(title, "UTF-8");
 
@@ -2809,9 +2759,17 @@ public class Wiki implements Serializable
 
         // then we use ImageIO to read from it
         logurl(url2, "getImage");
-        BufferedImage image = ImageIO.read(new URL(url2));
+        URLConnection connection = new URL(url2).openConnection();
+        setCookies(connection, cookies);
+        connection.connect();
+        // there should be a better way to do this
+        BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int c;
+        while ((c = in.read()) != -1)
+            out.write(c);
         log(Level.INFO, "Successfully retrieved image \"" + title + "\"", "getImage");
-        return image;
+        return out.toByteArray();
     }
 
     /**
@@ -2931,18 +2889,20 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets an old image revision. You will have to do the thumbnailing
-     *  yourself.
+     *  Gets an old image revision and returns the image data in a <tt>byte[]</tt>.
+     *  You will have to do the thumbnailing yourself.
      *  @param entry the upload log entry that corresponds to the image being
      *  uploaded
-     *  @return the image that was uploaded, as long as it is still live or
+     *  @return the image data that was uploaded, as long as it is still live or
      *  null if the image doesn't exist
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the entry is not in the upload log
      *  @since 0.20
      */
-    public BufferedImage getOldImage(LogEntry entry) throws IOException
+    public byte[] getOldImage(LogEntry entry) throws IOException
     {
+        // @revised 0.24 BufferedImage => byte[]
+
         // check for type
         if (!entry.getType().equals(UPLOAD_LOG))
             throw new IllegalArgumentException("You must provide an upload log entry!");
@@ -2964,14 +2924,22 @@ public class Wiki implements Serializable
                 b = line.indexOf('\"', a);
                 url = line.substring(a, b);
                 logurl(url, "getOldImage");
-                BufferedImage image = ImageIO.read(new URL(url));
+                URLConnection connection = new URL(url).openConnection();
+                setCookies(connection, cookies);
+                connection.connect();
+                // there should be a better way to do this
+                BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                int c;
+                while ((c = in.read()) != -1)
+                    out.write(c);
 
                 // scrape archive name for logging purposes
                 a = line.indexOf("archivename=\"") + 13;
                 b = line.indexOf('\"', a);
                 String archive = line.substring(a, b);
                 log(Level.INFO, "Successfully retrieved old image \"" + archive + "\"", "getImage");
-                return image;
+                return out.toByteArray();
             }
             line = line.substring(b + 10);
         }
@@ -3545,13 +3513,6 @@ public class Wiki implements Serializable
         }
 
         // post email
-        String url = query + "action=emailuser";
-        logurl(url, "emailUser");
-        URLConnection connection = new URL(url).openConnection();
-        connection.setDoOutput(true);
-        setCookies(connection, cookies2);
-        connection.connect();
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
         StringBuilder buffer = new StringBuilder(20000);
         buffer.append("token=");
         buffer.append(URLEncoder.encode(token, "UTF-8"));
@@ -3563,13 +3524,8 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(message, "UTF-8"));
         buffer.append("&subject=");
         buffer.append(URLEncoder.encode(subject, "UTF-8"));
-        out.write(buffer.toString());
-        out.close();
+        String response = post(query + "action=emailuser", buffer.toString(), "emailUser");
 
-        // done, read the response
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-        String response = in.readLine();
         // something
 
         // throttle
@@ -6075,6 +6031,32 @@ public class Wiki implements Serializable
         }
         in.close();
         return text.toString();
+    }
+
+    /**
+     *  Does a text-only HTTP POST with <tt>cookies2</tt>.
+     *  @param url the url to post to
+     *  @param text the text to post
+     *  @param caller the caller of this method
+     *  @throws IOException if a network error occurs
+     *  @return the server response
+     *  @since 0.24
+     */
+    protected String post(String url, String text, String caller) throws IOException
+    {
+        logurl(url, caller);
+        URLConnection connection = new URL(url).openConnection();
+        setCookies(connection, cookies2);
+        connection.setDoOutput(true);
+        connection.connect();
+        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        out.write(text);
+        out.close();
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
+        String temp = in.readLine();
+        in.close();
+        return temp;
     }
 
     /**
