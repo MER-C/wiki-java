@@ -64,5 +64,18 @@ public class WikiTests
         // getLinksOnPage
         for (String link : enWiki.getLinksOnPage("List of craters on Venus"))
             System.out.println(link);
+
+        // getImagesOnPage
+        for (String image : enWiki.getImagesOnPage("Main Page"))
+            System.out.println(image);
+        // This site runs an obsolete MW where "File:" doesn't exist
+        for (String image : new Wiki("wiki.eclipse.org", "").getImagesOnPage("Main Page"))
+            System.out.println(image);
+
+        // getImage()
+        byte[] image = enWiki.getImage("Wiki.png");
+        FileOutputStream out = new FileOutputStream("Wiki.png");
+        out.write(image);
+        out.close();
     }
 }
