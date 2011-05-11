@@ -1428,8 +1428,7 @@ public class Wiki implements Serializable
             info.put("lastrevid", -1L);
             info.put("size", -1);
             // is the page create protected?
-            if(line.contains("type=\"create\""))
-                info.put("protection", PROTECTED_DELETED_PAGE);
+            info.put("protection", line.contains("type=\"create\"") ? PROTECTED_DELETED_PAGE : NO_PROTECTION);
         }
 
         // cascade protection
