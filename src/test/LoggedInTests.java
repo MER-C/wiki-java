@@ -100,5 +100,8 @@ public class LoggedInTests
 
         // email
         wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
+
+        // edit (non-existent page)
+        wiki.edit("User:MER-C/dfhsdlfj", "Testing", "test", false);
     }
 }
