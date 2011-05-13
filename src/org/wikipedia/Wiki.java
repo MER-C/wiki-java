@@ -537,7 +537,7 @@ public class Wiki implements Serializable
     private static final String version = "0.23";
 
     // the domain of the wiki
-    private String domain, query, base;
+    protected String domain, query, base;
     private String scriptPath = "/w"; // need this for sites like partyvan.info
 
     // user management
@@ -5589,7 +5589,7 @@ public class Wiki implements Serializable
          *  @param bot whether this was a bot edit
          *  @since 0.17
          */
-        protected Revision(long revid, Calendar timestamp, String title, String summary, String user, boolean minor, boolean bot)
+        public Revision(long revid, Calendar timestamp, String title, String summary, String user, boolean minor, boolean bot)
         {
             this.revid = revid;
             this.timestamp = timestamp;
@@ -5897,12 +5897,12 @@ public class Wiki implements Serializable
 
         /**
          *  Sets the <tt>rcid</tt> of this revision, used for patrolling.
-         *  This parameter is optional. I can't think of a good reason why
-         *  this should be publicly editable.
+         *  This parameter is optional. This is publicly editable for
+         *  subclassing.
          *  @param rcid the rcid of this revision (long)
          *  @since 0.17
          */
-        protected void setRcid(long rcid)
+        public void setRcid(long rcid)
         {
             this.rcid = rcid;
         }
@@ -6263,7 +6263,7 @@ public class Wiki implements Serializable
      *  @param level the level to log at
      *  @since 0.06
      */
-    private void log(Level level, String text, String method)
+    protected void log(Level level, String text, String method)
     {
         StringBuilder sb = new StringBuilder(100);
         sb.append('[');
@@ -6295,7 +6295,7 @@ public class Wiki implements Serializable
      *  @see #timestampToCalendar
      *  @since 0.08
      */
-    protected final String calendarToTimestamp(Calendar c)
+    protected String calendarToTimestamp(Calendar c)
     {
         StringBuilder x = new StringBuilder(16);
         x.append(c.get(Calendar.YEAR));
@@ -6354,7 +6354,7 @@ public class Wiki implements Serializable
      *  @see #timestampToCalendar
      *  @since 0.12
      */
-    private String convertTimestamp(String timestamp)
+    protected String convertTimestamp(String timestamp)
     {
         StringBuilder ts = new StringBuilder(timestamp.substring(0, 4));
         ts.append(timestamp.substring(5, 7));
