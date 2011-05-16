@@ -5993,7 +5993,7 @@ public class Wiki implements Serializable
                     int lag = getCurrentDatabaseLag();
                     while (lag > maxlag)
                     {
-                        log(Level.WARNING, "Sleeping for 30s as current database lag exceeds the maximum allowed value of " + maxlag + " s", caller);
+                        log(Level.WARNING, "Sleeping for 30s as current database lag (" + lag + ")exceeds the maximum allowed value of " + maxlag + " s", caller);
                         Thread.sleep(30000);
                         lag = getCurrentDatabaseLag();
                     }
@@ -6272,6 +6272,14 @@ public class Wiki implements Serializable
         sb.append(text);
         sb.append('.');
         logger.logp(level, "Wiki", method + "()", sb.toString());
+    }
+    
+    /**
+     * Change the logging level of this object's Logger object.
+     * @param Level
+     */
+    public void setLogLevel(Level level) {
+    	logger.setLevel( level );
     }
 
     /**
