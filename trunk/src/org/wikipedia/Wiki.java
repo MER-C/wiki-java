@@ -567,6 +567,11 @@ public class Wiki implements Serializable
     // serial version
     private static final long serialVersionUID = -8745212681497644126L;
 
+    // time to open a connection
+	private static final int CONNECTION_CONNECT_TIMEOUT_MSEC = 30*1000;
+	// time for the read to take place. (needs to be longer, some connections are slow and the data volume is large!)
+	private static final int CONNECTION_READ_TIMEOUT_MSEC = 180*1000;
+
     // CONSTRUCTORS AND CONFIGURATION
 
     /**
@@ -6008,6 +6013,8 @@ public class Wiki implements Serializable
 
         // connect
         URLConnection connection = new URL(url).openConnection();
+        connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
+        connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         setCookies(connection, cookies);
         connection.connect();
         BufferedReader in = new BufferedReader(new InputStreamReader(
