@@ -276,42 +276,54 @@ public class Wiki implements Serializable
      *  Denotes no user rights.
      *  @see User#userRights()
      *  @since 0.05
+     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
      */
+    @Deprecated
     public static final int IP_USER = -1;
 
     /**
      *  Denotes a registered account.
      *  @see User#userRights()
      *  @since 0.05
+     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
      */
+    @Deprecated
     public static final int REGISTERED_USER = 1;
 
     /**
      *  Denotes a user who has admin rights.
      *  @see User#userRights()
      *  @since 0.05
+     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
      */
+    @Deprecated
     public static final int ADMIN = 2;
 
     /**
      *  Denotes a user who has bureaucrat rights.
      *  @see User#userRights()
      *  @since 0.05
+     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
      */
+    @Deprecated
     public static final int BUREAUCRAT = 4;
 
     /**
      *  Denotes a user who has steward rights.
      *  @see User#userRights()
      *  @since 0.05
+     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
      */
+    @Deprecated
     public static final int STEWARD = 8;
 
     /**
      *  Denotes a user who has a bot flag.
      *  @see User#userRights()
      *  @since 0.05
+     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
      */
+    @Deprecated
     public static final int BOT = 16;
 
     // LOG TYPES
@@ -400,7 +412,6 @@ public class Wiki implements Serializable
     /**
      *  Denotes full protection (i.e. only admins can edit this page)
      *  [edit=sysop;move=sysop].
-     *  @see #ADMIN
      *  @see User#userRights()
      *  @since 0.09
      */
@@ -411,7 +422,6 @@ public class Wiki implements Serializable
      *  We don't define semi-move protection because only autoconfirmed users
      *  can move pages anyway.
      *
-     *  @see #ADMIN
      *  @see User#userRights()
      *  @since 0.09
      */
@@ -423,7 +433,6 @@ public class Wiki implements Serializable
      *  Naturally, this value (4) is equal to SEMI_PROTECTION (1) +
      *  MOVE_PROTECTION (3).
      *
-     *  @see #ADMIN
      *  @see User#userRights()
      *  @since 0.09
      */
@@ -432,7 +441,6 @@ public class Wiki implements Serializable
     /**
      *  Denotes protected deleted pages [create=sysop].
      *  @since 0.12
-     *  @see #ADMIN
      */
      public static final int PROTECTED_DELETED_PAGE = 5;
 
@@ -534,7 +542,36 @@ public class Wiki implements Serializable
      */
     public static final long PREVIOUS_REVISION = -3L;
 
-    private static final String version = "0.23";
+    /**
+     *  The list of options the user can specify for his/her gender.
+     *  @since 0.24
+     */
+    public enum Gender
+    {
+        // These names come from the MW API so we can use valueOf() and
+        // toString() without any fidgets whatsoever. Java naming conventions
+        // aren't worth another 20 lines of code.
+
+        /**
+         *  The user self-identifies as a male.
+         *  @since 0.24
+         */
+        male,
+
+        /**
+         *  The user self-identifies as a female.
+         *  @since 0.24
+         */
+        female,
+        
+        /**
+         *  The user has not specified a gender in preferences.
+         *  @since 0.24
+         */
+        unknown;
+    }
+
+    private static final String version = "0.24";
 
     // the domain of the wiki
     protected String domain, query, base;
@@ -568,9 +605,10 @@ public class Wiki implements Serializable
     private static final long serialVersionUID = -8745212681497644126L;
 
     // time to open a connection
-	private static final int CONNECTION_CONNECT_TIMEOUT_MSEC = 30*1000;
-	// time for the read to take place. (needs to be longer, some connections are slow and the data volume is large!)
-	private static final int CONNECTION_READ_TIMEOUT_MSEC = 180*1000;
+    private static final int CONNECTION_CONNECT_TIMEOUT_MSEC = 30000; // 30 seconds
+    // time for the read to take place. (needs to be longer, some connections are slow
+    // and the data volume is large!)
+    private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -939,7 +977,7 @@ public class Wiki implements Serializable
         if (success)
         {
             user = new User(username);
-            boolean apihighlimit = (user.userRights() & BOT) == BOT || (user.userRights() & ADMIN) == ADMIN;
+            boolean apihighlimit = user.isAllowedTo("apihighlimits");
             max = apihighlimit ? 5000 : 500;
             log(Level.INFO, "Successfully logged in as " + username + ", highLimit = " + apihighlimit, "login");
         }
@@ -1705,7 +1743,7 @@ public class Wiki implements Serializable
             buffer.append("&section=");
             buffer.append(section);
         }
-        if ((user.userRights() & BOT) == BOT)
+        if (user.isA("bot"))
             buffer.append("&bot=1");
         String response = post(query + "action=edit", buffer.toString(), "edit");
 
@@ -2167,7 +2205,7 @@ public class Wiki implements Serializable
      */
     public void move(String title, String newTitle, String reason) throws IOException, LoginException
     {
-        move(title, newTitle, reason, false, true);
+        move(title, newTitle, reason, false, true, false);
     }
 
     /**
@@ -2179,6 +2217,8 @@ public class Wiki implements Serializable
      *  @param reason a reason for the move
      *  @param noredirect don't leave a redirect behind. You need to be a
      *  admin to do this, otherwise this option is ignored.
+     *  @param movesubpages move the subpages of this page as well. You need to
+     *  be an admin to do this, otherwise this will be ignored.
      *  @param movetalk move the talk page as well (if applicable)
      *  @throws UnsupportedOperationException if the original page is in the
      *  Category or Image namespace. MediaWiki does not support moving of
@@ -2189,14 +2229,15 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't move it
      *  @since 0.16
      */
-    public synchronized void move(String title, String newTitle, String reason, boolean noredirect, boolean movetalk) throws IOException, LoginException
+    public synchronized void move(String title, String newTitle, String reason, boolean noredirect, boolean movetalk,
+        boolean movesubpages) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
 
         // check for log in
-        if (user == null)
+        if (user == null || !user.isAllowedTo("move"))
         {
-            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: you need to be autoconfirmed to move pages.");
+            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot move pages.");
             logger.logp(Level.SEVERE, "Wiki", "move()", "[" + domain + "] Cannot move - permission denied.", ex);
             throw ex;
         }
@@ -2238,8 +2279,10 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(wpMoveToken, "UTF-8"));
         if (movetalk)
             buffer.append("&movetalk=1");
-        if (noredirect && (user.userRights() & ADMIN) == ADMIN)
+        if (noredirect && user.isAllowedTo("suppressredirect"))
             buffer.append("&noredirect=1");
+        if (movesubpages && user.isAllowedTo("move-subpages"))
+            buffer.append("&movesubpages=1");
         String response = post(query + "action=move", buffer.toString(), "move");
 
         // done
@@ -2256,7 +2299,7 @@ public class Wiki implements Serializable
             {
                 retry = false;
                 log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "move");
-                move(title, newTitle, reason, noredirect, movetalk);
+                move(title, newTitle, reason, noredirect, movetalk, movesubpages);
             }
             else
             {
@@ -2347,7 +2390,7 @@ public class Wiki implements Serializable
      *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
      *  be true for the rollback to succeed
      *  @param bot whether to mark this edit and the reverted revisions as
-     *  bot edits
+     *  bot edits (ignored if we cannot do this)
      *  @param reason (optional) a reason for the rollback. Use "" for the
      *  default ([[MediaWiki:Revertpage]]).
      *  @throws IOException if a network error occurs
@@ -2359,8 +2402,8 @@ public class Wiki implements Serializable
     public synchronized void rollback(Revision revision, boolean bot, String reason) throws IOException, LoginException
     {
         // check rights
-        if (user == null || (user.userRights() & ADMIN) != ADMIN)
-            throw new CredentialNotFoundException("Permission denied: You need to be an admin to rollback.");
+        if (user == null || !user.isAllowedTo("rollback"))
+            throw new CredentialNotFoundException("Permission denied: cannot rollback.");
         statusCheck();
         String url = query + "action=query&prop=revisions&titles=" + revision.getPage() + "&rvlimit=1&rvtoken=rollback";
         String line = fetch(url, "rollback", true);
@@ -2396,7 +2439,7 @@ public class Wiki implements Serializable
         buffer.append(revision.getUser());
         buffer.append("&token=");
         buffer.append(token);
-        if (bot)
+        if (bot && user.isAllowedTo("markbotedits"))
             buffer.append("&markbot=1");
         if (!reason.isEmpty())
         {
@@ -2958,175 +3001,6 @@ public class Wiki implements Serializable
      *
      *  @param file the image file
      *  @param filename the target file name (Example.png, not File:Example.png)
-     *  @param contents the contents of the image description page
-     *  @throws CredentialNotFoundException if not logged in
-     *  @throws CredentialExpiredException if cookies have expired
-     *  @throws CredentialException if page is protected and we can't upload
-     *  @throws IOException if a network/local filesystem error occurs
-     *  @throws AccountLockedException if user is blocked
-     *  @since 0.11
-     */
-    public synchronized void upload(File file, String filename, String contents) throws IOException, LoginException
-    {
-        // TODO: API upload? Still in the pipeline, unfortunately.
-        // throttle
-        long start = System.currentTimeMillis();
-        statusCheck();
-
-        // check for log in
-        if (user == null)
-        {
-            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: you need to be registered to upload files.");
-            logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] Cannot upload - permission denied.", ex);
-            throw ex;
-        }
-
-        // UTF-8 vodoo
-        try
-        {
-            contents = new String(contents.getBytes("UTF-8"), "iso-8859-1");
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            logger.logp(Level.SEVERE, "Wiki", "upload()", "Unsupported encoding", ex);
-        }
-
-
-        // check if the page is protected, and if we can upload (incorporates lag check)
-        String filename2 = filename.replaceAll(" ", "_");
-//        String filename2 = URLEncoder.encode(filename.replaceAll(" ", "_"), "UTF-8");
-        try
-        {
-            filename2 = new String(filename2.getBytes("UTF-8"), "iso-8859-1");
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            logger.logp(Level.SEVERE, "Wiki", "upload()", "Unsupported encoding", ex);
-        }
-
-
-        String fname = "File:" + filename2;
-        if (!checkRights(getProtectionLevel(fname), false))
-        {
-            CredentialException ex = new CredentialException("Permission denied: image is protected.");
-            logger.logp(Level.WARNING, "Wiki", "upload()", "[" + domain + "] Cannot upload - permission denied.", ex);
-            throw ex;
-        }
-
-        // prepare MIME type
-        String extension = filename2.substring(filename2.length() - 3).toUpperCase().toLowerCase();
-        if (extension.equals("jpg"))
-            extension = "jpeg";
-        else if (extension.equals("svg"))
-            extension += "+xml";
-
-        // upload the image
-        // this is how we do multipart post requests, by the way
-        // see also: http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
-        String url = base + "Special:Upload";
-        logurl(url, "upload");
-        URLConnection connection = new URL(url).openConnection();
-        String boundary = "----------NEXT PART----------";
-        connection.setRequestProperty("Accept-Charset", "iso-8859-1,*,utf-8");
-        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        setCookies(connection, cookies);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send data
-        boundary = "--" + boundary + "\r\n";
-        DataOutputStream out = new DataOutputStream(connection.getOutputStream());
-//        DataOutputStream out = new DataOutputStream(System.out); // debug version
-        out.writeBytes(boundary);
-        out.writeBytes("Content-Disposition: form-data; name=\"wpIgnoreWarning\"\r\n\r\n");
-        out.writeBytes("true\r\n");
-        out.writeBytes(boundary);
-        out.writeBytes("Content-Disposition: form-data; name=\"wpDestFile\"\r\n");
-        out.writeBytes("Content-Type: text/plain; charset=utf-8\r\n\r\n");
-        out.writeBytes(filename2);
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        out.writeBytes("Content-Disposition: form-data; name=\"wpUploadFile\"; filename=\"");
-        out.writeBytes(filename);
-        out.writeBytes("\"\r\n");
-        out.writeBytes("Content-Type: image/");
-        out.writeBytes(extension);
-        out.writeBytes("\r\n\r\n");
-
-        // write image
-        FileInputStream fi = new FileInputStream(file);
-        byte[] b = new byte[fi.available()];
-        fi.read(b);
-        out.write(b);
-        fi.close();
-
-        // write the rest
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        out.writeBytes("Content-Disposition: form-data; name=\"wpUploadDescription\"\r\n");
-        out.writeBytes("Content-Type: text/plain\r\n\r\n");
-        out.writeBytes(contents);
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        out.writeBytes("Content-Disposition: form-data; name=\"wpUpload\"\r\n\r\n");
-        out.writeBytes("Upload file\r\n");
-        out.writeBytes(boundary.substring(0, boundary.length() - 2) + "--\r\n");
-        out.close();
-
-        // done
-        BufferedReader in;
-        try
-        {
-            // it's somewhat strange that the edit only sticks when you start reading the response...
-
-            String line ;
-//            in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            line = in.readLine();
-//            while ((line = in.readLine()) != null) System.out.writeln(line);
-            in.close();
-
-        }
-        catch (IOException e)
-        {
-            // retry once
-            if (retry)
-            {
-                retry = false;
-                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "upload");
-                upload(file, filename, contents);
-            }
-            else
-            {
-                logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] EXCEPTION:  ", e);
-                throw e;
-            }
-        }
-        if (retry)
-            log(Level.INFO, "Successfully uploaded " + filename, "upload");
-        retry = true;
-
-        // throttle
-        try
-        {
-            long z = throttle - System.currentTimeMillis() + start;
-            if (z > 0)
-                Thread.sleep(z);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
-    }
-
-    /**
-     *  Uploads an image. Equivalent to [[Special:Upload]]. Supported
-     *  extensions are (case-insensitive) "png", "jpg", "gif" and "svg". You
-     *  need to be logged on to do this. This method is thread safe and subject
-     *  to the throttle.
-     *
-     *  @param file the image file
-     *  @param filename the target file name (Example.png, not File:Example.png)
      *  @param contents the contents of the image description page, set to ""
      *  if overwriting an existing file
      *  @param reason an upload summary (defaults to <tt>contents</tt>, use ""
@@ -3138,7 +3012,7 @@ public class Wiki implements Serializable
      *  @throws AccountLockedException if user is blocked
      *  @since 0.21
      */
-    public synchronized void uploadAPI(File file, String filename, String contents, String reason) throws IOException, LoginException
+    public synchronized void upload(File file, String filename, String contents, String reason) throws IOException, LoginException
     {
         // TODO: upload via URL
         // WORK IN PROGRESS! (WMF slow scapping doesn't help.)
@@ -3149,9 +3023,9 @@ public class Wiki implements Serializable
         String filename2 = URLEncoder.encode(filename, "UTF-8");
 
         // check for log in
-        if (user == null)
+        if (user == null || !user.isAllowedTo("upload"))
         {
-            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: you need to be registered to upload files.");
+            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot upload files.");
             logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] Cannot upload - permission denied.", ex);
             throw ex;
         }
@@ -3242,7 +3116,8 @@ public class Wiki implements Serializable
         try
         {
             // it's somewhat strange that the edit only sticks when you start reading the response...
-            BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
+            BufferedReader in = new BufferedReader(new InputStreamReader(
+                zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
             checkErrors(in.readLine(), "upload");
 
             // TODO: check for specific errors here
@@ -3281,7 +3156,8 @@ public class Wiki implements Serializable
      */
     public boolean userExists(String username) throws IOException
     {
-        return allUsers(username, 1)[0].equals(username);
+        username = URLEncoder.encode(username, "UTF-8");
+        return !fetch(query + "list=users&ususers=" + username, "userExists", false).contains("missing=\"\"");
     }
 
     /**
@@ -3503,11 +3379,16 @@ public class Wiki implements Serializable
         long start = System.currentTimeMillis();
 
         // check if blocked, logged in
-        if (this.user == null)
-            throw new CredentialNotFoundException("Permission denied: You need to be logged in to email.");
+        if (this.user == null || !this.user.isAllowedTo("sendemail"))
+            throw new CredentialNotFoundException("Permission denied: cannot email.");
 
-        // TODO: bundle userRights(), countEdits() and emailable into a getUserInfo method
-        // edit/email token
+        // is this user emailable?
+        if (!(Boolean)user.getUserInfo().get("emailable"))
+        {
+            // should throw an exception here
+            logger.log(Level.WARNING, "User {0} is not emailable", user.getUsername());
+            return;
+        }
         String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
         if (cookies2.isEmpty())
         {
@@ -4046,7 +3927,7 @@ public class Wiki implements Serializable
      */
     public ArrayList[] linksearch(String pattern) throws IOException
     {
-        return linksearch(pattern, ALL_NAMESPACES);
+        return linksearch(pattern, ALL_NAMESPACES, "http");
     }
 
     /**
@@ -4067,6 +3948,29 @@ public class Wiki implements Serializable
      */
     public ArrayList[] linksearch(String pattern, int namespace) throws IOException
     {
+        return linksearch(pattern, namespace, "http");
+    }
+
+    /**
+     *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
+     *  Returns two lists, where the first is the list of pages and the
+     *  second is the list of urls. The index of a page in the first list
+     *  corresponds to the index of the url on that page in the second list.
+     *  Wildcards (*) are only permitted at the start of the search string.
+     *
+     *  @param pattern the pattern (String) to search for (e.g. example.com,
+     *  *.example.com)
+     *  @param namespace filters by namespace, returns empty if namespace
+     *  does not exist
+     *  @param protocol one of { http, https, ftp, irc, gopher, telnet, nntp,
+     *  worldwind, mailto, news, svn, git, mms } or "" (equivalent to http)
+     *  @throws IOException if a network error occurs
+     *  @return two lists - index 0 is the list of pages (String), index 1 is
+     *  the list of urls (instance of <tt>java.net.URL</tt>)
+     *  @since 0.24
+     */
+    public ArrayList[] linksearch(String pattern, int namespace, String protocol) throws IOException
+    {
         // FIXME: Change return type to ArrayList<Object[]> or Object[][]
         // First index refers to item number, linksearch()[x][0] = page title
         
@@ -4074,6 +3978,8 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=exturlusage&euprop=title%7curl&euquery=");
         url.append(pattern);
+        url.append("&euprotocol=");
+        url.append(protocol);
         url.append("&eulimit=max");
         if (namespace != ALL_NAMESPACES)
         {
@@ -4631,19 +4537,17 @@ public class Wiki implements Serializable
         {
             a = xml.indexOf("<param>") + 7;
             b = xml.indexOf("</param>", a);
-                details = xml.substring(a, b); // the new username
+            details = xml.substring(a, b); // the new username
         }
         else if (type.equals(USER_RIGHTS_LOG))
         {
             a = xml.indexOf("new=\"") + 5;
             b = xml.indexOf('\"', a);
-            String z = xml.substring(a, b);
-            int rights = 1; // no ips in user rights log
-            rights += (z.contains("sysop") ? ADMIN : 0); // sysop
-            rights += (z.contains("bureaucrat") ? BUREAUCRAT : 0); // bureaucrat
-            rights += (z.contains("steward") ? STEWARD : 0); // steward
-            rights += (z.contains("bot") ? BOT : 0); // bot
-            details = new Integer(rights);
+            StringTokenizer tk = new StringTokenizer(xml.substring(a, b), ", ");
+            ArrayList<String> temp = new ArrayList<String>(10);
+            while (tk.hasMoreTokens())
+                temp.add(tk.nextToken());
+            details = temp.toArray(new String[0]);
         }
 
         return new LogEntry(type, action, reason, performer, target, timestamp, details);
@@ -5175,6 +5079,8 @@ public class Wiki implements Serializable
     {
         private String username;
         private int rights = -484; // cache for userRights()
+        private String[] rights2 = null; // cache
+        private String[] groups = null; // cache
 
         /**
          *  Creates a new user object. Does not create a new user on the
@@ -5198,7 +5104,9 @@ public class Wiki implements Serializable
          *  @return a bitwise mask of the user's rights.
          *  @throws IOException if a network error occurs
          *  @since 0.05
+         *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
          */
+        @Deprecated
         public int userRights() throws IOException
         {
             return userRights(true);
@@ -5215,7 +5123,9 @@ public class Wiki implements Serializable
          *  @throws IOException if a network error occurs
          *  @param cache whether we should use the cached value
          *  @since 0.07
+         *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
          */
+        @Deprecated
         public int userRights(boolean cache) throws IOException
         {
             // retrieve cache (if valid)
@@ -5263,6 +5173,117 @@ public class Wiki implements Serializable
         }
 
         /**
+         *  Gets various properties of this user. Groups and rights are cached
+         *  for the current logged in user. Returns:
+         *  <pre>
+         *  {
+         *      "editcount" => 150000,                                // {@link #countEdits() the user's edit count} (int)
+         *      "groups"    => { "users", "autoconfirmed", "sysop" }, // the groups the user is in (String[])
+         *      "rights"    => { "edit", "read", "block", "email"},   // the stuff the user can do (String[])
+         *      "emailable" => true,                                  // whether the user can be emailed through
+         *                                                            // [[Special:Emailuser]] or emailUser() (boolean)
+         *      "blocked"   => false,                                 // whether the user is blocked (boolean)
+         *      "gender"    => Gender.MALE                            // the user's gender (Gender)
+         *  }
+         *  </pre>
+         *  @return (see above)
+         *  @throws IOException if a network error occurs
+         *  @since 0.24
+         */
+        public HashMap<String, Object> getUserInfo() throws IOException
+        {
+            String info = fetch(query + "action=query&list=users&usprop=editcount|groups|rights|emailable|blockinfo|gender&ususers="
+                + URLEncoder.encode(username, "UTF-8"), "getUserInfo", false);
+            HashMap<String, Object> ret = new HashMap<String, Object>(10);
+
+            // blocked
+            ret.put("blocked", info.contains("blockedby=\""));
+
+            // emailable
+            ret.put("emailable", info.contains("emailable=\""));
+
+            // edit count
+            int a = info.indexOf("editcount=\"") + 11;
+            int b = info.indexOf('\"', a);
+            ret.put("editcount", Integer.parseInt(info.substring(a, b)));
+
+            // gender
+            a = info.indexOf("gender=\"") + 8;
+            b = info.indexOf('\"', a);
+            ret.put("gender", Gender.valueOf(info.substring(a, b)));
+
+            // groups
+            ArrayList<String> temp = new ArrayList<String>(50);
+            for (int x = info.indexOf("<g>"); x >= 0; x = info.indexOf("<g>", x))
+            {
+                int y = info.indexOf("</g>", x);
+                temp.add(info.substring(x + 3, y));
+                x = y;
+            }
+            String[] temp2 = temp.toArray(new String[0]);
+            // cache
+            if (this.equals(getCurrentUser()))
+                groups = temp2;
+            ret.put("groups", temp2);
+
+            // rights
+            temp.clear();
+            for (int x = info.indexOf("<r>"); x >= 0; x = info.indexOf("<r>", x))
+            {
+                int y = info.indexOf("</r>", x);
+                temp.add(info.substring(x + 3, y));
+                x = y;
+            }
+            temp2 = temp.toArray(new String[0]);
+            // cache
+            if (this.equals(getCurrentUser()))
+                rights2 = temp2;
+            ret.put("rights", temp2);
+            return ret;
+        }
+
+        /**
+         *  Returns true if the user is allowed to perform the specified action.
+         *  Uses the rights cache. Read [[Special:Listgrouprights]] before using
+         *  this!
+         *  @param right a specific action
+         *  @return whether the user is allowed to execute it
+         *  @since 0.24
+         *  @throws IOException if a network error occurs
+         */
+        public boolean isAllowedTo(String right) throws IOException
+        {
+            // We can safely assume the user is allowed to { read, edit, create,
+            // writeapi }. 
+            String[] rs = rights2;
+            if (rights2 != null)
+                rs = (String[])getUserInfo().get("rights");
+            for (String r : rs)
+                if (r.equals(right))
+                    return true;
+            return false;
+        }
+
+        /**
+         *  Returns true if the user is a member of the specified group. Uses
+         *  the groups cache.
+         *  @param group a specific group
+         *  @return whether the user is in it
+         *  @since 0.24
+         *  @throws IOException if a network error occurs
+         */
+        public boolean isA(String group) throws IOException
+        {
+            String[] gs = groups;
+            if (groups != null)
+                gs = (String[])getUserInfo().get("groups");
+            for (String g : gs)
+                if (g.equals(group))
+                    return true;
+            return false;
+        }
+
+        /**
          *  Returns a log of the times when the user has been blocked.
          *  @return records of the occasions when this user has been blocked
          *  @throws IOException if something goes wrong
@@ -5298,11 +5319,7 @@ public class Wiki implements Serializable
          */
         public int countEdits() throws IOException
         {
-            String url = query + "action=query&list=users&usprop=editcount&ususers=" + URLEncoder.encode(username, "UTF-8");
-            String line = fetch(url, "User.countEdits", false);
-            int a = line.indexOf("editcount=\"") + 11;
-            int b = line.indexOf('\"', a);
-            return Integer.parseInt(line.substring(a, b));
+            return (Integer)getUserInfo().get("editcount");
         }
 
         /**
@@ -5345,9 +5362,9 @@ public class Wiki implements Serializable
         }
 
         /**
-         *   Tests whether this user is equal to another one.
-         *   @return whether the users are equal
-         *   @since 0.08
+         *  Tests whether this user is equal to another one.
+         *  @return whether the users are equal
+         *  @since 0.08
          */
         @Override
         public boolean equals(Object x)
@@ -5502,7 +5519,7 @@ public class Wiki implements Serializable
          *  <tr><td>BLOCK_LOG
          *      <td>new Object[] { boolean anononly, boolean nocreate, boolean noautoblock, boolean noemail, boolean nousertalk, String duration }
          *  <tr><td>USER_RIGHTS_LOG
-         *      <td>The new user rights (Integer)
+         *      <td>The new user rights (String[])
          *  <tr><td>PROTECTION_LOG
          *      <td>action == "protect" or "modify" => the protection level (int, -2 if unrecognized), action == "move_prot" => the old title, else null
          *  <tr><td>Others or RevisionDeleted
@@ -6158,7 +6175,7 @@ public class Wiki implements Serializable
         }
 
         // admins can do anything, this also covers FULL_PROTECTION
-        if ((user.userRights() & ADMIN)  == ADMIN)
+        if (user.isA("sysop"))
             return true;
         switch (level)
         {
@@ -6192,7 +6209,7 @@ public class Wiki implements Serializable
         {
             // purge user rights in case of desysop or loss of other priviliges
             if (user != null)
-                user.userRights(false);
+                user.getUserInfo();
             // check for new messages
             if ((assertion & ASSERT_NO_MESSAGES) == ASSERT_NO_MESSAGES)
                 assert !(hasNewMessages()) : "User has new messages";
@@ -6206,7 +6223,7 @@ public class Wiki implements Serializable
         if ((assertion & ASSERT_LOGGED_IN) == ASSERT_LOGGED_IN)
             assert (user != null) : "Not logged in"; // Does this ever happen?
         if ((assertion & ASSERT_BOT) == ASSERT_BOT)
-            assert (user.userRights() & BOT) == BOT : "Not a bot";
+            assert user.isA("bot") : "Not a bot";
     }
 
     // cookie methods
@@ -6282,11 +6299,13 @@ public class Wiki implements Serializable
     }
     
     /**
-     * Change the logging level of this object's Logger object.
-     * @param Level
+     *  Change the logging level of this object's Logger object.
+     *  @param Level
+     *  @since 0.24
      */
-    public void setLogLevel(Level level) {
-    	logger.setLevel( level );
+    public void setLogLevel(Level level)
+    {
+    	logger.setLevel(level);
     }
 
     /**
@@ -6312,29 +6331,8 @@ public class Wiki implements Serializable
      */
     protected String calendarToTimestamp(Calendar c)
     {
-        StringBuilder x = new StringBuilder(16);
-        x.append(c.get(Calendar.YEAR));
-        int i = c.get(Calendar.MONTH) + 1; // January == 0!
-        if (i < 10)
-            x.append("0"); // add a zero if required
-        x.append(i);
-        i = c.get(Calendar.DATE);
-        if (i < 10)
-            x.append("0");
-        x.append(i);
-        i = c.get(Calendar.HOUR_OF_DAY);
-        if (i < 10)
-            x.append("0");
-        x.append(i);
-        i = c.get(Calendar.MINUTE);
-        if (i < 10)
-            x.append("0");
-        x.append(i);
-        i = c.get(Calendar.SECOND);
-        if (i < 10)
-            x.append("0");
-        x.append(i);
-        return x.toString();
+        return String.format("%04d%02d%02d%02d%02d%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1,
+            c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
     }
 
     /**
