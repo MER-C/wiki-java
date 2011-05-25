@@ -33,7 +33,7 @@ public class WikiTests
     {
         Wiki enWiki = new Wiki("en.wikipedia.org");
         enWiki.setMaxLag(0);
-
+/*
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
@@ -77,5 +77,20 @@ public class WikiTests
         FileOutputStream out = new FileOutputStream("Wiki.png");
         out.write(image);
         out.close();
+
+        // User.getUserInfo()
+        Wiki.User user = enWiki.getUser("Jimbo Wales");
+        for(Map.Entry<String, Object> entry : user.getUserInfo().entrySet())
+        {
+            System.out.print(entry.getKey());
+            System.out.print(" => ");
+            Object temp = entry.getValue();
+            System.out.println(temp instanceof Object[] ? Arrays.toString((Object[])temp) : temp);
+        }
+        System.out.println();
+ */
+        //getLogEntries() - user rights log
+        for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
+            System.out.println(entry);
     }
 }
