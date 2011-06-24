@@ -574,7 +574,7 @@ public class Wiki implements Serializable
     private static final String version = "0.24";
 
     // the domain of the wiki
-    protected String domain, query, base;
+    protected String domain, query, base, apiUrl;
     private String scriptPath = "/w"; // need this for sites like partyvan.info
 
     // user management
@@ -646,8 +646,7 @@ public class Wiki implements Serializable
         this.domain = domain;
 
         // init variables
-        base = "http://" + domain + scriptPath + "/index.php?title=";
-        query = "http://" + domain + scriptPath +  "/api.php?format=xml&";
+        initVars();
     }
 
     /**
@@ -664,8 +663,13 @@ public class Wiki implements Serializable
         this.scriptPath = scriptPath;
 
         // init variables
+        initVars();
+    }
+    
+    protected void initVars() {
         base = "http://" + domain + scriptPath + "/index.php?title=";
-        query = "http://" + domain + scriptPath +  "/api.php?format=xml&";
+        apiUrl  = "http://" + domain + scriptPath +  "/api.php?";
+        query = apiUrl + "format=xml&";
     }
 
     /**
