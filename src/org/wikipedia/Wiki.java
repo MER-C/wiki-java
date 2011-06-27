@@ -2103,14 +2103,45 @@ public class Wiki implements Serializable
      *  @return the creator of that page
      *  @throws IOException if a network error occurs
      *  @since 0.18
+     *  @deprecated replaced with <tt>getFirstRevision(title).getUser()</tt>
      */
+    @Deprecated
     public String getPageCreator(String title) throws IOException
     {
+        return getFirstRevision(title).getUser();
+    }
+
+    /**
+     *  Gets the most recent revision of a page.
+     *  @param title a page
+     *  @return the most recent revision of that page
+     *  @throws IOException if a network error occurs
+     *  @since 0.24
+     */
+    public Revision getTopRevision(String title) throws IOException
+    {
+        String url = query + "action=query&prop=revisions&titles=" + URLEncoder.encode(title, "UTF-8")
+            + "&rvlimit=1&rvtoken=rollback";
+        String line = fetch(url, "getTopRevision", true);
+        int a = line.indexOf("<rev");
+        int b = line.indexOf("/>", a);
+        return parseRevision(line.substring(a, b), title);
+    }
+
+    /**
+     *  Gets the first revision of a page.
+     *  @param title a page
+     *  @return the oldest revision of that page
+     *  @throws IOException if a network error occurs
+     *  @since 0.24
+     */
+    public Revision getFirstRevision(String title) throws IOException
+    {
         String url = query + "action=query&prop=revisions&rvlimit=1&rvdir=newer&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getPageCreator", false);
-        int a = line.indexOf("user=\"") + 6;
-        int b = line.indexOf('\"', a);
-        return line.substring(a, b);
+        String line = fetch(url, "getFirstRevision", false);
+        int a = line.indexOf("<rev");
+        int b = line.indexOf("/>", a);
+        return parseRevision(line.substring(a, b), title);
     }
 
     /**
@@ -2409,8 +2440,6 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("rollback"))
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
         statusCheck();
-        String url = query + "action=query&prop=revisions&titles=" + revision.getPage() + "&rvlimit=1&rvtoken=rollback";
-        String line = fetch(url, "rollback", true);
         // check if cookies have expired
         if (cookies2.isEmpty())
         {
@@ -2420,7 +2449,7 @@ public class Wiki implements Serializable
         }
 
         // check whether we are "on top".
-        Revision top = parseRevision(line, revision.getPage());
+        Revision top = getTopRevision(revision.getPage());
         System.out.println(top);
         System.out.println(revision);
         if (!top.equals(revision))
@@ -2430,9 +2459,7 @@ public class Wiki implements Serializable
         }
 
         // get the rollback token
-        int a = line.indexOf("rollbacktoken=\"") + 15;
-        int b = line.indexOf('\"', a);
-        String token = URLEncoder.encode(line.substring(a, b), "UTF-8");
+        String token = URLEncoder.encode(top.getRollbackToken(), "UTF-8");
 
         // Perform the rollback. Although it's easier through the human interface, we want
         // to make sense of any resulting errors.
@@ -2670,6 +2697,14 @@ public class Wiki implements Serializable
             a = xml.indexOf("rcid=\"") + 6;
             b = xml.indexOf('\"', a);
             revision.setRcid(Long.parseLong(xml.substring(a, b)));
+        }
+
+        // rollback token; will automatically be null if we cannot rollback
+        if (xml.contains("rollbacktoken=\""))
+        {
+            a = xml.indexOf("rollbacktoken=\"") + 15;
+            b = xml.indexOf('\"', a);
+            revision.setRollbackToken(xml.substring(a, b));
         }
         return revision;
     }
@@ -5260,7 +5295,7 @@ public class Wiki implements Serializable
             // We can safely assume the user is allowed to { read, edit, create,
             // writeapi }. 
             String[] rs = rights2;
-            if (rights2 != null)
+            if (rights2 == null)
                 rs = (String[])getUserInfo().get("rights");
             for (String r : rs)
                 if (r.equals(right))
@@ -5279,7 +5314,7 @@ public class Wiki implements Serializable
         public boolean isA(String group) throws IOException
         {
             String[] gs = groups;
-            if (groups != null)
+            if (groups == null)
                 gs = (String[])getUserInfo().get("groups");
             for (String g : gs)
                 if (g.equals(group))
@@ -5600,6 +5635,7 @@ public class Wiki implements Serializable
         private Calendar timestamp;
         private String user;
         private String title;
+        private String rollbacktoken = null;
 
         /**
          *  Constructs a new Revision object.
@@ -5676,16 +5712,12 @@ public class Wiki implements Serializable
          *  @return see above
          *  @throws IOException if a network error occurs
          *  @since 0.17
+         *  @deprecated replaced by <tt>rev.equals(getTopRevision(rev.getPage())</tt>
          */
+        @Deprecated
         public boolean isTop() throws IOException
         {
-            String url = query + "action=query&prop=revisions&titles=" + URLEncoder.encode(title, "UTF-8") + "&rvlimit=1&rvprop=timestamp%7Cids";
-            String line = fetch(url, "Revision.isTop", false);
-            // fetch the oldid
-            int a = line.indexOf("revid=\"") + 7;
-            int b = line.indexOf('\"', a);
-            long oldid2 = Long.parseLong(line.substring(a, b));
-            return revid == oldid2;
+            return equals(getTopRevision(title));
         }
 
         /**
@@ -5903,6 +5935,8 @@ public class Wiki implements Serializable
             sb.append(bot);
             sb.append(",rcid=");
             sb.append(rcid == -1 ? "unset" : rcid);
+            sb.append(",rollbacktoken=");
+            sb.append(rollbacktoken == null ? "null" : rollbacktoken);
             sb.append("]");
             return sb.toString();
         }
@@ -5941,6 +5975,27 @@ public class Wiki implements Serializable
         public long getRcid()
         {
             return rcid;
+        }
+
+        /**
+         *  Sets a rollback token for this revision.
+         *  @param token a rollback token
+         *  @since 0.24
+         */
+        public void setRollbackToken(String token)
+        {
+            rollbacktoken = token;
+        }
+
+        /**
+         *  Gets the rollback token for this revision. Can be null, and often
+         *  for good reasons: cannot rollback or not top revision.
+         *  @return the rollback token
+         *  @since 0.24
+         */
+        public String getRollbackToken()
+        {
+            return rollbacktoken;
         }
 
         /**
