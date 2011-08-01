@@ -11,6 +11,10 @@
         <servlet-name>ImageCCI</servlet-name>
         <servlet-class>org.wikipedia.servlets.ImageCCI</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>SpamArchiveSearch</servlet-name>
+        <servlet-class>org.wikipedia.servlets.SpamArchiveSearch</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>Linksearch</servlet-name>
         <url-pattern>/linksearch.jsp</url-pattern>
@@ -18,6 +22,10 @@
     <servlet-mapping>
         <servlet-name>ImageCCI</servlet-name>
         <url-pattern>/imagecci.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SpamArchiveSearch</servlet-name>
+        <url-pattern>/spamarchivesearch.jsp</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>

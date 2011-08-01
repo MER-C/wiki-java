@@ -92,8 +92,11 @@ public class WikiTests
         //getLogEntries() - user rights log
         for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
- */
+
         System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
         System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
+ */
+        for(String[] result : enWiki.search("WikiProject Spam zola enterprises", Wiki.PROJECT_TALK_NAMESPACE))
+            System.out.println(Arrays.toString(result));
     }
 }
