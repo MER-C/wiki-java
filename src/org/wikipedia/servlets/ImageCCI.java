@@ -20,6 +20,7 @@
 package org.wikipedia.servlets;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
@@ -31,8 +32,6 @@ import org.wikipedia.Wiki;
  */
 public class ImageCCI extends HttpServlet
 {
-    private static HashSet list = new HashSet(1000);
-
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
      *  which is in either the current or home directory.
@@ -42,8 +41,7 @@ public class ImageCCI extends HttpServlet
         String user = JOptionPane.showInputDialog(null, "Enter user to survey");
         OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(user + ".txt"), "UTF-8");
         StringBuilder buffer = new StringBuilder(10000);
-        conductCCI("en.wikipedia.org", user, buffer);
-        conductCCI("commons.wikimedia.org", user, buffer);
+        churn(user, buffer);
         out.write(buffer.toString());
         out.close();
         System.exit(0);
@@ -68,10 +66,9 @@ public class ImageCCI extends HttpServlet
         {
             response.setContentType("text/plain; charset=utf-8");
             // create a download prompt
-            response.setHeader("Content-Disposition", "attachment; filename=" + user + ".txt");
+            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
             out = response.getWriter();
-            conductCCI("en.wikipedia.org", user, buffer);
-            conductCCI("commons.wikimedia.org", user, buffer);
+            churn(user, buffer);
         }
         else
         {
@@ -93,47 +90,73 @@ public class ImageCCI extends HttpServlet
     }
 
     /**
+     *  Contains the common CCI code for both online and offline modes.
+     *  @param user the user to survey
+     *  @param buffer the StringBuilder to write to
+     *  @throws IOException if a network error occurs
+     */
+    public static void churn(String user, StringBuilder buffer) throws IOException
+    {
+        HashSet<String> wpUploads = conductCCI("en.wikipedia.org", user);
+        HashSet<String> commonsUploads = conductCCI("commons.wikimedia.org", user);
+        // remove all files that have been reuploaded to Commons by this user with the same name
+        wpUploads.removeAll(commonsUploads);
+
+        // output results
+        buffer.append("=== Uploads to en.wikipedia.org ===\n");
+        int i = 0;
+        for (String entry : wpUploads)
+        {
+            i++;
+            if (i % 20 == 1)
+            {
+                buffer.append("\n==== Local files ");
+                buffer.append(i);
+                buffer.append(" to ");
+                buffer.append(i + 19);
+                buffer.append(" ====\n");
+            }
+            buffer.append("*[[:");
+            buffer.append(entry);
+            buffer.append("]]\n");
+        }
+        buffer.append("\n=== Uploads to commons.wikimedia.org ===\n");
+        i = 0;
+        for (String entry : commonsUploads)
+        {
+            i++;
+            if (i % 20 == 1)
+            {
+                buffer.append("\n==== Commons files ");
+                buffer.append(i);
+                buffer.append(" to ");
+                buffer.append(i + 19);
+                buffer.append(" ====\n");
+            }
+            buffer.append("*[[:");
+            buffer.append(entry);
+            buffer.append("]]\n");
+        }
+    }
+
+    /**
+     *  Obtains a list of images the user <tt>u</tt> has uploaded.
      *  @param w the wiki domain
      *  @param u the user to survey
-     *  @param out the output stream to write the results to
+     *  @return the list of images the user has uploaded
      *  @throws IOException
      */
-    public static void conductCCI(String w, String u, StringBuilder buffer) throws IOException
+    public static HashSet conductCCI(String w, String u) throws IOException
     {
         Wiki wiki = new Wiki(w);
         wiki.setMaxLag(0);
         wiki.setUsingCompressedRequests(false); // this is Google's fault
         Wiki.User user = wiki.getUser(u);
+        HashSet<String> list = new HashSet<String>(10000);
 
         Wiki.LogEntry[] entries = wiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, user, "", Wiki.ALL_NAMESPACES);
         for (int i = 0; i < entries.length; i++)
-        {
-            if (i == 0)
-            {
-                buffer.append("===Uploads on ");
-                buffer.append(w);
-                buffer.append(" ===\n");
-            }
-            int size = list.size();
-            String page = entries[i].getTarget();
-            if (size % 20 == 0 && !list.contains(page))
-            {
-                buffer.append("\n====Files ");
-                buffer.append(size + 1);
-                buffer.append(" to ");
-                buffer.append(size + 21);
-                buffer.append(" ====\n");
-            }
-            // remove duplicates
-            if (!list.contains(page))
-            {
-                buffer.append("*[[:");
-                buffer.append(page);
-                buffer.append("]]\n");
-                list.add(page);
-            }
-        }
-        list.clear();
-        buffer.append("\n");
+            list.add((String)entries[i].getTarget());
+        return list;
     }
 }

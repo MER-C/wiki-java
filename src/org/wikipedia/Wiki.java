@@ -3620,7 +3620,13 @@ public class Wiki implements Serializable
 
     /**
      *  Performs a full text search of the wiki. Equivalent to
-     *  [[Special:Search]], or that little textbox in the sidebar.
+     *  [[Special:Search]], or that little textbox in the sidebar. Returns an
+     *  array of search results, where:
+     *  <pre>
+     *  results[0] == page name
+     *  results[1] == parsed section name (may be "")
+     *  results[2] == snippet of page text
+     *  </pre>
      *
      *  @param search a search string
      *  @param namespaces the namespaces to search. If no parameters are passed
@@ -3629,7 +3635,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.14
      */
-    public String[] search(String search, int... namespaces) throws IOException
+    public String[][] search(String search, int... namespaces) throws IOException
     {
         // this varargs thing is really handy, there's no need to define a
         // separate search(String search) while allowing multiple namespaces
@@ -3638,7 +3644,7 @@ public class Wiki implements Serializable
         if (namespaces.length == 0)
             namespaces = new int[] { MAIN_NAMESPACE };
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&list=search&srwhat=text&srlimit=max&srsearch=");
+        url.append("action=query&list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srlimit=max&srsearch=");
         url.append(URLEncoder.encode(search, "UTF-8"));
         url.append("&srnamespace=");
         for (int i = 0; i < namespaces.length; i++)
@@ -3651,7 +3657,7 @@ public class Wiki implements Serializable
 
         // some random variables we need later
         boolean done = false;
-        ArrayList<String> results = new ArrayList<String>(5000);
+        ArrayList<String[]> results = new ArrayList<String[]>(5000);
 
         // fetch and iterate through the search results
         while (!done)
@@ -3663,17 +3669,35 @@ public class Wiki implements Serializable
                 done = true;
 
             // strip the search results
-            // typical form: <p ns="0" title="Main Page" />
-            while (line.contains("title=\""))
+            // typical form: <p ns="0" title="Main Page" snippet="Blah blah blah" sectiontitle="Section"/>
+            for (int x = line.indexOf(" title=\""); x >= 0; x = line.indexOf(" title=\"", x))
             {
-                int a = line.indexOf("title=\"") + 7;
+                String[] result = new String[3];
+                // title
+                int a = x + 8;
                 int b = line.indexOf('\"', a);
-                results.add(line.substring(a, b));
-                line = line.substring(b);
+                result[0] = line.substring(a, b);
+
+                // section title (if available). Stupid API documentation is misleading.
+                if (line.contains("sectionsnippet=\""))
+                {
+                    a = line.indexOf("sectionsnippet=\"", x) + 16;
+                    b = line.indexOf('\"', a);
+                    result[1] = decode(line.substring(a, b));
+                }
+                else
+                    result[1] = "";
+
+                // snippet
+                a = line.indexOf("snippet=\"", x) + 9;
+                b = line.indexOf('\"', a);
+                result[2] = decode(line.substring(a, b));
+                results.add(result);
+                x = a;
             }
         }
         log(Level.INFO, "Successfully searched for string \"" + search + "\" (" + results.size() + " items found)", "search");
-        return results.toArray(new String[0]);
+        return results.toArray(new String[0][0]);
     }
 
     /**
