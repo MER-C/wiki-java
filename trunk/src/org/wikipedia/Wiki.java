@@ -1657,6 +1657,8 @@ public class Wiki implements Serializable
         url.append("&rvsection=");
         url.append(number);
         String text = fetch(url.toString(), "getSectionText", false);
+        if (text.contains("<error code=\"rvnosuchsection\""))
+            throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         int a = text.indexOf("<rev xml:space=\"preserve\">") + 26;
         int b = text.indexOf("</rev>", a);
         return text.substring(a, b);
