@@ -1641,6 +1641,28 @@ public class Wiki implements Serializable
     }
 
     /**
+     *  Gets the text of a specific section. Useful for section editing.
+     *  @param title the title of the relevant page
+     *  @param number the section number of the section to retrieve text for
+     *  @throws IOException if a network error occurs
+     *  @throws IllegalArgumentException if the page has less than <tt>number</tt>
+     *  sections
+     *  @since 0.24
+     */
+    public String getSectionText(String title, int number) throws IOException
+    {
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&prop=revisions&rvprop=content&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append("&rvsection=");
+        url.append(number);
+        String text = fetch(url.toString(), "getSectionText", false);
+        int a = text.indexOf("<rev xml:space=\"preserve\">") + 26;
+        int b = text.indexOf("</rev>", a);
+        return text.substring(a, b);
+    }
+
+    /**
      *  Gets the contents of a page, rendered in HTML (as opposed to
      *  wikitext). WARNING: only supports special pages in certain
      *  circumstances, for example <tt>getRenderedText("Special:Recentchanges")
@@ -1713,9 +1735,6 @@ public class Wiki implements Serializable
         long start = System.currentTimeMillis();
         statusCheck();
 
-        // sanitize some params
-        String title2 = URLEncoder.encode(title, "UTF-8");
-
         // protection and token
         HashMap<String, Object> info = getPageInfo(title);
         int level = (Integer)info.get("protection");
@@ -1731,7 +1750,7 @@ public class Wiki implements Serializable
         // post data
         StringBuilder buffer = new StringBuilder(300000);
         buffer.append("title=");
-        buffer.append(title2);
+        buffer.append(URLEncoder.encode(title, "UTF-8"));
         buffer.append("&text=");
         buffer.append(URLEncoder.encode(text, "UTF-8"));
         buffer.append("&summary=");
@@ -1830,6 +1849,81 @@ public class Wiki implements Serializable
         text.append(stuff);
         text.append(getPageText(title));
         edit(title, text.toString(), "+" + stuff, minor);
+    }
+
+    /**
+     *  Deletes a page. Does not delete any page requiring <tt>bigdelete</tt>.
+     *  @param title the page to delete
+     *  @param reason the reason for deletion
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if the user lacks the permission to
+     *  delete
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if user is blocked
+     *  @since 0.24
+     */
+    public synchronized void delete(String title, String reason) throws IOException, LoginException
+    {
+        long start = System.currentTimeMillis();
+        statusCheck();
+
+        if (user == null || !user.isAllowedTo("delete"))
+            throw new CredentialNotFoundException("Cannot delete: Permission denied");
+
+        // protection and token
+        HashMap<String, Object> info = getPageInfo(title);
+        if (!(Boolean)info.get("exists"))
+        {
+            logger.log(Level.INFO, "Page \"{0}\" does not exist.", title);
+            return;
+        }
+        String deleteToken = (String)info.get("token");
+
+        // post data
+        StringBuilder buffer = new StringBuilder(500);
+        buffer.append("title=");
+        buffer.append(URLEncoder.encode(title, "UTF-8"));
+        buffer.append("&summary=");
+        buffer.append(URLEncoder.encode(reason, "UTF-8"));
+        buffer.append("&token=");
+        buffer.append(URLEncoder.encode(deleteToken, "UTF-8"));
+        String response = post(query + "action=delete", buffer.toString(), "edit");
+
+        // done
+        try
+        {
+            checkErrors(response, "delete");
+        }
+        catch (IOException e)
+        {
+            // retry once
+            if (retry)
+            {
+                retry = false;
+                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "delete");
+                delete(title, reason);
+            }
+            else
+            {
+                logger.logp(Level.SEVERE, "Wiki", "delete()", "[" + domain + "] EXCEPTION:  ", e);
+                throw e;
+            }
+        }
+        if (retry)
+            log(Level.INFO, "Successfully deleted " + title, "delete");
+        retry = true;
+
+        // throttle
+        try
+        {
+            long time = throttle - System.currentTimeMillis() + start;
+            if (time > 0)
+                Thread.sleep(time);
+        }
+        catch (InterruptedException e)
+        {
+            // nobody cares
+        }
     }
 
     /**
@@ -2284,9 +2378,6 @@ public class Wiki implements Serializable
             throw new UnsupportedOperationException("Tried to move a category/image.");
         // TODO: image renaming? TEST ME (MediaWiki, that is).
 
-        // sanitize some params
-        String title2 = URLEncoder.encode(title, "UTF-8");
-
         // protection and token
         HashMap<String, Object> info = getPageInfo(title);
         // determine whether the page exists
@@ -2305,7 +2396,7 @@ public class Wiki implements Serializable
         // post data
         StringBuilder buffer = new StringBuilder(10000);
         buffer.append("from=");
-        buffer.append(title2);
+        buffer.append(URLEncoder.encode(title, "UTF-8"));
         buffer.append("&to=");
         buffer.append(URLEncoder.encode(newTitle, "UTF-8"));
         buffer.append("&reason=");
@@ -6177,7 +6268,6 @@ public class Wiki implements Serializable
      */
     protected void checkErrors(String line, String caller) throws IOException, LoginException
     {
-        // System.out.writeln(line);
         // empty response from server
         if (line.isEmpty())
             throw new UnknownError("Received empty response from server!");
