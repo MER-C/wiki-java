@@ -962,12 +962,14 @@ public class Wiki implements Serializable
 
         // send
         OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        out.write("lgname=");
-        out.write(username);
-        out.write("&lgpassword=");
-        out.write(password);
-        out.write("&lgtoken=");
-        out.write(URLEncoder.encode(wpLoginToken, "UTF-8"));
+        StringBuilder buffer = new StringBuilder(500);
+        buffer.append("lgname=");
+        buffer.append(URLEncoder.encode(username, "UTF-8"));
+        buffer.append("&lgpassword=");
+        buffer.append(URLEncoder.encode(new String(password), "UTF-8"));
+        buffer.append("&lgtoken=");
+        buffer.append(URLEncoder.encode(wpLoginToken, "UTF-8"));
+        out.write(buffer.toString());
         out.close();
 
         // get the cookies. Note: no post() here because of this line!
@@ -1885,11 +1887,11 @@ public class Wiki implements Serializable
         StringBuilder buffer = new StringBuilder(500);
         buffer.append("title=");
         buffer.append(URLEncoder.encode(title, "UTF-8"));
-        buffer.append("&summary=");
+        buffer.append("&reason=");
         buffer.append(URLEncoder.encode(reason, "UTF-8"));
         buffer.append("&token=");
         buffer.append(URLEncoder.encode(deleteToken, "UTF-8"));
-        String response = post(query + "action=delete", buffer.toString(), "edit");
+        String response = post(query + "action=delete", buffer.toString(), "delete");
 
         // done
         try
