@@ -99,8 +99,8 @@ public class WikiTests
         for(String[] result : enWiki.search("WikiProject Spam zola enterprises", Wiki.PROJECT_TALK_NAMESPACE))
             System.out.println(Arrays.toString(result));
  
-        System.out.println(enWiki.parse("{{Main Page}}"));
- */
-        System.out.println(enWiki.getSectionText("Wikipedia:Copyright_problems", 2));
+         System.out.println(enWiki.getSectionText("Wikipedia:Copyright_problems", 2));
+  */
+       System.out.println(enWiki.parse("{{Main Page}}"));
     }
 }

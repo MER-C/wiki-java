@@ -1128,45 +1128,10 @@ public class Wiki implements Serializable
     {
         // This is POST because markup can be arbitrarily large, as in the size
         // of an article (over 10kb).
-        String url = query + "action=parse";
-        URLConnection connection = new URL(url).openConnection();
-        logurl(url, "parse");
-        setCookies(connection, cookies);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        out.write("prop=text&text=");
-        out.write(URLEncoder.encode(markup, "UTF-8"));
-        out.close();
-
-        // parse. No post() here because we need this extra input!
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));String line;
-        StringBuilder text = new StringBuilder(100000);
-        while ((line = in.readLine()) != null)
-        {
-            int y = line.indexOf('>', line.indexOf("<text")) + 1;
-            int z = line.indexOf("</text>");
-            if (y != -1)
-            {
-                text.append(line.substring(y));
-                text.append("\n");
-            }
-            else if (z != -1)
-            {
-                text.append(line.substring(0, z));
-                text.append("\n");
-                break; // done
-            }
-            else
-            {
-                text.append(line);
-                text.append("\n");
-            }
-        }
-        return decode(text.toString());
+        String response = post(query + "action=parse", "prop=text&text=" + URLEncoder.encode(markup, "UTF-8"), "parse");
+        int y = response.indexOf('>', response.indexOf("<text")) + 1;
+        int z = response.indexOf("</text>");
+        return decode(response.substring(y, z));
     }
 
     /**
@@ -1896,7 +1861,8 @@ public class Wiki implements Serializable
         // done
         try
         {
-            checkErrors(response, "delete");
+            if (!response.contains("<delete title="))
+                checkErrors(response, "delete");
         }
         catch (IOException e)
         {
@@ -6255,9 +6221,15 @@ public class Wiki implements Serializable
         out.close();
         BufferedReader in = new BufferedReader(new InputStreamReader(
             zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-        String temp = in.readLine();
+        String line;
+        StringBuilder temp = new StringBuilder(100000);
+        while ((line = in.readLine()) != null)
+        {
+            temp.append(line);
+            temp.append("\n");
+        }
         in.close();
-        return temp;
+        return temp.toString();
     }
 
     /**
