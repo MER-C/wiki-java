@@ -1,27 +1,61 @@
-package test;
+/**
+ *  @(#)CPBot.java 0.01 29/08/2011
+ *  Copyright (C) 2011 MER-C
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 3
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software Foundation,
+ *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ */
+
+package org.wikipedia.bots;
 
 import java.io.*;
 import java.util.*;
 import javax.security.auth.login.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
 import org.wikipedia.Wiki;
 
-public class Blah
+public class CPBot extends HttpServlet
 {
     private static final String CP = "Wikipedia:Copyright_problems";
-    private static final String SCV = "Wikipedia:Suspected_copyright_violations";
 
+    /**
+     *  The idea here is run this with a cron job on Google App Engine. That
+     *  means we can run for no more than 10 minutes. See {@link
+     *  http://code.google.com/appengine/docs/java/config/cron.html here} for
+     *  more information.
+     */
+    @Override
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        try
+        {
+            main(new String[0]);
+        }
+        catch(Exception ex)
+        {
+            // something
+        }
+    }
+    
     public static void main(String[] args) throws IOException, LoginException
     {
         Wiki enWiki = new Wiki("en.wikipedia.org");
         enWiki.login("username", "password".toCharArray());
 
+        // create daily CP page
         GregorianCalendar cal = new GregorianCalendar();
-        // create daily pages
-        String date1 = cal.get(Calendar.YEAR) + "-" + (cal.get(Calendar.MONTH) + 1) + "-" + cal.get(Calendar.DAY_OF_MONTH);
-        String scppage = SCV + "/" + date1;
-        enWiki.edit(scppage, "===== [[" + scppage + "|" + date1 + " (Suspected copyright violations)]] =====", "edit summary", false);
-        String scvText = enWiki.getPageText(SCV);
-        enWiki.edit(SCV, scvText + "{{/" + date1 + "}}\n", "edit summary", false);
         enWiki.edit(createCPPageName(cal), "{{subst:cppage}}", "edit summary", false);
 
         // check for close paraphrase, etc.

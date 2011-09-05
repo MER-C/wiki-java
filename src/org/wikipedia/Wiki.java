@@ -1,5 +1,5 @@
 /**
- *  @(#)Wiki.java 0.23 26/03/2011
+ *  @(#)Wiki.java 0.24 05/09/2011
  *  Copyright (C) 2007 - 2011 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ import javax.security.auth.login.*; // useful exception types
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
- *  Requires JDK 1.5 (5.0) or greater. Uses the <a 
+ *  Requires JDK 1.5 (5.0) or greater. Uses the <a
  *  href="http://mediawiki.org/wiki/API">MediaWiki API</a> for most operations.
  *  It is recommended that the server runs the latest version of MediaWiki
  *  (1.18 SVN), otherwise some functions may not work.
@@ -130,7 +130,7 @@ import javax.security.auth.login.*; // useful exception types
  *  <!-- all wikilinks are relative to the English Wikipedia -->
  *
  *  @author MER-C and contributors
- *  @version 0.23
+ *  @version 0.24
  */
 public class Wiki implements Serializable
 {
@@ -563,7 +563,7 @@ public class Wiki implements Serializable
          *  @since 0.24
          */
         female,
-        
+
         /**
          *  The user has not specified a gender in preferences.
          *  @since 0.24
@@ -665,7 +665,7 @@ public class Wiki implements Serializable
         // init variables
         initVars();
     }
-    
+
     protected void initVars() {
         base = "http://" + domain + scriptPath + "/index.php?title=";
         apiUrl  = "http://" + domain + scriptPath +  "/api.php?";
@@ -1463,7 +1463,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the protection status of a page. 
+     *  Gets the protection status of a page.
      *
      *  @param title the title of the page
      *  @return one of the various protection levels (i.e,. NO_PROTECTION,
@@ -2101,7 +2101,7 @@ public class Wiki implements Serializable
             }
             else
                 plcontinue = "";
-            
+
             // parse the list
             // typical form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("title=\""); a >= 0; a = line.indexOf("title=\"", a))
@@ -3472,9 +3472,12 @@ public class Wiki implements Serializable
      *  @param emailme whether to send a copy of the message to your email address
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if you have been blocked from sending email
+     *  @throws UnsupportedOperationException if email is disabled or if you do
+     *  not have a verified email address
      *  @since 0.24
      */
-    public synchronized void emailUser(User user, String message, String subject, boolean emailme) throws IOException, CredentialException
+    public synchronized void emailUser(User user, String message, String subject, boolean emailme) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
 
@@ -3511,7 +3514,10 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(subject, "UTF-8"));
         String response = post(query + "action=emailuser", buffer.toString(), "emailUser");
 
-        // something
+        // check for errors
+        checkErrors(response, "email");
+        if (response.contains("error code=\"cantsend\""))
+            throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
 
         // throttle
         try
@@ -4097,7 +4103,7 @@ public class Wiki implements Serializable
     {
         // FIXME: Change return type to ArrayList<Object[]> or Object[][]
         // First index refers to item number, linksearch()[x][0] = page title
-        
+
         // set it up
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=exturlusage&euprop=title%7curl&euquery=");
@@ -4997,7 +5003,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches the <tt>amount</tt> most recent changes in the specified 
+     *  Fetches the <tt>amount</tt> most recent changes in the specified
      *  namespace subject to the specified constraints. WARNING: The recent
      *  changes table only stores new pages for about a month. It is not
      *  possible to retrieve changes before then. Equivalent to
@@ -5057,7 +5063,7 @@ public class Wiki implements Serializable
             int b = line.indexOf('\"', a);
             rcstart = line.substring(a, b);
 
-            // typical form <rc type="edit" ns="0" title="List of township-level divisions of Xinjiang" 
+            // typical form <rc type="edit" ns="0" title="List of township-level divisions of Xinjiang"
             // rcid="431225307" pageid="26261623" revid="418906444" old_revid="418906338" user="Visik"
             // comment="/* Turpan City */ fixed up" />
             for (int i = line.indexOf("<rc "); i >= 0 && revisions.size() < amount; i = line.indexOf("<rc ", i))
@@ -5085,7 +5091,7 @@ public class Wiki implements Serializable
      *  Here the page [[Spam]] contains the interwiki link [[testwiki:Blah]] and
      *  the page [[Test]] contains the interwiki link [[testwiki:Main_Page]].
      *  This does not resolve nested interwiki prefixes, e.g. [[wikt:fr:Test]].
-     * 
+     *
      *  <p>
      *  For WMF wikis, see <a href="http://meta.wikimedia.org/wiki/Interwiki_map">
      *  the interwiki map</a>for where some prefixes link to.
@@ -5117,7 +5123,7 @@ public class Wiki implements Serializable
      *      { "Test", "testwiki:Blah" }
      *  }
      *  </pre>
-     * 
+     *
      *  <p>
      *  For WMF wikis, see <a href="http://meta.wikimedia.org/wiki/Interwiki_map">
      *  the interwiki map</a>for where some prefixes link to.
@@ -5136,7 +5142,7 @@ public class Wiki implements Serializable
     public String[][] getInterWikiBacklinks(String prefix, String title) throws IOException
     {
         // WARNING: do not use on WMF sites until r84257 goes live!
-        
+
         // must specify a prefix
         if (title.equals("|") && prefix.isEmpty())
             throw new IllegalArgumentException("Interwiki backlinks: title specified without prefix!");
@@ -5150,7 +5156,7 @@ public class Wiki implements Serializable
             url.append(title);
         }
         url.append("&iwblprop=iwtitle%7Ciwprefix");
-        
+
         String iwblcontinue = "";
         ArrayList<String[]> links = new ArrayList<String[]>(500);
         do
@@ -5378,7 +5384,7 @@ public class Wiki implements Serializable
         public boolean isAllowedTo(String right) throws IOException
         {
             // We can safely assume the user is allowed to { read, edit, create,
-            // writeapi }. 
+            // writeapi }.
             String[] rs = rights2;
             if (rights2 == null)
                 rs = (String[])getUserInfo().get("rights");
@@ -6256,7 +6262,7 @@ public class Wiki implements Serializable
             log(Level.WARNING, "Server-side throttle hit.", caller);
             throw new HttpRetryException("Action throttled.", 503);
         }
-        // blocked!
+        // blocked! (note here the \" in blocked is deliberately missing for emailUser()
         if (line.contains("error code=\"blocked") || line.contains("error code=\"autoblocked\""))
         {
             log(Level.SEVERE, "Cannot " + caller + " - user is blocked!.", caller);
@@ -6446,7 +6452,7 @@ public class Wiki implements Serializable
         sb.append('.');
         logger.logp(level, "Wiki", method + "()", sb.toString());
     }
-    
+
     /**
      *  Change the logging level of this object's Logger object.
      *  @param Level

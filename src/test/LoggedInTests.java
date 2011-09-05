@@ -19,9 +19,6 @@
 
 package test;
 
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
 import org.wikipedia.Wiki;
 
 /**
@@ -32,67 +29,10 @@ public class LoggedInTests
 {
     private static Wiki wiki = new Wiki("en.wikipedia.org");
 
-    public static void main(String[] args)
-    {
-        // need a login dialog to input password
-        // don't want to store plaintext passwords on our hard disk, do we?
-        final JDialog dialog = new JDialog((JFrame)null, "Log in");
-
-        // login panel
-        JPanel login = new JPanel();
-        dialog.add(login, BorderLayout.CENTER);
-        login.setLayout(new GridLayout(2, 2));
-        login.add(new JLabel("Username"));
-        final JTextField username = new JTextField(10);
-        login.add(username);
-        login.add(new JLabel("Password"));
-        final JPasswordField password = new JPasswordField(10);
-        login.add(password);
-
-        // buttons
-        JPanel buttons = new JPanel();
-        dialog.add(buttons, BorderLayout.SOUTH);
-        JButton ok = new JButton("OK");
-        buttons.add(ok);
-        ok.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                try
-                {
-                    dialog.setVisible(false);
-                    test(username.getText(), password.getPassword());
-                    System.exit(0);
-                }
-                catch(Exception ex)
-                {
-                    JOptionPane.showMessageDialog(null, "Exception: " + ex);
-                    ex.printStackTrace();
-                }
-            }
-        });
-        JButton cancel = new JButton("Cancel");
-        buttons.add(cancel);
-        cancel.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                System.exit(0);
-            }
-        });
-        dialog.pack();
-        dialog.setVisible(true);
-    }
-
-    /**
-     *  Testing occurs here.
-     *  @param username the username to log in
-     *  @param password the password to use
-     */
-    public static void test(String username, char[] password) throws Exception
+    public static void main(String[] args) throws Exception
     {
         // login
-        wiki.login(username, password);
+        new LoginDialog(wiki);
 
         // watchlist
         for (String page : wiki.getRawWatchlist())
@@ -100,6 +40,9 @@ public class LoggedInTests
 
         // email
         wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
+
+        // BOT TESTS
+        // org.wikipedia.bots.CPBot.main(new String[0]);
 
         // edit (non-existent page)
         wiki.edit("User:MER-C/dfhsdlfj", "Testing", "test", false);
