@@ -949,9 +949,6 @@ public class Wiki implements Serializable
         int b = blah.indexOf('\"', a);
         String wpLoginToken = blah.substring(a, b);
 
-        // sanitize
-        username = URLEncoder.encode(username, "UTF-8");
-
         // start
         String url = query + "action=login";
         URLConnection connection = new URL(url).openConnection();
@@ -2888,16 +2885,13 @@ public class Wiki implements Serializable
     {
         // @revised 0.24 BufferedImage => byte[]
 
-        // sanitise the title
-        title = URLEncoder.encode(title, "UTF-8");
-
         // this is a two step process - first we fetch the image url
         StringBuilder url = new StringBuilder(query);
-        url.append("&action=query&prop=imageinfo&iiprop=url&titles=File:");
+        url.append("action=query&prop=imageinfo&iiprop=url&titles=File:");
         url.append(URLEncoder.encode(title, "UTF-8"));
         url.append("&iiurlwidth=");
         url.append(width);
-        url.append("&iirulheight=");
+        url.append("&iiurlheight=");
         url.append(height);
         String line = fetch(url.toString(), "getImage", false);
         int a = line.indexOf("url=\"") + 5;
