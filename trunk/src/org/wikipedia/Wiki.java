@@ -666,7 +666,16 @@ public class Wiki implements Serializable
         initVars();
     }
 
-    protected void initVars() {
+    /**
+     *  Override/edit this if you need to change the API and human interface
+     *  url configuration of the wiki. Also override/edit this if you want to
+     *  use https on Wikimedia.
+     *
+     *  @since 0.24
+     *  @author Tedder
+     */
+    protected void initVars()
+    {
         base = "http://" + domain + scriptPath + "/index.php?title=";
         apiUrl  = "http://" + domain + scriptPath +  "/api.php?";
         query = apiUrl + "format=xml&";
@@ -1487,6 +1496,7 @@ public class Wiki implements Serializable
      *  @return one of namespace types above, or a number for custom
      *  namespaces or ALL_NAMESPACES if we can't make sense of it
      *  @throws IOException if a network error occurs
+     *  @see #namespaceIdentifier(int)
      *  @since 0.03
      */
     public int namespace(String title) throws IOException
@@ -1505,26 +1515,7 @@ public class Wiki implements Serializable
 
         // cache this, as it will be called often
         if (namespaces == null)
-        {
-            String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces", "namespace", false);
-            namespaces = new HashMap<String, Integer>(30);
-            while (line.contains("<ns"))
-            {
-                int x = line.indexOf("<ns id=");
-                if (line.charAt(x + 8) == '0') // skip main, it's a little different
-                {
-                    line = line.substring(13);
-                    continue;
-                }
-                int y = line.indexOf("</ns>");
-                String working = line.substring(x + 8, y);
-                int ns = Integer.parseInt(working.substring(0, working.indexOf('"')));
-                String name = working.substring(working.indexOf('>') + 1);
-                namespaces.put(name, new Integer(ns));
-                line = line.substring(y + 5);
-            }
-            log(Level.INFO, "Successfully retrieved namespace list (" + (namespaces.size() + 1) + " namespaces)", "namespace");
-        }
+            populateNamespaceCache();
 
         // look up the namespace of the page in the namespace cache
         if (!namespaces.containsKey(namespace))
@@ -1532,6 +1523,61 @@ public class Wiki implements Serializable
         else
             return namespaces.get(namespace).intValue();
     }
+
+    /**
+     *  For a given namespace denoted as an integer, fetch the corresponding
+     *  identification string e.g. <tt>namespaceIdentifier(1)</tt> should return
+     *  "Talk". (This does the exact opposite to <tt>namespace()</tt>.
+     * 
+     *  @param namespace an integer corresponding to a namespace. If it does not
+     *  correspond to a namespace, we assume you mean the main namespace (i.e.
+     *  return "").
+     *  @return the identifier of the namespace
+     *  @throws IOException if the namespace cache has not been populated, and
+     *  a network error occurs when populating it
+     *  @see #namespace(java.lang.String)
+     *  @since 0.25
+     */
+    public String namespaceIdentifier(int namespace) throws IOException
+    {
+        if (namespaces == null)
+            populateNamespaceCache();
+
+        // anything we cannot identify is assumed to be in the main namespace
+        if (!namespaces.containsValue(namespace))
+            return "";
+        for (Map.Entry<String, Integer> entry : namespaces.entrySet())
+            if (entry.getValue().equals(namespace))
+                return entry.getKey();
+        return ""; // never reached...
+    }
+
+    /**
+     *  Populates the namespace cache.
+     *  @throws IOException if a network error occurs.
+     *  @since 0.25
+     */
+    protected void populateNamespaceCache() throws IOException
+    {
+        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces", "namespace", false);
+        namespaces = new HashMap<String, Integer>(30);
+        while (line.contains("<ns"))
+        {
+            int x = line.indexOf("<ns id=");
+            if (line.charAt(x + 8) == '0') // skip main, it's a little different
+            {
+                line = line.substring(13);
+                continue;
+            }
+            int y = line.indexOf("</ns>");
+            String working = line.substring(x + 8, y);
+            int ns = Integer.parseInt(working.substring(0, working.indexOf('"')));
+            String name = working.substring(working.indexOf('>') + 1);
+            namespaces.put(name, new Integer(ns));
+            line = line.substring(y + 5);
+        }
+        log(Level.INFO, "Successfully retrieved namespace list (" + (namespaces.size() + 1) + " namespaces)", "namespace");
+     }
 
     /**
      *  Determines whether a series of pages exist. Requires the
@@ -1652,7 +1698,7 @@ public class Wiki implements Serializable
     /**
      *  Edits a page by setting its text to the supplied value. This method is
      *  thread safe and blocks for a minimum time as specified by the
-     *  throttle.
+     *  throttle. The edit will not be marked as a bot edit.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1669,7 +1715,7 @@ public class Wiki implements Serializable
      */
     public void edit(String title, String text, String summary, boolean minor) throws IOException, LoginException
     {
-        edit(title, text, summary, minor, -2);
+        edit(title, text, summary, minor, false, -2);
     }
 
     /**
@@ -1683,6 +1729,34 @@ public class Wiki implements Serializable
      *  longer than 200 characters are truncated server-side.
      *  @param minor whether the edit should be marked as minor. See
      *  [[Help:Minor edit]].
+     *  @param bot whether the edit should be marked as a bot edit (ignored if
+     *  one does not have the necessary permissions)
+     *  @throws IOException if a network error occurs
+     *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialException if page is protected and we can't edit it
+     *  @throws UnsupportedOperationException if you try to edit a Special: or a
+     *  Media: page
+     *  @see #getPageText
+     *  @since 0.25
+     */
+    public void edit(String title, String text, String summary, boolean minor, boolean bot) throws IOException, LoginException
+    {
+        edit(title, text, summary, minor, bot, -2);
+    }
+
+    /**
+     *  Edits a page by setting its text to the supplied value. This method is
+     *  thread safe and blocks for a minimum time as specified by the
+     *  throttle.
+     *
+     *  @param text the text of the page
+     *  @param title the title of the page
+     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
+     *  longer than 200 characters are truncated server-side.
+     *  @param minor whether the edit should be marked as minor. See
+     *  [[Help:Minor edit]].
+     *  @param bot whether to mark the edit as a bot edit (ignored if one does
+     *  not have the necessary permissions)
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
      *  @throws IOException if a network error occurs
@@ -1694,10 +1768,12 @@ public class Wiki implements Serializable
      *  @see #getPageText
      *  @since 0.17
      */
-    public synchronized void edit(String title, String text, String summary, boolean minor, int section) throws IOException, LoginException
+    public synchronized void edit(String title, String text, String summary, boolean minor, boolean bot,
+        int section) throws IOException, LoginException
     {
         // @revised 0.16 to use API edit. No more screenscraping - yay!
         // @revised 0.17 section editing
+        // @revised 0.25 optional bot flagging
         long start = System.currentTimeMillis();
         statusCheck();
 
@@ -1725,6 +1801,8 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
         if (minor)
             buffer.append("&minor=1");
+        if (bot && user.isAllowedTo("bot"))
+            buffer.append("&bot=1");
         if (section == -1)
             buffer.append("&section=new");
         else if (section != -2)
@@ -1748,7 +1826,7 @@ public class Wiki implements Serializable
             {
                 retry = false;
                 log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "edit");
-                edit(title, text, summary, minor, section);
+                edit(title, text, summary, minor, bot, section);
             }
             else
             {
@@ -1789,9 +1867,9 @@ public class Wiki implements Serializable
      *  Media: page
      *  @since 0.17
      */
-    public void newSection(String title, String subject, String text, boolean minor) throws IOException, LoginException
+    public void newSection(String title, String subject, String text, boolean minor, boolean bot) throws IOException, LoginException
     {
-        edit(title, text, subject, minor, -1);
+        edit(title, text, subject, minor, bot, -1);
     }
 
     /**
@@ -1809,12 +1887,12 @@ public class Wiki implements Serializable
      *  of a Special: page or a Media: page
      *  @throws IOException if a network error occurs
      */
-    public void prepend(String title, String stuff, boolean minor) throws IOException, LoginException
+    public void prepend(String title, String stuff, boolean minor, boolean bot) throws IOException, LoginException
     {
         StringBuilder text = new StringBuilder(100000);
         text.append(stuff);
         text.append(getPageText(title));
-        edit(title, text.toString(), "+" + stuff, minor);
+        edit(title, text.toString(), "+" + stuff, minor, bot);
     }
 
     /**
@@ -6313,7 +6391,7 @@ public class Wiki implements Serializable
      *  @throws AssertionError if any defined assertions are false
      *  @since 0.10
      */
-    private boolean checkRights(int level, boolean move) throws IOException, CredentialException
+    protected boolean checkRights(int level, boolean move) throws IOException, CredentialException
     {
         // check if we are logged out
         if (cookies2.isEmpty())
@@ -6383,7 +6461,7 @@ public class Wiki implements Serializable
      *  @param u an unconnected URLConnection
      *  @param map the cookie store
      */
-    private void setCookies(URLConnection u, Map<String, String> map)
+    protected void setCookies(URLConnection u, Map<String, String> map)
     {
         StringBuilder cookie = new StringBuilder(100);
         for (Map.Entry<String, String> entry : map.entrySet())
@@ -6463,7 +6541,7 @@ public class Wiki implements Serializable
      *  @param method what we are currently doing
      *  @since 0.08
      */
-    private void logurl(String url, String method)
+    protected void logurl(String url, String method)
     {
         logger.logp(Level.FINE, "Wiki", method + "()", "Fetching URL " + url);
     }

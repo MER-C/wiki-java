@@ -111,7 +111,7 @@ public class XWikiLinksearch extends HttpServlet
             buffer.append(".wikipedia.org:</h3>\n<p><ol>\n");
             for (int j = 0; j < temp[0].size(); j++)
             {
-                buffer.append("<li><a href=\"http://");
+                buffer.append("<li><a href=\"//");
                 buffer.append(wikis[i]);
                 buffer.append(".wikipedia.org/wiki/");
                 buffer.append((String)temp[0].get(j));
@@ -125,7 +125,7 @@ public class XWikiLinksearch extends HttpServlet
             }
             buffer.append("</ol>\n<p>");
             buffer.append(temp[0].size());
-            buffer.append(" links found. (<a href=\"http://");
+            buffer.append(" links found. (<a href=\"//");
             buffer.append(wikis[i]);
             buffer.append(".wikipedia.org/wiki/Special:Linksearch/*.");
             buffer.append(domain);

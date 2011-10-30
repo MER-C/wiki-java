@@ -56,7 +56,7 @@ public class CPBot extends HttpServlet
 
         // create daily CP page
         GregorianCalendar cal = new GregorianCalendar();
-        enWiki.edit(createCPPageName(cal), "{{subst:cppage}}", "edit summary", false);
+        enWiki.edit(createCPPageName(cal), "{{subst:cppage}}", "edit summary", false, false);
 
         // check for close paraphrase, etc.
         String cpText = enWiki.getRenderedText(CP);
@@ -80,12 +80,12 @@ public class CPBot extends HttpServlet
             }
         }
         String cpTextToday = enWiki.getPageText(createCPPageName(cal));
-        enWiki.edit(createCPPageName(cal), cpTextToday + cpAddition.toString(), "edit summary", false);
+        enWiki.edit(createCPPageName(cal), cpTextToday + cpAddition.toString(), "edit summary", false, false);
 
         // move expired copyright problems around for closing
         cal.add(Calendar.DAY_OF_MONTH, -7);
         String cpOldSection = enWiki.getSectionText(CP, 2);
-        enWiki.edit(CP, cpOldSection + "{{" + createCPPageName(cal) + "}}\n", "edit summary", false, 2);
+        enWiki.edit(CP, cpOldSection + "{{" + createCPPageName(cal) + "}}\n", "edit summary", false, false, 2);
     }
 
     public static String createCPPageName(GregorianCalendar date)
