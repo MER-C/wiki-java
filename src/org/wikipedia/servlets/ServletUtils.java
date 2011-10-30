@@ -41,7 +41,7 @@ public class ServletUtils
         sb.append("Software Foundation, either version 3 of the License, or (at ");
         sb.append("your\noption) any later version.\n<p>Source code is available ");
         sb.append("<a href=\"http://code.google.com/p/wiki-java\">here</a>. Report ");
-        sb.append("bugs at <a href=\"http://en.wikipedia.org/wiki/User_talk:MER-C\">my ");
+        sb.append("bugs at <a href=\"//en.wikipedia.org/wiki/User_talk:MER-C\">my ");
         sb.append("talk page</a>\n(fast) or the tracker associated with the source ");
         sb.append("(slow).\n\n</body>\n</html>");
         return sb.toString();

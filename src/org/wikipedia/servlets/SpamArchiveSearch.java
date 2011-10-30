@@ -115,7 +115,7 @@ public class SpamArchiveSearch extends HttpServlet
         for (int i = 0; i < results.size(); i++)
         {
             String[] result = results.get(i);
-            buffer.append("<li><a href=\"http://");
+            buffer.append("<li><a href=\"//");
             buffer.append(result[0].contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia");
             buffer.append(".org/wiki/");
             buffer.append(result[0]);
