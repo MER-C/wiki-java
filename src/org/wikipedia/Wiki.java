@@ -1495,7 +1495,8 @@ public class Wiki implements Serializable
      *  @param title the title of the page
      *  @return one of namespace types above, or a number for custom
      *  namespaces or ALL_NAMESPACES if we can't make sense of it
-     *  @throws IOException if a network error occurs
+     *  @throws IOException if a network error occurs while populating the
+     *  namespace cache
      *  @see #namespaceIdentifier(int)
      *  @since 0.03
      */
@@ -3187,12 +3188,10 @@ public class Wiki implements Serializable
     public synchronized void upload(File file, String filename, String contents, String reason) throws IOException, LoginException
     {
         // TODO: upload via URL
-        // WORK IN PROGRESS! (WMF slow scapping doesn't help.)
 
         // the usual stuff
         // throttle
         long start = System.currentTimeMillis();
-        String filename2 = URLEncoder.encode(filename, "UTF-8");
 
         // check for log in
         if (user == null || !user.isAllowedTo("upload"))
@@ -3215,13 +3214,6 @@ public class Wiki implements Serializable
         }
         String wpEditToken = (String)info.get("token");
 
-        // prepare MIME type
-        String extension = filename2.substring(filename2.length() - 3).toUpperCase().toLowerCase();
-        if (extension.equals("jpg"))
-            extension = "jpeg";
-        else if (extension.equals("svg"))
-            extension += "+xml";
-
         // upload the image
         // this is how we do multipart post requests, by the way
         // see also: http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
@@ -3235,41 +3227,43 @@ public class Wiki implements Serializable
         connection.connect();
 
         // send data
+        // DO NOT URL ENCODE STUFF HERE see http://en.wikipedia.org/w/index.php?title=User_talk:MER-C&oldid=458392157#wiki.java
+        // DataOutputStream writes bytes literally. There is no need to employ percent encoding.
         boundary = "--" + boundary + "\r\n";
         DataOutputStream out = new DataOutputStream(connection.getOutputStream());
         // DataOutputStream out = new DataOutputStream(System.out);
         out.writeBytes(boundary);
         // filename
-        out.writeBytes("Content-Disposition: form-data; name=\"filename\"\r\n\r\n");
-        out.writeBytes(filename2);
+        out.writeBytes("Content-Disposition: form-data; name=\"filename\"\r\n");
+        out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+        out.writeBytes(filename);
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
         // edit token
         out.writeBytes("Content-Disposition: form-data; name=\"token\"\r\n\r\n");
-        out.writeBytes(URLEncoder.encode(wpEditToken, "UTF-8"));
+        out.writeBytes(wpEditToken);
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
-        // reason (awaiting scap)
+        // reason
         if (!reason.isEmpty())
         {
-            out.writeBytes("Content-Disposition: form-data; name=\"comment\"\r\n\r\n");
-            out.writeBytes(URLEncoder.encode(reason, "UTF-8"));
+            out.writeBytes("Content-Disposition: form-data; name=\"comment\"\r\n");
+            out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+            out.writeBytes(reason);
             out.writeBytes("\r\n");
             out.writeBytes(boundary);
         }
         // description page
         out.writeBytes("Content-Disposition: form-data; name=\"text\"\r\n");
-        out.writeBytes("Content-Type: text/plain\r\n\r\n");
+        out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
         out.writeBytes(contents);
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
         // the actual file
         out.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"");
-        out.writeBytes(URLEncoder.encode(file.getName(), "UTF-8"));
+        out.writeBytes(file.getName());
         out.writeBytes("\"\r\n");
-        out.writeBytes("Content-Type: image/");
-        out.writeBytes(extension);
-        out.writeBytes("\r\n\r\n");
+        out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
         FileInputStream fi = new FileInputStream(file);
         byte[] by = new byte[fi.available()];
         fi.read(by);
@@ -3313,6 +3307,7 @@ public class Wiki implements Serializable
         {
             // nobody cares
         }
+        log(Level.INFO, "Successfully uploaded to File:" + filename + ".", "upload");
     }
 
     // USER METHODS
