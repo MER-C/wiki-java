@@ -199,16 +199,36 @@ public class Wiki implements Serializable
      *  prefix "File:". Do not create these directly, use upload() instead.
      *  (This namespace used to have the prefix "Image:", hence the name.)
      *  @see MEDIA_NAMESPACE
-     *  @since 0.03
+     *  @since 0.25
      */
-    public static final int IMAGE_NAMESPACE = 6;
+    public static final int FILE_NAMESPACE = 6;
+
+    /**
+     *  Denotes talk pages for image description pages. Has the prefix
+     *  "File talk:".
+     *  @since 0.25
+     */
+    public static final int FILE_TALK_NAMESPACE = 7;
+
+    /**
+     *  Denotes the namespace for image/file description pages. Has the prefix
+     *  prefix "File:". Do not create these directly, use upload() instead.
+     *  (This namespace used to have the prefix "Image:", hence the name.)
+     *  @see MEDIA_NAMESPACE
+     *  @since 0.03
+     *  @deprecated use FILE_NAMESPACE
+     */
+    @Deprecated
+    public static final int IMAGE_NAMESPACE = FILE_NAMESPACE;
 
     /**
      *  Denotes talk pages for image description pages. Has the prefix
      *  "File talk:".
      *  @since 0.03
+     *  @deprecated use FILE_TALK_NAMESPACE
      */
-    public static final int IMAGE_TALK_NAMESPACE = 7;
+    @Deprecated
+    public static final int IMAGE_TALK_NAMESPACE = FILE_TALK_NAMESPACE;
 
     /**
      *  Denotes the namespace for (wiki) system messages, given the prefix
@@ -2260,9 +2280,11 @@ public class Wiki implements Serializable
      */
     public Revision getTopRevision(String title) throws IOException
     {
-        String url = query + "action=query&prop=revisions&titles=" + URLEncoder.encode(title, "UTF-8")
-            + "&rvlimit=1&rvtoken=rollback";
-        String line = fetch(url, "getTopRevision", true);
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&prop=revisions&rvlimit=1&rvtoken=rollback&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        String line = fetch(url.toString(), "getTopRevision", true);
         int a = line.indexOf("<rev");
         int b = line.indexOf("/>", a);
         return parseRevision(line.substring(a, b), title);
@@ -2277,8 +2299,11 @@ public class Wiki implements Serializable
      */
     public Revision getFirstRevision(String title) throws IOException
     {
-        String url = query + "action=query&prop=revisions&rvlimit=1&rvdir=newer&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getFirstRevision", false);
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&prop=revisions&rvlimit=1&rvdir=newer&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        String line = fetch(url.toString(), "getFirstRevision", false);
         int a = line.indexOf("<rev");
         int b = line.indexOf("/>", a);
         return parseRevision(line.substring(a, b), title);
@@ -2315,6 +2340,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&prop=revisions&rvlimit=max&titles=");
         url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
         if (end != null)
         {
             url.append("&rvend=");
@@ -2524,7 +2550,7 @@ public class Wiki implements Serializable
     public Revision getRevision(long oldid) throws IOException
     {
         // build url and connect
-        String url = query + "action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags&revids=" + oldid;
+        String url = query + "action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize&revids=" + oldid;
         String line = fetch(url, "getRevision", false);
         // check for deleted revisions
         if (line.contains("<badrevids>"))
@@ -2827,7 +2853,15 @@ public class Wiki implements Serializable
         boolean minor = xml.contains("minor=\"\"");
         boolean bot = xml.contains("bot=\"\"");
 
-        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot);
+        // size
+        if (xml.contains("newlen=")) // recentchanges
+            a = xml.indexOf("newlen=\"") + 8;
+        else
+            a = xml.indexOf("size=\"") + 6;
+        b = xml.indexOf('\"', a);
+        int size = Integer.parseInt(xml.substring(a, b));
+
+        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, size);
         if (xml.contains("rcid=\""))
         {
             // set rcid
@@ -3477,7 +3511,8 @@ public class Wiki implements Serializable
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
-        temp.append("action=query&list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids&uclimit=max&");
+        temp.append("action=query&list=usercontribs&uclimit=max");
+        temp.append("&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize&");
         if (prefix.isEmpty())
         {
             temp.append("ucuser=");
@@ -5090,7 +5125,7 @@ public class Wiki implements Serializable
     protected Revision[] recentChanges(int amount, int namespace, int rcoptions, boolean newpages) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment&rclimit=max");
+        url.append("action=query&list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes&rclimit=max");
         if (namespace != ALL_NAMESPACES)
         {
             url.append("&rcnamespace=");
@@ -5794,6 +5829,7 @@ public class Wiki implements Serializable
         private String user;
         private String title;
         private String rollbacktoken = null;
+        private int size = 0;
 
         /**
          *  Constructs a new Revision object.
@@ -5807,9 +5843,11 @@ public class Wiki implements Serializable
          *  use <tt>User.getUsername()</tt>)
          *  @param minor whether this was a minor edit
          *  @param bot whether this was a bot edit
+         *  @param size the size of the revision
          *  @since 0.17
          */
-        public Revision(long revid, Calendar timestamp, String title, String summary, String user, boolean minor, boolean bot)
+        public Revision(long revid, Calendar timestamp, String title, String summary, String user,
+            boolean minor, boolean bot, int size)
         {
             this.revid = revid;
             this.timestamp = timestamp;
@@ -5818,6 +5856,7 @@ public class Wiki implements Serializable
             this.user = user;
             this.title = title;
             this.bot = bot;
+            this.size = size;
         }
 
         /**
@@ -6070,6 +6109,16 @@ public class Wiki implements Serializable
         }
 
         /**
+         *  Gets the size of this revision in bytes.
+         *  @return see above
+         *  @since 0.25
+         */
+        public int getSize()
+        {
+            return size;
+        }
+
+        /**
          *  Returns a string representation of this revision.
          *  @return see above
          *  @since 0.17
@@ -6091,6 +6140,8 @@ public class Wiki implements Serializable
             sb.append(minor);
             sb.append(",bot=");
             sb.append(bot);
+            sb.append(",size=");
+            sb.append(size);
             sb.append(",rcid=");
             sb.append(rcid == -1 ? "unset" : rcid);
             sb.append(",rollbacktoken=");

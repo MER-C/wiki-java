@@ -37,7 +37,9 @@ public class WikiTests
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
-            
+        for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq"))
+            System.out.println(rev);
+
         // getPageInfo(): protected, cascade protected page
         HashMap<String, Object> blah = enWiki.getPageInfo("Main Page");
         for(Map.Entry<String, Object> entry : blah.entrySet())
@@ -93,16 +95,26 @@ public class WikiTests
         for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
 
-        System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
-        System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
- 
         for(String[] result : enWiki.search("WikiProject Spam zola enterprises", Wiki.PROJECT_TALK_NAMESPACE))
             System.out.println(Arrays.toString(result));
  
         System.out.println(enWiki.getSectionText("Wikipedia:Copyright_problems", 2));
 
         System.out.println(enWiki.parse("{{Main Page}}"));
- */
+
+        // getImage
         byte[] b = enWiki.getImage("GD - Yesterday.jpg");
+
+        System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
+        System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
+
+        // contribs
+        for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
+            System.out.println(revision);
+
+        // recentchanges
+        for (Wiki.Revision revision : enWiki.recentChanges(51))
+            System.out.println(revision);
+*/
     }
 }
