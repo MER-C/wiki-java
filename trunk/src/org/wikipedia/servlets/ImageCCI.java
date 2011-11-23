@@ -1,5 +1,5 @@
 /**
- *  @(#)ImageCCI.java 0.01 22/01/2011
+ *  @(#)ImageCCI.java 0.02 23/11/2011
  *  Copyright (C) 2011 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -32,6 +32,19 @@ import org.wikipedia.Wiki;
  */
 public class ImageCCI extends HttpServlet
 {
+    // wiki variables
+    private static final Wiki enWiki = new Wiki("en.wikipedia.org");
+    private static final Wiki commons = new Wiki("commons.wikimedia.org");
+
+    static
+    {
+         // non-compression is Google's fault
+        enWiki.setMaxLag(0);
+        enWiki.setUsingCompressedRequests(false);
+        commons.setMaxLag(0);
+        commons.setUsingCompressedRequests(false);
+    }
+
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
      *  which is in either the current or home directory.
@@ -97,10 +110,30 @@ public class ImageCCI extends HttpServlet
      */
     public static void churn(String user, StringBuilder buffer) throws IOException
     {
-        HashSet<String> wpUploads = conductCCI("en.wikipedia.org", user);
-        HashSet<String> commonsUploads = conductCCI("commons.wikimedia.org", user);
-        // remove all files that have been reuploaded to Commons by this user with the same name
+        // search enwiki upload log
+        Wiki.User wpuser = enWiki.getUser(user);
+        HashSet<String> wpUploads = new HashSet<String>(10000);
+        Wiki.LogEntry[] entries = enWiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, wpuser, "", Wiki.ALL_NAMESPACES);
+        for (int i = 0; i < entries.length; i++)
+            wpUploads.add((String)entries[i].getTarget());
+
+        // search commons upload log
+        Wiki.User comuser = commons.getUser(user);
+        HashSet<String> commonsUploads = new HashSet<String>(10000);
+        entries = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, comuser, "", Wiki.ALL_NAMESPACES);
+        for (int i = 0; i < entries.length; i++)
+            commonsUploads.add((String)entries[i].getTarget());
+
+        // search for transferred images
+        HashSet<String> commonsTransfer = new HashSet<String>(10000);
+        String[][] temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
+        for (int i = 0; i < temp.length; i++)
+            commonsTransfer.add(temp[i][0]);
+
+        // remove all files that have been reuploaded to Commons
         wpUploads.removeAll(commonsUploads);
+        wpUploads.removeAll(commonsTransfer);
+        commonsTransfer.removeAll(commonsUploads);
 
         // output results
         buffer.append("=== Uploads to en.wikipedia.org ===\n");
@@ -137,26 +170,23 @@ public class ImageCCI extends HttpServlet
             buffer.append(entry);
             buffer.append("]]\n");
         }
-    }
-
-    /**
-     *  Obtains a list of images the user <tt>u</tt> has uploaded.
-     *  @param w the wiki domain
-     *  @param u the user to survey
-     *  @return the list of images the user has uploaded
-     *  @throws IOException
-     */
-    public static HashSet conductCCI(String w, String u) throws IOException
-    {
-        Wiki wiki = new Wiki(w);
-        wiki.setMaxLag(0);
-        wiki.setUsingCompressedRequests(false); // this is Google's fault
-        Wiki.User user = wiki.getUser(u);
-        HashSet<String> list = new HashSet<String>(10000);
-
-        Wiki.LogEntry[] entries = wiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, user, "", Wiki.ALL_NAMESPACES);
-        for (int i = 0; i < entries.length; i++)
-            list.add((String)entries[i].getTarget());
-        return list;
+        buffer.append("\n=== Transferred files on commons.wikimedia.org ===\n");
+        buffer.append("WARNING: may be inaccurate, depending on username.\n");
+        i = 0;
+        for (String entry : commonsTransfer)
+        {
+            i++;
+            if (i % 20 == 1)
+            {
+                buffer.append("\n==== Transferred files ");
+                buffer.append(i);
+                buffer.append(" to ");
+                buffer.append(i + 19);
+                buffer.append(" ====\n");
+            }
+            buffer.append("*[[:");
+            buffer.append(entry);
+            buffer.append("]]\n");
+        }
     }
 }
