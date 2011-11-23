@@ -1719,7 +1719,7 @@ public class Wiki implements Serializable
     /**
      *  Edits a page by setting its text to the supplied value. This method is
      *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will not be marked as a bot edit.
+     *  throttle. The edit will be marked as a bot edit, if possible.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1736,7 +1736,33 @@ public class Wiki implements Serializable
      */
     public void edit(String title, String text, String summary, boolean minor) throws IOException, LoginException
     {
-        edit(title, text, summary, minor, false, -2);
+        edit(title, text, summary, minor, true, -2);
+    }
+
+    /**
+     *  Edits a page by setting its text to the supplied value. This method is
+     *  thread safe and blocks for a minimum time as specified by the
+     *  throttle. The edit will be marked as a bot edit, if possible.
+     *
+     *  @param text the text of the page
+     *  @param title the title of the page
+     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
+     *  longer than 200 characters are truncated server-side.
+     *  @param minor whether the edit should be marked as minor. See
+     *  [[Help:Minor edit]].
+     *  @param bot whether the edit should be marked as a bot edit (ignored if
+     *  one does not have the necessary permissions)
+     *  @throws IOException if a network error occurs
+     *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialException if page is protected and we can't edit it
+     *  @throws UnsupportedOperationException if you try to edit a Special: or a
+     *  Media: page
+     *  @see #getPageText
+     *  @since 0.25
+     */
+    public void edit(String title, String text, String summary, boolean minor, int section) throws IOException, LoginException
+    {
+        edit(title, text, summary, minor, true, section);
     }
 
     /**
@@ -1750,8 +1776,8 @@ public class Wiki implements Serializable
      *  longer than 200 characters are truncated server-side.
      *  @param minor whether the edit should be marked as minor. See
      *  [[Help:Minor edit]].
-     *  @param bot whether the edit should be marked as a bot edit (ignored if
-     *  one does not have the necessary permissions)
+     *  @param section the section to edit. Use -1 to specify a new section and
+     *  -2 to disable section editing.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1831,8 +1857,6 @@ public class Wiki implements Serializable
             buffer.append("&section=");
             buffer.append(section);
         }
-        if (user.isA("bot"))
-            buffer.append("&bot=1");
         String response = post(query + "action=edit", buffer.toString(), "edit");
 
         // done
