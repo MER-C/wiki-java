@@ -3146,7 +3146,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getImageHistory(String title) throws IOException
     {
-        String url = query + "action=query&prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" + title;
+        String url = query + "action=query&prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" + URLEncoder.encode(title, "UTF-8");
         String line = fetch(url, "getImageHistory", false);
         ArrayList<LogEntry> history = new ArrayList<LogEntry>(40);
         while (line.contains("<ii "))

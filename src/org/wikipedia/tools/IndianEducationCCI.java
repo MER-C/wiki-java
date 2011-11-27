@@ -70,7 +70,7 @@ public class IndianEducationCCI
             out.write("*{{user5|" + user + "}}\n");
             out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
                 ", Deleted edits: " + (editcount - contribs.length) + "\n\n");
-            // any user with over 50 live edits should be handled by the dedicated
+            // any user with over 200 live edits should be handled by the dedicated
             // contribution surveyor
             if (contribs.length >= 200)
             {
@@ -91,6 +91,11 @@ public class IndianEducationCCI
                     continue;
                 // compute diff size; too small => skip
                 Wiki.Revision[] history = enWiki.getPageHistory(title, revision.getTimestamp(), cal);
+                if (history.length == 0)
+                {
+                    System.out.println(user + " has contributions prior to the IEP.");
+                    continue;
+                }
                 int size = history.length == 1 ? revision.getSize() : revision.getSize() - history[1].getSize();
                 if (size < 150)
                     continue;
