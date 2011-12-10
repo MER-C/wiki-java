@@ -29,10 +29,10 @@ import javax.security.auth.login.*; // useful exception types
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
- *  Requires JDK 1.5 (5.0) or greater. Uses the <a
+ *  Requires JDK 1.6 (6.0) or greater. Uses the <a
  *  href="http://mediawiki.org/wiki/API">MediaWiki API</a> for most operations.
  *  It is recommended that the server runs the latest version of MediaWiki
- *  (1.18 SVN), otherwise some functions may not work.
+ *  (1.18), otherwise some functions may not work.
  *
  *  <p>
  *  A typical program would go something like this:
@@ -139,7 +139,7 @@ public class Wiki implements Serializable
     /**
      *  Denotes the namespace of images and media, such that there is no
      *  description page. Uses the "Media:" prefix.
-     *  @see IMAGE_NAMESPACE
+     *  @see #FILE_NAMESPACE
      *  @since 0.03
      */
     public static final int MEDIA_NAMESPACE = -2;
@@ -198,7 +198,7 @@ public class Wiki implements Serializable
      *  Denotes the namespace for image/file description pages. Has the prefix
      *  prefix "File:". Do not create these directly, use upload() instead.
      *  (This namespace used to have the prefix "Image:", hence the name.)
-     *  @see MEDIA_NAMESPACE
+     *  @see #MEDIA_NAMESPACE
      *  @since 0.25
      */
     public static final int FILE_NAMESPACE = 6;
@@ -214,7 +214,7 @@ public class Wiki implements Serializable
      *  Denotes the namespace for image/file description pages. Has the prefix
      *  prefix "File:". Do not create these directly, use upload() instead.
      *  (This namespace used to have the prefix "Image:", hence the name.)
-     *  @see MEDIA_NAMESPACE
+     *  @see #MEDIA_NAMESPACE
      *  @since 0.03
      *  @deprecated use FILE_NAMESPACE
      */
@@ -289,62 +289,6 @@ public class Wiki implements Serializable
      *  @since 0.03
      */
     public static final int ALL_NAMESPACES = 0x09f91102;
-
-    // USER RIGHTS
-
-    /**
-     *  Denotes no user rights.
-     *  @see User#userRights()
-     *  @since 0.05
-     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-     */
-    @Deprecated
-    public static final int IP_USER = -1;
-
-    /**
-     *  Denotes a registered account.
-     *  @see User#userRights()
-     *  @since 0.05
-     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-     */
-    @Deprecated
-    public static final int REGISTERED_USER = 1;
-
-    /**
-     *  Denotes a user who has admin rights.
-     *  @see User#userRights()
-     *  @since 0.05
-     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-     */
-    @Deprecated
-    public static final int ADMIN = 2;
-
-    /**
-     *  Denotes a user who has bureaucrat rights.
-     *  @see User#userRights()
-     *  @since 0.05
-     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-     */
-    @Deprecated
-    public static final int BUREAUCRAT = 4;
-
-    /**
-     *  Denotes a user who has steward rights.
-     *  @see User#userRights()
-     *  @since 0.05
-     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-     */
-    @Deprecated
-    public static final int STEWARD = 8;
-
-    /**
-     *  Denotes a user who has a bot flag.
-     *  @see User#userRights()
-     *  @since 0.05
-     *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-     */
-    @Deprecated
-    public static final int BOT = 16;
 
     // LOG TYPES
 
@@ -432,7 +376,6 @@ public class Wiki implements Serializable
     /**
      *  Denotes full protection (i.e. only admins can edit this page)
      *  [edit=sysop;move=sysop].
-     *  @see User#userRights()
      *  @since 0.09
      */
     public static final int FULL_PROTECTION = 2;
@@ -441,8 +384,6 @@ public class Wiki implements Serializable
      *  Denotes move protection (i.e. only admins can move this page) [move=sysop].
      *  We don't define semi-move protection because only autoconfirmed users
      *  can move pages anyway.
-     *
-     *  @see User#userRights()
      *  @since 0.09
      */
     public static final int MOVE_PROTECTION = 3;
@@ -453,7 +394,6 @@ public class Wiki implements Serializable
      *  Naturally, this value (4) is equal to SEMI_PROTECTION (1) +
      *  MOVE_PROTECTION (3).
      *
-     *  @see User#userRights()
      *  @since 0.09
      */
     public static final int SEMI_AND_MOVE_PROTECTION = 4;
@@ -543,21 +483,21 @@ public class Wiki implements Serializable
 
     /**
      *  In <tt>Revision.diff()</tt>, denotes the next revision.
-     *  @see #Revision.diff
+     *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
      *  @since 0.21
      */
     public static final long NEXT_REVISION = -1L;
 
     /**
      *  In <tt>Revision.diff()</tt>, denotes the current revision.
-     *  @see #Revision.diff
+     *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
      *  @since 0.21
      */
     public static final long CURRENT_REVISION = -2L;
 
     /**
      *  In <tt>Revision.diff()</tt>, denotes the previous revision.
-     *  @see #Revision.diff
+     *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
      *  @since 0.21
      */
     public static final long PREVIOUS_REVISION = -3L;
@@ -828,45 +768,29 @@ public class Wiki implements Serializable
     @Override
     public String toString()
     {
-        try
-        {
-            // domain
-            StringBuilder buffer = new StringBuilder("Wiki[domain=");
-            buffer.append(domain);
+        // domain
+        StringBuilder buffer = new StringBuilder("Wiki[domain=");
+        buffer.append(domain);
 
-            // user
-            buffer.append(",user=");
-            if (user != null)
-            {
-                buffer.append(user.getUsername());
-                buffer.append("[rights=");
-                buffer.append(user.userRights());
-                buffer.append("],");
-            }
-            else
-                buffer.append("null,");
+        // user
+        buffer.append(",user=");
+        buffer.append(user.toString());
+        buffer.append(",");
 
-            // throttle mechanisms
-            buffer.append("throttle=");
-            buffer.append(throttle);
-            buffer.append(",maxlag=");
-            buffer.append(maxlag);
-            buffer.append(",assertionMode=");
-            buffer.append(assertion);
-            buffer.append(",statusCheckInterval=");
-            buffer.append(statusinterval);
-            buffer.append(",cookies=");
-            buffer.append(cookies);
-            buffer.append(",cookies2=");
-            buffer.append(cookies2);
-            return buffer.toString();
-        }
-        catch (IOException ex)
-        {
-            // this shouldn't happen due to the user rights cache
-            logger.logp(Level.SEVERE, "Wiki", "toString()", "Cannot retrieve user rights!", ex);
-            return "";
-        }
+        // throttle mechanisms
+        buffer.append("throttle=");
+        buffer.append(throttle);
+        buffer.append(",maxlag=");
+        buffer.append(maxlag);
+        buffer.append(",assertionMode=");
+        buffer.append(assertion);
+        buffer.append(",statusCheckInterval=");
+        buffer.append(statusinterval);
+        buffer.append(",cookies=");
+        buffer.append(cookies);
+        buffer.append(",cookies2=");
+        buffer.append(cookies2);
+        return buffer.toString();
     }
 
     /**
@@ -1386,7 +1310,7 @@ public class Wiki implements Serializable
                 return "MediaWiki talk:" + title;
             case HELP_NAMESPACE:
                 return "Help talk:" + title;
-            case IMAGE_NAMESPACE:
+            case FILE_NAMESPACE:
                 return "File talk:" + title;
         }
         return "";
@@ -1750,8 +1674,8 @@ public class Wiki implements Serializable
      *  longer than 200 characters are truncated server-side.
      *  @param minor whether the edit should be marked as minor. See
      *  [[Help:Minor edit]].
-     *  @param bot whether the edit should be marked as a bot edit (ignored if
-     *  one does not have the necessary permissions)
+     *  @param section the section to edit. Use -1 to specify a new section and
+     *  -2 to disable section editing.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1776,8 +1700,8 @@ public class Wiki implements Serializable
      *  longer than 200 characters are truncated server-side.
      *  @param minor whether the edit should be marked as minor. See
      *  [[Help:Minor edit]].
-     *  @param section the section to edit. Use -1 to specify a new section and
-     *  -2 to disable section editing.
+     *  @param bot whether the edit should be marked as a bot edit (ignored if
+     *  one does not have the necessary permissions)
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -2281,21 +2205,6 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the creator of a page. Note the return value here is <tt>String
-     *  </tt>, as we cannot assume the creator has an account.
-     *  @param title the title of the page to fetch the creator for
-     *  @return the creator of that page
-     *  @throws IOException if a network error occurs
-     *  @since 0.18
-     *  @deprecated replaced with <tt>getFirstRevision(title).getUser()</tt>
-     */
-    @Deprecated
-    public String getPageCreator(String title) throws IOException
-    {
-        return getFirstRevision(title).getUser();
-    }
-
-    /**
      *  Gets the most recent revision of a page.
      *  @param title a page
      *  @return the most recent revision of that page
@@ -2470,7 +2379,7 @@ public class Wiki implements Serializable
 
         // check namespace
         int ns = namespace(title);
-        if (ns == IMAGE_NAMESPACE || ns == CATEGORY_NAMESPACE)
+        if (ns == FILE_NAMESPACE || ns == CATEGORY_NAMESPACE)
             throw new UnsupportedOperationException("Tried to move a category/image.");
         // TODO: image renaming? TEST ME (MediaWiki, that is).
 
@@ -3136,7 +3045,7 @@ public class Wiki implements Serializable
     /**
      *  Returns the upload history of an image. This is not the same as
      *  <tt>getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG,
-     *  title, Wiki.IMAGE_NAMESPACE)</tt>, as the image may have been deleted.
+     *  title, Wiki.FILE_NAMESPACE)</tt>, as the image may have been deleted.
      *  This returns only the live history of an image.
      *
      *  @param title the title of the image, excluding the File prefix
@@ -5334,8 +5243,7 @@ public class Wiki implements Serializable
     public class User implements Cloneable
     {
         private String username;
-        private int rights = -484; // cache for userRights()
-        private String[] rights2 = null; // cache
+        private String[] rights = null; // cache
         private String[] groups = null; // cache
 
         /**
@@ -5352,74 +5260,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Gets a user's rights. Returns a bitmark of the user's rights.
-         *  See fields above (be aware that IP_USER = -1, but you shouldn't
-         *  be calling from a null object anyway). Uses the cached value for
-         *  speed.
-         *
-         *  @return a bitwise mask of the user's rights.
-         *  @throws IOException if a network error occurs
-         *  @since 0.05
-         *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-         */
-        @Deprecated
-        public int userRights() throws IOException
-        {
-            return userRights(true);
-        }
-
-        /**
-         *  Gets a user's rights. Returns a bitmark of the user's rights.
-         *  See fields above (be aware that IP_USER = -1, but you
-         *  shouldn't be calling from a null object anyway). The value
-         *  returned is cached which is returned by default, specify
-         *  <tt>cache = false</tt> to retrieve a new one.
-         *
-         *  @return a bitwise mask of the user's rights.
-         *  @throws IOException if a network error occurs
-         *  @param cache whether we should use the cached value
-         *  @since 0.07
-         *  @deprecated replaced with getUserInfo().get("groups"). Will be removed in 0.25.
-         */
-        @Deprecated
-        public int userRights(boolean cache) throws IOException
-        {
-            // retrieve cache (if valid)
-            if (cache && rights != -484)
-                return rights;
-
-            // begin
-            String url = query + "action=query&list=users&usprop=groups&ususers=" + URLEncoder.encode(username, "UTF-8");
-            String line = fetch(url, "User.userRights", false);
-
-            // parse
-            ArrayList<String> members = new ArrayList<String>(10);
-            while (line.contains("<g>"))
-            {
-                int x = line.indexOf("<g>");
-                int y = line.indexOf("</g>");
-                members.add(line.substring(x + 3, y));
-                line = line.substring(y + 4);
-            }
-            log(Level.INFO, "Successfully retrived user rights for " + username, "User.userRights");
-
-            int ret = 1;
-            if (members.contains("sysop"))
-                ret += ADMIN;
-            if (members.contains("bureaucrat"))
-                ret += BUREAUCRAT;
-            if (members.contains("steward"))
-                ret += STEWARD;
-            if (members.contains("bot"))
-                ret += BOT;
-
-            // store
-            rights = ret;
-            return ret;
-        }
-
-        /**
-         *  Gets this user's username. (Should have implemented this earlier).
+         *  Gets this user's username.
          *  @return this user's username
          *  @since 0.08
          */
@@ -5493,7 +5334,7 @@ public class Wiki implements Serializable
             temp2 = temp.toArray(new String[0]);
             // cache
             if (this.equals(getCurrentUser()))
-                rights2 = temp2;
+                rights = temp2;
             ret.put("rights", temp2);
             return ret;
         }
@@ -5511,10 +5352,9 @@ public class Wiki implements Serializable
         {
             // We can safely assume the user is allowed to { read, edit, create,
             // writeapi }.
-            String[] rs = rights2;
-            if (rights2 == null)
-                rs = (String[])getUserInfo().get("rights");
-            for (String r : rs)
+            if (rights == null)
+                rights = (String[])getUserInfo().get("rights");
+            for (String r : rights)
                 if (r.equals(right))
                     return true;
             return false;
@@ -5530,10 +5370,9 @@ public class Wiki implements Serializable
          */
         public boolean isA(String group) throws IOException
         {
-            String[] gs = groups;
             if (groups == null)
-                gs = (String[])getUserInfo().get("groups");
-            for (String g : gs)
+                groups = (String[])getUserInfo().get("groups");
+            for (String g : groups)
                 if (g.equals(group))
                     return true;
             return false;
@@ -5636,7 +5475,12 @@ public class Wiki implements Serializable
         @Override
         public String toString()
         {
-            return "User[username=" + username + ",rights=" + (rights == -484 ? "unset" : rights) + "]";
+            StringBuilder temp = new StringBuilder("User[username=");
+            temp.append(username);
+            temp.append("groups=");
+            temp.append(groups != null ? Arrays.toString(groups) : "unset");
+            temp.append("]");
+            return temp.toString();
         }
 
         /**
@@ -5924,21 +5768,6 @@ public class Wiki implements Serializable
             String temp = fetch(url, "Revision.getRenderedText", false);
             log(Level.INFO, "Successfully retrieved rendered text of revision " + revid, "Revision.getRenderedText");
             return decode(temp);
-        }
-
-        /**
-         *  Determines whether this Revision is the most recent revision of
-         *  the relevant page.
-         *
-         *  @return see above
-         *  @throws IOException if a network error occurs
-         *  @since 0.17
-         *  @deprecated replaced by <tt>rev.equals(getTopRevision(rev.getPage())</tt>
-         */
-        @Deprecated
-        public boolean isTop() throws IOException
-        {
-            return equals(getTopRevision(title));
         }
 
         /**
@@ -6597,7 +6426,7 @@ public class Wiki implements Serializable
 
     /**
      *  Change the logging level of this object's Logger object.
-     *  @param Level
+     *  @param level the new logging level
      *  @since 0.24
      */
     public void setLogLevel(Level level)
