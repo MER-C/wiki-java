@@ -1,6 +1,6 @@
 /**
- *  @(#)Wiki.java 0.24 05/09/2011
- *  Copyright (C) 2007 - 2011 MER-C and contributors
+ *  @(#)Wiki.java 0.25 17/12/2011
+ *  Copyright (C) 2007 - 2012 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -130,7 +130,7 @@ import javax.security.auth.login.*; // useful exception types
  *  <!-- all wikilinks are relative to the English Wikipedia -->
  *
  *  @author MER-C and contributors
- *  @version 0.24
+ *  @version 0.25
  */
 public class Wiki implements Serializable
 {
@@ -531,7 +531,7 @@ public class Wiki implements Serializable
         unknown;
     }
 
-    private static final String version = "0.24";
+    private static final String version = "0.25";
 
     // the domain of the wiki
     protected String domain, query, base, apiUrl;
@@ -1286,6 +1286,8 @@ public class Wiki implements Serializable
      */
     public String getTalkPage(String title) throws IOException
     {
+        // It is convention that talk namespaces are the original namespace + 1
+        // and are odd integers.
         int namespace = namespace(title);
         if (namespace % 2 == 1)
             throw new IllegalArgumentException("Cannot fetch talk page of a talk page!");
@@ -1293,27 +1295,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Special: and Media: pages do not have talk pages!");
         if (namespace != MAIN_NAMESPACE) // remove the namespace
             title = title.substring(title.indexOf(':') + 1);
-
-        switch(namespace)
-        {
-            case MAIN_NAMESPACE:
-                return "Talk:" + title;
-            case USER_NAMESPACE:
-                return "User talk:" + title;
-            case PROJECT_NAMESPACE:
-                return "Project talk:" + title;
-            case TEMPLATE_NAMESPACE:
-                return "Template talk:" + title;
-            case CATEGORY_NAMESPACE:
-                return "Category talk:" + title;
-            case MEDIAWIKI_NAMESPACE:
-                return "MediaWiki talk:" + title;
-            case HELP_NAMESPACE:
-                return "Help talk:" + title;
-            case FILE_NAMESPACE:
-                return "File talk:" + title;
-        }
-        return "";
+        return namespaceIdentifier(namespace + 1) + ":" + title;
     }
 
     /**
