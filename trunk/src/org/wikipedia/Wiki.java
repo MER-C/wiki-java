@@ -539,7 +539,6 @@ public class Wiki implements Serializable
 
     // user management
     private HashMap<String, String> cookies = new HashMap<String, String>(12);
-    private HashMap<String, String> cookies2 = new HashMap<String, String>(10);
     private User user;
     private int statuscounter = 0;
 
@@ -774,7 +773,7 @@ public class Wiki implements Serializable
 
         // user
         buffer.append(",user=");
-        buffer.append(user.toString());
+        buffer.append(user != null ? user.toString() : "null");
         buffer.append(",");
 
         // throttle mechanisms
@@ -788,8 +787,7 @@ public class Wiki implements Serializable
         buffer.append(statusinterval);
         buffer.append(",cookies=");
         buffer.append(cookies);
-        buffer.append(",cookies2=");
-        buffer.append(cookies2);
+        buffer.append("]");
         return buffer.toString();
     }
 
@@ -897,21 +895,12 @@ public class Wiki implements Serializable
 
         // Scrape a login token from Special:Userlogin. Login tokens should be
         // available through prop=info !
-        String blah = fetch(base + "Special:Userlogin", "login", true);
+        String blah = fetch(base + "Special:Userlogin", "login");
         int a = blah.indexOf("wpLoginToken") + 21;
         int b = blah.indexOf('\"', a);
         String wpLoginToken = blah.substring(a, b);
 
-        // start
-        String url = query + "action=login";
-        URLConnection connection = new URL(url).openConnection();
-        logurl(url, "login");
-        setCookies(connection, cookies2);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
+        // post login request
         StringBuilder buffer = new StringBuilder(500);
         buffer.append("lgname=");
         buffer.append(URLEncoder.encode(username, "UTF-8"));
@@ -919,18 +908,10 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(new String(password), "UTF-8"));
         buffer.append("&lgtoken=");
         buffer.append(URLEncoder.encode(wpLoginToken, "UTF-8"));
-        out.write(buffer.toString());
-        out.close();
+        String line = post(query + "action=login", buffer.toString(), "login");
 
-        // get the cookies. Note: no post() here because of this line!
-        grabCookies(connection, cookies);
-
-        // determine success
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));String line = in.readLine();
-        boolean success = line.contains("result=\"Success\"");
-        in.close();
-        if (success)
+        // check for success
+        if (line.contains("result=\"Success\""))
         {
             user = new User(username);
             boolean apihighlimit = user.isAllowedTo("apihighlimits");
@@ -967,7 +948,6 @@ public class Wiki implements Serializable
     public synchronized void logout()
     {
         cookies.clear();
-        cookies2.clear();
         user = null;
         max = 500;
         log(Level.INFO, "Logged out", "logout");
@@ -988,7 +968,7 @@ public class Wiki implements Serializable
      */
     public synchronized void logoutServerSide() throws IOException
     {
-        fetch(query + "action=logout", "logoutServerSide", false);
+        fetch(query + "action=logout", "logoutServerSide");
         logout(); // destroy local cookies
     }
 
@@ -1002,7 +982,7 @@ public class Wiki implements Serializable
     public boolean hasNewMessages() throws IOException
     {
         String url = query + "action=query&meta=userinfo&uiprop=hasmsg";
-        return fetch(url, "hasNewMessages", false).contains("messages=\"\"");
+        return fetch(url, "hasNewMessages").contains("messages=\"\"");
     }
 
     /**
@@ -1015,7 +995,7 @@ public class Wiki implements Serializable
      */
     public int getCurrentDatabaseLag() throws IOException
     {
-        String line = fetch(query + "action=query&meta=siteinfo&siprop=dbrepllag", "getCurrentDatabaseLag", false);
+        String line = fetch(query + "action=query&meta=siteinfo&siprop=dbrepllag", "getCurrentDatabaseLag");
         int z = line.indexOf("lag=\"") + 5;
         String lag = line.substring(z, line.indexOf("\" />", z));
         log(Level.INFO, "Current database replication lag is " + lag + " seconds", "getCurrentDatabaseLag");
@@ -1130,7 +1110,7 @@ public class Wiki implements Serializable
         // fetch
         String url = query + "action=query&list=random";
         url += (namespace == ALL_NAMESPACES ? "" : "&rnnamespace=" + namespace);
-        String line = fetch(url, "random", false);
+        String line = fetch(url, "random");
 
         // parse
         int a = line.indexOf("title=\"") + 7;
@@ -1328,7 +1308,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&prop=info&intoken=edit&inprop=protection%7Cdisplaytitle&titles=");
         url.append(URLEncoder.encode(page, "UTF-8"));
-        String line = fetch(url.toString(), "getPageInfo", true);
+        String line = fetch(url.toString(), "getPageInfo");
         HashMap<String, Object> info = new HashMap<String, Object>(15);
 
         // does the page exist?
@@ -1486,7 +1466,7 @@ public class Wiki implements Serializable
      */
     protected void populateNamespaceCache() throws IOException
     {
-        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces", "namespace", false);
+        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces", "namespace");
         namespaces = new HashMap<String, Integer>(30);
         while (line.contains("<ns"))
         {
@@ -1572,7 +1552,7 @@ public class Wiki implements Serializable
 
         // go for it
         String url = base + URLEncoder.encode(title, "UTF-8") + "&action=raw";
-        String temp = fetch(url, "getPageText", false);
+        String temp = fetch(url, "getPageText");
         log(Level.INFO, "Successfully retrieved text of " + title, "getPageText");
         return decode(temp);
     }
@@ -1593,7 +1573,7 @@ public class Wiki implements Serializable
         url.append(URLEncoder.encode(title, "UTF-8"));
         url.append("&rvsection=");
         url.append(number);
-        String text = fetch(url.toString(), "getSectionText", false);
+        String text = fetch(url.toString(), "getSectionText");
         if (text.contains("<error code=\"rvnosuchsection\""))
             throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         int a = text.indexOf("<rev xml:space=\"preserve\">") + 26;
@@ -1948,7 +1928,7 @@ public class Wiki implements Serializable
             else
                 log.append("\" }");
         }
-        fetch(url.toString(), "purge", false);
+        fetch(url.toString(), "purge");
         // System.out.writeln(fetch(url.toString(), "purge", false)); // for debugging purposes
         log(Level.INFO, log.toString(), "purge"); // done, log
     }
@@ -1966,7 +1946,7 @@ public class Wiki implements Serializable
     public String[] getImagesOnPage(String title) throws IOException
     {
         String url = query + "action=query&prop=images&imlimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getImagesOnPage", false);
+        String line = fetch(url, "getImagesOnPage");
 
         // parse the list
         // typical form: <im ns="6" title="File:Example.jpg" />
@@ -1995,7 +1975,7 @@ public class Wiki implements Serializable
     public String[] getCategories(String title) throws IOException
     {
         String url = query + "action=query&prop=categories&cllimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getCategories", false);
+        String line = fetch(url, "getCategories");
 
         // parse the list
         // typical form: <cl ns="14" title="Category:1879 births" />
@@ -2042,7 +2022,7 @@ public class Wiki implements Serializable
         String url = query + "action=query&prop=templates&tllimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
         if (namespace != ALL_NAMESPACES)
             url += ("&tlnamespace=" + namespace);
-        String line = fetch(url, "getTemplates", false);
+        String line = fetch(url, "getTemplates");
 
         // parse the list
         // typical form: <tl ns="10" title="Template:POTD" />
@@ -2072,7 +2052,7 @@ public class Wiki implements Serializable
     public HashMap<String, String> getInterwikiLinks(String title) throws IOException
     {
         String url = query + "action=parse&prop=langlinks&llimit=max&page=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getInterwikiLinks", false);
+        String line = fetch(url, "getInterwikiLinks");
 
         // parse the list
         // typical form: <ll lang="en" />Main Page</ll>
@@ -2116,7 +2096,7 @@ public class Wiki implements Serializable
                 url.append(plcontinue);
             }
 
-            String line = fetch(url.toString(), "getLinksOnPage", false);
+            String line = fetch(url.toString(), "getLinksOnPage");
 
             // strip continuation
             if (line.contains("plcontinue"))
@@ -2163,7 +2143,7 @@ public class Wiki implements Serializable
     public LinkedHashMap<String, String> getSectionMap(String page) throws IOException
     {
         String url = query + "action=parse&text={{:" + URLEncoder.encode(page, "UTF-8") + "}}__TOC__&prop=sections";
-        String line = fetch(url, "getSectionMap", false);
+        String line = fetch(url, "getSectionMap");
 
         // expected format: <s toclevel="1" level="2" line="How to nominate" number="1" />
         LinkedHashMap<String, String> map = new LinkedHashMap<String, String>(30);
@@ -2199,7 +2179,7 @@ public class Wiki implements Serializable
         url.append("action=query&prop=revisions&rvlimit=1&rvtoken=rollback&titles=");
         url.append(URLEncoder.encode(title, "UTF-8"));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
-        String line = fetch(url.toString(), "getTopRevision", true);
+        String line = fetch(url.toString(), "getTopRevision");
         int a = line.indexOf("<rev");
         int b = line.indexOf("/>", a);
         return parseRevision(line.substring(a, b), title);
@@ -2218,7 +2198,7 @@ public class Wiki implements Serializable
         url.append("action=query&prop=revisions&rvlimit=1&rvdir=newer&titles=");
         url.append(URLEncoder.encode(title, "UTF-8"));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
-        String line = fetch(url.toString(), "getFirstRevision", false);
+        String line = fetch(url.toString(), "getFirstRevision");
         int a = line.indexOf("<rev");
         int b = line.indexOf("/>", a);
         return parseRevision(line.substring(a, b), title);
@@ -2276,7 +2256,7 @@ public class Wiki implements Serializable
                 temp += ("id=" + rvstart);
             else
                 temp += rvstart;
-            String line = fetch(temp, "getPageHistory", false);
+            String line = fetch(temp, "getPageHistory");
 
             // set continuation parameter
             if (line.contains("rvstartid=\""))
@@ -2447,7 +2427,7 @@ public class Wiki implements Serializable
      */
     public String export(String title) throws IOException
     {
-        return fetch(query + "action=query&export&exportnowrap&titles=" + URLEncoder.encode(title, "UTF-8"), "export", false);
+        return fetch(query + "action=query&export&exportnowrap&titles=" + URLEncoder.encode(title, "UTF-8"), "export");
     }
 
     // REVISION METHODS
@@ -2466,7 +2446,7 @@ public class Wiki implements Serializable
     {
         // build url and connect
         String url = query + "action=query&prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize&revids=" + oldid;
-        String line = fetch(url, "getRevision", false);
+        String line = fetch(url, "getRevision");
         // check for deleted revisions
         if (line.contains("<badrevids>"))
             return null;
@@ -2519,7 +2499,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
         statusCheck();
         // check if cookies have expired
-        if (cookies2.isEmpty())
+        if (!cookies.containsValue(user.getUsername()))
         {
             logger.log(Level.SEVERE, "Cookies have expired.");
             logout();
@@ -2921,7 +2901,7 @@ public class Wiki implements Serializable
         url.append(width);
         url.append("&iiurlheight=");
         url.append(height);
-        String line = fetch(url.toString(), "getImage", false);
+        String line = fetch(url.toString(), "getImage");
         int a = line.indexOf("url=\"") + 5;
         int b = line.indexOf('\"', a);
         String url2 = line.substring(a, b);
@@ -2929,7 +2909,7 @@ public class Wiki implements Serializable
         // then we use ImageIO to read from it
         logurl(url2, "getImage");
         URLConnection connection = new URL(url2).openConnection();
-        setCookies(connection, cookies);
+        setCookies(connection);
         connection.connect();
         // there should be a better way to do this
         BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
@@ -2963,7 +2943,7 @@ public class Wiki implements Serializable
 
         // fetch
         String url = query + "action=query&prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=File:" + URLEncoder.encode(file, "UTF-8");
-        String line = fetch(url, "getFileMetadata", false);
+        String line = fetch(url, "getFileMetadata");
         HashMap<String, Object> metadata = new HashMap<String, Object>(30);
 
         // size, width, height, mime type
@@ -3008,7 +2988,7 @@ public class Wiki implements Serializable
     public String[] getDuplicates(String file) throws IOException
     {
         String url = query + "action=query&prop=duplicatefiles&dflimit=max&titles=File:" + URLEncoder.encode(file, "UTF-8");
-        String line = fetch(url, "getDuplicates", false);
+        String line = fetch(url, "getDuplicates");
 
         // do the parsing
         // Expected format: <df name="Star-spangled_banner_002.ogg" other stuff >
@@ -3038,7 +3018,7 @@ public class Wiki implements Serializable
     public LogEntry[] getImageHistory(String title) throws IOException
     {
         String url = query + "action=query&prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getImageHistory", false);
+        String line = fetch(url, "getImageHistory");
         ArrayList<LogEntry> history = new ArrayList<LogEntry>(40);
         while (line.contains("<ii "))
         {
@@ -3078,7 +3058,7 @@ public class Wiki implements Serializable
         // no thumbnails for image history, sorry.
         String title = entry.getTarget();
         String url = query + "action=query&prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=File:" + title;
-        String line = fetch(url, "getOldImage", false);
+        String line = fetch(url, "getOldImage");
 
         // find the correct log entry by comparing timestamps
         while (line.contains("<ii "))
@@ -3094,7 +3074,7 @@ public class Wiki implements Serializable
                 url = line.substring(a, b);
                 logurl(url, "getOldImage");
                 URLConnection connection = new URL(url).openConnection();
-                setCookies(connection, cookies);
+                setCookies(connection);
                 connection.connect();
                 // there should be a better way to do this
                 BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
@@ -3171,7 +3151,7 @@ public class Wiki implements Serializable
         URLConnection connection = new URL(url).openConnection();
         String boundary = "----------NEXT PART----------";
         connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        setCookies(connection, cookies2);
+        setCookies(connection);
         connection.setDoOutput(true);
         connection.connect();
 
@@ -3273,7 +3253,7 @@ public class Wiki implements Serializable
     public boolean userExists(String username) throws IOException
     {
         username = URLEncoder.encode(username, "UTF-8");
-        return !fetch(query + "action=query&list=users&ususers=" + username, "userExists", false).contains("missing=\"\"");
+        return !fetch(query + "action=query&list=users&ususers=" + username, "userExists").contains("missing=\"\"");
     }
 
     /**
@@ -3297,7 +3277,7 @@ public class Wiki implements Serializable
         do
         {
             next = URLEncoder.encode(next, "UTF-8");
-            String line = fetch(url + next, "allUsers", false);
+            String line = fetch(url + next, "allUsers");
 
             // parse
             int a = line.indexOf("aufrom=\"") + 8;
@@ -3450,7 +3430,7 @@ public class Wiki implements Serializable
         // fetch data
         do
         {
-            String line = fetch(temp.toString() + ucstart, "contribs", false);
+            String line = fetch(temp.toString() + ucstart, "contribs");
 
             // set offset parameter
             int aa = line.indexOf("ucstart=\"") + 9;
@@ -3510,7 +3490,7 @@ public class Wiki implements Serializable
             return;
         }
         String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
-        if (cookies2.isEmpty())
+        if (!cookies.containsValue(user.getUsername()))
         {
             logger.log(Level.SEVERE, "Cookies have expired.");
             logout();
@@ -3612,7 +3592,7 @@ public class Wiki implements Serializable
         String url = query + "action=watch&title=" + URLEncoder.encode(title, "UTF-8");
         if (unwatch)
             url += "&unwatch";
-        fetch(url, state, false);
+        fetch(url, state);
         log(Level.INFO, "Successfully " + state + "ed " + title, state);
     }
 
@@ -3656,7 +3636,7 @@ public class Wiki implements Serializable
         // fetch the watchlist
         do
         {
-            String line = fetch(url + wrcontinue, "getRawWatchlist", false);
+            String line = fetch(url + wrcontinue, "getRawWatchlist");
             // set continuation parameter
             int a = line.indexOf("wrcontinue=\"") + 12;
             if (a > 12)
@@ -3746,7 +3726,7 @@ public class Wiki implements Serializable
         // fetch and iterate through the search results
         while (!done)
         {
-            String line = fetch(url.toString() + results.size(), "search", false);
+            String line = fetch(url.toString() + results.size(), "search");
 
             // if this is the last page of results then there is no sroffset parameter
             if (!line.contains("sroffset=\""))
@@ -3819,7 +3799,7 @@ public class Wiki implements Serializable
             // connect
             if (!pages.isEmpty())
                 next = "&iucontinue="  + next;
-            String line = fetch(url + next, "imageUsage", false);
+            String line = fetch(url + next, "imageUsage");
 
             // set continuation parameter
             if (line.contains("iucontinue"))
@@ -3906,7 +3886,7 @@ public class Wiki implements Serializable
         do
         {
             // fetch data
-            String line = fetch(temp + next, "whatLinksHere", false);
+            String line = fetch(temp + next, "whatLinksHere");
 
             // set next starting point
             if (line.contains("blcontinue"))
@@ -3968,7 +3948,7 @@ public class Wiki implements Serializable
         do
         {
             // fetch data
-            String line = fetch(url + next, "whatTranscludesHere", false);
+            String line = fetch(url + next, "whatTranscludesHere");
 
             // set next starting point
             if (line.contains("eicontinue"))
@@ -4034,7 +4014,7 @@ public class Wiki implements Serializable
         {
             if (!members.isEmpty())
                 next = "&cmcontinue=" + URLEncoder.encode(next, "UTF-8");
-            String line = fetch(url + next, "getCategoryMembers", false);
+            String line = fetch(url + next, "getCategoryMembers");
 
             // parse
             if (line.contains("cmcontinue"))
@@ -4147,7 +4127,7 @@ public class Wiki implements Serializable
         while (!done)
         {
             // if this is the last page of results then there is no euoffset parameter
-            String line = fetch(url.toString() + ret[0].size(), "linksearch", false);
+            String line = fetch(url.toString() + ret[0].size(), "linksearch");
             if (!line.contains("euoffset=\""))
                 done = true;
 
@@ -4248,7 +4228,7 @@ public class Wiki implements Serializable
         ArrayList<LogEntry> entries = new ArrayList<LogEntry>(1333);
         do
         {
-            String line = fetch(urlBase.toString() + bkstart, "getIPBlockList", false);
+            String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
 
             // set start parameter to new value if required
             if (line.contains("bkstart"))
@@ -4480,7 +4460,7 @@ public class Wiki implements Serializable
         ArrayList<LogEntry> entries = new ArrayList<LogEntry>(6667); // should be enough
         do
         {
-            String line = fetch(url.toString() + "&lestart=" + lestart, "getLogEntries", false);
+            String line = fetch(url.toString() + "&lestart=" + lestart, "getLogEntries");
 
             // set start parameter to new value
             if (line.contains("lestart=\""))
@@ -4871,7 +4851,7 @@ public class Wiki implements Serializable
             String s = url.toString();
             if (!next.isEmpty())
                 s += ("&apfrom=" + next);
-            String line = fetch(s, "listPages", false);
+            String line = fetch(s, "listPages");
 
             // don't set a continuation if no max, min, prefix or protection level
             if (maximum < 0 && minimum < 0 && prefix.isEmpty() && level == NO_PROTECTION)
@@ -5073,7 +5053,7 @@ public class Wiki implements Serializable
         do
         {
             String temp = url.toString();
-            String line = fetch(temp + rcstart, newpages ? "newPages" : "recentChanges", false);
+            String line = fetch(temp + rcstart, newpages ? "newPages" : "recentChanges");
 
             // set continuation parameter
             int a = line.indexOf("rcstart=\"") + 9;
@@ -5180,9 +5160,9 @@ public class Wiki implements Serializable
         {
             String line = "";
             if (iwblcontinue.isEmpty())
-                line = fetch(url.toString(), "getInterWikiBacklinks", false);
+                line = fetch(url.toString(), "getInterWikiBacklinks");
             else
-                line = fetch(url.toString() + "&iwblcontinue=" + iwblcontinue, "getInterWikiBacklinks", false);
+                line = fetch(url.toString() + "&iwblcontinue=" + iwblcontinue, "getInterWikiBacklinks");
 
             // set continuation parameter
             if(line.contains("iwblcontinue"))
@@ -5272,7 +5252,7 @@ public class Wiki implements Serializable
         public HashMap<String, Object> getUserInfo() throws IOException
         {
             String info = fetch(query + "action=query&list=users&usprop=editcount|groups|rights|emailable|blockinfo|gender&ususers="
-                + URLEncoder.encode(username, "UTF-8"), "getUserInfo", false);
+                + URLEncoder.encode(username, "UTF-8"), "getUserInfo");
             HashMap<String, Object> ret = new HashMap<String, Object>(10);
 
             // blocked
@@ -5725,7 +5705,7 @@ public class Wiki implements Serializable
 
             // go for it
             String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=raw";
-            String temp = fetch(url, "Revision.getText", false);
+            String temp = fetch(url, "Revision.getText");
             log(Level.INFO, "Successfully retrieved text of revision " + revid, "Revision.getText");
             return decode(temp);
         }
@@ -5747,7 +5727,7 @@ public class Wiki implements Serializable
 
             // go for it
             String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=render";
-            String temp = fetch(url, "Revision.getRenderedText", false);
+            String temp = fetch(url, "Revision.getRenderedText");
             log(Level.INFO, "Successfully retrieved rendered text of revision " + revid, "Revision.getRenderedText");
             return decode(temp);
         }
@@ -5794,7 +5774,7 @@ public class Wiki implements Serializable
             // send via POST
             URLConnection connection = new URL(query).openConnection();
             logurl(query, "Revision.diff");
-            setCookies(connection, cookies);
+            setCookies(connection);
             connection.setDoOutput(true);
             connection.connect();
             OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
@@ -6091,12 +6071,10 @@ public class Wiki implements Serializable
      *
      *  @param url the url to fetch
      *  @param caller the caller of this method
-     *  @param write whether we need to fetch the cookies from this connection
-     *  in a token-fetching exercise (edit() and friends)
      *  @throws IOException if a network error occurs
      *  @since 0.18
      */
-    protected String fetch(String url, String caller, boolean write) throws IOException
+    protected String fetch(String url, String caller) throws IOException
     {
         // check the database lag
         logurl(url, caller);
@@ -6135,17 +6113,11 @@ public class Wiki implements Serializable
         URLConnection connection = new URL(url).openConnection();
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
-        setCookies(connection, cookies);
+        setCookies(connection);
         connection.connect();
         BufferedReader in = new BufferedReader(new InputStreamReader(
             zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-
-        // get the cookies
-        if (write)
-        {
-            grabCookies(connection, cookies2);
-            cookies2.putAll(cookies);
-        }
+        grabCookies(connection);
 
         // get the text
         String line;
@@ -6172,7 +6144,7 @@ public class Wiki implements Serializable
     {
         logurl(url, caller);
         URLConnection connection = new URL(url).openConnection();
-        setCookies(connection, cookies2);
+        setCookies(connection);
         connection.setDoOutput(true);
         connection.connect();
         OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
@@ -6180,6 +6152,7 @@ public class Wiki implements Serializable
         out.close();
         BufferedReader in = new BufferedReader(new InputStreamReader(
             zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
+        grabCookies(connection);
         String line;
         StringBuilder temp = new StringBuilder(100000);
         while ((line = in.readLine()) != null)
@@ -6275,7 +6248,7 @@ public class Wiki implements Serializable
     protected boolean checkRights(int level, boolean move) throws IOException, CredentialException
     {
         // check if we are logged out
-        if (cookies2.isEmpty())
+        if (!cookies.containsValue(user.getUsername()))
         {
             logger.log(Level.SEVERE, "Cookies have expired");
             logout();
@@ -6340,12 +6313,11 @@ public class Wiki implements Serializable
      *  Sets cookies to an unconnected URLConnection and enables gzip
      *  compression of returned text.
      *  @param u an unconnected URLConnection
-     *  @param map the cookie store
      */
-    protected void setCookies(URLConnection u, Map<String, String> map)
+    protected void setCookies(URLConnection u)
     {
         StringBuilder cookie = new StringBuilder(100);
-        for (Map.Entry<String, String> entry : map.entrySet())
+        for (Map.Entry<String, String> entry : cookies.entrySet())
         {
             cookie.append(entry.getKey());
             cookie.append("=");
@@ -6365,24 +6337,17 @@ public class Wiki implements Serializable
      *  @param u an unconnected URLConnection
      *  @param map the cookie store
      */
-    private void grabCookies(URLConnection u, Map<String, String> map)
+    private void grabCookies(URLConnection u)
     {
-        // reset the cookie store
-        map.clear();
         String headerName = null;
         for (int i = 1; (headerName = u.getHeaderFieldKey(i)) != null; i++)
             if (headerName.equals("Set-Cookie"))
             {
                 String cookie = u.getHeaderField(i);
-
-                // _session cookies are for cookies2, otherwise this causes problems
-                if (cookie.contains("_session") && map == cookies)
-                    continue;
-
                 cookie = cookie.substring(0, cookie.indexOf(';'));
                 String name = cookie.substring(0, cookie.indexOf('='));
                 String value = cookie.substring(cookie.indexOf('=') + 1, cookie.length());
-                map.put(name, value);
+                cookies.put(name, value);
             }
     }
 
@@ -6504,7 +6469,7 @@ public class Wiki implements Serializable
         out.writeObject(scriptPath);
         out.writeObject(domain);
         out.writeObject(namespaces);
-        out.write(statusinterval);
+        out.writeInt(statusinterval);
         out.writeObject(useragent);
     }
 
@@ -6530,9 +6495,7 @@ public class Wiki implements Serializable
         useragent = (String)in.readObject();
 
         // various other intializations
-        cookies2 = new HashMap<String, String>(10);
-        base = "http://" + domain + scriptPath + "/index.php?title=";
-        query = "http://" + domain + scriptPath + "/api.php?format=xml&";
+        initVars();
 
         // force a status check on next edit
         statuscounter = statusinterval;
