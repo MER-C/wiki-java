@@ -2749,12 +2749,21 @@ public class Wiki implements Serializable
         boolean bot = xml.contains("bot=\"\"");
 
         // size
+        int size;
         if (xml.contains("newlen=")) // recentchanges
+        {
             a = xml.indexOf("newlen=\"") + 8;
-        else
+            b = xml.indexOf('\"', a);
+            size = Integer.parseInt(xml.substring(a, b));
+        }
+        else if (xml.contains("size=\""))
+        {
             a = xml.indexOf("size=\"") + 6;
-        b = xml.indexOf('\"', a);
-        int size = Integer.parseInt(xml.substring(a, b));
+            b = xml.indexOf('\"', a);
+            size = Integer.parseInt(xml.substring(a, b));
+        }
+        else // MW bug 32414/32415? Also, may help for revdeled revisions.
+            size = 0;
 
         Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, size);
         if (xml.contains("rcid=\""))
