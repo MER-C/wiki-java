@@ -115,9 +115,12 @@ public class WikiTests
         // recentchanges
         for (Wiki.Revision revision : enWiki.recentChanges(51))
             System.out.println(revision);
-*/
+
         // getImageHistory
         for (Wiki.LogEntry entry : enWiki.getImageHistory("Davis Motor Car Company logo.jpg"))
             System.out.println(entry);
+  */
+        // Revision.diff
+        System.out.println(enWiki.getRevision(473467375L).diff(Wiki.PREVIOUS_REVISION));
     }
 }
