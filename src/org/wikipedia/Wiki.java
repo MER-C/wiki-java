@@ -5673,7 +5673,7 @@ public class Wiki implements Serializable
         /**
          *  Constructs a new Revision object.
          *  @param revid the id of the revision (this is a long since
-         *  {{NUMBEROFEDITS}} on en.wikipedia.org is now (November 2007) ~10%
+         *  {{NUMBEROFEDITS}} on en.wikipedia.org is now (January 2012) ~25%
          *  of <tt>Integer.MAX_VALUE</tt>
          *  @param timestamp when this revision was made
          *  @param title the concerned article
@@ -5744,9 +5744,7 @@ public class Wiki implements Serializable
         /**
          *  Returns a HTML rendered diff between this and the specified
          *  revision. Such revisions should be on the same page.
-         *  @param other another revision on the same page. NEXT_REVISION,
-         *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
-         *  effect.
+         *  @param other another revision on the same page. 
          *  @return the difference between this and the other revision
          *  (<a href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>).
          *  @throws IOException if a network error occurs
@@ -5771,9 +5769,25 @@ public class Wiki implements Serializable
         }
 
         /**
+         *  Returns a HTML rendered diff between this and the specified
+         *  revision. Such revisions should be on the same page.
+         *  @param other another revision on the same page. NEXT_REVISION,
+         *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
+         *  effect.
+         *  @return the difference between this and the other revision
+         *  (<a href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>).
+         *  @throws IOException if a network error occurs
+         *  @since 0.26
+         */
+        public String diff(long oldid) throws IOException
+        {
+            return diff(oldid, "");
+        }
+
+        /**
          *  Fetches a HTML rendered diff.
          *  @param oldid the id of another revision; (exclusive) or
-         *  @param text some wikitext to compare agains
+         *  @param text some wikitext to compare against
          *  @return a difference between oldid or text
          *  @throws IOException if a network error occurs
          *  @since 0.21
@@ -5781,54 +5795,31 @@ public class Wiki implements Serializable
         protected String diff(long oldid, String text) throws IOException
         {
             // send via POST
-            URLConnection connection = new URL(query).openConnection();
-            logurl(query, "Revision.diff");
-            setCookies(connection);
-            connection.setDoOutput(true);
-            connection.connect();
-            OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-            out.write("action=query&prop=revisions&revids=" + revid);
-
+            StringBuilder temp = new StringBuilder("action=query&prop=revisions&revids=");
+            temp.append(revid);
             // no switch for longs? WTF?
             if (oldid == NEXT_REVISION)
-                out.write("&rvdiffto=next");
+                temp.append("&rvdiffto=next");
             else if (oldid == CURRENT_REVISION)
-                out.write("&rvdiffto=cur");
+                temp.append("&rvdiffto=cur");
             else if (oldid == PREVIOUS_REVISION)
-                out.write("&rvdiffto=previous");
+                temp.append("&rvdiffto=prev");
             else if (oldid == 0L)
             {
-                out.write("&rvdifftotext=");
-                out.write(text);
+                temp.append("&rvdifftotext=");
+                temp.append(text);
             }
             else
             {
-                out.write("&rvdiffto=");
-                out.write("" + oldid);
+                temp.append("&rvdiffto=");
+                temp.append(oldid);
             }
-            out.close();
-
-            // parse
-            BufferedReader in = new BufferedReader(new InputStreamReader(new GZIPInputStream(connection.getInputStream()), "UTF-8"));
-            String line;
-            StringBuilder diff = new StringBuilder(100000);
-            while ((line = in.readLine()) != null)
-            {
-                int y = line.indexOf('>', line.indexOf("<diff")) + 1;
-                int z = line.indexOf("</diff>");
-                if (y != -1)
-                    diff.append(line.substring(y + 6));
-                else if (z != -1)
-                {
-                    diff.append(line.substring(0, z));
-                    diff.append("\n");
-                    break; // done
-                }
-                else
-                    diff.append(line);
-                diff.append("\n");
-            }
-            return decode(diff.toString());
+            String line = post(query, temp.toString(), "Revision.diff");
+            // strip extraneous information
+            int a = line.indexOf("<diff");
+            a = line.indexOf(">", a) + 1;
+            int b = line.indexOf("</diff>", a);
+            return decode(line.substring(a, b));
         }
 
         /**
@@ -6141,7 +6132,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Does a text-only HTTP POST with <tt>cookies2</tt>.
+     *  Does a text-only HTTP POST.
      *  @param url the url to post to
      *  @param text the text to post
      *  @param caller the caller of this method
