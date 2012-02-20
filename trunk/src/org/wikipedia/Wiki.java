@@ -2222,8 +2222,7 @@ public class Wiki implements Serializable
     /**
      *  Gets the revision history of a page between two dates.
      *  @param title a page
-     *  @param start the date to start enumeration (the latest of the two
-     *  dates)
+     *  @param start the date to start enumeration (the latest of the two dates)
      *  @param end the date to stop enumeration (the earliest of the two dates)
      *  @return the revisions of that page in that time span
      *  @throws IOException if a network error occurs
@@ -2245,7 +2244,7 @@ public class Wiki implements Serializable
 
         // Hack time: since we cannot use rvstart (a timestamp) and rvstartid
         // (an oldid) together, let's make them the same thing.
-        String rvstart = "=" + calendarToTimestamp(start == null ? new GregorianCalendar() : start);
+        String rvstart = "=" + calendarToTimestamp(start == null ? makeCalendar() : start);
         ArrayList<Revision> revisions = new ArrayList<Revision>(1500);
 
         // main loop
@@ -3434,7 +3433,7 @@ public class Wiki implements Serializable
         }
         temp.append("&ucstart=");
         ArrayList<Revision> revisions = new ArrayList<Revision>(7500);
-        String ucstart = calendarToTimestamp(offset == null ? new GregorianCalendar() : offset);
+        String ucstart = calendarToTimestamp(offset == null ? makeCalendar() : offset);
 
         // fetch data
         do
@@ -4214,7 +4213,7 @@ public class Wiki implements Serializable
         if (start != null && end != null)
             if (start.before(end))
                 throw new IllegalArgumentException("Specified start date is before specified end date!");
-        String bkstart = calendarToTimestamp(start == null ? new GregorianCalendar() : start);
+        String bkstart = calendarToTimestamp(start == null ? makeCalendar() : start);
 
         // url base
         StringBuilder urlBase = new StringBuilder(query);
@@ -4300,9 +4299,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets log entries for a specific user. Equivalent to [[Special:Log]]. Dates
-     *  and timestamps are in UTC.
-     *
+     *  Gets log entries for a specific user. Equivalent to [[Special:Log]]. 
      *  @param user the user to get log entries for
      *  @throws IOException if a network error occurs
      *  @return the set of log entries created by that user
@@ -4315,8 +4312,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the log entries representing actions that were performed on a
-     *  specific target. Equivalent to [[Special:Log]]. Dates and timestamps are
-     *  in UTC.
+     *  specific target. Equivalent to [[Special:Log]].
      *
      *  @param target the target of the action(s).
      *  @throws IOException if a network error occurs
@@ -4332,7 +4328,7 @@ public class Wiki implements Serializable
      *  Gets all log entries that occurred between the specified dates.
      *  WARNING: the start date is the most recent of the dates given, and
      *  the order of enumeration is from newest to oldest. Equivalent to
-     *  [[Special:Log]]. Dates and timestamps are in UTC.
+     *  [[Special:Log]]. 
      *
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
@@ -4349,7 +4345,7 @@ public class Wiki implements Serializable
     /**
      *  Gets the last how ever many log entries in the specified log. Equivalent
      *  to [[Special:Log]] and [[Special:Newimages]] when
-     *  <tt>type.equals(UPLOAD_LOG)</tt>. Dates and timestamps are in UTC.
+     *  <tt>type.equals(UPLOAD_LOG)</tt>.
      *
      *  @param amount the number of entries to get
      *  @param type what log to get (e.g. DELETION_LOG)
@@ -4366,8 +4362,7 @@ public class Wiki implements Serializable
      *  Gets the specified amount of log entries between the given times by
      *  the given user on the given target. Equivalent to [[Special:Log]].
      *  WARNING: the start date is the most recent of the dates given, and
-     *  the order of enumeration is from newest to oldest. Dates and timestamps
-     *  are in UTC.
+     *  the order of enumeration is from newest to oldest. 
      *
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
@@ -5057,7 +5052,7 @@ public class Wiki implements Serializable
 
         // fetch, parse
         url.append("&rcstart=");
-        String rcstart = calendarToTimestamp(new GregorianCalendar());
+        String rcstart = calendarToTimestamp(makeCalendar());
         ArrayList<Revision> revisions = new ArrayList<Revision>(750);
         do
         {
@@ -6395,6 +6390,17 @@ public class Wiki implements Serializable
     // calendar/timestamp methods
 
     /**
+     *  Creates a Calendar object with the current time. Wikimedia wikis use
+     *  UTC, override this if your wiki is in another timezone.
+     *  @return see above
+     *  @since 0.26
+     */
+    public Calendar makeCalendar()
+    {
+        return new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+    }
+
+    /**
      *  Turns a calendar into a timestamp of the format yyyymmddhhmmss. Might
      *  be useful for subclasses.
      *  @param c the calendar to convert
@@ -6419,7 +6425,7 @@ public class Wiki implements Serializable
      */
     protected final Calendar timestampToCalendar(String timestamp)
     {
-        GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+        Calendar calendar = makeCalendar();
         int year = Integer.parseInt(timestamp.substring(0, 4));
         int month = Integer.parseInt(timestamp.substring(4, 6)) - 1; // January == 0!
         int day = Integer.parseInt(timestamp.substring(6, 8));
