@@ -33,101 +33,14 @@ import javax.security.auth.login.*; // useful exception types
  *  href="http://mediawiki.org/wiki/API">MediaWiki API</a> for most operations.
  *  It is recommended that the server runs the latest version of MediaWiki
  *  (1.18), otherwise some functions may not work.
- *
  *  <p>
- *  A typical program would go something like this:
- *
- *  <pre>
- *  Wiki wiki;
- *  File f = new File("wiki.dat");
- *  if (f.exists()) // we already have a copy on disk
- *  {
- *      ObjectInputStream in = new ObjectInputStream(new FileInputStream(f));
- *      wiki = (Wiki)in.readObject();
- *  }
- *  else
- *  {
- *      try
- *      {
- *          wiki = new Wiki("en.wikipedia.org"); // create a new wiki connection to en.wikipedia.org
- *          wiki.setThrottle(5000); // set the edit throttle to 0.2 Hz
- *          wiki.login("ExampleBot", password); // log in as user ExampleBot, with the specified password
- *      }
- *      catch (FailedLoginException ex)
- *      {
- *          // deal with failed login attempt
- *      }
- *  }
- *  String[] titles = . . . ; // fetch a list of titles
- *  try
- *  {
- *      for (int i = 0; i < titles.length; i++)
- *      {
- *          try
- *          {
- *              // do something with titles[i]
- *          }
- *          // this exception isn't fatal - probably won't affect the task as a whole
- *          catch (CredentialException ex)
- *          {
- *              // deal with protected page
- *          }
- *      }
- *  }
- *  // these exceptions are fatal - we need to abandon the task
- *  catch (CredentialNotFoundException ex)
- *  {
- *      // deal with trying to do something we can't
- *  }
- *  catch (CredentialExpiredException ex)
- *  {
- *      // deal with the expiry of the cookies
- *  }
- *  catch (AccountLockedException ex)
- *  {
- *      // deal with being blocked
- *  }
- *  catch (IOException ex)
- *  {
- *      // deal with network error
- *  }
- *  </pre>
- *
- *  Don't forget to release system resources held by this object when done.
- *  This may be achieved by logging out of the wiki. Since <tt>logout()</tt> is
- *  entirely offline, we can have a persistent session by simply serializing
- *  this wiki, then logging out as follows:
- *
- *  <pre>
- *  File f = new File("wiki.dat");
- *  ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(f));
- *  out.writeObject(wiki); // if we want the session to persist
- *  out.close();
- *  wiki.logout();
- *  </pre>
- *
- *  Long term storage of data (particularly greater than 20 days) is not
- *  recommended as the cookies may expire on the server.
- *
- *  <h4>Assertions</h4>
- *
- *  Without too much effort, it is possible to emulate assertions supported
- *  by [[mw:Extension:Assert Edit]]. The extension need not be installed
- *  for these assertions to work. Use <tt>setAssertionMode(int mode)</tt>
- *  to set the assertion mode. Checking for login, bot flag or new messages is
- *  supported by default. Other assertions can easily be defined, see <a
- *  href="http://java.sun.com/j2se/1.4.2/docs/guide/lang/assert.html">Programming
- *  With Assertions</a>. Assertions are applied on write methods only and are
- *  disabled by default.
- *
- *  <p>
- *  IMPORTANT: You need to run the program with the flag -enableassertions
- *  or -ea to enable assertions, example: <tt>java -ea Mybot</tt>.
- *
+ *  Extended documentation is available at {@link
+ *  http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation }. All
+ *  wikilinks are relative to the English Wikipedia and all timestamps are in
+ *  your wiki's time zone.
  *  <p>
  *  Please file bug reports at [[User talk:MER-C]] (fast) or the Google
  *  code bug tracker (slow).
- *  <!-- all wikilinks are relative to the English Wikipedia -->
  *
  *  @author MER-C and contributors
  *  @version 0.25
@@ -958,8 +871,8 @@ public class Wiki implements Serializable
      *  need to log in again instead of just reading in a serialized wiki.
      *  Equivalent to [[Special:Userlogout]]. This method is thread safe
      *  (so that we don't log out during an edit). WARNING: kills all
-     *  concurrent sessions as well - if you are logged in with a browser this
-     *  will log you out there as well.
+     *  concurrent sessions - if you are logged in with a browser this will log
+     *  you out there as well.
      *
      *  @throws IOException if a network error occurs
      *  @since 0.14
@@ -5737,11 +5650,10 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns a HTML rendered diff between this and the specified
-         *  revision. Such revisions should be on the same page.
+         *  Returns a HTML rendered diff table; see the table at the <a
+         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param other another revision on the same page. 
          *  @return the difference between this and the other revision
-         *  (<a href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>).
          *  @throws IOException if a network error occurs
          *  @since 0.21
          */
@@ -5751,8 +5663,10 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns a HTML rendered diff between this revision and the given
-         *  text. Useful for emulating the "show changes" functionality.
+         *  Returns a HTML rendered diff table between this revision and the
+         *  given text. Useful for emulating the "show changes" functionality.
+         *  See the table at the <a 
+         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
@@ -5764,13 +5678,12 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns a HTML rendered diff between this and the specified
-         *  revision. Such revisions should be on the same page.
-         *  @param other another revision on the same page. NEXT_REVISION,
+         *  Returns a HTML rendered diff table; see the table at the <a
+         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  @param oldid the oldid of a revision on the same page. NEXT_REVISION,
          *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
          *  effect.
          *  @return the difference between this and the other revision
-         *  (<a href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>).
          *  @throws IOException if a network error occurs
          *  @since 0.26
          */
@@ -5780,7 +5693,8 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Fetches a HTML rendered diff.
+         *  Fetches a HTML rendered diff table; see the table at the <a
+         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param oldid the id of another revision; (exclusive) or
          *  @param text some wikitext to compare against
          *  @return a difference between oldid or text
