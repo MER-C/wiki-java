@@ -461,7 +461,7 @@ public class Wiki implements Serializable
 
     // preferences
     private int max = 500; // awkward workaround
-    private static final Logger logger = Logger.getLogger("wiki"); // only one required
+    protected static final Logger logger = Logger.getLogger("wiki"); // only one required
     private int throttle = 10000; // throttle
     private int maxlag = 5;
     private volatile long lastlagcheck;
@@ -540,8 +540,10 @@ public class Wiki implements Serializable
 
     /**
      *  Override/edit this if you need to change the API and human interface
-     *  url configuration of the wiki. Also override/edit this if you want to
-     *  use https on Wikimedia.
+     *  url configuration of the wiki. Some example uses:
+     *
+     *  *Using HTTPS on Wikimedia sites
+     *  *Using [[mw:Extension:Assert Edit]] functionality directly
      *
      *  @since 0.24
      *  @author Tedder
@@ -1491,7 +1493,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         int a = text.indexOf("<rev xml:space=\"preserve\">") + 26;
         int b = text.indexOf("</rev>", a);
-        return text.substring(a, b);
+        return decode(text.substring(a, b));
     }
 
     /**
@@ -6284,7 +6286,9 @@ public class Wiki implements Serializable
      *  Change the logging level of this object's Logger object.
      *  @param level the new logging level
      *  @since 0.24
+     *  @deprecated <tt>logger</tt> is now protected, can call setLevel there
      */
+    @Deprecated
     public void setLogLevel(Level level)
     {
     	logger.setLevel(level);
