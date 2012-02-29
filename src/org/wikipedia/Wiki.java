@@ -2097,11 +2097,13 @@ public class Wiki implements Serializable
         String line = fetch(url.toString(), "getTopRevision");
         int a = line.indexOf("<rev");
         int b = line.indexOf("/>", a);
+        if (a < 0) // page does not exist
+            return null;
         return parseRevision(line.substring(a, b), title);
     }
 
     /**
-     *  Gets the first revision of a page.
+     *  Gets the first revision of a page, or null if the page does not exist.
      *  @param title a page
      *  @return the oldest revision of that page
      *  @throws IOException if a network error occurs
@@ -2116,6 +2118,8 @@ public class Wiki implements Serializable
         String line = fetch(url.toString(), "getFirstRevision");
         int a = line.indexOf("<rev");
         int b = line.indexOf("/>", a);
+        if (a < 0) // page does not exist
+            return null;
         return parseRevision(line.substring(a, b), title);
     }
 
