@@ -469,6 +469,7 @@ public class Wiki implements Serializable
     private int statusinterval = 100; // status check
     private String useragent = "Wiki.java " + version;
     private boolean zipped = true;
+    private boolean markminor = false, markbot = false;
 
     // retry flag
     private boolean retry = true;
@@ -543,7 +544,7 @@ public class Wiki implements Serializable
      *  url configuration of the wiki. Some example uses:
      *
      *  *Using HTTPS on Wikimedia sites
-     *  *Using [[mw:Extension:Assert Edit]] functionality directly
+     *  *Server-side cache management (maxage and smaxage API parameters)
      *
      *  @since 0.24
      *  @author Tedder
@@ -647,6 +648,49 @@ public class Wiki implements Serializable
     public boolean isUsingCompressedRequests()
     {
         return zipped;
+    }
+
+    /**
+     *  Sets whether edits are marked as bot by default (may be overridden
+     *  specifically by edit()). Default = false. Works only if one has the
+     *  required permissions.
+     *  @param markbot (see above)
+     *  @since 0.26
+     */
+    public void setMarkBot(boolean markbot)
+    {
+        this.markbot = markbot;
+    }
+
+    /**
+     *  Are edits are marked as bot by default?
+     *  @return whether edits are marked as bot by default
+     *  @since 0.26
+     */
+    public boolean isMarkBot()
+    {
+        return markbot;
+    }
+
+    /**
+     *  Sets whether edits are marked as minor by default (may be overridden
+     *  specifically by edit()). Default = false.
+     *  @param minor (see above)
+     *  @since 0.26
+     */
+    public void setMarkMinor(boolean minor)
+    {
+        this.markminor = minor;
+    }
+
+    /**
+     *  Are edits are marked as minor by default?
+     *  @return whether edits are marked as minor by default
+     *  @since 0.26
+     */
+    public boolean isMarkMinor()
+    {
+        return markminor;
     }
 
     /**
@@ -1197,18 +1241,19 @@ public class Wiki implements Serializable
      *  Gets various page info. Returns:
      *  <pre>
      *  {
-     *      { "displaytitle" => "iPod"         }, // the title of the page that is actually displayed (String)
-     *      { "protection"   => NO_PROTECTION  }, // the protection level of the page (Integer)
-     *      { "token"        => "\+"           }, // an edit token for the page, must be logged
-     *                                            // in to be non-trivial (String)
-     *      { "exists"       => true           }, // whether the page exists (Boolean)
-     *      { "lastpurged"   => 20110101000000 }, // when the page was last purged (Calendar), null if the
-     *                                            // page does not exist
-     *      { "lastrevid"    => 123456789L     }, // the revid of the top revision (Long), -1L if the page
-     *                                            // does not exist
-     *      { "size"         => 5000           }, // the size of the page (Integer), -1 if the page does
-     *                                            // not exist
-     *      { "cascade"      => false          }  // whether this page is cascade protected (Boolean)
+     *      "displaytitle" => "iPod"         , // the title of the page that is actually displayed (String)
+     *      "protection"   => NO_PROTECTION  , // the protection level of the page (Integer)
+     *      "token"        => "\+"           , // an edit token for the page, must be logged
+     *                                         // in to be non-trivial (String)
+     *      "exists"       => true           , // whether the page exists (Boolean)
+     *      "lastpurged"   => 20110101000000 , // when the page was last purged (Calendar), null if the
+     *                                         // page does not exist
+     *      "lastrevid"    => 123456789L     , // the revid of the top revision (Long), -1L if the page
+     *                                         // does not exist
+     *      "size"         => 5000           , // the size of the page (Integer), -1 if the page does
+     *                                         // not exist
+     *      "cascade"      => false          , // whether this page is cascade protected (Boolean)
+     *      "timestamp"    => makeCalendar()   // when this method was called (Calendar)
      *  }
      *  </pre>
      *  @param page the page to get info for
@@ -1284,6 +1329,9 @@ public class Wiki implements Serializable
         a = line.indexOf("token=\"") + 7;
         b = line.indexOf('\"', a);
         info.put("token", line.substring(a, b));
+
+        // timestamp
+        info.put("timestamp", makeCalendar());
 
         log(Level.INFO, "Successfully retrieved page info for " + page, "getPageInfo");
         return info;
@@ -1520,14 +1568,13 @@ public class Wiki implements Serializable
     /**
      *  Edits a page by setting its text to the supplied value. This method is
      *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will be marked as a bot edit, if possible.
+     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
+     *  and minor if <tt>isMarkMinor() == true</tt>.
      *
      *  @param text the text of the page
      *  @param title the title of the page
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
-     *  @param minor whether the edit should be marked as minor. See
-     *  [[Help:Minor edit]].
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1535,22 +1582,21 @@ public class Wiki implements Serializable
      *  Media: page
      *  @see #getPageText
      */
-    public void edit(String title, String text, String summary, boolean minor) throws IOException, LoginException
+    public void edit(String title, String text, String summary) throws IOException, LoginException
     {
-        edit(title, text, summary, minor, true, -2);
+        edit(title, text, summary, markminor, markbot, -2);
     }
 
     /**
      *  Edits a page by setting its text to the supplied value. This method is
      *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will be marked as a bot edit, if possible.
+     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
+     *  and minor if <tt>isMarkMinor() == true</tt>.
      *
      *  @param text the text of the page
      *  @param title the title of the page
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
-     *  @param minor whether the edit should be marked as minor. See
-     *  [[Help:Minor edit]].
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
      *  @throws IOException if a network error occurs
@@ -1561,9 +1607,9 @@ public class Wiki implements Serializable
      *  @see #getPageText
      *  @since 0.25
      */
-    public void edit(String title, String text, String summary, boolean minor, int section) throws IOException, LoginException
+    public void edit(String title, String text, String summary, int section) throws IOException, LoginException
     {
-        edit(title, text, summary, minor, true, section);
+        edit(title, text, summary, markminor, markbot, section);
     }
 
     /**
@@ -1575,34 +1621,8 @@ public class Wiki implements Serializable
      *  @param title the title of the page
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
-     *  @param minor whether the edit should be marked as minor. See
-     *  [[Help:Minor edit]].
-     *  @param bot whether the edit should be marked as a bot edit (ignored if
-     *  one does not have the necessary permissions)
-     *  @throws IOException if a network error occurs
-     *  @throws AccountLockedException if user is blocked
-     *  @throws CredentialException if page is protected and we can't edit it
-     *  @throws UnsupportedOperationException if you try to edit a Special: or a
-     *  Media: page
-     *  @see #getPageText
-     *  @since 0.25
-     */
-    public void edit(String title, String text, String summary, boolean minor, boolean bot) throws IOException, LoginException
-    {
-        edit(title, text, summary, minor, bot, -2);
-    }
-
-    /**
-     *  Edits a page by setting its text to the supplied value. This method is
-     *  thread safe and blocks for a minimum time as specified by the
-     *  throttle.
-     *
-     *  @param text the text of the page
-     *  @param title the title of the page
-     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
-     *  longer than 200 characters are truncated server-side.
-     *  @param minor whether the edit should be marked as minor. See
-     *  [[Help:Minor edit]].
+     *  @param minor whether the edit should be marked as minor, See 
+     * [[Help:Minor edit]].
      *  @param bot whether to mark the edit as a bot edit (ignored if one does
      *  not have the necessary permissions)
      *  @param section the section to edit. Use -1 to specify a new section and
@@ -1647,6 +1667,8 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(summary, "UTF-8"));
         buffer.append("&token=");
         buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
+        buffer.append("&starttimestamp=");
+        buffer.append(calendarToTimestamp((Calendar)info.get("timestamp")));
         if (minor)
             buffer.append("&minor=1");
         if (bot && user.isAllowedTo("bot"))
@@ -1721,10 +1743,12 @@ public class Wiki implements Serializable
     /**
      *  Prepends something to the given page. A convenience method for
      *  adding maintainance templates, rather than getting and setting the
-     *  page yourself. Edit summary is automatic, being "+whatever".
+     *  page yourself.
      *
      *  @param title the title of the page
      *  @param stuff what to prepend to the page
+     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
+     *  longer than 200 characters are truncated server-side.
      *  @param minor whether the edit is minor
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1733,12 +1757,13 @@ public class Wiki implements Serializable
      *  of a Special: page or a Media: page
      *  @throws IOException if a network error occurs
      */
-    public void prepend(String title, String stuff, boolean minor, boolean bot) throws IOException, LoginException
+    public void prepend(String title, String stuff, String summary, boolean minor, boolean bot) throws IOException, LoginException
     {
         StringBuilder text = new StringBuilder(100000);
         text.append(stuff);
-        text.append(getPageText(title));
-        edit(title, text.toString(), "+" + stuff, minor, bot);
+        // section 0 to save bandwidth
+        text.append(getSectionText(title, 0));
+        edit(title, text.toString(), summary, minor, bot, 0); 
     }
 
     /**
@@ -2082,7 +2107,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the most recent revision of a page.
+     *  Gets the most recent revision of a page, or null if the page does not exist.
      *  @param title a page
      *  @return the most recent revision of that page
      *  @throws IOException if a network error occurs
@@ -2376,7 +2401,8 @@ public class Wiki implements Serializable
      *  provided that they are the most recent revisions on that page. If this
      *  is not the case, then this method does nothing. See
      *  [[mw:Manual:Parameters to index.php#Actions]] (look under rollback)
-     *  for more information.
+     *  for more information. The edit and reverted edits will be marked as bot
+     *  if <tt>isMarkBot() == true</tt>.
      *
      *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
      *  be true for the rollback to succeed
@@ -2388,7 +2414,7 @@ public class Wiki implements Serializable
      */
     public void rollback(Revision revision) throws IOException, LoginException
     {
-        rollback(revision, false, "");
+        rollback(revision, markbot, "");
     }
 
     /**
@@ -2514,6 +2540,7 @@ public class Wiki implements Serializable
      *  @param reason an edit summary (optional). Use "" to get the default
      *  [[MediaWiki:Undo-summary]].
      *  @param minor whether this is a minor edit
+     *  @param bot whether this is a bot edit
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialExpiredException if cookies have expired
@@ -2522,7 +2549,8 @@ public class Wiki implements Serializable
      *  page.
      *  @since 0.20
      */
-    public synchronized void undo(Revision rev, Revision to, String reason, boolean minor) throws IOException, LoginException
+    public synchronized void undo(Revision rev, Revision to, String reason, boolean minor,
+        boolean bot) throws IOException, LoginException
     {
         // throttle
         long start = System.currentTimeMillis();
@@ -2562,6 +2590,8 @@ public class Wiki implements Serializable
         }
         if (minor)
             buffer.append("&minor=1");
+        if (bot)
+            buffer.append("&bot=1");
         buffer.append("&token=");
         buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
         String response = post(query + "action=edit", buffer.toString(), "undo");
@@ -2578,7 +2608,7 @@ public class Wiki implements Serializable
             {
                 retry = false;
                 log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "undo");
-                undo(rev, to, reason, minor);
+                undo(rev, to, reason, minor, bot);
             }
             else
             {
