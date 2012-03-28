@@ -26,6 +26,21 @@ package org.wikipedia.servlets;
 public class ServletUtils
 {
     /**
+     *  Strips < > and other unwanted stuff that leads to XSS attacks.
+     *  @param input an input string
+     *  @return <tt>input</tt>, sanitized
+     */
+    public static String sanitize(String input)
+    {
+        input = input.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+        input = input.replaceAll("\\(", "&#40;").replaceAll("\\)", "&#41;");
+        input = input.replaceAll("'", "&#39;");
+        input = input.replaceAll("eval\\((.*)\\)", "");
+        input = input.replaceAll("[\\\"\\\'][\\s]*javascript:(.*)[\\\"\\\']", "\"\"");
+        input = input.replaceAll("script", "");
+        return input;
+    }
+    /**
      *  Generates a boilerplate GPLv3 footer given a tool name
      *  @param toolname the name of the tool
      */

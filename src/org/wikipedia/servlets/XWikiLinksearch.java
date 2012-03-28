@@ -21,6 +21,7 @@ package org.wikipedia.servlets;
 
 import java.io.*;
 import java.util.*;
+import java.net.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -41,6 +42,8 @@ public class XWikiLinksearch extends HttpServlet
     {
         OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("results.html"), "UTF-8");
         String domain = JOptionPane.showInputDialog(null, "Enter domain to search");
+        if (domain == null)
+            System.exit(0);
         StringBuilder builder = new StringBuilder(10000);
         linksearch(domain, builder);
         out.write(builder.toString());
@@ -76,7 +79,7 @@ public class XWikiLinksearch extends HttpServlet
         if (domain != null)
         {
             buffer.append(" value=\"");
-            buffer.append(domain);
+            buffer.append(ServletUtils.sanitize(domain));
             buffer.append("\"");
         }
         buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
@@ -94,7 +97,7 @@ public class XWikiLinksearch extends HttpServlet
         String[] wikis = { "en", "de", "fr", "pl", "it", "ja", "es", "nl", "pt", "ru",
             "sv", "zh", "ca", "no", "fi", "uk", "hu", "cs", "ro" };
         buffer.append("<hr>\n<h2>Searching for links to ");
-        buffer.append(domain);
+        buffer.append(ServletUtils.sanitize(domain));
         buffer.append(".\n");
         for (int i = 0; i < wikis.length; i++)
         {
@@ -128,7 +131,7 @@ public class XWikiLinksearch extends HttpServlet
             buffer.append(" links found. (<a href=\"//");
             buffer.append(wikis[i]);
             buffer.append(".wikipedia.org/wiki/Special:Linksearch/*.");
-            buffer.append(domain);
+            buffer.append(ServletUtils.sanitize(domain));
             buffer.append("\">Linksearch</a>)\n");
         }
     }
