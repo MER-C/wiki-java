@@ -27,6 +27,7 @@ public class ServletUtils
 {
     /**
      *  Strips < > and other unwanted stuff that leads to XSS attacks.
+     *  Borrowed from http://greatwebguy.com/programming/java/simple-cross-site-scripting-xss-servlet-filter
      *  @param input an input string
      *  @return <tt>input</tt>, sanitized
      */
@@ -40,6 +41,7 @@ public class ServletUtils
         input = input.replaceAll("script", "");
         return input;
     }
+    
     /**
      *  Generates a boilerplate GPLv3 footer given a tool name
      *  @param toolname the name of the tool

@@ -21,7 +21,6 @@ package org.wikipedia.servlets;
 
 import java.io.*;
 import java.util.*;
-import java.net.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
 import javax.servlet.http.*;
