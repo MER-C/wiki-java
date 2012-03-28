@@ -20,6 +20,7 @@
 package org.wikipedia.servlets;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
@@ -40,6 +41,8 @@ public class SpamArchiveSearch extends HttpServlet
     public static void main(String[] args) throws IOException
     {
         String query = JOptionPane.showInputDialog(null, "Enter query string");
+        if (query == null)
+            System.exit(0);
         StringBuilder builder = new StringBuilder(10000);
         archivesearch(query, builder);
         System.out.println(builder.toString());
@@ -74,7 +77,7 @@ public class SpamArchiveSearch extends HttpServlet
         if (query != null)
         {
             buffer.append(" value=\"");
-            buffer.append(query);
+            buffer.append(ServletUtils.sanitize(query));
             buffer.append("\"");
         }
         buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
@@ -90,7 +93,7 @@ public class SpamArchiveSearch extends HttpServlet
     public static void archivesearch(String query, StringBuilder buffer) throws IOException
     {
         buffer.append("<hr>\n<h2>Searching for \"");
-        buffer.append(query);
+        buffer.append(ServletUtils.sanitize(query));
         buffer.append("\".</h2>\n");
 
         Wiki enwiki = new Wiki("en.wikipedia.org");
