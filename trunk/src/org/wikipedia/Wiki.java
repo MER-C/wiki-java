@@ -1720,7 +1720,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Creates a new section on the specified page.
+     *  Creates a new section on the specified page. Leave <tt>subject</tt> as
+     *  the empty string if you just want to append.
      *
      *  @param title the title of the page to edit
      *  @param subject the subject of the new section
@@ -2669,14 +2670,12 @@ public class Wiki implements Serializable
         {
             a = xml.indexOf("title=\"") + 7;
             b = xml.indexOf('\"', a);
-            title = xml.substring(a, b);
+            title = decode(xml.substring(a, b));
         }
 
         // summary
-        String summary;
-        if (xml.contains("commenthidden=\""))
-            summary = null; // oversighted
-        else
+        String summary = null;
+        if (!xml.contains("commenthidden=\"")) // not oversighted
         {
             a = xml.indexOf("comment=\"") + 9;
             b = xml.indexOf('\"', a);
@@ -2689,7 +2688,7 @@ public class Wiki implements Serializable
         {
             a = xml.indexOf("user=\"") + 6;
             b = xml.indexOf('\"', a);
-            user2 = xml.substring(a, b);
+            user2 = decode(xml.substring(a, b));
         }
 
         // minor
@@ -4514,7 +4513,7 @@ public class Wiki implements Serializable
             // performer
             int a = xml.indexOf("by=\"") + 4;
             int b = xml.indexOf('\"', a);
-            performer = new User(xml.substring(a, b));
+            performer = new User(decode(xml.substring(a, b)));
 
             // target
             a = xml.indexOf("user=\"") + 6;
@@ -4527,7 +4526,7 @@ public class Wiki implements Serializable
             else
             {
                 b = xml.indexOf("\" ", a);
-                target = xml.substring(a, b);
+                target = decode(xml.substring(a, b));
             }
         }
         // normal logs, not oversighted
@@ -4536,19 +4535,19 @@ public class Wiki implements Serializable
             // performer
             int a = xml.indexOf("user=\"") + 6;
             int b = xml.indexOf("\" ", a);
-            performer = new User(xml.substring(a, b));
+            performer = new User(decode(xml.substring(a, b)));
 
             // target
             a = xml.indexOf("title=\"") + 7;
             b = xml.indexOf("\" ", a);
-            target = xml.substring(a, b);
+            target = decode(xml.substring(a, b));
         }
         else if (caller == 2)
         {
            // no title here, we can set that in getImageHistory
             int a = xml.indexOf("user=\"") + 6;
             int b = xml.indexOf("\" ", a);
-            performer = new User(xml.substring(a, b));
+            performer = new User(decode(xml.substring(a, b)));
         }
 
         // timestamp
@@ -4564,7 +4563,7 @@ public class Wiki implements Serializable
         {
             a = xml.indexOf("new_title=\"") + 11;
             b = xml.indexOf("\" />", a);
-            details = decode(xml.substring(a, b)); // the new title
+            details = decode(decode(xml.substring(a, b))); // the new title
         }
         else if (type.equals(BLOCK_LOG))
         {
@@ -4617,7 +4616,7 @@ public class Wiki implements Serializable
         {
             a = xml.indexOf("<param>") + 7;
             b = xml.indexOf("</param>", a);
-            details = xml.substring(a, b); // the new username
+            details = decode(xml.substring(a, b)); // the new username
         }
         else if (type.equals(USER_RIGHTS_LOG))
         {
