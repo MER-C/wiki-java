@@ -107,6 +107,8 @@ public class WikiTests
 
         System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
         System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
+        System.out.println(enWiki.getFirstRevision("dgfhdfjklg"));
+        System.out.println(enWiki.getTopRevision("dgfhdfjklg"));
 
         // contribs
         for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
@@ -119,8 +121,11 @@ public class WikiTests
         // getImageHistory
         for (Wiki.LogEntry entry : enWiki.getImageHistory("Davis Motor Car Company logo.jpg"))
             System.out.println(entry);
-  */
+
         // Revision.diff
         System.out.println(enWiki.getRevision(473467375L).diff(Wiki.PREVIOUS_REVISION));
+  */
+        enWiki.setMaxLag(-1);
+        System.out.println(enWiki.getPageText("Main Page"));
     }
 }
