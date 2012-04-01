@@ -464,7 +464,6 @@ public class Wiki implements Serializable
     protected static final Logger logger = Logger.getLogger("wiki"); // only one required
     private int throttle = 10000; // throttle
     private int maxlag = 5;
-    private volatile long lastlagcheck;
     private int assertion = 0; // assertion mode
     private int statusinterval = 100; // status check
     private String useragent = "Wiki.java " + version;
@@ -551,8 +550,20 @@ public class Wiki implements Serializable
      */
     protected void initVars()
     {
-        base = "http://" + domain + scriptPath + "/index.php?title=";
-        apiUrl  = "http://" + domain + scriptPath +  "/api.php?";
+        String temp = "http://" + domain + scriptPath;
+        // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
+        // parameter]]. Let's exploit it.
+        if (maxlag >= 0)
+        {
+            String lag = "maxlag=" + maxlag + "&";
+            apiUrl = temp + "/api.php?" + lag;
+            base = temp + "/index.php?" + lag + "title=";
+        }
+        else
+        {
+            apiUrl = temp + "/api.php?";
+            base = temp + "/index.php?title=";
+        }
         query = apiUrl + "format=xml&";
     }
 
@@ -602,8 +613,7 @@ public class Wiki implements Serializable
     public String getScriptPath() throws IOException
     {
         scriptPath = parseAndCleanup("{{SCRIPTPATH}}");
-        base = "http://" + domain + scriptPath + "/index.php?title=";
-        query = "http://" + domain + scriptPath +  "/api.php?format=xml&";
+        initVars();
         return scriptPath;
     }
 
@@ -763,7 +773,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Sets the maxlag parameter. A value of less than 1s disables this
+     *  Sets the maxlag parameter. A value of less than 0s disables this
      *  mechanism. Default is 5s.
      *  @param lag the desired maxlag in seconds
      *  @see #getMaxLag
@@ -774,6 +784,7 @@ public class Wiki implements Serializable
     {
         maxlag = lag;
         log(Level.CONFIG, "Setting maximum allowable database lag to " + lag, "setMaxLag");
+        initVars();
     }
 
     /**
@@ -6008,7 +6019,7 @@ public class Wiki implements Serializable
      *  which is almost everything that doesn't modify the wiki. Might be
      *  useful for subclasses.
      *
-     *  Here we also check the database lag and wait 30s if it exceeds
+     *  Here we also check the database lag and wait if it exceeds
      *  <tt>maxlag</tt>. See [[mw:Manual:Maxlag parameter]] for the server-side
      *  analog (which isn't implemented here, because I'm too lazy to retry
      *  the request).
@@ -6020,50 +6031,39 @@ public class Wiki implements Serializable
      */
     protected String fetch(String url, String caller) throws IOException
     {
-        // check the database lag
+        // connect
         logurl(url, caller);
-        do // this is just a dummy loop
-        {
-            if (maxlag < 1) // disabled
-                break;
-            // only bother to check every 30 seconds
-            if ((System.currentTimeMillis() - lastlagcheck) < 30000) // TODO: this really should be a preference
-                break;
+        System.out.println(url);
+        URLConnection connection = new URL(url).openConnection();
+        connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
+        connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
+        setCookies(connection);
+        connection.connect();
+        grabCookies(connection);
 
+        // check lag
+        int lag = connection.getHeaderFieldInt("X-Database-Lag", -5);
+        if (lag > maxlag)
+        {
             try
             {
-                // if we use this, this can block unrelated read requests while we edit a page
-                synchronized(domain)
+                synchronized(this)
                 {
-                    // update counter. We do this before the actual check, so that only one thread does the check.
-                    lastlagcheck = System.currentTimeMillis();
-                    int lag = getCurrentDatabaseLag();
-                    while (lag > maxlag)
-                    {
-                        log(Level.WARNING, "Sleeping for 30s as current database lag (" + lag + ")exceeds the maximum allowed value of " + maxlag + " s", caller);
-                        Thread.sleep(30000);
-                        lag = getCurrentDatabaseLag();
-                    }
+                    int time = connection.getHeaderFieldInt("Retry-After", 10);
+                    log(Level.WARNING, "Current database lag " + lag + " s exceeds " + maxlag + " s, waiting " + time + " s.", caller);
+                    Thread.sleep(time * 1000);
                 }
             }
             catch (InterruptedException ex)
             {
                 // nobody cares
             }
+            return fetch(url, caller); // retry the request
         }
-        while (false);
-
-        // connect
-        URLConnection connection = new URL(url).openConnection();
-        connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
-        connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
-        setCookies(connection);
-        connection.connect();
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-        grabCookies(connection);
 
         // get the text
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
         String line;
         StringBuilder text = new StringBuilder(100000);
         while ((line = in.readLine()) != null)
