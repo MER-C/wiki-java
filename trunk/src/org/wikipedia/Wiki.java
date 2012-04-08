@@ -1595,7 +1595,31 @@ public class Wiki implements Serializable
      */
     public void edit(String title, String text, String summary) throws IOException, LoginException
     {
-        edit(title, text, summary, markminor, markbot, -2);
+        edit(title, text, summary, markminor, markbot, -2, null);
+    }
+
+    /**
+     *  Edits a page by setting its text to the supplied value. This method is
+     *  thread safe and blocks for a minimum time as specified by the
+     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
+     *  and minor if <tt>isMarkMinor() == true</tt>.
+     *
+     *  @param text the text of the page
+     *  @param title the title of the page
+     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
+     *  longer than 200 characters are truncated server-side.
+     *  @param basetime the timestamp of the revision on which <tt>text</tt> is
+     *  based, used to check for edit conflicts. <tt>null<tt> disables this.
+     *  @throws IOException if a network error occurs
+     *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialException if page is protected and we can't edit it
+     *  @throws UnsupportedOperationException if you try to edit a Special: or a
+     *  Media: page
+     *  @see #getPageText
+     */
+    public void edit(String title, String text, String summary, Calendar basetime) throws IOException, LoginException
+    {
+        edit(title, text, summary, markminor, markbot, -2, basetime);
     }
 
     /**
@@ -1620,7 +1644,35 @@ public class Wiki implements Serializable
      */
     public void edit(String title, String text, String summary, int section) throws IOException, LoginException
     {
-        edit(title, text, summary, markminor, markbot, section);
+        edit(title, text, summary, markminor, markbot, section, null);
+    }
+
+    /**
+     *  Edits a page by setting its text to the supplied value. This method is
+     *  thread safe and blocks for a minimum time as specified by the
+     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
+     *  and minor if <tt>isMarkMinor() == true</tt>.
+     *
+     *  @param text the text of the page
+     *  @param title the title of the page
+     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
+     *  longer than 200 characters are truncated server-side.
+     *  @param section the section to edit. Use -1 to specify a new section and
+     *  -2 to disable section editing.
+     *  @param basetime the timestamp of the revision on which <tt>text</tt> is
+     *  based, used to check for edit conflicts. <tt>null<tt> disables this.
+     *  @throws IOException if a network error occurs
+     *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialException if page is protected and we can't edit it
+     *  @throws UnsupportedOperationException if you try to edit a Special: or a
+     *  Media: page
+     *  @see #getPageText
+     *  @since 0.25
+     */
+    public void edit(String title, String text, String summary, int section, Calendar basetime)
+        throws IOException, LoginException
+    {
+        edit(title, text, summary, markminor, markbot, section, basetime);
     }
 
     /**
@@ -1638,6 +1690,8 @@ public class Wiki implements Serializable
      *  not have the necessary permissions)
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
+     *  @param basetime the timestamp of the revision on which <tt>text</tt> is
+     *  based, used to check for edit conflicts. <tt>null<tt> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialExpiredException if cookies have expired
@@ -1648,7 +1702,7 @@ public class Wiki implements Serializable
      *  @since 0.17
      */
     public synchronized void edit(String title, String text, String summary, boolean minor, boolean bot,
-        int section) throws IOException, LoginException
+        int section, Calendar basetime) throws IOException, LoginException
     {
         // @revised 0.16 to use API edit. No more screenscraping - yay!
         // @revised 0.17 section editing
@@ -1678,8 +1732,14 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(summary, "UTF-8"));
         buffer.append("&token=");
         buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
-        buffer.append("&starttimestamp=");
-        buffer.append(calendarToTimestamp((Calendar)info.get("timestamp")));
+        if (basetime != null)
+        {
+            buffer.append("&starttimestamp=");
+            buffer.append(calendarToTimestamp((Calendar)info.get("timestamp")));
+            buffer.append("&basetimestamp=");
+            // I wonder if the time getPageText() was called suffices here
+            buffer.append(calendarToTimestamp(basetime));
+        }
         if (minor)
             buffer.append("&minor=1");
         if (bot && user.isAllowedTo("bot"))
@@ -1694,6 +1754,11 @@ public class Wiki implements Serializable
         String response = post(query + "action=edit", buffer.toString(), "edit");
 
         // done
+        if (response.contains("error code=\"editconflict\""))
+        {
+            log(Level.WARNING, "Edit conflict on " + title, "edit");
+            return; // hmmm, perhaps we should throw an exception. I'm open to ideas.
+        }
         try
         {
             checkErrors(response, "edit");
@@ -1705,7 +1770,7 @@ public class Wiki implements Serializable
             {
                 retry = false;
                 log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "edit");
-                edit(title, text, summary, minor, bot, section);
+                edit(title, text, summary, minor, bot, section, basetime);
             }
             else
             {
@@ -1749,7 +1814,7 @@ public class Wiki implements Serializable
      */
     public void newSection(String title, String subject, String text, boolean minor, boolean bot) throws IOException, LoginException
     {
-        edit(title, text, subject, minor, bot, -1);
+        edit(title, text, subject, minor, bot, -1, null);
     }
 
     /**
@@ -1775,7 +1840,7 @@ public class Wiki implements Serializable
         text.append(stuff);
         // section 0 to save bandwidth
         text.append(getSectionText(title, 0));
-        edit(title, text.toString(), summary, minor, bot, 0); 
+        edit(title, text.toString(), summary, minor, bot, 0, null);
     }
 
     /**
