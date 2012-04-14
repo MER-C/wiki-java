@@ -7,11 +7,11 @@ import javax.security.auth.login.*;
 import java.util.regex.*;
 
 /**
- *  Bot framework for Fbot family of bots consisting of static methods.  Supplements MER-C's Wiki.java.  
- *  Unless otherwise specified, assume that all Wiki objects have been 'logged in'.
- *  As far as I know, everything is fairly stable.  
- *Report bugs to [http://commons.wikimedia.org/wiki/User_talk:Fastily].  
- *  For best results, use with Wiki.java r48: [http://code.google.com/p/wiki-java/source/browse/trunk/src/org/wikipedia/Wiki.java?spec=svn48&r=48]
+ *  Bot framework for Fbot family of bots consisting of static methods.  Supplements MER-C's Wiki.java.  </br>
+ *  Unless otherwise specified, assume that all Wiki objects have been 'logged in'. </br>
+ *  As far as I know, everything is fairly stable.   </br>
+ *  Report bugs to [http://commons.wikimedia.org/wiki/User_talk:Fastily].   </br>
+ *  For best results, use with Wiki.java r51: [http://code.google.com/p/wiki-java/source/browse/trunk/src/org/wikipedia/Wiki.java?spec=svn51&r=51] </br>
  *  Licensed under GNU GPL v3.
  */
 
@@ -20,7 +20,7 @@ public class Fbot
    //Hiding Fbot() from appearing with a constructor in javadocs
    private Fbot()
    {
-     //do nothing
+      //do nothing
    } 
 
    /**
@@ -102,12 +102,12 @@ public class Fbot
     *
     */
 
-    public static void loginAndSetPrefs(Wiki wiki, String user, char[] p, int throttle) throws IOException, FailedLoginException
-    {
-      wiki.setMaxLag(1000000);
+   public static void loginAndSetPrefs(Wiki wiki, String user, char[] p, int throttle) throws IOException, FailedLoginException
+   {
+      wiki.setMaxLag(-1);
       wiki.login(user, p);
       wiki.setThrottle(throttle);
-    }
+   }
 
 
    /**
@@ -130,14 +130,14 @@ public class Fbot
 
    public static void loginAndSetPrefs(String file, String user, int throttle, Wiki wiki) throws IOException, FailedLoginException
    {
-     for(String f : loadFromFile(file, ""))
-       if(f.startsWith(user))
-       {
-	 loginAndSetPrefs(wiki, user, f.substring(f.indexOf(":") + 1).trim().toCharArray(), throttle); 
-	 return;
-       }
+      for(String f : loadFromFile(file, ""))
+         if(f.startsWith(user))
+         {
+            loginAndSetPrefs(wiki, user, f.substring(f.indexOf(":") + 1).trim().toCharArray(), throttle); 
+            return;
+         }
 
-     throw new UnsupportedOperationException("Did not find a Username in the specified file matching String value in user param");
+      throw new UnsupportedOperationException("Did not find a Username in the specified file matching String value in user param");
    }
 
    /**
@@ -171,14 +171,14 @@ public class Fbot
       }
       catch (FailedLoginException e)
       {
-	 e.printStackTrace();
+         e.printStackTrace();
          JOptionPane.showMessageDialog(null, "Username and password do not match on Database, program will now exit");
          System.exit(1);
       }
       catch (IOException e)
       {
-	e.printStackTrace();
-	System.err.println("Fatal Network Error, program will now exit.");
+         e.printStackTrace();
+         System.err.println("Fatal Network Error, program will now exit.");
       }
    }
 
@@ -279,10 +279,10 @@ public class Fbot
     */
    public static String namespaceStrip(String title)
    {
-     int i = title.indexOf(":");
-     if(i > 0)
-       return title.substring(i + 1);
-     return title;
+      int i = title.indexOf(":");
+      if(i > 0)
+         return title.substring(i + 1);
+      return title;
    }
 
    /**
@@ -303,36 +303,6 @@ public class Fbot
    }
 
    /**
-    *  Converts an int (0-11) to a month (String).  I have this because I'm too
-    *  lazy to figure out how to work java.util.Calendar. 
-    *
-    *  @param d int value (0-11).  0 = Janurary, 1 = Februaray, ect.
-    *
-    *  @return Month representation of the passed in int or null if value was not within 0-11
-    *  
-    */
-
-   public static String getMonthText(int d)
-   {
-      switch(d)
-      {
-         case 0: return "January";
-         case 1: return "February";
-         case 2: return "March";
-         case 3: return "April";
-         case 4: return "May";
-         case 5: return "June";
-         case 6: return "July";
-         case 7: return "August";
-         case 8: return "September";
-         case 9: return "October";
-         case 10: return "November";
-         case 11: return "December";
-         default : return null;
-      }
-   } 
-
-   /**
     *  Determines if a substring in an array of strings is present in at least 
     *  one string of that array.  String substring is the substring to search for. 
     *
@@ -344,25 +314,25 @@ public class Fbot
     *  
     */
 
-  public static boolean listElementContains(String[] list, String substring, boolean caseinsensitive)
-  {
-    if(caseinsensitive)
-    { 
-      substring = substring.toLowerCase();
-      for(String s : list)
-        if(s.toLowerCase().contains(substring))
-	   return true;
-      return false;
-    }
-    else
-    {
-      for(String s : list)
-	if(s.contains(substring))
-	  return true;
-      return false;
-    } 
-  }
-  
+   public static boolean listElementContains(String[] list, String substring, boolean caseinsensitive)
+   {
+      if(caseinsensitive)
+      { 
+         substring = substring.toLowerCase();
+         for(String s : list)
+            if(s.toLowerCase().contains(substring))
+               return true;
+         return false;
+      }
+      else
+      {
+         for(String s : list)
+            if(s.contains(substring))
+               return true;
+         return false;
+      } 
+   }
+
 
    /**
     *  Outputs a text file (.txt) representing the elements of an array.  Broken at the
@@ -375,14 +345,14 @@ public class Fbot
     *  
     */
 
-  public static void dumpAsFile(String[] list, String outputTitle) throws IOException
-  {
-    BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputTitle + ".txt"), "UTF-8"));
-    for (String s : list)
-      out.write(s + "\n");
-    out.flush();
-    out.close();
-  }
+   public static void dumpAsFile(String[] list, String outputTitle) throws IOException
+   {
+      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputTitle + ".txt"), "UTF-8"));
+      for (String s : list)
+         out.write(s + "\n");
+      out.flush();
+      out.close();
+   }
 
    /**
     *  Gets the target of the title, which is presumed to be a redirect.
@@ -396,14 +366,14 @@ public class Fbot
     *  @return String The title of the redirect's target.
     */
 
-  public static String getRedirectTarget(String redirect, Wiki wiki) throws Throwable
-  {
-    String text = wiki.getPageText(redirect).trim();
-    if(text.startsWith("#"))
-      return text.substring(text.indexOf("[[") + 2, text.indexOf("]]"));
-    
-    throw new UnsupportedOperationException("Parameter passed in is not a redirect page!");
-  }
+   public static String getRedirectTarget(String redirect, Wiki wiki) throws Throwable
+   {
+      String text = wiki.getPageText(redirect).trim();
+      if(text.startsWith("#"))
+         return text.substring(text.indexOf("[[") + 2, text.indexOf("]]"));
+
+      throw new UnsupportedOperationException("Parameter passed in is not a redirect page!");
+   }
 
    /**
     *  Checks to see if a given page exists locally (i.e. page is not a 'red-link')
@@ -416,10 +386,10 @@ public class Fbot
     *  @return boolean True if the page exists.
     */
 
-  public static boolean exists(String page, Wiki wiki) throws Throwable
-  {
-    return ((Boolean) wiki.getPageInfo(page).get("exists")).booleanValue();
-  }
+   public static boolean exists(String page, Wiki wiki) throws Throwable
+   {
+      return ((Boolean) wiki.getPageInfo(page).get("exists")).booleanValue();
+   }
 
    /**
     *  Gets redirects of a template, returns then as a String regex.  Ready for 
@@ -434,16 +404,16 @@ public class Fbot
     *  template and its redirects.
     */
 
-  public static String getRedirectsAsRegex(String template, Wiki wiki) throws Throwable
-  {
-    String r = "(?si)\\{\\{(Template:)??(" + namespaceStrip(template);
-    for(String str : wiki.whatLinksHere(template, Wiki.TEMPLATE_NAMESPACE, true))
-      r += "|" + namespaceStrip(str);
-    r += ").*?\\}\\}";
+   public static String getRedirectsAsRegex(String template, Wiki wiki) throws Throwable
+   {
+      String r = "(?si)\\{\\{(Template:)??(" + namespaceStrip(template);
+      for(String str : wiki.whatLinksHere(template, Wiki.TEMPLATE_NAMESPACE, true))
+         r += "|" + namespaceStrip(str);
+      r += ").*?\\}\\}";
 
-    return r;
+      return r;
    }
- 
+
    /**
     *  checks to see if a file has at least one FILE LINK to the mainspace.  Be sure to pass in file with "File:" prefix.
     *
@@ -457,10 +427,10 @@ public class Fbot
 
    public static boolean hasMainspaceFileLink(String file, Wiki wiki) throws Throwable
    {
-     for(String page : wiki.imageUsage(namespaceStrip(file)))
-       if(wiki.namespace(page) == Wiki.MAIN_NAMESPACE)
-	   return true;
-     return false;
+      for(String page : wiki.imageUsage(namespaceStrip(file)))
+         if(wiki.namespace(page) == Wiki.MAIN_NAMESPACE)
+            return true;
+      return false;
    }
 
    /**
@@ -484,17 +454,17 @@ public class Fbot
       String[] f = arrayNuke(listNamespaceSort(wiki.getCategoryMembers(namespaceStrip(cat)), Wiki.FILE_NAMESPACE, wiki), reason, talkReason, wiki);
       try
       {
-	superDelete(cat, catReason, talkReason, wiki);
+         superDelete(cat, catReason, talkReason, wiki);
       }
       catch (Throwable e)
       {
-	//well, we did try…
+         //well, we did try…
       }
 
       return f;
    }
 
-  
+
    /**
     *  Standard Fbot Database dump template.  Follows *[[:_TITLE_]]\n.
     *
@@ -510,11 +480,11 @@ public class Fbot
 
    public static void dbrDump(String page, String[] list, String headerText, String footerText, Wiki wiki) throws Throwable
    {
-     String dump = headerText + "  This report last updated as of ~~~~~\n";
-     for(String s : list)
-       dump += "*[[:" + s + "]]\n";
-     dump += "\n" + footerText;
-     wiki.edit(page, dump, "Updating list");
+      String dump = headerText + "  This report last updated as of ~~~~~\n";
+      for(String s : list)
+         dump += "*[[:" + s + "]]\n";
+      dump += "\n" + footerText;
+      wiki.edit(page, dump, "Updating list");
    }
 
    /**
@@ -531,7 +501,7 @@ public class Fbot
 
    public static void dbrDump(String page, String[] list, String headerText, Wiki wiki) throws Throwable
    {
-     dbrDump(page, list, headerText, "", wiki);
+      dbrDump(page, list, headerText, "", wiki);
    }
 
    /**
@@ -548,21 +518,21 @@ public class Fbot
 
    public static void templateReplace(String template, String replacementText, String reason, Wiki wiki) throws Throwable
    {
-     String[] list = wiki.whatTranscludesHere(template);
-     if(template.startsWith("Template:"))
-        template = namespaceStrip(template);
+      String[] list = wiki.whatTranscludesHere(template);
+      if(template.startsWith("Template:"))
+         template = namespaceStrip(template);
 
-     for(String page : list)
-     {
-       try
-       {
-	 wiki.edit(page, wiki.getPageText(page).replaceAll("(?i)(" + template + ")", replacementText), reason);
-       }
-       catch (Throwable e)
-       {
-	 e.printStackTrace();
-       }
-     }
+      for(String page : list)
+      {
+         try
+         {
+            wiki.edit(page, wiki.getPageText(page).replaceAll("(?i)(" + template + ")", replacementText), reason);
+         }
+         catch (Throwable e)
+         {
+            e.printStackTrace();
+         }
+      }
    }
 
    /**
@@ -580,14 +550,14 @@ public class Fbot
 
    public static String[] listNamespaceSort(String[] list, int namespace, Wiki wiki) throws IOException
    {
-     ArrayList<String> l = new ArrayList<String>();
-     for(String s : list)
-     {
-       if(wiki.namespace(s) == namespace)
-	 l.add(s);
-     }
+      ArrayList<String> l = new ArrayList<String>();
+      for(String s : list)
+      {
+         if(wiki.namespace(s) == namespace)
+            l.add(s);
+      }
 
-     return l.toArray(new String[0]);
+      return l.toArray(new String[0]);
    }
 
 
@@ -603,7 +573,7 @@ public class Fbot
 
    public static boolean arraysShareElement(String[] a1, String[] a2)
    {
-     return Wiki.intersection(a1, a2).length > 0;
+      return Wiki.intersection(a1, a2).length > 0;
    }
 
 
@@ -616,22 +586,22 @@ public class Fbot
     *
     *  @return An array containing the elements we were unable to delete
     */
-   
+
    public static String[] arrayNuke(String[] list, String reason, Wiki wiki)
    {
-     ArrayList<String> f = new ArrayList<String>();
-     for(String s : list)
-     {
-       try
-       {
-         wiki.delete(s, reason);
-       }
-       catch (Throwable e)
-       {
-	 f.add(s);
-       }
-     }
-     return f.toArray(new String[0]);
+      ArrayList<String> f = new ArrayList<String>();
+      for(String s : list)
+      {
+         try
+         {
+            wiki.delete(s, reason);
+         }
+         catch (Throwable e)
+         {
+            f.add(s);
+         }
+      }
+      return f.toArray(new String[0]);
    }
 
    /**
@@ -644,25 +614,25 @@ public class Fbot
     *
     *  @return An array containing the elements we were unable to delete.
     */
-   
+
    public static String[] arrayNuke(String[] list, String reason, String talkReason, Wiki wiki)
    {
-     String[] f = arrayNuke(list, reason, wiki);
-     for(String s : list)
-     {
-       try
-       {
-	 wiki.delete(wiki.getTalkPage(s), talkReason);
-       }
-       catch (Throwable e)
-       {
-	 //We'll probably only be here if we tried to delete the talk page of a talk page :P
-       }
-     } 
-     return f;
+      String[] f = arrayNuke(list, reason, wiki);
+      for(String s : list)
+      {
+         try
+         {
+            wiki.delete(wiki.getTalkPage(s), talkReason);
+         }
+         catch (Throwable e)
+         {
+            //We'll probably only be here if we tried to delete the talk page of a talk page :P
+         }
+      } 
+      return f;
    }
 
- 
+
    /**
     *  Adds specified text to the end of a page
     *
@@ -677,19 +647,19 @@ public class Fbot
    {
       for(String page : pages)
       {
-	try
-	{
-	  wiki.edit(page, wiki.getPageText(text) + text, summary);
-	}
-	catch (Throwable e)
-	{
-	  e.printStackTrace();
-        }
+         try
+         {
+            wiki.edit(page, wiki.getPageText(text) + text, summary);
+         }
+         catch (Throwable e)
+         {
+            e.printStackTrace();
+         }
       }
-    }
+   }
 
 
-  /**
+   /**
     *  Replaces a file with another for a given list of pages.
     *
     *  @param list The list of pages to perform replacement on
@@ -700,25 +670,25 @@ public class Fbot
     *  
     */
 
-  public static void fileReplace(String[] list, String file, String replacement, String summary, Wiki wiki)
-  {
-    file = file.replace("_", " "); //need to guarantee that we aren't using underscores
-    String regex = "(?i)(" + file + "|" + file.replace(" ", "_") + ")";
+   public static void fileReplace(String[] list, String file, String replacement, String summary, Wiki wiki)
+   {
+      file = file.replace("_", " "); //need to guarantee that we aren't using underscores
+      String regex = "(?i)(" + file + "|" + file.replace(" ", "_") + ")";
 
-    for(String page : list)
-    {
-      try
+      for(String page : list)
       {
-	wiki.edit(page, wiki.getPageText(page).replaceAll(regex, replacement), summary);
+         try
+         {
+            wiki.edit(page, wiki.getPageText(page).replaceAll(regex, replacement), summary);
+         }
+         catch (Throwable e)
+         {
+            e.printStackTrace();
+         }
       }
-      catch (Throwable e)
-      {
-	e.printStackTrace();
-      }
-    }
-  }   
+   }   
 
-  /**
+   /**
     *  Deletes a page and it's talk page (if possible)
     *
     *  @param page The page to delete
@@ -730,13 +700,13 @@ public class Fbot
     *  @throws Throwable if we had a problem
     */
 
-    public static void superDelete(String page, String reason, String tReason, Wiki wiki) throws Throwable
-    {
+   public static void superDelete(String page, String reason, String tReason, Wiki wiki) throws Throwable
+   {
       wiki.delete(page, reason);
       wiki.delete(wiki.getTalkPage(page), tReason);
-    }
+   }
 
-  /**
+   /**
     *  Attempts to parse out a template parameter.
     *
     *  @param template The template to work on.  Must be entered in format {{NAME|PARM1|PARAM2|...}}
@@ -745,20 +715,20 @@ public class Fbot
     *  @return The param we parsed out or Null if we didn't find a param matching the specified criteria
     * 
     */
-    public static String getTemplateParam(String template, int number)
-    {
+   public static String getTemplateParam(String template, int number)
+   {
       try
       {
-	return templateParamStrip(template.split("\\|")[number]);
+         return templateParamStrip(template.split("\\|")[number]);
       }
       catch (ArrayIndexOutOfBoundsException e)
       {
-	return null;
+         return null;
       }
-    }
+   }
 
 
-  /**
+   /**
     *  Attempts to parse out a template parameter based on specification
     *
     *  @param template The template to work on.  Must be entered in format {{NAME|PARM1|PARAM2|...}}
@@ -772,16 +742,16 @@ public class Fbot
    {
       ArrayList<String> f = new ArrayList<String>();
       for(String s : template.split("\\|"))
-        f.add(s.trim());
+         f.add(s.trim());
 
       for(String p : f)
-        if(p.startsWith(param))
-	   return templateParamStrip(p);
+         if(p.startsWith(param))
+            return templateParamStrip(p);
 
       return null; //if nothing matched  
    }
 
-  /**
+   /**
     *  Returns the param of a template.  e.g. If we get "|foo = baz", we return baz.  
     *
     *  @param p Must be a param in the form "|foo = baz" or "foo = baz"
@@ -792,14 +762,14 @@ public class Fbot
 
    public static String templateParamStrip(String p)
    {
-     int i = p.indexOf("=");
-     if(i == -1)
-       return p;
-     else
-	return p.substring(i+1).replace("}}", "").trim();
+      int i = p.indexOf("=");
+      if(i == -1)
+         return p;
+      else
+         return p.substring(i+1).replace("}}", "").trim();
    }
 
-  /**
+   /**
     *  Parses out the first instance of a template from a body of text, based on specified template.  
     *
     *  @param text Text to search
@@ -816,12 +786,12 @@ public class Fbot
    public static String parseTemplateFromPage(String text, String template, boolean redirects, Wiki wiki) throws Throwable
    {
       if(redirects)
-	return parseFromPageRegex(text, getRedirectsAsRegex("Template:" + template, wiki));
+         return parseFromPageRegex(text, getRedirectsAsRegex("Template:" + template, wiki));
       else
-	return parseFromPageRegex(text, "(?s)\\{\\{(Template:)??(" + template + ").*?\\}\\}");
+         return parseFromPageRegex(text, "(?s)\\{\\{(Template:)??(" + template + ").*?\\}\\}");
    }
 
-  /**
+   /**
     *  Parses out the first group of matching text, based on specified regex.  Useful for parsing out templates.
     *
     *  @param text Text to search
@@ -830,14 +800,58 @@ public class Fbot
     *  @return The text we parsed out, or null if we didn't find anything. 
     * 
     */
-   
+
    public static String parseFromPageRegex(String text, String regex)
    {
       Matcher m = Pattern.compile(regex).matcher(text);
       if(m.find())
-	return text.substring(m.start(), m.end());
+         return text.substring(m.start(), m.end());
       else
-	return null;
+         return null;
    }
-   
+
+  /**
+    *  Returns a Gregorian Calendar offset by a given number of days from the current system clock.  
+    *  Use positive int to offset by future days and negative numbers to offset to days before.  
+    *  Automatically set to UTC.
+    *
+    *  @param days The number of days to offset by -/+
+    * 
+    *  @return The newly modified calendar.
+    * 
+    */
+
+    public static GregorianCalendar offsetTime(int days)
+    {
+      GregorianCalendar utc = new GregorianCalendar();
+      utc.setTimeInMillis(new GregorianCalendar().getTime().getTime() + 86400000L*days);
+      utc.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+      return utc;
+    }
+
+
+  /**
+    *  Creates a HashMap from a file.  Key and Value must be separated by
+    *  colons.  One newline per entry.  Example line: "KEY:VALUE".  Useful
+    *  for storing deletion/editing reasons.
+    *
+    *  @param path The path of the file to read from
+    * 
+    *  @return The HashMap we created by parsing the file
+    * 
+    */
+
+    public static HashMap<String, String> buildReasonCollection(String path) throws FileNotFoundException
+    {
+      HashMap<String, String> l = new HashMap<String, String>();
+
+      for(String s : loadFromFile(path, ""))
+      {
+        int i = s.indexOf(":");
+        l.put(s.substring(0, i), s.substring(i+1));
+      }
+     
+      return l;
+    }
 }
