@@ -1,10 +1,12 @@
+package org.wikipedia;
+
 import java.io.*;
 import java.util.*;
-import org.wikipedia.*;
 import java.awt.*;
 import javax.swing.*;
 import javax.security.auth.login.*;
 import java.util.regex.*;
+import java.text.*;
 
 /**
  *  Bot framework for Fbot family of bots consisting of static methods.  Supplements MER-C's Wiki.java.  </br>
@@ -22,70 +24,6 @@ public class Fbot
    {
       //do nothing
    } 
-
-   /**
-    *  Splits an array into multiple parts by requesting user input. Useful for 
-    *  running the same bot task in multiple terminal windows.  Input requested
-    *  includes how many splits and which split this window should be running.
-    *  Very hackish, temporary fix.
-    *
-    *  @param z the array to split
-    *
-    *  @return the split array
-    */
-   public static String[] arraySplitter(String[] z)
-   {
-      Scanner m = new Scanner(System.in);
-      int splits = arraySplitterAssist("How many to split: ", z.length);
-      int part = arraySplitterAssist("Part of split (1-" + splits + "): ", splits);
-
-      String[] xf;
-      if(splits == 1)
-         xf = z;
-      else if(part == 1)
-         xf = Arrays.copyOfRange(z, 0, z.length/splits);
-      else if(part == splits)
-         xf = Arrays.copyOfRange(z, z.length/splits*(splits-1), z.length);
-      else
-         xf = Arrays.copyOfRange(z, z.length/splits*(part-1), z.length/splits*part);
-
-      return xf;
-   }
-
-   /**
-    *  Assist method to arraySplitter().  Idiot proofs user input.  User must
-    *  enter a integer value and the value must be a positive value less than the
-    *  values previously specified.
-    *
-    *  @param prompt Message user will see.
-    *  @param upperLimit User cannot enter a value that exceeds this value.
-    *
-    *  @return the number specified by the user
-    *
-    *  @see #arraySplitter
-    *
-    *
-    */
-
-   private static int arraySplitterAssist(String prompt, int upperLimit)
-   {
-      Scanner m = new Scanner(System.in);
-      while (true)
-      {
-         System.out.print(prompt);
-         while(!m.hasNextInt())
-         {
-            m.nextLine();
-            System.out.println("Not an integer; try again.");
-            System.out.print(prompt);
-         }
-         int i = m.nextInt();
-         if(i >= 1 && i <= upperLimit)
-            return i;
-         System.out.println("Invalid number.  Entry must satisfy [1, " + upperLimit + "].  Please try again.");
-
-      }
-   }
 
    /**
     *  Generic login method which also sets maxlag and throttle.  Max lag set to
@@ -810,7 +748,7 @@ public class Fbot
          return null;
    }
 
-  /**
+   /**
     *  Returns a Gregorian Calendar offset by a given number of days from the current system clock.  
     *  Use positive int to offset by future days and negative numbers to offset to days before.  
     *  Automatically set to UTC.
@@ -821,17 +759,16 @@ public class Fbot
     * 
     */
 
-    public static GregorianCalendar offsetTime(int days)
-    {
-      GregorianCalendar utc = new GregorianCalendar();
+   public static GregorianCalendar offsetTime(int days)
+   {
+      GregorianCalendar utc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
       utc.setTimeInMillis(new GregorianCalendar().getTime().getTime() + 86400000L*days);
-      utc.setTimeZone(TimeZone.getTimeZone("UTC"));
 
       return utc;
-    }
+   }
 
 
-  /**
+   /**
     *  Creates a HashMap from a file.  Key and Value must be separated by
     *  colons.  One newline per entry.  Example line: "KEY:VALUE".  Useful
     *  for storing deletion/editing reasons.
@@ -842,16 +779,118 @@ public class Fbot
     * 
     */
 
-    public static HashMap<String, String> buildReasonCollection(String path) throws FileNotFoundException
-    {
+   public static HashMap<String, String> buildReasonCollection(String path) throws FileNotFoundException
+   {
       HashMap<String, String> l = new HashMap<String, String>();
 
       for(String s : loadFromFile(path, ""))
       {
-        int i = s.indexOf(":");
-        l.put(s.substring(0, i), s.substring(i+1));
+         int i = s.indexOf(":");
+         l.put(s.substring(0, i), s.substring(i+1));
       }
-     
+
       return l;
-    }
+   }
+
+   /**
+    *  Outputs the date/time in UTC.  Based on the format and offset in days.
+    *
+    *  @param format Must be specified in accordance with java.text.DateFormat.  
+    *  @param offset The offset from the current time, in days.  Accepts both positive (for future) and negative values (for past)
+    * 
+    *  @return The formatted date string.
+    * 
+    */
+
+   public static String fetchDateUTC(String format, int offset)
+   {
+      SimpleDateFormat sdf = new SimpleDateFormat(format);
+      sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+      return sdf.format(offsetTime(offset).getTime());
+   } 
+
+
+   /**
+    *  Checks to see if an array contains a given element
+    *
+    *  @param array The array to check 
+    *  @param el The element to look for in this array
+    * 
+    *  @return True if this array contains the element, else false.
+    * 
+    */
+
+   public static boolean arrayContains(Object[] array, Object el)
+   {
+      return Arrays.asList(array).contains(el);
+   }
+
+
+
+   /**
+    *  Fetches a list of Wiki-uploadable files in contained in the specified directory and its subfolders.  Recursive implementation.
+    *
+    *  @param dir The top directory to start with
+    *  @param fl The ArrayList to add the files we found to.
+    *
+    *  @throws UnsupportedOperationException If dir is not a directory.
+    */
+
+   public static void listFilesR(File dir, ArrayList<File> fl) 
+   {
+      if(!dir.exists() || !dir.isDirectory())
+         throw new UnsupportedOperationException("Not a directory:  " + dir.getName());
+      for(File f : dir.listFiles())
+      {
+         String fn = f.getName();
+         if(f.isDirectory() && !fn.startsWith("."))
+            listFilesR(f, fl);
+         else if(fn.matches("(?i).*?(png|jpg|jpeg|gif|ogv|ogg|tif|pdf)"))
+         {
+            fl.add(f);
+         }
+      }
+   }
+
+   /**
+    *  Splits an array of Strings into an array of smaller arrays.  Useful for multithreaded bots. CAVEAT: if splits > z.length, splits will be set to z.length.
+    *
+    *  @param z The array we'll be splitting
+    *  @param splits The number of sub-arrays you want.
+    *
+    */
+
+
+   public static String[][] arraySplitter(String[] z, int splits)
+   {
+
+      if(splits > z.length)
+         splits = z.length;
+
+      String[][] xf;
+
+      if(splits == 0)
+      {
+         xf = new String[][] {z};
+         return xf;
+      }
+      else
+      {
+         xf = new String[splits][];
+         for(int i = 0; i < splits; i++)
+         {
+            String[] temp;
+            if(i == 0)
+               temp = Arrays.copyOfRange(z, 0, z.length/splits);
+            else if(i == splits-1)
+               temp = Arrays.copyOfRange(z, z.length/splits*(splits-1), z.length);
+            else
+               temp = Arrays.copyOfRange(z, z.length/splits*(i), z.length/splits*(i+1));
+
+            xf[i] = temp;
+         }
+         return xf;
+      }
+   }
 }
