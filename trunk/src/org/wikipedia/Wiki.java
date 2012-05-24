@@ -1264,7 +1264,8 @@ public class Wiki implements Serializable
      *      "size"         => 5000           , // the size of the page (Integer), -1 if the page does
      *                                         // not exist
      *      "cascade"      => false          , // whether this page is cascade protected (Boolean)
-     *      "timestamp"    => makeCalendar()   // when this method was called (Calendar)
+     *      "timestamp"    => makeCalendar() , // when this method was called (Calendar)
+     *      "watchtoken"   => "\+"             // watchlist token (String)
      *  }
      *  </pre>
      *  @param page the page to get info for
@@ -1275,9 +1276,8 @@ public class Wiki implements Serializable
     public HashMap<String, Object> getPageInfo(String page) throws IOException
     {
         // fetch
-        // As we are going to call this from edit() and friends, we need to populate cookies2
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&prop=info&intoken=edit&inprop=protection%7Cdisplaytitle&titles=");
+        url.append("action=query&prop=info&intoken=edit|watch&inprop=protection%7Cdisplaytitle&titles=");
         url.append(URLEncoder.encode(page, "UTF-8"));
         String line = fetch(url.toString(), "getPageInfo");
         HashMap<String, Object> info = new HashMap<String, Object>(15);
@@ -1337,9 +1337,14 @@ public class Wiki implements Serializable
         info.put("displaytitle", line.substring(a, b));
 
         // edit/move/upload/protect/delete token
-        a = line.indexOf("token=\"") + 7;
+        a = line.indexOf("edittoken=\"") + 11;
         b = line.indexOf('\"', a);
         info.put("token", line.substring(a, b));
+        
+        // watchlist token
+        a = line.indexOf("watchtoken=\"") + 12;
+        b = line.indexOf('\"', a);
+        info.put("watchtoken", line.substring(a, b));
 
         // timestamp
         info.put("timestamp", makeCalendar());
@@ -2529,8 +2534,6 @@ public class Wiki implements Serializable
 
         // check whether we are "on top".
         Revision top = getTopRevision(revision.getPage());
-        System.out.println(top);
-        System.out.println(revision);
         if (!top.equals(revision))
         {
             log(Level.INFO, "Rollback failed: revision is not the most recent", "rollback");
@@ -3621,10 +3624,14 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        String url = query + "action=watch&title=" + URLEncoder.encode(title, "UTF-8");
+        StringBuilder data = new StringBuilder("title=");
+        data.append(URLEncoder.encode(title, "UTF-8"));
         if (unwatch)
-            url += "&unwatch";
-        fetch(url, state);
+            data.append("&unwatch");
+        String watchToken = (String)getPageInfo(title).get("watchtoken");
+        data.append("&token=");
+        data.append(URLEncoder.encode(watchToken, "UTF-8"));
+        post(query + "action=watch", data.toString(), state);
         log(Level.INFO, "Successfully " + state + "ed " + title, state);
     }
 
@@ -6098,7 +6105,6 @@ public class Wiki implements Serializable
     {
         // connect
         logurl(url, caller);
-        System.out.println(url);
         URLConnection connection = new URL(url).openConnection();
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
