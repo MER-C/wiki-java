@@ -21,6 +21,7 @@ package test;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.logging.LogManager;
 import javax.swing.*;
 import org.wikipedia.Wiki;
 
@@ -91,6 +92,10 @@ public class LoggedInTests
      */
     public static void test(String username, char[] password) throws Exception
     {
+        // set logging
+        System.setProperty("wiki.level", "100");
+        LogManager.getLogManager().readConfiguration();
+        
         // login
         wiki.login(username, password);
 
@@ -105,7 +110,10 @@ public class LoggedInTests
         // org.wikipedia.bots.CPBot.main(new String[0]);
 
         // edit
-        wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
         // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
+        // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
+        
+        // watch
+        wiki.watch("Main Page");
     }
 }

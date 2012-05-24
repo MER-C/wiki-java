@@ -21,6 +21,7 @@ package test;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.LogManager;
 import org.wikipedia.Wiki;
 
 /**
@@ -31,8 +32,12 @@ public class WikiTests
 {
     public static void main(String[] args) throws IOException
     {
+        // setup stuff
+        System.setProperty("wiki.level", "100");
+        LogManager.getLogManager().readConfiguration();
         Wiki enWiki = new Wiki("en.wikipedia.org");
         enWiki.setMaxLag(0);
+
 /*
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
