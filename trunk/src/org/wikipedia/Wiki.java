@@ -1277,7 +1277,7 @@ public class Wiki implements Serializable
     {
         // fetch
         StringBuilder url = new StringBuilder(query);
-        url.append("action=query&prop=info&intoken=edit|watch&inprop=protection%7Cdisplaytitle&titles=");
+        url.append("action=query&prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle&titles=");
         url.append(URLEncoder.encode(page, "UTF-8"));
         String line = fetch(url.toString(), "getPageInfo");
         HashMap<String, Object> info = new HashMap<String, Object>(15);
@@ -3718,6 +3718,67 @@ public class Wiki implements Serializable
             getRawWatchlist();
         return watchlist.contains(title);
     }
+    
+    /**
+     *  Fetches the most recent changes to pages on your watchlist. Data is  
+     *  retrieved from the <tt>recentchanges</tt> table and hence cannot be  
+     *  older than about a month.
+     * 
+     *  @return list of changes to watched pages and their talk pages
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if not logged in
+     *  @since 0.27
+     */
+    public Revision[] watchlist() throws IOException, CredentialNotFoundException
+    {
+        return watchlist(false);
+    }
+    
+    /**
+     *  Fetches recent changes to pages on your watchlist. Data is retrieved 
+     *  from the <tt>recentchanges</tt> table and hence cannot be older than 
+     *  about a month.
+     * 
+     *  @param allrev show all revisions to the pages, instead of the top most
+     *  change
+     *  @return list of changes to watched pages and their talk pages
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if not logged in
+     *  @since 0.27
+     */
+    public Revision[] watchlist(boolean allrev) throws IOException, CredentialNotFoundException
+    {
+        if (user == null)
+            throw new CredentialNotFoundException("Not logged in");
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=watchlist&wlprop=ids|title|timestamp|user|comment|sizes&wllimit=max");
+        if (allrev)
+            url.append("&wlallrev=true");
+        
+        ArrayList<Revision> wl = new ArrayList<Revision>(667);
+        boolean done = false;
+        String wlstart = "";
+        do
+        {
+            String line = fetch(url.toString() + "&wlstart=" + wlstart, "watchlist");
+            if (line.contains("wlstart"))
+            {
+                int a = line.indexOf("wlstart") + 9;
+                wlstart = line.substring(a, line.indexOf('\"', a));
+            }
+            else
+                done = true;
+            for (int i = line.indexOf("<item "); i >= 0; i = line.indexOf("<item ", i))
+            {
+                int j = line.indexOf("/>", i);
+                wl.add(parseRevision(line.substring(i, j), ""));
+                i = j;
+            }
+        }
+        while(!done);
+        log(Level.INFO, "Successfully retrieved watchlist (" + wl.size() + " items)", "watchlist");
+        return wl.toArray(new Revision[0]);
+    }
 
     // LISTS
 
@@ -5076,7 +5137,7 @@ public class Wiki implements Serializable
             if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED)
                 url.append("!patrolled%7C");
             if ((rcoptions & HIDE_BOT) == HIDE_BOT)
-                url.append("!bot");
+                url.append("!bot%7C");
             // chop off last |
             url.delete(url.length() - 3, url.length());
         }
@@ -5173,8 +5234,6 @@ public class Wiki implements Serializable
      */
     public String[][] getInterWikiBacklinks(String prefix, String title) throws IOException
     {
-        // WARNING: do not use on WMF sites until r84257 goes live!
-
         // must specify a prefix
         if (title.equals("|") && prefix.isEmpty())
             throw new IllegalArgumentException("Interwiki backlinks: title specified without prefix!");

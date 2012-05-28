@@ -23,6 +23,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.logging.LogManager;
 import javax.swing.*;
+import org.wikipedia.Fbot;
 import org.wikipedia.Wiki;
 
 /**
@@ -33,87 +34,30 @@ public class LoggedInTests
 {
     private static Wiki wiki = new Wiki("en.wikipedia.org");
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
-        // need a login dialog to input password
-        // don't want to store plaintext passwords on our hard disk, do we?
-        final JDialog dialog = new JDialog((JFrame)null, "Log in");
-
-        // login panel
-        JPanel login = new JPanel();
-        dialog.add(login, BorderLayout.CENTER);
-        login.setLayout(new GridLayout(2, 2));
-        login.add(new JLabel("Username"));
-        final JTextField username = new JTextField(10);
-        login.add(username);
-        login.add(new JLabel("Password"));
-        final JPasswordField password = new JPasswordField(10);
-        login.add(password);
-
-        // buttons
-        JPanel buttons = new JPanel();
-        dialog.add(buttons, BorderLayout.SOUTH);
-        JButton ok = new JButton("OK");
-        buttons.add(ok);
-        ok.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                try
-                {
-                    dialog.setVisible(false);
-                    test(username.getText(), password.getPassword());
-                    System.exit(0);
-                }
-                catch(Exception ex)
-                {
-                    JOptionPane.showMessageDialog(null, "Exception: " + ex);
-                    ex.printStackTrace();
-                }
-            }
-        });
-        JButton cancel = new JButton("Cancel");
-        buttons.add(cancel);
-        cancel.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent e)
-            {
-                System.exit(0);
-            }
-        });
-        dialog.pack();
-        dialog.setVisible(true);
-    }
-
-    /**
-     *  Testing occurs here.
-     *  @param username the username to log in
-     *  @param password the password to use
-     */
-    public static void test(String username, char[] password) throws Exception
-    {
-        // set logging
+        // login and override defaults
         System.setProperty("wiki.level", "100");
         LogManager.getLogManager().readConfiguration();
-        
-        // login
-        wiki.login(username, password);
+        Fbot.guiLogin(wiki);
+        wiki.setThrottle(5);
 
-        // watchlist
-        for (String page : wiki.getRawWatchlist())
-            System.out.println(page);
+        // raw watchlist
+        //for (String page : wiki.getRawWatchlist())
+        //    System.out.println(page);
 
         // email
         // wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
-
-        // BOT TESTS
-        // org.wikipedia.bots.CPBot.main(new String[0]);
 
         // edit
         // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
         // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
         
         // watch
-        wiki.watch("Main Page");
+        // wiki.watch("Main Page");
+        
+        // watchlist
+        for (Wiki.Revision item : wiki.watchlist(false))
+            System.out.println(item);
     }
 }
