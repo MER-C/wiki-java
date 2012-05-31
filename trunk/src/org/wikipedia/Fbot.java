@@ -355,7 +355,7 @@ public class Fbot
    /**
     *  checks to see if a file has at least one FILE LINK to the mainspace.  Be sure to pass in file with "File:" prefix.
     *
-    *  @param file The file to check. Be sure to exclude "File:" prefix.
+    *  @param file The file to check. Be sure to include "File:" prefix.
     *  @param wiki The wiki object to use.
     *
     *  @throws Throwable If Kaboom
@@ -365,7 +365,7 @@ public class Fbot
 
    public static boolean hasMainspaceFileLink(String file, Wiki wiki) throws Throwable
    {
-      return wiki.imageUsage(file, Wiki.MAIN_NAMESPACE).length > 0;
+      return wiki.imageUsage(namespaceStrip(file), Wiki.MAIN_NAMESPACE).length > 0;
    }
 
    /**
