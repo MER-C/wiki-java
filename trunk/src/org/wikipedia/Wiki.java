@@ -1075,12 +1075,13 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.13
      */
-    public String random(int namespace) throws IOException
+    public String random(int... ns) throws IOException
     {
         // fetch
-        String url = query + "action=query&list=random";
-        url += (namespace == ALL_NAMESPACES ? "" : "&rnnamespace=" + namespace);
-        String line = fetch(url, "random");
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=random");
+        constructNamespaceString(url, "rn", ns);
+        String line = fetch(url.toString(), "random");
 
         // parse
         int a = line.indexOf("title=\"") + 7;
@@ -2014,37 +2015,23 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the list of templates used on a particular page. Capped at
-     *  <tt>max</tt> number of templates, there's no reason why there should
-     *  be more than that.
-     *
-     *  @param title a page
-     *  @return the list of templates used on that page
-     *  @throws IOException if a network error occurs
-     *  @since 0.16
-     */
-    public String[] getTemplates(String title) throws IOException
-    {
-        return getTemplates(title, ALL_NAMESPACES);
-    }
-
-    /**
      *  Gets the list of templates used on a particular page that are in a
-     *  particular namespace. Capped at <tt>max</tt> number of templates,
+     *  particular namespace(s). Capped at <tt>max</tt> number of templates,
      *  there's no reason why there should be more than that.
      *
      *  @param title a page
-     *  @param namespace a namespace
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the list of templates used on that page in that namespace
      *  @throws IOException if a network error occurs
      *  @since 0.16
      */
-    public String[] getTemplates(String title, int namespace) throws IOException
+    public String[] getTemplates(String title, int... ns) throws IOException
     {
-        String url = query + "action=query&prop=templates&tllimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
-        if (namespace != ALL_NAMESPACES)
-            url += ("&tlnamespace=" + namespace);
-        String line = fetch(url, "getTemplates");
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&prop=templates&tllimit=max&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        constructNamespaceString(url, "tl", ns);
+        String line = fetch(url.toString(), "getTemplates");
 
         // parse the list
         // typical form: <tl ns="10" title="Template:POTD" />
@@ -3357,35 +3344,20 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the contributions of a user. Equivalent to
-     *  [[Special:Contributions]] Be careful when using this method because
-     *  the user may have a high edit count e.g. <tt>
-     *  enWiki.contribs("MER-C").length</tt> > 150000.
-     *
-     *  @param user the user or IP to get contributions for
-     *  @return the contributions of the user
-     *  @throws IOException if a network error occurs
-     *  @since 0.17
-     */
-    public Revision[] contribs(String user) throws IOException
-    {
-        return contribs(user, "", null, ALL_NAMESPACES);
-    }
-
-    /**
      *  Gets the contributions of a user in a particular namespace. Equivalent
      *  to [[Special:Contributions]]. Be careful when using this method because
      *  the user may have a high edit count e.g. <tt>enWiki.contribs("MER-C",
      *  Wiki.MAIN_NAMESPACE).length</tt> > 30000.
      *
      *  @param user the user or IP to get contributions for
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the contributions of the user
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
-    public Revision[] contribs(String user, int namespace) throws IOException
+    public Revision[] contribs(String user, int... ns) throws IOException
     {
-        return contribs(user, "", null, namespace);
+        return contribs(user, "", null, ns);
     }
 
     /**
@@ -3413,13 +3385,13 @@ public class Wiki implements Serializable
         switch (size)
         {
             case 8:
-                return contribs("", numbers[0] + ".", null, ALL_NAMESPACES);
+                return contribs("", numbers[0] + ".", null);
             case 16:
-                return contribs("", numbers[0] + "." + numbers[1] + ".", null, ALL_NAMESPACES);
+                return contribs("", numbers[0] + "." + numbers[1] + ".", null);
             case 24:
-                return contribs("", numbers[0] + "." + numbers[1] + "." + numbers[2] + ".", null, ALL_NAMESPACES);
+                return contribs("", numbers[0] + "." + numbers[1] + "." + numbers[2] + ".", null);
             case 32: // not that people are silly enough to do this...
-                return contribs(range.substring(0, range.length() - 3), "", null, ALL_NAMESPACES);
+                return contribs(range.substring(0, range.length() - 3), "", null);
             default:
                 throw new NumberFormatException("Range is not supported.");
         }
@@ -3431,13 +3403,13 @@ public class Wiki implements Serializable
      *
      *  @param user the user to get contributions for
      *  @param offset fetch edits no older than this date
-     *  @param namespace a namespace
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param prefix a prefix of usernames. Overrides <tt>user</tt>.
      *  @return contributions of this user
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
-    public Revision[] contribs(String user, String prefix, Calendar offset, int namespace) throws IOException
+    public Revision[] contribs(String user, String prefix, Calendar offset, int... ns) throws IOException
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
@@ -3453,11 +3425,7 @@ public class Wiki implements Serializable
             temp.append("ucuserprefix=");
             temp.append(prefix);
         }
-        if (namespace != ALL_NAMESPACES)
-        {
-            temp.append("&ucnamespace=");
-            temp.append(namespace);
-        }
+        constructNamespaceString(temp, "uc", ns);
         temp.append("&ucstart=");
         ArrayList<Revision> revisions = new ArrayList<Revision>(7500);
         String ucstart = calendarToTimestamp(offset == null ? makeCalendar() : offset);
@@ -3741,12 +3709,13 @@ public class Wiki implements Serializable
      * 
      *  @param allrev show all revisions to the pages, instead of the top most
      *  change
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @since 0.27
      */
-    public Revision[] watchlist(boolean allrev) throws IOException, CredentialNotFoundException
+    public Revision[] watchlist(boolean allrev, int... ns) throws IOException, CredentialNotFoundException
     {
         if (user == null)
             throw new CredentialNotFoundException("Not logged in");
@@ -3754,6 +3723,7 @@ public class Wiki implements Serializable
         url.append("action=query&list=watchlist&wlprop=ids|title|timestamp|user|comment|sizes&wllimit=max");
         if (allrev)
             url.append("&wlallrev=true");
+        constructNamespaceString(url, "wl", ns);
         
         ArrayList<Revision> wl = new ArrayList<Revision>(667);
         boolean done = false;
@@ -3810,13 +3780,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srlimit=max&srsearch=");
         url.append(URLEncoder.encode(search, "UTF-8"));
-        url.append("&srnamespace=");
-        for (int i = 0; i < namespaces.length; i++)
-        {
-            url.append(namespaces[i]);
-            if (i != namespaces.length - 1)
-                url.append("%7C");
-        }
+        constructNamespaceString(url, "sr", namespaces);
         url.append("&sroffset=");
 
         // some random variables we need later
@@ -3865,32 +3829,21 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Returns a list of pages which the use the specified image.
-     *  @param image the image (Example.png, not File:Example.png)
-     *  @return the list of pages that use this image
-     *  @throws IOException if a network error occurs
-     *  @since 0.10
-     */
-    public String[] imageUsage(String image) throws IOException
-    {
-        return imageUsage(image, ALL_NAMESPACES);
-    }
-
-    /**
-     *  Returns a list of pages in the specified namespace which use the
+     *  Returns a list of pages in the specified namespaces which use the
      *  specified image.
      *  @param image the image (Example.png, not File:Example.png)
-     *  @param namespace a namespace
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the list of pages that use this image
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    public String[] imageUsage(String image, int namespace) throws IOException
+    public String[] imageUsage(String image, int... ns) throws IOException
     {
-        String url = query + "action=query&list=imageusage&iutitle=File:" + URLEncoder.encode(image, "UTF-8") + "&iulimit=max";
-        if (namespace != ALL_NAMESPACES)
-            url += "&iunamespace=" + namespace;
-
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=imageusage&iulimit=max&iutitle=File:");
+        url.append(URLEncoder.encode(image, "UTF-8"));
+        constructNamespaceString(url, "iu", ns);
+        
         // fiddle
         ArrayList<String> pages = new ArrayList<String>(1333);
         String next = "";
@@ -3929,53 +3882,35 @@ public class Wiki implements Serializable
      *  [[Special:Whatlinkshere]].
      *
      *  @param title the title of the page
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the list of pages linking to the specified page
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    public String[] whatLinksHere(String title) throws IOException
+    public String[] whatLinksHere(String title, int... ns) throws IOException
     {
-        return whatLinksHere(title, ALL_NAMESPACES, false);
-    }
-
-    /**
-     *  Returns a list of all pages linking to this page. Equivalent to
-     *  [[Special:Whatlinkshere]].
-     *
-     *  @param title the title of the page
-     *  @param namespace a namespace
-     *  @return the list of pages linking to the specified page
-     *  @throws IOException if a network error occurs
-     *  @since 0.10
-     */
-    public String[] whatLinksHere(String title, int namespace) throws IOException
-    {
-        return whatLinksHere(title, namespace, false);
+        return whatLinksHere(title, false, ns);
     }
 
     /**
      *  Returns a list of all pages linking to this page within the specified
-     *  namespace. Alternatively, we can retrive a list of what redirects to a
+     *  namespaces. Alternatively, we can retrive a list of what redirects to a
      *  page by setting <tt>redirects</tt> to true. Equivalent to
      *  [[Special:Whatlinkshere]].
      *
      *  @param title the title of the page
-     *  @param namespace a namespace
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param redirects whether we should limit to redirects only
      *  @return the list of pages linking to the specified page
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    public String[] whatLinksHere(String title, int namespace, boolean redirects) throws IOException
+    public String[] whatLinksHere(String title, boolean redirects, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=backlinks&bllimit=max&bltitle=");
         url.append(URLEncoder.encode(title, "UTF-8"));
-        if (namespace != ALL_NAMESPACES)
-        {
-            url.append("&blnamespace=");
-            url.append(namespace);
-        }
+        constructNamespaceString(url, "bl", ns);
         if (redirects)
             url.append("&blfilterredir=redirects");
 
@@ -4014,33 +3949,21 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Returns a list of all pages transcluding to a page.
-     *
-     *  @param title the title of the page, e.g. "Template:Stub"
-     *  @return the list of pages transcluding the specified page
-     *  @throws IOException if a netwrok error occurs
-     *  @since 0.12
-     */
-    public String[] whatTranscludesHere(String title) throws IOException
-    {
-        return whatTranscludesHere(title, ALL_NAMESPACES);
-    }
-
-    /**
      *  Returns a list of all pages transcluding to a page within the specified
-     *  namespace.
+     *  namespaces.
      *
      *  @param title the title of the page, e.g. "Template:Stub"
-     *  @param namespace a namespace
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the list of pages transcluding the specified page
      *  @throws IOException if a netwrok error occurs
      *  @since 0.12
      */
-    public String[] whatTranscludesHere(String title, int namespace) throws IOException
+    public String[] whatTranscludesHere(String title, int... ns) throws IOException
     {
-        String url = query + "action=query&list=embeddedin&eilimit=max&eititle=" + URLEncoder.encode(title, "UTF-8");
-        if (namespace != ALL_NAMESPACES)
-            url += "&einamespace=" + namespace;
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=embeddedin&eilimit=max&eititle=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        constructNamespaceString(url, "ei", ns);
 
         // main loop
         ArrayList<String> pages = new ArrayList<String>(6667); // generally enough
@@ -4079,33 +4002,17 @@ public class Wiki implements Serializable
      *
      *  @param name the name of the category (e.g. Candidates for speedy
      *  deletion, not Category:Candidates for speedy deletion)
-     *  @return a String[] containing page titles of members of the category
-     *  @throws IOException if a network error occurs
-     *  @since 0.02
-     */
-    public String[] getCategoryMembers(String name) throws IOException
-    {
-        return getCategoryMembers(name, ALL_NAMESPACES);
-    }
-
-    /**
-     *  Gets the members of a category.
-     *
-     *  @param name the name of the category (e.g. Candidates for speedy
-     *  deletion, not Category:Candidates for speedy deletion)
-     *  @param namespace filters by namespace, returns empty if namespace
-     *  does not exist
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
      *  @since 0.03
      */
-    public String[] getCategoryMembers(String name, int namespace) throws IOException
+    public String[] getCategoryMembers(String name, int... ns) throws IOException
     {
-        // WARNING: currently broken on Wikimedia, but should be fixed when
-        // r53304 goes live
-        String url = query + "action=query&list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:" + URLEncoder.encode(name, "UTF-8");
-        if (namespace != ALL_NAMESPACES)
-            url += "&cmnamespace=" + namespace;
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:");
+        url.append(URLEncoder.encode(name, "UTF-8"));
+        constructNamespaceString(url, "cm", ns);
 
         // work around an arbitrary and silly limitation
         ArrayList<String> members = new ArrayList<String>(6667); // enough for most cats
@@ -4114,7 +4021,7 @@ public class Wiki implements Serializable
         {
             if (!members.isEmpty())
                 next = "&cmcontinue=" + URLEncoder.encode(next, "UTF-8");
-            String line = fetch(url + next, "getCategoryMembers");
+            String line = fetch(url.toString() + next, "getCategoryMembers");
 
             // parse
             if (line.contains("cmcontinue"))
@@ -4154,7 +4061,7 @@ public class Wiki implements Serializable
      */
     public ArrayList[] linksearch(String pattern) throws IOException
     {
-        return linksearch(pattern, ALL_NAMESPACES, "http");
+        return linksearch(pattern, "http");
     }
 
     /**
@@ -4166,29 +4073,7 @@ public class Wiki implements Serializable
      *
      *  @param pattern the pattern (String) to search for (e.g. example.com,
      *  *.example.com)
-     *  @param namespace filters by namespace, returns empty if namespace
-     *  does not exist
-     *  @throws IOException if a network error occurs
-     *  @return two lists - index 0 is the list of pages (String), index 1 is
-     *  the list of urls (instance of <tt>java.net.URL</tt>)
-     *  @since 0.06
-     */
-    public ArrayList[] linksearch(String pattern, int namespace) throws IOException
-    {
-        return linksearch(pattern, namespace, "http");
-    }
-
-    /**
-     *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
-     *  Returns two lists, where the first is the list of pages and the
-     *  second is the list of urls. The index of a page in the first list
-     *  corresponds to the index of the url on that page in the second list.
-     *  Wildcards (*) are only permitted at the start of the search string.
-     *
-     *  @param pattern the pattern (String) to search for (e.g. example.com,
-     *  *.example.com)
-     *  @param namespace filters by namespace, returns empty if namespace
-     *  does not exist
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param protocol one of { http, https, ftp, irc, gopher, telnet, nntp,
      *  worldwind, mailto, news, svn, git, mms } or "" (equivalent to http)
      *  @throws IOException if a network error occurs
@@ -4196,7 +4081,7 @@ public class Wiki implements Serializable
      *  the list of urls (instance of <tt>java.net.URL</tt>)
      *  @since 0.24
      */
-    public ArrayList[] linksearch(String pattern, int namespace, String protocol) throws IOException
+    public ArrayList[] linksearch(String pattern, String protocol, int... ns) throws IOException
     {
         // FIXME: Change return type to ArrayList<Object[]> or Object[][]
         // First index refers to item number, linksearch()[x][0] = page title
@@ -4208,11 +4093,7 @@ public class Wiki implements Serializable
         url.append("&euprotocol=");
         url.append(protocol);
         url.append("&eulimit=max");
-        if (namespace != ALL_NAMESPACES)
-        {
-            url.append("&eunamespace=");
-            url.append(namespace);
-        }
+        constructNamespaceString(url, "eu", ns);
         url.append("&euoffset=");
 
         // some variables we need later
@@ -4991,7 +4872,7 @@ public class Wiki implements Serializable
      */
     public Revision[] newPages(int amount) throws IOException
     {
-        return recentChanges(amount, MAIN_NAMESPACE, 0, true);
+        return recentChanges(amount, 0, true, MAIN_NAMESPACE);
     }
 
     /**
@@ -5011,7 +4892,7 @@ public class Wiki implements Serializable
      */
     public Revision[] newPages(int amount, int rcoptions) throws IOException
     {
-        return recentChanges(amount, MAIN_NAMESPACE, rcoptions, true);
+        return recentChanges(amount, rcoptions, true, MAIN_NAMESPACE);
     }
 
     /**
@@ -5024,16 +4905,16 @@ public class Wiki implements Serializable
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. exclude patrolled pages => rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get
-     *  @param namespace the namespace to search
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
-    public Revision[] newPages(int amount, int namespace, int rcoptions) throws IOException
+    public Revision[] newPages(int amount, int rcoptions, int... ns) throws IOException
     {
         // @revised 0.23 move code to recent changes
-        return recentChanges(amount, namespace, rcoptions, true);
+        return recentChanges(amount, rcoptions, true, ns);
     }
 
     /**
@@ -5051,7 +4932,7 @@ public class Wiki implements Serializable
      */
     public Revision[] recentChanges(int amount) throws IOException
     {
-        return recentChanges(amount, MAIN_NAMESPACE, 0, false);
+        return recentChanges(amount, 0, false, MAIN_NAMESPACE);
     }
 
     /**
@@ -5063,14 +4944,14 @@ public class Wiki implements Serializable
      *  Note: Log entries in recent changes have a revid of 0!
      *
      *  @param amount the number of entries to return
-     *  @param namespace the namespace to search
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public Revision[] recentChanges(int amount, int namespace) throws IOException
+    public Revision[] recentChanges(int amount, int... ns) throws IOException
     {
-        return recentChanges(amount, namespace, 0, false);
+        return recentChanges(amount, 0, false, ns);
     }
 
     /**
@@ -5083,16 +4964,16 @@ public class Wiki implements Serializable
      *  Note: Log entries in recent changes have a revid of 0!
      *
      *  @param amount the number of entries to return
-     *  @param namespace the namespace to search
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return.
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public Revision[] recentChanges(int amount, int namespace, int rcoptions) throws IOException
+    public Revision[] recentChanges(int amount, int rcoptions, int... ns) throws IOException
     {
-        return recentChanges(amount, namespace, rcoptions, false);
+        return recentChanges(amount, rcoptions, false, ns);
     }
 
     /**
@@ -5105,7 +4986,7 @@ public class Wiki implements Serializable
      *  Note: Log entries in recent changes have a revid of 0!
      *
      *  @param amount the number of entries to return
-     *  @param namespace the namespace to search
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return.
      *  @param newpages show new pages only
@@ -5113,15 +4994,11 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    protected Revision[] recentChanges(int amount, int namespace, int rcoptions, boolean newpages) throws IOException
+    protected Revision[] recentChanges(int amount, int rcoptions, boolean newpages, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes&rclimit=max");
-        if (namespace != ALL_NAMESPACES)
-        {
-            url.append("&rcnamespace=");
-            url.append(namespace);
-        }
+        constructNamespaceString(url, "rc", ns);
         if (newpages)
             url.append("&rctype=new");
         // rc options
@@ -5474,24 +5351,14 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Fetches the contributions for this user.
+         *  Fetches the contributions for this user in a particular namespace(s).
+         *  @param ns a list of namespaces to filter by, empty = all namespaces.
          *  @return a revision array of contributions
          *  @since 0.17
          */
-        public Revision[] contribs() throws IOException
+        public Revision[] contribs(int... ns) throws IOException
         {
-            return Wiki.this.contribs(username);
-        }
-
-        /**
-         *  Fetches the contributions for this user in a particular namespace.
-         *  @param namespace a namespace
-         *  @return a revision array of contributions
-         *  @since 0.17
-        */
-        public Revision[] contribs(int namespace) throws IOException
-        {
-            return Wiki.this.contribs(username, namespace);
+            return Wiki.this.contribs(username, ns);
         }
 
         /**
@@ -6164,6 +6031,7 @@ public class Wiki implements Serializable
     {
         // connect
         logurl(url, caller);
+        System.out.println(url);
         URLConnection connection = new URL(url).openConnection();
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
@@ -6302,6 +6170,28 @@ public class Wiki implements Serializable
         in = in.replace("&quot;", "\"");
         in = in.replace("&#039;", "'");
         return in;
+    }
+    
+    /**
+     *  Convenience method for converting a namespace list into String form.
+     *  @param sb the url StringBuilder to append to
+     *  @param id the request type prefix (e.g. "pl" for prop=links)
+     *  @param namespaces the list of namespaces to append
+     *  @since 0.27
+     */
+    protected void constructNamespaceString(StringBuilder sb, String id, int... namespaces)
+    {
+        if (namespaces.length == 0)
+            return;
+        sb.append("&");
+        sb.append(id);
+        sb.append("namespace=");
+        for (int namespace : namespaces)
+        {
+            sb.append(namespace);
+            sb.append("%7C");
+        }
+        sb.delete(sb.length() - 3, sb.length());
     }
 
     // user rights methods
