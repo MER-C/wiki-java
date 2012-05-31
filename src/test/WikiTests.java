@@ -36,9 +36,27 @@ public class WikiTests
         System.setProperty("wiki.level", "100");
         LogManager.getLogManager().readConfiguration();
         Wiki enWiki = new Wiki("en.wikipedia.org");
-        enWiki.setMaxLag(0);
+        enWiki.setMaxLag(-1);
+        
+        // random
+        System.out.println(enWiki.random());
+        System.out.println(enWiki.random());
+        System.out.println(enWiki.random());
+        System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
+        System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
+        System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
+        
+/*       
+        // imageUsage()
+        for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
+            System.out.println(page);
 
-/*
+        // getCategoryMembers()
+        for (String page : enWiki.getCategoryMembers("Place of death missing"))
+            System.out.println(page);
+        for (String page : enWiki.getCategoryMembers("Miscellaneous pages for deletion", Wiki.USER_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
+            System.out.println(page);
+
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
@@ -129,8 +147,8 @@ public class WikiTests
 
         // Revision.diff
         System.out.println(enWiki.getRevision(473467375L).diff(Wiki.PREVIOUS_REVISION));
-  */
-        enWiki.setMaxLag(-1);
+
         System.out.println(enWiki.getPageText("Main Page"));
+        */
     }
 }

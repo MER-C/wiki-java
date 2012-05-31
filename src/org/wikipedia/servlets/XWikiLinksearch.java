@@ -103,9 +103,9 @@ public class XWikiLinksearch extends HttpServlet
             Wiki wiki = new Wiki(wikis[i] + ".wikipedia.org");
             wiki.setUsingCompressedRequests(false); // This is Google's fault.
             wiki.setMaxLag(0);
-            ArrayList[] temp = wiki.linksearch("*." + domain, Wiki.ALL_NAMESPACES, "http");
+            ArrayList[] temp = wiki.linksearch("*." + domain, "http");
             // silly api designs aplenty here!
-            ArrayList[] temp2 = wiki.linksearch("*." + domain, Wiki.ALL_NAMESPACES, "https");
+            ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
             temp[0].addAll(temp2[0]);
             temp[1].addAll(temp2[1]);
             buffer.append("<h3>Results for ");
