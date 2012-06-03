@@ -9,25 +9,23 @@ import java.util.regex.*;
 import java.text.*;
 
 /**
- *  Bot framework for Fbot family of bots consisting of static methods.  Supplements MER-C's Wiki.java.  </br>
- *  Unless otherwise specified, assume that all Wiki objects have been 'logged in'. </br>
- *  As far as I know, everything is fairly stable.   </br>
- *  Report bugs to [http://commons.wikimedia.org/wiki/User_talk:Fastily].   </br>
- *  For best results, use with Wiki.java r51: [http://code.google.com/p/wiki-java/source/browse/trunk/src/org/wikipedia/Wiki.java?spec=svn51&r=51] </br>
- *  Licensed under GNU GPL v3.
+ *  A Mediawiki bot framework consisting of static methods. </br>
+ *  Unless otherwise specified, assume that all Wiki objects are logged in.</br>
+ *  Please report bugs <a href=http://commons.wikimedia.org/wiki/User_talk:Fastily>here</a>!</br>
+ *  Licensed under the <ins>GNU GPL v3 license</ins></br>
+ *  Visit our Google Code Project <a href="http://code.google.com/p/wiki-java/">home</a>
  */
 
 public class Fbot
 {
-   //Hiding Fbot() from appearing with a constructor in javadocs
+   //Hiding constructor from Javadoc
    private Fbot()
    {
       //do nothing
    } 
 
    /**
-    *  Generic login method which also sets maxlag and throttle.  Max lag set to
-    *  1000000.
+    *  Generic login method which turns off maxlag and allows for setting of throttle.
     *
     *  @param wiki Wiki object to perform changes on
     *  @param user User to login as, without "User:" prefix
@@ -35,7 +33,7 @@ public class Fbot
     *  @param throttle Seconds to wait in between making edits
     *
     *  @throws IOException If we had a network error
-    *  @throws FailedLoginException If login credentials were wrong
+    *  @throws FailedLoginException If we had bad login information
     *
     *
     */
@@ -68,7 +66,7 @@ public class Fbot
 
    public static void loginAndSetPrefs(String file, String user, int throttle, Wiki wiki) throws IOException, FailedLoginException
    {
-      for(String f : loadFromFile(file, ""))
+      for(String f : FbotUtil.loadFromFile(file, ""))
          if(f.startsWith(user))
          {
             loginAndSetPrefs(wiki, user, f.substring(f.indexOf(":") + 1).trim().toCharArray(), throttle); 
@@ -83,13 +81,10 @@ public class Fbot
     *
     *  @param wiki Wiki object to perform changes on
     *
-    *  @throws IOException
-    *  @throws FailedLoginException
-    *
     *  @see #loginAndSetPrefs
     *
     */
-   public static void guiLogin(Wiki wiki) throws IOException, FailedLoginException
+   public static void guiLogin(Wiki wiki)
    {
 
       JPanel pl = new JPanel(new GridLayout(2,2));
@@ -121,88 +116,18 @@ public class Fbot
    }
 
    /**
-    *  Loads list of pages contained in a local file into an array.  One newline per item.
+    *  Used to check if <tt>{{bots}}</tt> or <tt>{{robots}}</tt>, case-insensitive, is present in a String.
     *  
-    *  @param file directory of the file to load from. 
-    *  @param prefix append prefix/namespace to items?  If not, specify "" as
-    *  arg.
+    *  @param text The String to check for <tt>{{bots}}</tt> or <tt>{{nobots}}</tt>
+    *  @param user The account to check for, without the "User:" prefix.
     *
-    *  @return The resulting array
-    *
-    *  @throws FileNotFoundException if the specified file cannot be found.
-    *
-    *
-    */
-
-   public static String[] loadFromFile(String file, String prefix) throws FileNotFoundException
-   {
-      Scanner m = new Scanner(new File(file));
-      ArrayList<String> l = new ArrayList<String>();
-      while (m.hasNextLine())
-         l.add(prefix + m.nextLine().trim());
-      return l.toArray(new String[0]);
-   }
-
-   /**
-    *  Loads list from a page on a wiki.  Note that each item to load into a list
-    *  must be on a new line, or else the parser will not work.  Will ignore any
-    *  lines beginning with the "<" character (useful for inline commenting in wiki-text).
-    *
-    *  
-    *  @param page Wiki page to load from
-    *  @param wiki The wiki object to use for this action
-    *  @param prefix Can be used to prepend a prefix to every item in the list.
-    *  Use empty string "" if no prefix required.
-    *
-    *  @return The resulting list
-    *
-    *  @throws IOException in case of network failure
-    *
-    */
-
-   public static String[] getList(String page, Wiki wiki, String prefix) throws IOException
-   {
-      Scanner m = new Scanner(wiki.getPageText(page));
-      ArrayList<String> list = new ArrayList<String>();
-
-      String x;
-      while(m.hasNextLine())
-         if(! (x = m.nextLine().trim()).startsWith("<") && x.length() > 1)
-            list.add(prefix + x);
-      return list.toArray(new String[0]);
-   }
-
-   /**
-    *  Removes character sequence(s) from each element of an ArrayList<String>.
-    * 
-    *  
-    *  @param l The ArrayList<String> to be actioned upon
-    *  @param crap List of String(s) to strip from each element of l
-    *
-    */
-
-   public static void stripCrap(ArrayList<String> l, String[] crap)
-   {
-      for (String c : crap)
-         for(int i = 0; i < l.size(); i++)
-            l.set(i, l.get(i).replace(c, ""));
-   }
-
-   /**
-    *  Used to check if {{bots}} or {{nobots}}, case ignored, is present on a
-    *  given page. 
-    *  
-    *  @param text The text to check for aformentioned template occurances.
-    *  @param user The current bot's username.  Used to check if the bot is being
-    *  explicitly allowed or denied.
-    *
-    *  @return boolean indicating whether the bot should edit this page.
+    *  @return boolean True if this particular bot should be allowed to edit this page.
     *  
     */
 
    public static boolean allowBots(String text, String user)
    {
-      return !text.matches("(?si).*\\{\\{(nobots|bots\\|(allow=none|deny=(.*?" + user + ".*?|all)|optout=all))\\}\\}.*");
+      return !text.matches("(?i).*?\\{\\{(nobots|bots\\|(allow=none|deny=(.*?" + user + ".*?|all)|optout=all))\\}\\}.*?");
    }
 
    /**
@@ -210,9 +135,9 @@ public class Fbot
     *  namespace attached to the passed in string, then the original string is
     *  returned.
     *
-    *  @param title The title to remove a namespace from
+    *  @param title The String to remove a namespace identifier from.
     *
-    *  @return The title without a namespace.
+    *  @return The String without a namespace identifier.
     *
     */
    public static String namespaceStrip(String title)
@@ -224,87 +149,18 @@ public class Fbot
    }
 
    /**
-    *  Performs same function as String contains() from java.lang.String, but is
-    *  not case-sensitive.
-    *
-    *  @param text main body of text to check.
-    *  @param s2 we will try to check if s2 is contained in text.
-    *
-    *  @return boolean indicating whether s2 is contained in text,
-    *  case-insensitive.
-    *
-    */
-
-   public static boolean containsIgnoreCase(String text, String s2)
-   {
-      return text.toUpperCase().contains(s2.toUpperCase());
-   }
-
-   /**
-    *  Determines if a substring in an array of strings is present in at least 
-    *  one string of that array.  String substring is the substring to search for. 
-    *
-    *  @param list The list of elements to use
-    *  @param substring The substring to search for in the list
-    *  @param caseinsensitive If true, ignore upper/lowercase distinctions.
-    *
-    *  @return boolean True if we found a matching substring in the specified list.
-    *  
-    */
-
-   public static boolean listElementContains(String[] list, String substring, boolean caseinsensitive)
-   {
-      if(caseinsensitive)
-      { 
-         substring = substring.toLowerCase();
-         for(String s : list)
-            if(s.toLowerCase().contains(substring))
-               return true;
-         return false;
-      }
-      else
-      {
-         for(String s : list)
-            if(s.contains(substring))
-               return true;
-         return false;
-      } 
-   }
-
-
-   /**
-    *  Outputs a text file (.txt) representing the elements of an array.  Broken at the
-    *  moment, seems to work only half of the time.
-    *
-    *  @param list The list of elements to use
-    *  @param outputTitle Title to output txt file to, w/o file extension. 
-    *
-    *  @throws IOException If we encounter a read-write exception.
-    *  
-    */
-
-   public static void dumpAsFile(String[] list, String outputTitle) throws IOException
-   {
-      BufferedWriter out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(outputTitle + ".txt"), "UTF-8"));
-      for (String s : list)
-         out.write(s + "\n");
-      out.flush();
-      out.close();
-   }
-
-   /**
-    *  Gets the target of the title, which is presumed to be a redirect.
+    *  Gets the target of the redirect page. </br>PRECONDITION: <tt>redirect</tt> must be a Redirect.
     *
     *  @param redirect The title of the redirect to get the target for.
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable If Kaboom
+    *  @throws Throwable If there was a network issue, non-existent page issue, or if we tried to access a Special: page.
     *  @throws UnsupportedOperationException If the page was not a redirect page.
     *  
     *  @return String The title of the redirect's target.
     */
 
-   public static String getRedirectTarget(String redirect, Wiki wiki) throws Throwable
+   public static String getRedirectTarget(String redirect, Wiki wiki) throws Throwable 
    {
       String text = wiki.getPageText(redirect).trim();
       if(text.startsWith("#"))
@@ -314,14 +170,14 @@ public class Fbot
    }
 
    /**
-    *  Checks to see if a given page exists locally (i.e. page is not a 'red-link')
+    *  Checks to see if a given page exists on Wiki (i.e. page is not a 'red-link')
     *
-    *  @param page The title to check for.
+    *  @param page The page to check for.
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable If Kaboom
+    *  @throws Throwable
     *  
-    *  @return boolean True if the page exists.
+    *  @return True if the page exists.
     */
 
    public static boolean exists(String page, Wiki wiki) throws Throwable
@@ -336,9 +192,9 @@ public class Fbot
     *  @param template The title of the main Template (CANNOT BE REDIRECT), including the "Template:" prefix.
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable If Kaboom
+    *  @throws Throwable
     *  
-    *  @return String The regex, in the form (?si)\{\{(Template:)??)(XXXXX|XXXX|XXXX...).*?\}\}, where XXXX is the
+    *  @return The regex, in the form (?si)\{\{(Template:)??)(XXXXX|XXXX|XXXX...).*?\}\}, where XXXX is the
     *  template and its redirects.
     */
 
@@ -353,14 +209,14 @@ public class Fbot
    }
 
    /**
-    *  checks to see if a file has at least one FILE LINK to the mainspace.  Be sure to pass in file with "File:" prefix.
+    *  Checks to see if a file has at least one <b>file link</b> to the mainspace. 
     *
     *  @param file The file to check. Be sure to include "File:" prefix.
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable If Kaboom
+    *  @throws Throwable
     *  
-    *  @return boolean true if the file has at least one mainspace file link.
+    *  @return True if the file has at least one mainspace file link.
     */
 
    public static boolean hasMainspaceFileLink(String file, Wiki wiki) throws Throwable
@@ -369,7 +225,7 @@ public class Fbot
    }
 
    /**
-    *  Deletes ALL members of a category and then the category itself.
+    *  Deletes <ins>all</ins> members of a category and then the category itself.
     *
     *  @param cat The category to fetch items from, INCLUDING "Category:" prefix.
     *  @param reason The reason to use when deleting the category members.
@@ -378,7 +234,7 @@ public class Fbot
     *  @param catReason The reason to use when deleting the category.
     *  @param wiki The wiki object to use.
     *
-    *  @throws IOException if we had a network error
+    *  @throws IOException If we had a network error
     *
     *  @return An array containing the elements we were unable to delete.
     *  
@@ -393,7 +249,7 @@ public class Fbot
       }
       catch (Throwable e)
       {
-         //well, we did try…
+	//don't care
       }
 
       return f;
@@ -409,7 +265,7 @@ public class Fbot
     *  @param footerText Ending description text.  Specify "" for no end.
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable If Kaboom
+    *  @throws Throwable
     *  
     */
 
@@ -430,7 +286,7 @@ public class Fbot
     *  @param headerText Leading description text.  Specify "" for no lead.
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable If Kaboom
+    *  @throws Throwable
     *  
     */
 
@@ -447,7 +303,7 @@ public class Fbot
     *  @param reason Edit summary to use
     *  @param wiki The wiki object to use.
     *
-    *  @throws Throwable if Kaboom
+    *  @throws Throwable 
     *  
     */
 
@@ -471,7 +327,7 @@ public class Fbot
    }
 
    /**
-    *  Returns all the items in an array that are in the specified namespace. 
+    *  Returns all the items in an array that are within the specified namespace. 
     *
     *  @param list The list of items to use
     *  @param namespace The namespace of items to return
@@ -497,7 +353,7 @@ public class Fbot
 
 
    /**
-    *  Checks if two arrays share at least one element.
+    *  Determines if two arrays share at least one element.
     *
     *  @param a1 The first array
     *  @param a2 The second array
@@ -624,7 +480,7 @@ public class Fbot
    }   
 
    /**
-    *  Deletes a page and it's talk page (if possible)
+    *  Deletes a page and it's talk page (if applicable)
     *
     *  @param page The page to delete
     *  @param reason The reason to use when deleting this page
@@ -647,7 +503,7 @@ public class Fbot
     *  @param template The template to work on.  Must be entered in format {{NAME|PARM1|PARAM2|...}}
     *  @param number The parameter to retrieve: {{NAME|1|2|3|4...}}
     * 
-    *  @return The param we parsed out or Null if we didn't find a param matching the specified criteria
+    *  @return The param we parsed out or null if we didn't find a param matching the specified criteria
     * 
     */
    public static String getTemplateParam(String template, int number)
@@ -669,7 +525,7 @@ public class Fbot
     *  @param template The template to work on.  Must be entered in format {{NAME|PARM1|PARAM2|...}}
     *  @param param The parameter to retrieve, without "=". 
     * 
-    *  @return The param we parsed out or Null if we didn't find a param matching the specified criteria
+    *  @return The param we parsed out or null if we didn't find a param matching the specified criteria
     * 
     */
 
@@ -766,30 +622,6 @@ public class Fbot
 
 
    /**
-    *  Creates a HashMap from a file.  Key and Value must be separated by
-    *  colons.  One newline per entry.  Example line: "KEY:VALUE".  Useful
-    *  for storing deletion/editing reasons.
-    *
-    *  @param path The path of the file to read from
-    * 
-    *  @return The HashMap we created by parsing the file
-    * 
-    */
-
-   public static HashMap<String, String> buildReasonCollection(String path) throws FileNotFoundException
-   {
-      HashMap<String, String> l = new HashMap<String, String>();
-
-      for(String s : loadFromFile(path, ""))
-      {
-         int i = s.indexOf(":");
-         l.put(s.substring(0, i), s.substring(i+1));
-      }
-
-      return l;
-   }
-
-   /**
     *  Outputs the date/time in UTC.  Based on the format and offset in days.
     *
     *  @param format Must be specified in accordance with java.text.DateFormat.  
@@ -809,85 +641,18 @@ public class Fbot
 
 
    /**
-    *  Checks to see if an array contains a given element
+    *  Logs in using a user-defined file named "px".
     *
-    *  @param array The array to check 
-    *  @param el The element to look for in this array
-    * 
-    *  @return True if this array contains the element, else false.
-    * 
+    *  @param wiki The wiki object to use
+    *  @param user The user to be logged in
+    *
+    *  @throws Throwable
+    *  @see #loginAndSetPrefs
     */
 
-   public static boolean arrayContains(Object[] array, Object el)
+   public static void loginPX(Wiki wiki, String user) throws Throwable
    {
-      return Arrays.asList(array).contains(el);
+      Fbot.loginAndSetPrefs("px", user, 1, wiki);
    }
 
-
-
-   /**
-    *  Fetches a list of Wiki-uploadable files in contained in the specified directory and its subfolders.  Recursive implementation.
-    *
-    *  @param dir The top directory to start with
-    *  @param fl The ArrayList to add the files we found to.
-    *
-    *  @throws UnsupportedOperationException If dir is not a directory.
-    */
-
-   public static void listFilesR(File dir, ArrayList<File> fl) 
-   {
-      if(!dir.exists() || !dir.isDirectory())
-         throw new UnsupportedOperationException("Not a directory:  " + dir.getName());
-      for(File f : dir.listFiles())
-      {
-         String fn = f.getName();
-         if(f.isDirectory() && !fn.startsWith("."))
-            listFilesR(f, fl);
-         else if(fn.matches("(?i).*?(png|jpg|jpeg|gif|ogv|ogg|tif|pdf)"))
-         {
-            fl.add(f);
-         }
-      }
-   }
-
-   /**
-    *  Splits an array of Strings into an array of smaller arrays.  Useful for multithreaded bots. CAVEAT: if splits > z.length, splits will be set to z.length.
-    *
-    *  @param z The array we'll be splitting
-    *  @param splits The number of sub-arrays you want.
-    *
-    */
-
-
-   public static String[][] arraySplitter(String[] z, int splits)
-   {
-
-      if(splits > z.length)
-         splits = z.length;
-
-      String[][] xf;
-
-      if(splits == 0)
-      {
-         xf = new String[][] {z};
-         return xf;
-      }
-      else
-      {
-         xf = new String[splits][];
-         for(int i = 0; i < splits; i++)
-         {
-            String[] temp;
-            if(i == 0)
-               temp = Arrays.copyOfRange(z, 0, z.length/splits);
-            else if(i == splits-1)
-               temp = Arrays.copyOfRange(z, z.length/splits*(splits-1), z.length);
-            else
-               temp = Arrays.copyOfRange(z, z.length/splits*(i), z.length/splits*(i+1));
-
-            xf[i] = temp;
-         }
-         return xf;
-      }
-   }
 }
