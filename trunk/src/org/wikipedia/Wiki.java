@@ -30,17 +30,16 @@ import javax.security.auth.login.*; // useful exception types
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.6 (6.0) or greater. Uses the <a
- *  href="http://mediawiki.org/wiki/API">MediaWiki API</a> for most operations.
+ *  href="http://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most operations.
  *  It is recommended that the server runs the latest version of MediaWiki
  *  (1.18), otherwise some functions may not work.
  *  <p>
- *  Extended documentation is available at {@link
- *  http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation }. All
+ *  Extended documentation is available <a href="http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. All
  *  wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
  *  <p>
- *  Please file bug reports at [[User talk:MER-C]] (fast) or the Google
- *  code bug tracker (slow).
+ *  Please file bug reports <a href="http://en.wikipedia.org/w/index.php?title=User_talk:MER-C&action=edit&section=new">here</a> (fast)
+ *  or at the Google code bug <a href="http://code.google.com/p/wiki-java/issues/list">tracker</a> (slow).
  *
  *  @author MER-C and contributors
  *  @version 0.26
@@ -1070,7 +1069,7 @@ public class Wiki implements Serializable
      *  Fetches a random page in the specified namespace. Equivalent to
      *  [[Special:Random]].
      *
-     *  @param namespace a namespace
+     *  @param ns namespace(s)
      *  @return the title of the page
      *  @throws IOException if a network error occurs
      *  @since 0.13
@@ -1163,7 +1162,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Determines the intersection of two lists of pages a and b, i.e. a ∩ b.
+     *  Determines the intersection of two lists of pages a and b, i.e. a â© b.
      *  Such lists might be generated from the various list methods below.
      *  Examples from the English Wikipedia:
      *
@@ -1179,7 +1178,7 @@ public class Wiki implements Serializable
      *
      *  @param a a list of pages
      *  @param b another list of pages
-     *  @return a ∩ b (as String[])
+     *  @return a â© b (as String[])
      *  @since 0.04
      */
     public static String[] intersection(String[] a, String[] b)
@@ -2708,7 +2707,7 @@ public class Wiki implements Serializable
     /**
      *  Parses stuff of the form <tt>title="L. Sprague de Camp"
      *  timestamp="2006-08-28T23:48:08Z" minor="" comment="robot  Modifying:
-     *  [[bg:Лион Спраг де Камп]]"</tt> into useful revision objects. Used by
+     *  [[bg:ÐÐ¸Ð¾Ð½ Ð¡Ð¿ÑÐ°Ð³ Ð´Ðµ ÐÐ°Ð¼Ð¿]]"</tt> into useful revision objects. Used by
      *  <tt>contribs()</tt>, <tt>watchlist()</tt>, <tt>getPageHistory()</tt>
      *  <tt>rangeContribs()</tt> and <tt>recentChanges()</tt>. NOTE: if
      *  RevisionDelete was used on a revision, the relevant values will be null.
@@ -3216,9 +3215,12 @@ public class Wiki implements Serializable
         out.writeBytes("\"\r\n");
         out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
         FileInputStream fi = new FileInputStream(file);
-        byte[] by = new byte[fi.available()];
-        fi.read(by);
-        out.write(by);
+
+	byte[] by = new byte[1024];
+        int len;
+	while((len = fi.read(by)) > 0)
+           out.write(by);
+
         fi.close();
         out.writeBytes("\r\n");
         out.writeBytes(boundary);
@@ -5145,7 +5147,7 @@ public class Wiki implements Serializable
             else
                 iwblcontinue = "";
             // parse
-            // form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wrocław" iwprefix="pl" iwtitle="Main_Page" />
+            // form: <iw pageid="24163544" ns="0" title="Elisabeth_of_WrocÅaw" iwprefix="pl" iwtitle="Main_Page" />
             for (int x = line.indexOf("<iw "); x >= 0;  x = line.indexOf("<iw ", x))
             {
                 int a = line.indexOf("title=\"", x) + 7;

@@ -9,11 +9,10 @@ import java.util.regex.*;
 import java.text.*;
 
 /**
- *  A Mediawiki bot framework consisting of static methods. </br>
- *  Unless otherwise specified, assume that all Wiki objects are logged in.</br>
- *  Please report bugs <a href=http://commons.wikimedia.org/wiki/User_talk:Fastily>here</a>!</br>
- *  Licensed under the <ins>GNU GPL v3 license</ins></br>
- *  Visit our Google Code Project <a href="http://code.google.com/p/wiki-java/">home</a>
+ *  A Mediawiki bot framework consisting of static methods.  Unless otherwise specified, assume that all Wiki objects are logged in. Please report bugs <a href=http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here</a>! Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here</a>! This code and project are licensed under the terms of the <a href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
+ *  
+ *  @see org.wikipedia.FbotUtil
+ *  @see org.wikipedia.MBot
  */
 
 public class Fbot
