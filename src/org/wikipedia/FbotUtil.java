@@ -5,6 +5,9 @@ import java.util.*;
 
 /**
  *  Miscellaneous utility methods for Fbot.  Contains non-wiki related functions.
+ *
+ * @see org.wikipedia.Fbot
+ * @see org.wikipedia.MBot
  */
 
 public class FbotUtil
@@ -238,7 +241,7 @@ public class FbotUtil
       byte[] buf = new byte[1024];
       int len;
       while((len = in.read(buf)) > 0)
-         out.write(buf, 0, len);
+         out.write(buf);
 
       in.close();
       out.close();
@@ -265,7 +268,7 @@ public class FbotUtil
    /**
     *  Determines if a file is uploadable to a WMF Wiki.  Uploadable files currently are (png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga).
     *
-    *  @param file The filename to check
+    *  @param f The filename to check
     *
     *  @return True if the file is uploadable to a WMF wiki.  
     */
