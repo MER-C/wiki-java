@@ -681,6 +681,7 @@ public class Wiki implements Serializable
     public void setResolveRedirects(boolean b)
     {
         resolveredirect = b;
+        initVars();
     }
 
     /**
