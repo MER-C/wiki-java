@@ -4,7 +4,17 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Class consisting of stand-alone, multi-threaded bot methods. These methods are designed to get the specified task done, as <i>fast</i> as possible.  Currently consists of an Upload and Deletion bot. There should only be once instance of this bot running at a time.  Please note that you <span style="font-weight:bold;color:#FF0000">MUST</span> call setup() before running any of these bot methods.  Be sure to <a href="http://stackoverflow.com/questions/1565388/increase-heap-size-in-java">adjust heap space</a> according to the method you're running (Uploads will require more space depending on the size of files you're uploading and how many threads you've chosen to instantiate).  Now accepting feature requests <a href="http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new">here</a>.
+ * Class consisting of stand-alone, multi-threaded bot methods. These methods 
+ * are designed to get the specified task done, as <i>fast</i> as possible.  
+ * Currently consists of an Upload and Deletion bot. There should only be once 
+ * instance of this bot running at a time.  Please note that you 
+ * <span style="font-weight:bold;color:#FF0000">MUST</span> call setup() before
+ * running any of these bot methods.  Be sure to 
+ * <a href="http://stackoverflow.com/questions/1565388/increase-heap-size-in-java">adjust 
+ * heap space</a> according to the method you're running (Uploads will require 
+ * more space depending on the size of files you're uploading and how many 
+ * threads you've chosen to instantiate).  Now accepting feature requests 
+ * <a href="http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new">here</a>.
  *
  * @see org.wikipedia.Fbot
  * @see org.wikipedia.FbotUtil
@@ -15,24 +25,37 @@ public class MBot
    /**
     * The username to be logging in under.
     */
-   private static String username;
+   private String username;
 
    /**
     * The password to be using.
     */
-   private static char[] px;
+   private char[] px;
 
    /**
     * The domain we'll be using: e.g. commons.wikimedia.org, en.wikipedia.org, ect.
     */ 
-   private static String domain;
+   private String domain;
+   
+   private static MBot instance = null;
 
    /**
-    * Constructor, hiding from Javadoc
+    * Constructor, hiding from Javadoc and forcing singleton.
     */
    private MBot()
    {
       //do nothing
+   }
+   
+   /**
+    *  Returns the single instance.
+    *  @return (see above)
+    */
+   public static MBot getInstance()
+   {
+       if (instance == null)
+           instance = new MBot();
+       return instance;
    }
 
    /**
@@ -42,7 +65,7 @@ public class MBot
     * @param p The password to use
     * @param d The domain to use (e.g. "commons.wikimedia.org", "en.wikipedia.org")
     */
-   public static void setup(String u, char[] p, String d)
+   public void setup(String u, char[] p, String d)
    {
       username = u;
       px = p;
@@ -60,7 +83,7 @@ public class MBot
     * @throws Throwable If we had a network or login issue.
     */
 
-   public static void upload(String dir, String desc, int num) throws Throwable
+   public void upload(String dir, String desc, int num) throws Throwable
    {
       ArrayList<String> l = new ArrayList<String>();
       for(String s : new File(dir).list())
@@ -79,7 +102,7 @@ public class MBot
     *
     * @throws Throwable If we had a network of login issue.
     */
-   public static void upload(String[] filelist, String desc, int num) throws Throwable
+   public synchronized void upload(String[] filelist, String desc, int num) throws Throwable
    {
       for(String[] l : FbotUtil.arraySplitter(filelist, num))
          new Thread(new UploadT(l, desc)).start();
@@ -94,7 +117,7 @@ public class MBot
     *
     * @throws Throwable If we had a network of login issue.
     */
-   public static void delete(String[] list, String reason, int num) throws Throwable
+   public synchronized void delete(String[] list, String reason, int num) throws Throwable
    {
       for(String[] l : FbotUtil.arraySplitter(list, num))
          new Thread(new DeleteT(l, reason)).start();
@@ -107,7 +130,7 @@ public class MBot
     * @throws UnsupportedOperationException If we had a network of login issue.
     */
 
-   private static Wiki generateWiki()
+   private Wiki generateWiki()
    {
       short cnt = 0;
       Wiki wiki = new Wiki(domain);
@@ -130,7 +153,7 @@ public class MBot
     * Can be used as a single instance of an upload bot thread.  
     */
 
-   private static class UploadT implements Runnable
+   private class UploadT implements Runnable
    {
 
       /**
@@ -184,7 +207,7 @@ public class MBot
    } //end UploadT
 
 
-   private static class DeleteT implements Runnable
+   private class DeleteT implements Runnable
    {
       /**
        * The list of pages to delete
