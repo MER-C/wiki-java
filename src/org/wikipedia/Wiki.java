@@ -1952,17 +1952,21 @@ public class Wiki implements Serializable
     /**
      *  Purges the server-side cache for various pages.
      *  @param titles the titles of the page to purge
+     *  @param links update the links tables 
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @since 0.17
      */
-    public void purge(String... titles) throws IOException, CredentialNotFoundException
+    public void purge(boolean links, String... titles) throws IOException, CredentialNotFoundException
     {
         if (user == null)
             throw new CredentialNotFoundException("You need to be logged in to purge pages via the API.");
         StringBuilder url = new StringBuilder(apiUrl);
         StringBuilder log = new StringBuilder("Successfully purged { \""); // log statement
-        url.append("action=purge&titles=");
+        url.append("action=purge");
+        if (links)
+            url.append("&forcelinkupdate");
+        url.append("&titles=");
         for (int i = 0; i < titles.length; i++)
         {
             url.append(URLEncoder.encode(titles[i], "UTF-8"));
@@ -2781,9 +2785,10 @@ public class Wiki implements Serializable
             user2 = decode(xml.substring(a, b));
         }
 
-        // minor
+        // flags: minor, bot, new
         boolean minor = xml.contains("minor=\"\"");
         boolean bot = xml.contains("bot=\"\"");
+        boolean rvnew = xml.contains("new=\"\"");
 
         // size
         int size;
@@ -2802,7 +2807,7 @@ public class Wiki implements Serializable
         else // MW bug 32414/32415? Also, may help for revdeled revisions.
             size = 0;
 
-        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, size);
+        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, rvnew, size);
         if (xml.contains("rcid=\""))
         {
             // set rcid
@@ -5639,7 +5644,7 @@ public class Wiki implements Serializable
      */
     public class Revision implements Comparable<Revision>
     {
-        private boolean minor, bot;
+        private boolean minor, bot, rvnew;
         private String summary;
         private long revid, rcid = -1;
         private Calendar timestamp;
@@ -5660,11 +5665,12 @@ public class Wiki implements Serializable
          *  use <tt>User.getUsername()</tt>)
          *  @param minor whether this was a minor edit
          *  @param bot whether this was a bot edit
+         *  @param rvnew whether this revision created a new page
          *  @param size the size of the revision
          *  @since 0.17
          */
         public Revision(long revid, Calendar timestamp, String title, String summary, String user,
-            boolean minor, boolean bot, int size)
+            boolean minor, boolean bot, boolean rvnew, int size)
         {
             this.revid = revid;
             this.timestamp = timestamp;
@@ -5673,6 +5679,7 @@ public class Wiki implements Serializable
             this.user = user;
             this.title = title;
             this.bot = bot;
+            this.rvnew = rvnew;
             this.size = size;
         }
 
@@ -5846,6 +5853,21 @@ public class Wiki implements Serializable
         public boolean isBot()
         {
             return bot;
+        }
+        
+        /**
+         *  Determines whether this revision created a new page. <br>
+         *  WARNING: Will return false for all revisions prior to 2007 
+         *  (I think?) -- this is a MediaWiki problem.<br>
+         *  WARNING: Returning true does not imply this is the bottommost
+         *  revision on the page due to histmerges.<br>
+         *  WARNING: Not accessible through getPageHistory() -- a MW problem.
+         *  @return (see above)
+         *  @since 0.27
+         */
+        public boolean isNew()
+        {
+            return rvnew;
         }
 
         /**
