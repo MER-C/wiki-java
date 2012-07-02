@@ -446,8 +446,9 @@ public class Wiki implements Serializable
     private static final String version = "0.26";
 
     // the domain of the wiki
-    protected String domain, query, base, apiUrl;
-    private String scriptPath = "/w"; // need this for sites like partyvan.info
+    private String domain;
+    protected String query, base, apiUrl;
+    protected String scriptPath = "/w";
 
     // user management
     private HashMap<String, String> cookies = new HashMap<String, String>(12);
@@ -555,7 +556,7 @@ public class Wiki implements Serializable
         // parameter]]. Let's exploit it.
         if (maxlag >= 0)
         {
-            apiUrl = temp + "/api.php?maxlag=" + maxlag + "&format=xml";
+            apiUrl = temp + "/api.php?maxlag=" + maxlag + "&format=xml&";
             base = temp + "/index.php?maxlag=" + maxlag + "&title=";
         }
         else
@@ -1025,9 +1026,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the version of MediaWiki this wiki runs e.g. 1.13 alpha (r31567).
-     *  The r number corresponds to a revision in <a
-     *  href="http://svn.wikimedia.org/viewvc/mediawiki/">MediaWiki subversion</a>.
+     *  Gets the version of MediaWiki this wiki runs e.g. 1.20wmf5 (54b4fcb).
+     *  See also http://gerrit.wikimedia.org/ .
      *  @return the version of MediaWiki used
      *  @throws IOException if a network error occurs
      *  @since 0.14
