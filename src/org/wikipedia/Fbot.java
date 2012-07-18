@@ -1,18 +1,28 @@
 package org.wikipedia;
 
-import java.io.*;
-import java.util.*;
-import java.awt.*;
-import javax.swing.*;
-import javax.security.auth.login.*;
-import java.util.regex.*;
-import java.text.*;
+import java.awt.GridLayout;
+import java.io.IOException;
+import java.util.ArrayList;
+import javax.security.auth.login.FailedLoginException;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
 /**
- *  A Mediawiki bot framework consisting of static methods.  Unless otherwise specified, assume that all Wiki objects are logged in. Please report bugs <a href=http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here</a>! Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here</a>! This code and project are licensed under the terms of the <a href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
+ *  Contains static mw bot/api methods built off MER-C's Wiki.java. 
+ *  Unless otherwise specified, assume that all Wiki objects are logged in. 
+ *  Please report bugs <a href=http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here</a>! 
+ *  Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here</a>! 
+ *  This code and project are licensed under the terms of the <a href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
  *  
  *  @see org.wikipedia.FbotUtil
  *  @see org.wikipedia.MBot
+ *  @see org.wikipedia.Wiki
+ *  @see org.wikipedia.FbotParse
+ *  
+ *  @author Fastily
  */
 
 public class Fbot
@@ -46,10 +56,9 @@ public class Fbot
 
 
    /**
-    *  Method reads in user/password combinations from a txt file to log in user.  In file, format should be
+    *  Method reads in user/password combinations from a text file titled "px" to log in user.  In file, format should be
     *  "USERNAME:PASSWORD", separated by colon, one entry per line. 
     *
-    *  @param file File name to use, with ext.
     *  @param wiki Wiki object to perform changes on
     *  @param user Which account? (no "User:" prefix)
     *  @param throttle Number of seconds to wait in between edits
@@ -63,12 +72,12 @@ public class Fbot
     *
     */
 
-   public static void loginAndSetPrefs(String file, String user, int throttle, Wiki wiki) throws IOException, FailedLoginException
+   public static void loginPX(Wiki wiki, String user) throws IOException, FailedLoginException
    {
-      for(String f : FbotUtil.loadFromFile(file, ""))
+      for(String f : FbotUtil.loadFromFile("px", ""))
          if(f.startsWith(user))
          {
-            loginAndSetPrefs(wiki, user, f.substring(f.indexOf(":") + 1).trim().toCharArray(), throttle); 
+            loginAndSetPrefs(wiki, user, f.substring(f.indexOf(":") + 1).trim().toCharArray(), 1); 
             return;
          }
 
@@ -110,45 +119,12 @@ public class Fbot
       catch (IOException e)
       {
          e.printStackTrace();
-         System.err.println("Fatal Network Error, program will now exit.");
+         System.err.println("Network Error, program will now exit.");
       }
    }
 
    /**
-    *  Used to check if <tt>{{bots}}</tt> or <tt>{{robots}}</tt>, case-insensitive, is present in a String.
-    *  
-    *  @param text The String to check for <tt>{{bots}}</tt> or <tt>{{nobots}}</tt>
-    *  @param user The account to check for, without the "User:" prefix.
-    *
-    *  @return boolean True if this particular bot should be allowed to edit this page.
-    *  
-    */
-
-   public static boolean allowBots(String text, String user)
-   {
-      return !text.matches("(?i).*?\\{\\{(nobots|bots\\|(allow=none|deny=(.*?" + user + ".*?|all)|optout=all))\\}\\}.*?");
-   }
-
-   /**
-    *  Strips the namespace prefix of a page, if applicable. If there is no
-    *  namespace attached to the passed in string, then the original string is
-    *  returned.
-    *
-    *  @param title The String to remove a namespace identifier from.
-    *
-    *  @return The String without a namespace identifier.
-    *
-    */
-   public static String namespaceStrip(String title)
-   {
-      int i = title.indexOf(":");
-      if(i > 0)
-         return title.substring(i + 1);
-      return title;
-   }
-
-   /**
-    *  Gets the target of the redirect page. </br>PRECONDITION: <tt>redirect</tt> must be a Redirect.
+    *  Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a Redirect.
     *
     *  @param redirect The title of the redirect to get the target for.
     *  @param wiki The wiki object to use.
@@ -162,9 +138,10 @@ public class Fbot
    public static String getRedirectTarget(String redirect, Wiki wiki) throws Throwable 
    {
       String text = wiki.getPageText(redirect).trim();
-      if(text.startsWith("#"))
-         return text.substring(text.indexOf("[[") + 2, text.indexOf("]]"));
 
+      if(text.matches("(?si)^#(redirect)\\s*?\\[\\[.+?\\]\\].*?"))
+    	  return text.substring(text.indexOf("[[") + 2, text.indexOf("]]"));
+      
       throw new UnsupportedOperationException("Parameter passed in is not a redirect page!");
    }
 
@@ -185,78 +162,7 @@ public class Fbot
    }
 
    /**
-    *  Gets redirects of a template, returns then as a String regex.  Ready for 
-    *  replacing instances of templates.  Pass in template with "Template:" prefix.
-    *
-    *  @param template The title of the main Template (CANNOT BE REDIRECT), including the "Template:" prefix.
-    *  @param wiki The wiki object to use.
-    *
-    *  @throws Throwable
-    *  
-    *  @return The regex, in the form (?si)\{\{(Template:)??)(XXXXX|XXXX|XXXX...).*?\}\}, where XXXX is the
-    *  template and its redirects.
-    */
-
-   public static String getRedirectsAsRegex(String template, Wiki wiki) throws Throwable
-   {
-      String r = "(?si)\\{\\{(Template:)??(" + namespaceStrip(template);
-      for(String str : wiki.whatLinksHere(template, true, Wiki.TEMPLATE_NAMESPACE))
-         r += "|" + namespaceStrip(str);
-      r += ").*?\\}\\}";
-
-      return r;
-   }
-
-   /**
-    *  Checks to see if a file has at least one <b>file link</b> to the mainspace. 
-    *
-    *  @param file The file to check. Be sure to include "File:" prefix.
-    *  @param wiki The wiki object to use.
-    *
-    *  @throws Throwable
-    *  
-    *  @return True if the file has at least one mainspace file link.
-    */
-
-   public static boolean hasMainspaceFileLink(String file, Wiki wiki) throws Throwable
-   {
-      return wiki.imageUsage(namespaceStrip(file), Wiki.MAIN_NAMESPACE).length > 0;
-   }
-
-   /**
-    *  Deletes <ins>all</ins> members of a category and then the category itself.
-    *
-    *  @param cat The category to fetch items from, INCLUDING "Category:" prefix.
-    *  @param reason The reason to use when deleting the category members.
-    *  @param namespace Restricted to deleting members of a particular namespace.
-    *  @param talkReason The reason to use when deleting the talk pages of the category members.
-    *  @param catReason The reason to use when deleting the category.
-    *  @param wiki The wiki object to use.
-    *
-    *  @throws IOException If we had a network error
-    *
-    *  @return An array containing the elements we were unable to delete.
-    *  
-    */
-
-   public static String[] categoryNuke(String cat, String reason, int namespace, String talkReason, String catReason, Wiki wiki) throws IOException
-   {
-      String[] f = arrayNuke(listNamespaceSort(wiki.getCategoryMembers(namespaceStrip(cat)), Wiki.FILE_NAMESPACE, wiki), reason, talkReason, wiki);
-      try
-      {
-         superDelete(cat, catReason, talkReason, wiki);
-      }
-      catch (Throwable e)
-      {
-	//don't care
-      }
-
-      return f;
-   }
-
-
-   /**
-    *  Standard Fbot Database dump template.  Follows *[[:_TITLE_]]\n.
+    *  A template that could be used when listing pages.  Follows *[[:<tt>TITLE</tt>]]\n.
     *
     *  @param page Page to dump report into.
     *  @param list The list of pages that need to be dumped
@@ -275,54 +181,6 @@ public class Fbot
          dump += "*[[:" + s + "]]\n";
       dump += "\n" + footerText;
       wiki.edit(page, dump, "Updating list");
-   }
-
-   /**
-    *  Standard Fbot Database dump template.  Follows *[[:_TITLE_]]\n.
-    *
-    *  @param page Page to dump report into.
-    *  @param list The list of pages that need to be dumped
-    *  @param headerText Leading description text.  Specify "" for no lead.
-    *  @param wiki The wiki object to use.
-    *
-    *  @throws Throwable
-    *  
-    */
-
-   public static void dbrDump(String page, String[] list, String headerText, Wiki wiki) throws Throwable
-   {
-      dbrDump(page, list, headerText, "", wiki);
-   }
-
-   /**
-    *  Replaces all transclusions of a template/page with specified text
-    *
-    *  @param template The template (including namespace prefix) to be replaced
-    *  @param replacementText The text to replace the template with (can include subst:XXXX)
-    *  @param reason Edit summary to use
-    *  @param wiki The wiki object to use.
-    *
-    *  @throws Throwable 
-    *  
-    */
-
-   public static void templateReplace(String template, String replacementText, String reason, Wiki wiki) throws Throwable
-   {
-      String[] list = wiki.whatTranscludesHere(template);
-      if(template.startsWith("Template:"))
-         template = namespaceStrip(template);
-
-      for(String page : list)
-      {
-         try
-         {
-            wiki.edit(page, wiki.getPageText(page).replaceAll("(?i)(" + template + ")", replacementText), reason);
-         }
-         catch (Throwable e)
-         {
-            e.printStackTrace();
-         }
-      }
    }
 
    /**
@@ -352,79 +210,50 @@ public class Fbot
 
 
    /**
-    *  Determines if two arrays share at least one element.
-    *
-    *  @param a1 The first array
-    *  @param a2 The second array
-    *
-    *  @return True if the arrays share at least one element
-    *  
-    */
-
-   public static boolean arraysShareElement(String[] a1, String[] a2)
-   {
-      return Wiki.intersection(a1, a2).length > 0;
-   }
-
-
-   /**
-    *  Attempts to delete all the elements in an array
-    *
-    *  @param list The array to use
-    *  @param reason The reason to use while deleting
-    *  @param wiki The wiki object to use.
-    *
-    *  @return An array containing the elements we were unable to delete
-    */
-
-   public static String[] arrayNuke(String[] list, String reason, Wiki wiki)
-   {
-      ArrayList<String> f = new ArrayList<String>();
-      for(String s : list)
-      {
-         try
-         {
-            wiki.delete(s, reason);
-         }
-         catch (Throwable e)
-         {
-            f.add(s);
-         }
-      }
-      return f.toArray(new String[0]);
-   }
-
-   /**
     *  Deletes all the elements in an array and their associated talk pages
     *
     *  @param list The array to use
     *  @param reason The reason to use while deleting
-    *  @param talkReason The reason to use when deleting talk pages of the pages we're deleting
+    *  @param talkReason The reason to use when deleting talk pages of the pages we're deleting. Specify "null" if talk pages are not to be deleted
     *  @param wiki The wiki object to use.
     *
     *  @return An array containing the elements we were unable to delete.
     */
 
-   public static String[] arrayNuke(String[] list, String reason, String talkReason, Wiki wiki)
-   {
-      String[] f = arrayNuke(list, reason, wiki);
-      for(String s : list)
-      {
-         try
-         {
-            wiki.delete(wiki.getTalkPage(s), talkReason);
-         }
-         catch (Throwable e)
-         {
-            //We'll probably only be here if we tried to delete the talk page of a talk page :P
-         }
-      } 
-      return f;
-   }
+	public static String[] arrayNuke(String[] list, String reason, String talkReason, Wiki wiki) 
+	{
+		ArrayList<String> f = new ArrayList<String>();
+		for (String s : list) 
+		{
+			try 
+			{
+				wiki.delete(s, reason);
+			} 
+			catch (Throwable e) 
+			{
+				f.add(s);
+				continue;
+			}
+
+			if (talkReason != null) 
+			{
+				try 
+				{
+					wiki.delete(wiki.getTalkPage(s), talkReason);
+				} 
+				catch (Throwable e) 
+				{
+					// We'll probably only be here if we tried to delete a talk page of a talk page :P
+				}
+			}
+
+		}
+		return f.toArray(new String[0]);
+	}
 
 
    /**
-    *  Adds specified text to the end of a page
+    *  Attempts to add specified text to the end of each page in a list.
     *
     *  @param pages The list of pages to use
     *  @param text The text to append
@@ -479,179 +308,23 @@ public class Fbot
    }   
 
    /**
-    *  Deletes a page and it's talk page (if applicable)
+    *  Creates Wiki objects with the specified username, password, and domain.
     *
-    *  @param page The page to delete
-    *  @param reason The reason to use when deleting this page
-    *  @param tReason The reason to use when deleting the talk page
-    *  @param wiki The wiki object to use.
+    *  @param u The username to use
+    *  @param p The password to use
+    *  @param domain The domain to use (e.g. "commons.wikimedia.org")
     *  
-    * 
-    *  @throws Throwable if we had a problem
+    *  @return The resulting Wiki object
+    *  
+    *  @throws FailedLoginException If User/Password combination do not match
+    *  @throws IOException If we had a network error.
+    *  
     */
-
-   public static void superDelete(String page, String reason, String tReason, Wiki wiki) throws Throwable
+   
+   public static Wiki wikiFactory(String u, char[] p, String domain) throws FailedLoginException, IOException
    {
-      wiki.delete(page, reason);
-      wiki.delete(wiki.getTalkPage(page), tReason);
+	   Wiki wiki = new Wiki(domain);
+	   loginAndSetPrefs(wiki, u, p, 1);
+	   return wiki;
    }
-
-   /**
-    *  Attempts to parse out a template parameter.
-    *
-    *  @param template The template to work on.  Must be entered in format {{NAME|PARM1|PARAM2|...}}
-    *  @param number The parameter to retrieve: {{NAME|1|2|3|4...}}
-    * 
-    *  @return The param we parsed out or null if we didn't find a param matching the specified criteria
-    * 
-    */
-   public static String getTemplateParam(String template, int number)
-   {
-      try
-      {
-         return templateParamStrip(template.split("\\|")[number]);
-      }
-      catch (ArrayIndexOutOfBoundsException e)
-      {
-         return null;
-      }
-   }
-
-
-   /**
-    *  Attempts to parse out a template parameter based on specification
-    *
-    *  @param template The template to work on.  Must be entered in format {{NAME|PARM1|PARAM2|...}}
-    *  @param param The parameter to retrieve, without "=". 
-    * 
-    *  @return The param we parsed out or null if we didn't find a param matching the specified criteria
-    * 
-    */
-
-   public static String getTemplateParam(String template, String param) 
-   {
-      ArrayList<String> f = new ArrayList<String>();
-      for(String s : template.split("\\|"))
-         f.add(s.trim());
-
-      for(String p : f)
-         if(p.startsWith(param))
-            return templateParamStrip(p);
-
-      return null; //if nothing matched  
-   }
-
-   /**
-    *  Returns the param of a template.  e.g. If we get "|foo = baz", we return baz.  
-    *
-    *  @param p Must be a param in the form "|foo = baz" or "foo = baz"
-    * 
-    *  @return The param we parsed out
-    * 
-    */
-
-   public static String templateParamStrip(String p)
-   {
-      int i = p.indexOf("=");
-      if(i == -1)
-         return p;
-      else
-         return p.substring(i+1).replace("}}", "").trim();
-   }
-
-   /**
-    *  Parses out the first instance of a template from a body of text, based on specified template.  
-    *
-    *  @param text Text to search
-    *  @param template The Template (in template namespace) to look for.  DO NOT add namespace prefix.
-    *  @param redirects Whether to incorporate redirects to this template or not.
-    *  @param wiki The wiki object to use
-    * 
-    *  @return The template we parsed out, in the form {{TEMPLATE|ARG1|ARG2|...}} or null, if we didn't find the specified template.
-    *
-    *  @throws Throwable if Big boom
-    * 
-    */
-
-   public static String parseTemplateFromPage(String text, String template, boolean redirects, Wiki wiki) throws Throwable
-   {
-      if(redirects)
-         return parseFromPageRegex(text, getRedirectsAsRegex("Template:" + template, wiki));
-      else
-         return parseFromPageRegex(text, "(?s)\\{\\{(Template:)??(" + template + ").*?\\}\\}");
-   }
-
-   /**
-    *  Parses out the first group of matching text, based on specified regex.  Useful for parsing out templates.
-    *
-    *  @param text Text to search
-    *  @param regex The regex to use
-    * 
-    *  @return The text we parsed out, or null if we didn't find anything. 
-    * 
-    */
-
-   public static String parseFromPageRegex(String text, String regex)
-   {
-      Matcher m = Pattern.compile(regex).matcher(text);
-      if(m.find())
-         return text.substring(m.start(), m.end());
-      else
-         return null;
-   }
-
-   /**
-    *  Returns a Gregorian Calendar offset by a given number of days from the current system clock.  
-    *  Use positive int to offset by future days and negative numbers to offset to days before.  
-    *  Automatically set to UTC.
-    *
-    *  @param days The number of days to offset by -/+
-    * 
-    *  @return The newly modified calendar.
-    * 
-    */
-
-   public static GregorianCalendar offsetTime(int days)
-   {
-      GregorianCalendar utc = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-      utc.setTimeInMillis(new GregorianCalendar().getTime().getTime() + 86400000L*days);
-
-      return utc;
-   }
-
-
-   /**
-    *  Outputs the date/time in UTC.  Based on the format and offset in days.
-    *
-    *  @param format Must be specified in accordance with java.text.DateFormat.  
-    *  @param offset The offset from the current time, in days.  Accepts both positive (for future) and negative values (for past)
-    * 
-    *  @return The formatted date string.
-    * 
-    */
-
-   public static String fetchDateUTC(String format, int offset)
-   {
-      SimpleDateFormat sdf = new SimpleDateFormat(format);
-      sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-      return sdf.format(offsetTime(offset).getTime());
-   } 
-
-
-   /**
-    *  Logs in using a user-defined file named "px".
-    *
-    *  @param wiki The wiki object to use
-    *  @param user The user to be logged in
-    *
-    *  @throws Throwable
-    *  @see #loginAndSetPrefs
-    */
-
-   public static void loginPX(Wiki wiki, String user) throws Throwable
-   {
-      Fbot.loginAndSetPrefs("px", user, 1, wiki);
-   }
-
 }

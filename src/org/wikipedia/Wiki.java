@@ -37,7 +37,7 @@ import javax.security.auth.login.*; // useful exception types
  *  Extended documentation is available <a href="http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. All
  *  wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
- *  <p>
+ *  </p>
  *  Please file bug reports <a href="http://en.wikipedia.org/w/index.php?title=User_talk:MER-C&action=edit&section=new">here</a> (fast)
  *  or at the Google code bug <a href="http://code.google.com/p/wiki-java/issues/list">tracker</a> (slow).
  *

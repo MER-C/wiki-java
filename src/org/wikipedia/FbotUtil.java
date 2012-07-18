@@ -1,13 +1,26 @@
 package org.wikipedia;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.TimeZone;
+
 
 /**
- *  Miscellaneous utility methods for Fbot.  Contains non-wiki related functions.
+ *  Miscellaneous utility methods for Fbot.  Contains many non-wiki related functions whose uses extend beyond Wikis.
  *
  * @see org.wikipedia.Fbot
  * @see org.wikipedia.MBot
+ * @see org.wikipedia.FbotParse
  */
 
 public class FbotUtil
@@ -80,7 +93,7 @@ public class FbotUtil
    }
 
    /**
-    *  Fetches a list of Wiki-uploadable files in contained in the specified directory and its subfolders.  Recursive implementation.
+    *  Recursively fetches a list of Wiki-uploadable files in contained in the specified directory and its subfolders.
     *
     *  @param dir The top directory to start with
     *  @param fl The ArrayList to add the files we found to.
@@ -103,7 +116,7 @@ public class FbotUtil
    }
 
    /**
-    *  Checks to see if an array contains a given element
+    *  Checks to see if an array of objects contains a given element
     *
     *  @param array The array to check 
     *  @param el The element to look for in this array
@@ -188,22 +201,6 @@ public class FbotUtil
    }
 
    /**
-    *  Removes character sequence(s) from each element of an ArrayList<String>.
-    * 
-    *  
-    *  @param l The ArrayList<String> to use
-    *  @param crap List of String(s) to strip from each element of <tt>l</tt>
-    *
-    */
-
-   public static void stripCrap(ArrayList<String> l, String[] crap)
-   {
-      for (String c : crap)
-         for(int i = 0; i < l.size(); i++)
-            l.set(i, l.get(i).replace(c, ""));
-   }
-
-   /**
     *  Loads list of pages contained in a file into an array.  One newline per item.
     *  
     *  @param file The abstract filename of the file to load from. 
@@ -241,7 +238,7 @@ public class FbotUtil
       byte[] buf = new byte[1024];
       int len;
       while((len = in.read(buf)) > 0)
-         out.write(buf);
+         out.write(buf, 0, len);
 
       in.close();
       out.close();
@@ -278,4 +275,74 @@ public class FbotUtil
        return f.matches("(?i).*?\\.(png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga)");
     }
 
+    /**
+     *  Reverses an array of Objects.
+     *
+     *  @param array The array to create a reversed shallow copy of.
+     *
+     *  @return The reversed array (shallow copy of 'array').
+     */
+    
+    public static Object[] reverseArray(Object[] array)
+    {
+    	Object[] l = new Object[array.length];
+    	for(int i = 0; i < array.length; i++)
+    	  l[i] = array[array.length - 1 - i];
+    	
+    	return l;
+    }
+    
+    /**
+     *  Determines if two arrays of Strings share at least one element.
+     *
+     *  @param a1 The first array
+     *  @param a2 The second array
+     *
+     *  @return True if the arrays share at least one element
+     *  
+     */
+
+    public static boolean arraysShareElement(String[] a1, String[] a2)
+    {
+       return Wiki.intersection(a1, a2).length > 0;
+    }
+
+    /**
+     *  Returns a Gregorian Calendar offset by a given number of days from the current system clock.  
+     *  Use positive int to offset by future days and negative numbers to offset to days before.  
+     *  Automatically set to UTC.
+     *
+     *  @param days The number of days to offset by -/+. Use 0 for no offset.
+     * 
+     *  @return The newly modified calendar.
+     * 
+     */
+
+    public static GregorianCalendar offsetTime(int days)
+    {
+       GregorianCalendar utc = (GregorianCalendar) new Wiki().makeCalendar();
+       utc.setTimeInMillis(utc.getTime().getTime() + 86400000L*days);
+
+       return utc;
+    }
+
+
+    /**
+     *  Outputs the date/time in UTC.  Based on the format and offset in days.
+     *
+     *  @param format Must be specified in accordance with java.text.DateFormat.  
+     *  @param offset The offset from the current time, in days.  Accepts  positive values (for future), negative values (for past), and 0 for no offset.
+     * 
+     *  @return The formatted date string.
+     * 
+     */
+
+    public static String fetchDateUTC(String format, int offset)
+    {
+       SimpleDateFormat sdf = new SimpleDateFormat(format);
+       sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+       return sdf.format(offsetTime(offset).getTime());
+    } 
+    
 }
