@@ -18,6 +18,7 @@ import java.util.*;
  *
  * @see org.wikipedia.Fbot
  * @see org.wikipedia.FbotUtil
+ * @see org.wikipedia.FbotParse
  */
 
 public class MBot
