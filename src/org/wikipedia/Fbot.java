@@ -308,7 +308,10 @@ public class Fbot
    }   
 
    /**
-    *  Creates Wiki objects with the specified username, password, and domain.
+    *  Creates Wiki objects with the specified username, password, and domain. < /br>< /br>
+    *  <b>PRECONDITION:</b> Username, password, and domain <span style="color:Red;font-weight:bold">MUST</span> be valid.
+    *  Method will continue to loop until credentials are accepted so you might just find yourself in an infinite loop if 
+    *  they're not!
     *
     *  @param u The username to use
     *  @param p The password to use
@@ -324,7 +327,20 @@ public class Fbot
    public static Wiki wikiFactory(String u, char[] p, String domain) throws FailedLoginException, IOException
    {
 	   Wiki wiki = new Wiki(domain);
-	   loginAndSetPrefs(wiki, u, p, 1);
+	   try
+	   {
+		 boolean success = false;
+		 do
+		 {
+	       loginAndSetPrefs(wiki, u, p, 1);
+	       success = true;
+		 }
+		 while (!success);
+	   }
+	   catch(Throwable e)
+	   {
+		   e.printStackTrace();
+	   }
 	   return wiki;
    }
 }
