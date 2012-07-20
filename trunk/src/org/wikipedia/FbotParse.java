@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
  * @see org.wikipedia.Fbot
  * @see org.wikipedia.FbotUtil
  * @see org.wikipedia.MBot
+ * 
+ *  @author Fastily
  */
 
 public class FbotParse

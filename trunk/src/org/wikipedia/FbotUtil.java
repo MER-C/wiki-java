@@ -21,6 +21,8 @@ import java.util.TimeZone;
  * @see org.wikipedia.Fbot
  * @see org.wikipedia.MBot
  * @see org.wikipedia.FbotParse
+ * 
+ *  @author Fastily
  */
 
 public class FbotUtil
