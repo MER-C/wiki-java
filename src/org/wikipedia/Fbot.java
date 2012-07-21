@@ -61,7 +61,6 @@ public class Fbot
     *
     *  @param wiki Wiki object to perform changes on
     *  @param user Which account? (no "User:" prefix)
-    *  @param throttle Number of seconds to wait in between edits
     *  
     *  @throws IOException If we encountered a network error
     *  @throws FailedLoginException If user credentials do not match
@@ -308,7 +307,7 @@ public class Fbot
    }   
 
    /**
-    *  Creates Wiki objects with the specified username, password, and domain. < /br>< /br>
+    *  Creates Wiki objects with the specified username, password, and domain. </br></br>
     *  <b>PRECONDITION:</b> Username, password, and domain <span style="color:Red;font-weight:bold">MUST</span> be valid.
     *  Method will continue to loop until credentials are accepted so you might just find yourself in an infinite loop if 
     *  they're not!
