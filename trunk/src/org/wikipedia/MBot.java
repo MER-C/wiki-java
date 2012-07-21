@@ -41,14 +41,15 @@ public class MBot
 	private Wiki[] wikis;
 	
 	/**
-	 * The list of String objects to act on; action to be determined by option param
+	 * Sublists for each wiki object to act upon.  Determined by <tt>instances</tt>
+	 * param in constructor.
 	 */
-	private String[] list;
+	private String[][] lists;
 	
 	/**
-	 * The reason to use when performing a set action on <tt>list</tt>.
+	 * The reason(s) to use when performing a set action on <tt>list</tt>.
 	 */
-	private String reason;
+	private String[] reason;
 	
 	/**
 	 * Constructor that creates an MBot object.
@@ -56,53 +57,64 @@ public class MBot
 	 * @param user The username to use
 	 * @param px The password to use (This is not saved anywhere once the constructor exits)
 	 * @param domain The domain to use (e.g. "commons.wikimedia.org", "en.wikipedia.org")
-	 * @param instances The number of threads to create when performing the requested action
+	 * @param instances The maximum number of threads to create when performing the requested action.  Remember, you need to
+	 * adjust your heap space accordingly for the task at hand and for the number of threads lest you should get out of memory
+	 * exceptions!
 	 * @param list The list we'll be acting upon
-	 * @param reason The reason to use when performing the specified actions.
+	 * @param reason The reason(s) to use when performing the specified actions.
 	 * 
 	 * @throws FailedLoginException If the login credentials you used were invalid.
 	 * @throws IOException If we encountered a network error.
 	 */
 
-	public MBot(String user, char[] px, String domain, int instances, String[] list, String reason) throws FailedLoginException, IOException
+	public MBot(String user, char[] px, String domain, int instances, String[] list, String... reason) throws FailedLoginException, IOException
 	{
 	  new Wiki(domain).login(user, px); //Testing for bad login credentials & network errors
 	  
+	  lists = FbotUtil.arraySplitter(list, instances); //determine number of splits
+	  
 	  //Create the actual Wiki objects
-	  wikis = new Wiki[instances];
-	  for(int i = 0; i < instances; i++)
+	  wikis = new Wiki[lists.length];
+	  for(int i = 0; i < lists.length; i++)
 		  wikis[i] = Fbot.wikiFactory(user, px, domain);
 	  
-	  this.list = list;
-	  this.reason = reason;  
+	  this.reason = reason;
 	}
 	
 	/**
 	 * Uploads files specified in the constructor. Interprets the <tt>list</tt> param 
 	 * in the constructor as a list of file paths and attempts to upload them to the
-	 * specified Wiki with the specified credentials.  The reason param shall be interpreted
-	 * as the text of the file description page.  Files will be uploaded using their default,
-	 * system names.  If an upload of a particular file fails for whatever reason, a stack trace 
-	 * shall be printed and the file will be skipped.
+	 * specified Wiki with the specified credentials.  Only the <i>first</i> reason param shall be interpreted
+	 * as the text of the file description page; if you include more than one reason, the rest will be ignored
+	 * Files will be uploaded using their default, system names.  If an upload of a particular file fails 
+	 * for whatever reason, a stack trace shall be printed and uploading of the file shall be skipped. 
+	 * 
+	 * @throws UnsupportedOperationException If you did not specify at least one reason in the constructor.
 	 */
 	public void upload()
 	{
+	   if(reason.length < 1)
+		  throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason'.");
 	   this.generateThreadsAndRun(UPLOAD);
 	}
 	
 	/**
 	 * Deletes files specified in the constructor. Interprets the <tt>list</tt> param 
 	 * in the constructor as a list of wiki pages and attempts to delete them from the 
-	 * specified Wiki with the specified credentials.  The reason param shall be interpreted
-	 * as the rationale to use when deleting the file.  </ br></ br><b>CAVEAT:</b>If a deletion of a 
-	 * particular file fails for whatever reason, a stack trace, the method will continue to try and
-	 * delete the page until the page is deleted.  This means that if you're blocked or do not have
-	 * the proper userrights associated with the account you're using to perform said action, the program
-	 * will loop endlessly.
+	 * specified Wiki with the specified credentials.  Only the <i>first</i> reason param shall be interpreted
+	 * as the rationale to use when deleting the file;  if you include more than one reason, the rest will be ignored.
+	 * </br></br><b>CAVEAT:</b> If a deletion of a  particular file fails for whatever reason, a stack trace, 
+	 * the method will continue to try and delete the page until the page is deleted.  
+	 * This means that if you're blocked or do not have the proper userrights associated with the account you're 
+	 * using to perform said action, the program will loop endlessly.
+	 * 
+	 * @throws UnsupportedOperationException If you did not specify at least one reason in the constructor.
 	 */
 	public void delete()
 	{
-		this.generateThreadsAndRun(DELETE);
+	   if(reason.length < 1)
+			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason'.");
+	   this.generateThreadsAndRun(DELETE);
 	}
 	
 	/**
@@ -113,9 +125,8 @@ public class MBot
 	 */
 	private void generateThreadsAndRun(short mode)
 	{
-	 String[][] l = FbotUtil.arraySplitter(list, wikis.length);
-	 for(int i = 0; i < l.length; i++)
-	   new Thread(new MBotT(mode, wikis[i], l[i])).start();
+	 for(int i = 0; i < lists.length; i++)
+	   new Thread(new MBotT(mode, wikis[i], lists[i])).start();
 	}
 	
 	/**
@@ -183,7 +194,8 @@ public class MBot
 		  {
 			 try
 			 {
-				 wiki.upload(new File(f), f, reason, "");
+				 File x = new File(f);
+				 wiki.upload(x, x.getName(), reason[0], "");
 			 }
 			 catch(Throwable e)
 			 {
@@ -206,7 +218,7 @@ public class MBot
 					boolean success = false;
 					do
 					{
-						wiki.delete(s, reason);
+						wiki.delete(s, reason[0]);
 						success = true;
 					} while (!success);
 				}
