@@ -2069,7 +2069,7 @@ public class Wiki implements Serializable
         {
             int a = line.indexOf("title=\"") + 7;
             int b = line.indexOf('\"', a);
-            templates.add(line.substring(a, b));
+            templates.add(decode(line.substring(a, b)));
             line = line.substring(b);
         }
         log(Level.INFO, "Successfully retrieved templates used on " + title + " (" + templates.size() + " templates)", "getTemplates");
@@ -3249,7 +3249,7 @@ public class Wiki implements Serializable
 	byte[] by = new byte[1024];
         int len;
 	while((len = fi.read(by)) > 0)
-           out.write(by);
+           out.write(by, 0, len);
 
         fi.close();
         out.writeBytes("\r\n");
