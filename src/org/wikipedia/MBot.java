@@ -198,7 +198,8 @@ public class MBot
 				{
 					File x = new File(f);
 					wiki.upload(x, x.getName(), reason[0], "");
-				} catch (Throwable e)
+				}
+				catch (Throwable e)
 				{
 					e.printStackTrace();
 				}
@@ -222,7 +223,8 @@ public class MBot
 						wiki.delete(s, reason[0]);
 						success = true;
 					} while (!success);
-				} catch (Throwable e)
+				}
+				catch (Throwable e)
 				{
 					e.printStackTrace();
 					System.err.println("Trying again.");

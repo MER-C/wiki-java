@@ -87,7 +87,8 @@ public class FbotParse
 			try
 			{
 				wiki.edit(page, wiki.getPageText(page).replaceAll("(?i)(" + template + ")", replacementText), reason);
-			} catch (Throwable e)
+			}
+			catch (Throwable e)
 			{
 				e.printStackTrace();
 			}
@@ -126,7 +127,8 @@ public class FbotParse
 		try
 		{
 			return templateParamStrip(template.split("\\|")[number]);
-		} catch (ArrayIndexOutOfBoundsException e)
+		}
+		catch (ArrayIndexOutOfBoundsException e)
 		{
 			return null;
 		}
