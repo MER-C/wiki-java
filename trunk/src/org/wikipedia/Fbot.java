@@ -109,12 +109,14 @@ public class Fbot
 		try
 		{
 			loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword(), 10);
-		} catch (FailedLoginException e)
+		}
+		catch (FailedLoginException e)
 		{
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Username and password do not match on Database, program will now exit");
 			System.exit(1);
-		} catch (IOException e)
+		}
+		catch (IOException e)
 		{
 			e.printStackTrace();
 			System.err.println("Network Error, program will now exit.");
@@ -225,7 +227,8 @@ public class Fbot
 			try
 			{
 				wiki.delete(s, reason);
-			} catch (Throwable e)
+			}
+			catch (Throwable e)
 			{
 				f.add(s);
 				continue;
@@ -236,7 +239,8 @@ public class Fbot
 				try
 				{
 					wiki.delete(wiki.getTalkPage(s), talkReason);
-				} catch (Throwable e)
+				}
+				catch (Throwable e)
 				{
 					// We'll probably only be here if we tried to delete a talk page of a talk page :P
 				}
@@ -263,7 +267,8 @@ public class Fbot
 			try
 			{
 				wiki.edit(page, wiki.getPageText(text) + text, summary);
-			} catch (Throwable e)
+			}
+			catch (Throwable e)
 			{
 				e.printStackTrace();
 			}
@@ -291,7 +296,8 @@ public class Fbot
 			try
 			{
 				wiki.edit(page, wiki.getPageText(page).replaceAll(regex, replacement), summary);
-			} catch (Throwable e)
+			}
+			catch (Throwable e)
 			{
 				e.printStackTrace();
 			}
@@ -326,7 +332,8 @@ public class Fbot
 				loginAndSetPrefs(wiki, u, p, 1);
 				success = true;
 			} while (!success);
-		} catch (Throwable e)
+		}
+		catch (Throwable e)
 		{
 			e.printStackTrace();
 		}

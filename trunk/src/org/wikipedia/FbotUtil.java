@@ -75,7 +75,8 @@ public class FbotUtil
 		{
 			xf = new String[][] { z };
 			return xf;
-		} else
+		}
+		else
 		{
 			xf = new String[splits][];
 			for (int i = 0; i < splits; i++)
@@ -176,7 +177,8 @@ public class FbotUtil
 				if (s.toLowerCase().contains(substring))
 					return true;
 			return false;
-		} else
+		}
+		else
 		{
 			for (String s : list)
 				if (s.contains(substring))
