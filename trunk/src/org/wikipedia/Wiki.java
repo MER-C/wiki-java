@@ -3194,91 +3194,52 @@ public class Wiki implements Serializable
         }
         String wpEditToken = (String)info.get("token");
 
-        // upload the image
-        // this is how we do multipart post requests, by the way
-        // see also: http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
-        String url = apiUrl + "action=upload";
-        logurl(url, "upload");
-        URLConnection connection = new URL(url).openConnection();
-        String boundary = "----------NEXT PART----------";
-        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        setCookies(connection);
-        connection.setDoOutput(true);
-        connection.connect();
-
-        // send data
-        // DO NOT URL ENCODE STUFF HERE see http://en.wikipedia.org/w/index.php?title=User_talk:MER-C&oldid=458392157#wiki.java
-        // DataOutputStream writes bytes literally. There is no need to employ percent encoding.
-        boundary = "--" + boundary + "\r\n";
-        DataOutputStream out = new DataOutputStream(connection.getOutputStream());
-        // DataOutputStream out = new DataOutputStream(System.out);
-        out.writeBytes(boundary);
-        // filename
-        out.writeBytes("Content-Disposition: form-data; name=\"filename\"\r\n");
-        out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-        out.writeBytes(filename);
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        // edit token
-        out.writeBytes("Content-Disposition: form-data; name=\"token\"\r\n\r\n");
-        out.writeBytes(wpEditToken);
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        // reason
-        if (!reason.isEmpty())
-        {
-            out.writeBytes("Content-Disposition: form-data; name=\"comment\"\r\n");
-            out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-            out.writeBytes(reason);
-            out.writeBytes("\r\n");
-            out.writeBytes(boundary);
-        }
-        // description page
-        out.writeBytes("Content-Disposition: form-data; name=\"text\"\r\n");
-        out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-        out.writeBytes(contents);
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        // the actual file
-        out.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"");
-        out.writeBytes(file.getName());
-        out.writeBytes("\"\r\n");
-        out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
+        // TODO: chunked uploads
+        long filesize = file.length();
+        int LOG2_CHUNK_SIZE = 22; // 4 MB chunks
+        int chunks = (int)(filesize >> LOG2_CHUNK_SIZE) + 1; 
         FileInputStream fi = new FileInputStream(file);
-
-	byte[] by = new byte[1024];
-        int len;
-	while((len = fi.read(by)) > 0)
-           out.write(by, 0, len);
-
-        fi.close();
-        out.writeBytes("\r\n");
-        out.writeBytes(boundary);
-        // ignore warnings
-        out.writeBytes("Content-Disposition: form-data; name=\"ignorewarnings\"\r\n\r\n");
-        out.writeBytes("true\r\n");
-        out.writeBytes(boundary);
-        out.writeBytes("--\r\n");
-        out.close();
-
+        
+        // upload the image
+        // for (int i = 0; i < chunks; i++)
+        // {
+        HashMap<String, Object> params = new HashMap<String, Object>(50);
+        params.put("filename", filename);
+        params.put("token", wpEditToken);
+        if (!reason.isEmpty())
+            params.put("comment", reason);
+        // long offset = chunks << LOG2_CHUNK_SIZE;
+        // params.put("offset", "" + offset);
+        // if (i == 0)
+        //     params.put("filesize", "" + filesize);
+        params.put("text", contents);
+        params.put("ignorewarnings", "true");
+        // write the actual file
+	byte[] by = new byte[fi.available()];
+        // byte[] by = new byte[1 << LOG2_CHUNK_SIZE];
+        fi.read(by);
+        // fi.read(by, offset, by.length);
+        params.put("file", by);
+        // params.put("chunk", by);
+                
         // done
+        String response = multipartPost(apiUrl + "action=upload", params, "upload");
         try
         {
-            // it's somewhat strange that the edit only sticks when you start reading the response...
-            BufferedReader in = new BufferedReader(new InputStreamReader(
-                zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-            checkErrors(in.readLine(), "upload");
-
+            checkErrors(response, "upload");
             // TODO: check for specific errors here
-            in.close();
         }
         catch (IOException e)
         {
+            fi.close();
             // don't bother retrying - uploading is a pain
             logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] EXCEPTION:  ", e);
             throw e;
         }
-
+        
+        // } (end for)
+        fi.close();
+        
         // throttle
         try
         {
@@ -6128,6 +6089,7 @@ public class Wiki implements Serializable
      *  @param caller the caller of this method
      *  @throws IOException if a network error occurs
      *  @return the server response
+     *  @see #multipartPost(java.lang.String, java.util.Map, java.lang.String) 
      *  @since 0.24
      */
     protected String post(String url, String text, String caller) throws IOException
@@ -6140,6 +6102,77 @@ public class Wiki implements Serializable
         OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
         out.write(text);
         out.close();
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
+        grabCookies(connection);
+        String line;
+        StringBuilder temp = new StringBuilder(100000);
+        while ((line = in.readLine()) != null)
+        {
+            temp.append(line);
+            temp.append("\n");
+        }
+        in.close();
+        return temp.toString();
+    }
+    
+    /**
+     *  Performs a multi-part HTTP POST.
+     *  @param url the url to post to
+     *  @param params the POST parameters. Supported types: UTF-8 text, byte[].
+     *  Text and parameter names must NOT be URL encoded.
+     *  @param caller the caller of this method
+     *  @return the server response
+     *  @see #post(java.lang.String, java.lang.String, java.lang.String)
+     *  @see http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
+     *  @since 0.27
+     */
+    protected String multipartPost(String url, Map<String, ?> params, String caller) throws IOException
+    {
+        // set up the POST
+        logurl(url, caller);
+        URLConnection connection = new URL(url).openConnection();
+        String boundary = "----------NEXT PART----------";
+        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        setCookies(connection);
+        connection.setDoOutput(true);
+        connection.connect();
+        boundary = "--" + boundary + "\r\n";
+        
+        // write stuff to a local buffer
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bout);
+        out.writeBytes(boundary);
+        
+        // write params
+        for (Map.Entry<String, ?> entry : params.entrySet())
+        {
+            String name = entry.getKey();
+            Object value = entry.getValue();
+            out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
+            if (value instanceof String)
+            {
+                out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+                out.writeBytes((String)value);
+            }
+            else if (value instanceof byte[])
+            {
+                out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
+                out.write((byte[])value);
+            }
+            else
+                throw new UnsupportedOperationException("Unrecognized data type");
+            out.writeBytes("\r\n");
+            out.writeBytes(boundary);
+        }
+        out.writeBytes("--\r\n");
+        out.close();
+        // write the buffer to the URLConnection
+        OutputStream uout = connection.getOutputStream();
+        uout.write(bout.toByteArray());
+        uout.close();
+
+        // done
         BufferedReader in = new BufferedReader(new InputStreamReader(
             zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
         grabCookies(connection);
