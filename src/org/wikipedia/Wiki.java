@@ -3208,7 +3208,7 @@ public class Wiki implements Serializable
         params.put("token", wpEditToken);
         if (!reason.isEmpty())
             params.put("comment", reason);
-        // long offset = chunks << LOG2_CHUNK_SIZE;
+        // long offset = i << LOG2_CHUNK_SIZE;
         // params.put("offset", "" + offset);
         // if (i == 0)
         //     params.put("filesize", "" + filesize);
