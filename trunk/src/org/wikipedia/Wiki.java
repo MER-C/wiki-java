@@ -482,6 +482,9 @@ public class Wiki implements Serializable
     // time for the read to take place. (needs to be longer, some connections are slow
     // and the data volume is large!)
     private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
+    // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
+    // chunked uploads by setting a large value here (50 = 1 PB will do).
+    private static final int LOG2_CHUNK_SIZE = 22; 
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -3149,8 +3152,9 @@ public class Wiki implements Serializable
     /**
      *  Uploads an image. Equivalent to [[Special:Upload]]. Supported
      *  extensions are (case-insensitive) "png", "jpg", "gif" and "svg". You
-     *  need to be logged on to do this. This method is thread safe and subject
-     *  to the throttle.
+     *  need to be logged on to do this. Automatically breaks uploads into
+     *  2^<tt>LOG2_CHUNK_SIZE</tt> byte size chunks. This method is thread safe 
+     *  and subject to the throttle.
      *
      *  @param file the image file
      *  @param filename the target file name (Example.png, not File:Example.png)
@@ -3194,52 +3198,83 @@ public class Wiki implements Serializable
         }
         String wpEditToken = (String)info.get("token");
 
-        // TODO: chunked uploads
+        // chunked upload setup
         long filesize = file.length();
-        int LOG2_CHUNK_SIZE = 22; // 4 MB chunks
-        int chunks = (int)(filesize >> LOG2_CHUNK_SIZE) + 1; 
+        long chunks = filesize >> LOG2_CHUNK_SIZE + 1; 
         FileInputStream fi = new FileInputStream(file);
+        String filekey = "";
         
         // upload the image
-        // for (int i = 0; i < chunks; i++)
-        // {
-        HashMap<String, Object> params = new HashMap<String, Object>(50);
-        params.put("filename", filename);
-        params.put("token", wpEditToken);
-        if (!reason.isEmpty())
-            params.put("comment", reason);
-        // long offset = i << LOG2_CHUNK_SIZE;
-        // params.put("offset", "" + offset);
-        // if (i == 0)
-        //     params.put("filesize", "" + filesize);
-        params.put("text", contents);
-        params.put("ignorewarnings", "true");
-        // write the actual file
-	byte[] by = new byte[fi.available()];
-        // byte[] by = new byte[1 << LOG2_CHUNK_SIZE];
-        fi.read(by);
-        // fi.read(by, offset, by.length);
-        params.put("file", by);
-        // params.put("chunk", by);
+        for (int i = 0; i < chunks; i++)
+        {
+            HashMap<String, Object> params = new HashMap<String, Object>(50);
+            params.put("filename", filename);
+            params.put("token", wpEditToken);
+            params.put("ignorewarnings", "true");
+            if (chunks == 1)
+            {
+                // Chunks disabled due to a small filesize.
+                // This is just a normal upload.
+                params.put("text", contents);
+                if (!reason.isEmpty())
+                    params.put("comment", reason);
+                byte[] by = new byte[fi.available()];
+                fi.read(by);
+                params.put("file", by);
+            }
+            else
+            {
+                long offset = i << LOG2_CHUNK_SIZE;
+                params.put("stash", "1");
+                params.put("offset", "" + offset);
+                params.put("filesize", "" + filesize);
+                if (i != 0)
+                    params.put("filekey", filekey);
                 
-        // done
-        String response = multipartPost(apiUrl + "action=upload", params, "upload");
-        try
-        {
-            checkErrors(response, "upload");
-            // TODO: check for specific errors here
+                // write the actual file
+                byte[] by = new byte[1 << LOG2_CHUNK_SIZE];
+                fi.read(by); 
+                params.put("chunk", by);
+                
+                // Each chunk presumably requires a new edit token
+                wpEditToken = (String)getPageInfo("File:" + filename).get("token");
+            }
+                
+            // done
+            String response = multipartPost(apiUrl + "action=upload", params, "upload");
+            try
+            {
+                // look for filekey
+                if (chunks > 1)
+                {
+                    int a = response.indexOf("filekey=\"") + 9;
+                    filekey = response.substring(a, response.indexOf('\"', a));
+                }
+                checkErrors(response, "upload");
+                // TODO: check for specific errors here
+            }
+            catch (IOException e)
+            {
+                fi.close();
+                // don't bother retrying - uploading is a pain
+                logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] EXCEPTION:  ", e);
+                throw e;
+            }
         }
-        catch (IOException e)
-        {
-            fi.close();
-            // don't bother retrying - uploading is a pain
-            logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] EXCEPTION:  ", e);
-            throw e;
-        }
-        
-        // } (end for)
         fi.close();
         
+        // unstash upload if chunked
+        if (chunks > 1)
+        {
+            HashMap<String, Object> params = new HashMap<String, Object>(50);
+            params.put("filename", filename);
+            params.put("token", wpEditToken);
+            params.put("ignorewarnings", "true");
+            params.put("filekey", filekey);
+            String response = multipartPost(apiUrl + "action=upload", params, "upload");
+            checkErrors(response, "upload");
+        }
+                  
         // throttle
         try
         {
@@ -6172,7 +6207,7 @@ public class Wiki implements Serializable
         uout.write(bout.toByteArray());
         uout.close();
 
-        // done
+        // done, read the response
         BufferedReader in = new BufferedReader(new InputStreamReader(
             zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
         grabCookies(connection);
