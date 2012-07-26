@@ -19,10 +19,8 @@
 
 package test;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.io.*;
 import java.util.logging.LogManager;
-import javax.swing.*;
 import org.wikipedia.Fbot;
 import org.wikipedia.Wiki;
 
@@ -32,7 +30,7 @@ import org.wikipedia.Wiki;
  */
 public class LoggedInTests
 {
-    private static Wiki wiki = new Wiki("en.wikipedia.org");
+    private static Wiki wiki = new Wiki("test.wikipedia.org");
 
     public static void main(String[] args) throws Exception
     {
@@ -59,5 +57,8 @@ public class LoggedInTests
         // watchlist
         for (Wiki.Revision item : wiki.watchlist(false))
             System.out.println(item);
+        
+        // upload
+        wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]].", "");
     }
 }
