@@ -484,7 +484,7 @@ public class Wiki implements Serializable
     private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
     // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
-    private static final int LOG2_CHUNK_SIZE = 22; 
+    private static final int LOG2_CHUNK_SIZE = 19; 
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -3200,7 +3200,7 @@ public class Wiki implements Serializable
 
         // chunked upload setup
         long filesize = file.length();
-        long chunks = filesize >> LOG2_CHUNK_SIZE + 1; 
+        long chunks = (filesize >> LOG2_CHUNK_SIZE) + 1; 
         FileInputStream fi = new FileInputStream(file);
         String filekey = "";
         
@@ -3220,7 +3220,8 @@ public class Wiki implements Serializable
                     params.put("comment", reason);
                 byte[] by = new byte[fi.available()];
                 fi.read(by);
-                params.put("file", by);
+                // Why this is necessary?
+                params.put("file\"; filename=\"" + file.getName(), by);
             }
             else
             {
@@ -3232,9 +3233,10 @@ public class Wiki implements Serializable
                     params.put("filekey", filekey);
                 
                 // write the actual file
-                byte[] by = new byte[1 << LOG2_CHUNK_SIZE];
+                long buffersize = Math.min(1 << LOG2_CHUNK_SIZE, filesize - offset);
+                byte[] by = new byte[(int)buffersize]; // 32 bit problem. Why the cast?!
                 fi.read(by); 
-                params.put("chunk", by);
+                params.put("chunk\"; filename=\"" + file.getName(), by);
                 
                 // Each chunk presumably requires a new edit token
                 wpEditToken = (String)getPageInfo("File:" + filename).get("token");
@@ -3248,7 +3250,10 @@ public class Wiki implements Serializable
                 if (chunks > 1)
                 {
                     int a = response.indexOf("filekey=\"") + 9;
+                    if (a < 0)
+                        throw new IOException("No filekey present! Server response was " + response);
                     filekey = response.substring(a, response.indexOf('\"', a));
+                    continue;
                 }
                 checkErrors(response, "upload");
                 // TODO: check for specific errors here
@@ -4801,6 +4806,8 @@ public class Wiki implements Serializable
     public String[] listPages(String prefix, int level, int namespace, int minimum, int maximum) throws IOException
     {
         // @revised 0.15 to add short/long pages
+        // No varargs namespace here because MW API only supports one namespace
+        // for this module.
         StringBuilder url = new StringBuilder(query);
         url.append("list=allpages&aplimit=max");
         if (!prefix.isEmpty()) // prefix
@@ -6075,7 +6082,6 @@ public class Wiki implements Serializable
     {
         // connect
         logurl(url, caller);
-        System.out.println(url);
         URLConnection connection = new URL(url).openConnection();
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
