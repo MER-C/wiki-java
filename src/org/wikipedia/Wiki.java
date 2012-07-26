@@ -484,7 +484,7 @@ public class Wiki implements Serializable
     private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
     // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
-    private static final int LOG2_CHUNK_SIZE = 19; 
+    private static final int LOG2_CHUNK_SIZE = 22; 
 
     // CONSTRUCTORS AND CONFIGURATION
 
