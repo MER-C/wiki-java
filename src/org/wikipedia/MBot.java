@@ -56,9 +56,9 @@ public class MBot
 	 * @param user The username to use
 	 * @param px The password to use (This is not saved anywhere once the constructor exits)
 	 * @param domain The domain to use (e.g. "commons.wikimedia.org", "en.wikipedia.org")
-	 * @param instances The maximum number of threads to create when performing the requested action. Remember, you need to
-	 * adjust your heap space accordingly for the task at hand and for the number of threads lest you should get out of memory
-	 * exceptions!
+	 * @param instances The <b>maximum</b> number of threads to create when performing the requested action. Note that if instances > list.length,
+	 * instances will be set to list.length. This is done for efficiency reasons. Remember, you need to adjust your heap space accordingly for 
+	 * the task at hand and for the number of threads lest you should get out of memory exceptions!
 	 * @param list The list we'll be acting upon
 	 * @param reason The reason(s) to use when performing the specified actions.
 	 * 
@@ -80,6 +80,71 @@ public class MBot
 		this.reason = reason;
 	}
 
+	
+	/**
+	 * Hard sets the number of Wiki objects (instances) used by this MBot object.
+	 * 
+	 * @param user The username to use with these Wiki objects
+	 * @param px The password to use with these Wiki objects
+	 * @param domain The domain to use with these Wiki objects
+	 * @param instances The number of instances to hard set the MBot object to use
+	 * 
+	 * @throws IOException If we encountered a network error
+	 * @FailedLoginException If we 
+	 */
+	
+	public void setInstances(String user, char[] px, String domain, int instances) throws IOException, FailedLoginException
+	{
+		new Wiki(domain).login(user, px); // Testing for bad login credentials & network errors
+		
+		Wiki[] wl = new Wiki[instances];
+		
+		if(wikis.length > instances)
+			System.arraycopy(wikis, 0, wl, 0, instances);
+		else if(wikis.length == instances)
+			return;
+		else
+		{
+		  System.arraycopy(wikis, 0, wl, 0, wikis.length);
+		
+		  for(int i = wikis.length-1; i < instances; i++)
+			  wl[i] = Fbot.wikiFactory(user, px, domain);
+		}
+		
+		wikis = wl;
+	}
+	
+	/**
+	 * Gets the number of instances this MBot object is using.
+	 * 
+	 * @return An integer representing the length of the internal Wiki object array.
+	 */
+	public int getInstances()
+	{
+		return wikis.length;
+	}
+	
+	
+	/**
+	 * Sets the list to be used by this MBot object.
+	 * 
+	 * @param list The array of Strings to set the lists array to.
+	 */
+	public void setList(String[] list)
+	{
+		lists = FbotUtil.arraySplitter(list, wikis.length);
+	}
+	
+	/**
+	 * Sets the reason(s) to be used by this MBot object.
+	 * 
+	 * @param reason The reason(s) to use when setting the reason(s) list.
+	 */
+	public void setReason(String... reason)
+	{
+		this.reason = reason;
+	}
+	
 	/**
 	 * Uploads files specified in the constructor. Interprets the <tt>list</tt> param
 	 * in the constructor as a list of file paths and attempts to upload them to the
@@ -194,15 +259,27 @@ public class MBot
 		{
 			for (String f : l)
 			{
-				try
+				boolean success = false;
+				do 
 				{
-					File x = new File(f);
-					wiki.upload(x, x.getName(), reason[0], "");
-				}
-				catch (Throwable e)
-				{
-					e.printStackTrace();
-				}
+					  try
+					  {
+						 File x = new File(f);
+						 wiki.upload(x, x.getName(), reason[0], "");
+						 success = true;
+					  }
+					  catch (IOException e)
+					  {
+						 e.printStackTrace();
+						 System.err.println("IOException encountered, trying again.");
+					  }
+					  catch (Throwable e)
+					  {
+						 e.printStackTrace();
+						 continue;
+					  }
+
+				} while (!success);
 			}
 		}
 
