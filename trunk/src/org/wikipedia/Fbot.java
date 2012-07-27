@@ -2,6 +2,7 @@ package org.wikipedia;
 
 import java.awt.GridLayout;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -316,12 +317,9 @@ public class Fbot
 	 * 
 	 * @return The resulting Wiki object
 	 * 
-	 * @throws FailedLoginException If User/Password combination do not match
-	 * @throws IOException If we had a network error.
-	 * 
 	 */
 
-	public static Wiki wikiFactory(String u, char[] p, String domain) throws FailedLoginException, IOException
+	public static Wiki wikiFactory(String u, char[] p, String domain)
 	{
 		Wiki wiki = new Wiki(domain);
 		try
@@ -339,4 +337,26 @@ public class Fbot
 		}
 		return wiki;
 	}
+	
+	
+	/**
+	 * Downloads a file
+	 * 
+	 * @param title The title of the file to download <ins>on the Wiki</ins> <b>excluding</b> the "<tt>File:</tt>" prefix.
+	 * @param localpath The pathname to save this file to (e.g. "<tt>/Users/Fastily/Example.jpg</tt>").  Note that if a file 
+	 * with that name already exists at that pathname, it <span style="color:Red;font-weight:bold">will</span> be overwritten!
+	 * @param wiki The wiki object to use.
+	 * 
+	 * @throws IOException If we had a network error
+	 * @throws FileNotFoundException If <tt>localpath</tt> cannot be resolved to a pathname on the local system.
+	 * 
+	 * 
+	 */
+	public static void downloadFile(String title, String localpath, Wiki wiki) throws IOException, FileNotFoundException
+	{
+		FileOutputStream fos = new FileOutputStream(localpath); 
+		fos.write(wiki.getImage(title));
+		fos.close();
+	}
+	
 }

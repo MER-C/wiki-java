@@ -1642,7 +1642,7 @@ public class Wiki implements Serializable
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
      *  @param basetime the timestamp of the revision on which <tt>text</tt> is
-     *  based, used to check for edit conflicts. <tt>null<tt> disables this.
+     *  based, used to check for edit conflicts. <tt>null</tt> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1693,7 +1693,7 @@ public class Wiki implements Serializable
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
      *  @param basetime the timestamp of the revision on which <tt>text</tt> is
-     *  based, used to check for edit conflicts. <tt>null<tt> disables this.
+     *  based, used to check for edit conflicts. <tt>null</tt> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1724,7 +1724,7 @@ public class Wiki implements Serializable
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
      *  @param basetime the timestamp of the revision on which <tt>text</tt> is
-     *  based, used to check for edit conflicts. <tt>null<tt> disables this.
+     *  based, used to check for edit conflicts. <tt>null</tt> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialExpiredException if cookies have expired
