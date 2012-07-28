@@ -3274,6 +3274,9 @@ public class Wiki implements Serializable
             HashMap<String, Object> params = new HashMap<String, Object>(50);
             params.put("filename", filename);
             params.put("token", wpEditToken);
+            params.put("text", contents);
+            if (!reason.isEmpty())
+                params.put("comment", reason);
             params.put("ignorewarnings", "true");
             params.put("filekey", filekey);
             String response = multipartPost(apiUrl + "action=upload", params, "upload");
