@@ -105,7 +105,7 @@ public class MBot
 	 * @see #setList(String[])
 	 */
 	
-	public void setInstances(String user, char[] px, String domain, int instances) throws IOException, FailedLoginException
+	public synchronized void setInstances(String user, char[] px, String domain, int instances) throws IOException, FailedLoginException
 	{
 
 		if (wikis.length < instances)
@@ -142,7 +142,7 @@ public class MBot
 	 * 
 	 * @see #setInstances(String, char[], String, int)
 	 */
-	public void setList(String[] list)
+	public synchronized void setList(String[] list)
 	{
 		lists = FbotUtil.arraySplitter(list, wikis.length);
 	}
@@ -152,7 +152,7 @@ public class MBot
 	 * 
 	 * @param reason The reason(s) to use when setting the reason(s) list.
 	 */
-	public void setReason(String... reason)
+	public synchronized void setReason(String... reason)
 	{
 		this.reason = reason;
 	}
@@ -167,7 +167,7 @@ public class MBot
 	 * 
 	 * @throws UnsupportedOperationException If you did not specify at least one reason in the constructor.
 	 */
-	public void upload()
+	public synchronized void upload()
 	{
 		if (reason.length < 1)
 			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for upload().");
@@ -186,7 +186,7 @@ public class MBot
 	 * @throws UnsupportedOperationException If you did not specify at least two reasons in the constructor.
 	 */
 	
-	public void addText()
+	public synchronized void addText()
 	{
 		if(reason.length < 2)
 			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for addText()");
@@ -204,7 +204,7 @@ public class MBot
 	 * 
 	 * @throws UnsupportedOperationException If you did not specify at least one reason in the constructor.
 	 */
-	public void delete()
+	public synchronized void delete()
 	{
 		if (reason.length < 1)
 			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for delete()");
@@ -217,7 +217,7 @@ public class MBot
 	 * 
 	 * @param mode The run mode to use. Must be one of the private static final fields specified above.
 	 */
-	private void generateThreadsAndRun(short mode)
+	private synchronized void generateThreadsAndRun(short mode)
 	{
 		for (int i = 0; i < lists.length; i++)
 			new Thread(new MBotT(mode, wikis[i], lists[i])).start();
