@@ -34,6 +34,12 @@ public class MBot
 	 */
 	private static final short DELETE = 102;
 
+	
+	/**
+	 * Represents the option for adding text in MBot.
+	 */
+	private static final short ADD_TEXT = 103;
+	
 	/**
 	 * The list of Wiki objects we'll be acting on.
 	 */
@@ -82,36 +88,39 @@ public class MBot
 
 	
 	/**
-	 * Hard sets the number of Wiki objects (instances) used by this MBot object.
+	 * Hard sets the number of Wiki objects (instances) used by this MBot object.  The only
+	 * reason you should be calling this method is if you are planning on working on a larger data
+	 * set but wish to retain the settings of the original MBot.  This method is provided for
+	 * convenience only; it's a better idea to create a new MBot object.
 	 * 
 	 * @param user The username to use with these Wiki objects
 	 * @param px The password to use with these Wiki objects
 	 * @param domain The domain to use with these Wiki objects
-	 * @param instances The number of instances to hard set the MBot object to use
+	 * @param instances The number of instances to hard set the MBot object to use.  Note that you
+	 * may not reduce the number of Wiki objects, only increase.
 	 * 
 	 * @throws IOException If we encountered a network error
-	 * @FailedLoginException If we 
+	 * @throws FailedLoginException If login credentials do not match/exist.
+	 * 
+	 * @see #setList(String[])
 	 */
 	
 	public void setInstances(String user, char[] px, String domain, int instances) throws IOException, FailedLoginException
 	{
-		new Wiki(domain).login(user, px); // Testing for bad login credentials & network errors
-		
-		Wiki[] wl = new Wiki[instances];
-		
-		if(wikis.length > instances)
-			System.arraycopy(wikis, 0, wl, 0, instances);
-		else if(wikis.length == instances)
-			return;
-		else
+
+		if (wikis.length < instances)
 		{
-		  System.arraycopy(wikis, 0, wl, 0, wikis.length);
-		
-		  for(int i = wikis.length-1; i < instances; i++)
-			  wl[i] = Fbot.wikiFactory(user, px, domain);
+			new Wiki(domain).login(user, px); // Testing for bad login credentials & network errors
+			Wiki[] wl = new Wiki[instances];
+
+			System.arraycopy(wikis, 0, wl, 0, wikis.length);
+
+			for (int i = wikis.length - 1; i < instances; i++)
+				wl[i] = Fbot.wikiFactory(user, px, domain);
+
+			wikis = wl;
+
 		}
-		
-		wikis = wl;
 	}
 	
 	/**
@@ -126,9 +135,12 @@ public class MBot
 	
 	
 	/**
-	 * Sets the list to be used by this MBot object.
+	 * Sets the list to be used by this MBot object.  If you're using <tt>setInstances()</tt>,
+	 * call it before you call this method!
 	 * 
 	 * @param list The array of Strings to set the lists array to.
+	 * 
+	 * @see #setInstances(String, char[], String, int)
 	 */
 	public void setList(String[] list)
 	{
@@ -158,10 +170,28 @@ public class MBot
 	public void upload()
 	{
 		if (reason.length < 1)
-			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason'.");
+			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for upload().");
 		this.generateThreadsAndRun(UPLOAD);
 	}
 
+	
+	/**
+	 * Adds text to the beginning of each page specified in the <tt>list</tt> param
+	 * in the constructor.  You <b>MUST</b> have <ins>two</ins> Strings in the reason param of
+	 * the constructor.  The first param shall be interpreted as the edit summary to use for
+	 * each edit and the second param shall be interpreted as the text to add!  If you specify more
+	 * than two params, the rest shall be ignored.  If an exception occurs when editing, that page will
+	 * be skipped over.
+	 * 
+	 * @throws UnsupportedOperationException If you did not specify at least two reasons in the constructor.
+	 */
+	
+	public void addText()
+	{
+		if(reason.length < 2)
+			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for addText()");
+		this.generateThreadsAndRun(ADD_TEXT);
+	}
 	/**
 	 * Deletes files specified in the constructor. Interprets the <tt>list</tt> param
 	 * in the constructor as a list of wiki pages and attempts to delete them from the
@@ -177,7 +207,7 @@ public class MBot
 	public void delete()
 	{
 		if (reason.length < 1)
-			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason'.");
+			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for delete()");
 		this.generateThreadsAndRun(DELETE);
 	}
 
@@ -246,6 +276,8 @@ public class MBot
 				case DELETE:
 					this.delete();
 					break;
+				case ADD_TEXT:
+					this.addText();
 				default:
 					throw new UnsupportedOperationException("Invalid option used!");
 			}
@@ -309,5 +341,26 @@ public class MBot
 			}
 		}
 
+		
+		/**
+		 * Adds text to the beginning of a page.  Skips over a page if we get <i>any</i> exceptions
+		 */
+		
+		private void addText()
+		{
+		  for(String s : l)	
+		  {
+			  try
+			  {
+				  wiki.edit(s, reason[1] + "\n" + wiki.getPageText(s), reason[0]);
+			  }
+			  catch(Throwable e)
+			  {
+				  e.printStackTrace();
+				  System.err.println("Encountered an issue of some sort, skipping " + s);
+			  }
+		  }
+			
+		}
 	}
 }

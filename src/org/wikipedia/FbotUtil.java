@@ -265,7 +265,7 @@ public class FbotUtil
 
 	/**
 	 * Determines if a file is uploadable to a WMF Wiki.
-	 * Uploadable files currently are (png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga).
+	 * Uploadable files currently are (png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga|pdf).
 	 * 
 	 * @param f The filename to check
 	 * 
@@ -274,7 +274,7 @@ public class FbotUtil
 
 	public static boolean isUploadable(String f)
 	{
-		return f.matches("(?i).*?\\.(png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga)");
+		return f.matches("(?i).*?\\.(png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga|pdf)");
 	}
 
 	/**
@@ -344,5 +344,73 @@ public class FbotUtil
 
 		return sdf.format(offsetTime(offset).getTime());
 	}
+	
+	/**
+	 * Reads the contents of a file into a String.  Use with a <tt>.txt</tt> files for
+	 * best results.  There seems to be an issue with reading in non-standard ascii characters
+	 * at the moment.
+	 * 
+	 * @param f The file to read from
+	 * 
+	 * @return The contents of the file as a String.
+	 * 
+	 * @throws FileNotFoundException If the file specified does not exist.
+	 */
+	public static String fileToString(File f) throws FileNotFoundException
+	{
+		Scanner m = new Scanner(f);
+		String s = "";
+		while(m.hasNextLine())
+			s += m.nextLine().trim() + "\n";
+		
+		m.close();
+		return s.trim();
+			
+	}
 
+	
+	/**
+	 * Parses a String, assumed to be a list, into a String array.  Each item in the list
+	 * must be separated by a newline character.  Space characters are ignored.  The ignore
+	 * list is case sensitive, and only checks if each String in the list starts with the
+	 * specified text; this is useful for parsing out comments and/or unwanted crap.
+	 * 
+	 * @param s The String to use (must be delimited by new line chars)
+	 * @param ignorelist If an item in the list starts with a String in this list, it won't
+	 * be included in the final result.  Whatever you do, don't put an empty string in here;
+	 * you'll be sorry :3
+	 */
+	
+	public static String[] listify(String s, String... ignorelist)
+	{
+		ArrayList<String> l = new ArrayList<String>();
+		Scanner m = new Scanner(s);
+		while(m.hasNextLine())
+		{
+			String b = m.nextLine().trim();
+			if(b.length() > 0)
+				l.add(b);
+		}
+		
+		if(ignorelist.length > 0)
+		{
+			ArrayList<String> x = new ArrayList<String>();
+			
+			for(String a : l)
+			{
+				boolean good = true;
+				
+				for(String bad : ignorelist)
+					if(a.startsWith(bad))
+						good = false;
+				
+				if(good)
+					x.add(a);
+			}
+			
+		   l = x;
+		}
+		
+		return l.toArray(new String[0]);
+	}
 }

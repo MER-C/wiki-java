@@ -41,7 +41,7 @@ public class FbotParse
 
 	public static String getRedirectsAsRegex(String template, Wiki wiki) throws Throwable
 	{
-		String r = "(?si)\\{\\{(Template:)??(" + namespaceStrip(template);
+		String r = "(?si)\\{\\{\\s*?(Template:)??\\s*?(" + namespaceStrip(template);
 		for (String str : wiki.whatLinksHere(template, true, Wiki.TEMPLATE_NAMESPACE))
 			r += "|" + namespaceStrip(str);
 		r += ").*?\\}\\}";
@@ -183,7 +183,7 @@ public class FbotParse
 	 * @param redirects Whether to incorporate redirects to this template or not.
 	 * @param wiki The wiki object to use
 	 * 
-	 * @return The template we parsed out, in the form {{TEMPLATE|ARG1|ARG2|...}} or null, if we didn't find the specified template.
+	 * @return The template we parsed out, in the form {{TEMPLATE|ARG1|ARG2|...}} or NULL, if we didn't find the specified template.
 	 * 
 	 * @throws Throwable if Big boom
 	 * 
@@ -194,7 +194,7 @@ public class FbotParse
 		if (redirects)
 			return parseFromPageRegex(text, FbotParse.getRedirectsAsRegex("Template:" + template, wiki));
 		else
-			return parseFromPageRegex(text, "(?s)\\{\\{(Template:)??(" + template + ").*?\\}\\}");
+			return parseFromPageRegex(text, "(?si)\\{\\{\\s*?(Template:)??\\s*?(" + template + ").*?\\}\\}");
 	}
 
 	/**
