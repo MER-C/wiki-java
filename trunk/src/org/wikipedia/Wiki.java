@@ -6168,7 +6168,7 @@ public class Wiki implements Serializable
      *  @param caller the caller of this method
      *  @return the server response
      *  @see #post(java.lang.String, java.lang.String, java.lang.String)
-     *  @see http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
+     *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
      *  @since 0.27
      */
     protected String multipartPost(String url, Map<String, ?> params, String caller) throws IOException
