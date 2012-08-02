@@ -1,5 +1,6 @@
 package org.wikipedia;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,18 +34,18 @@ public class FbotParse
 	 * @param template The title of the main Template (CANNOT BE REDIRECT), including the "Template:" prefix.
 	 * @param wiki The wiki object to use.
 	 * 
-	 * @throws Throwable
-	 * 
 	 * @return The regex, in the form (?si)\{\{(Template:)??)(XXXXX|XXXX|XXXX...).*?\}\}, where XXXX is the
 	 * template and its redirects.
+	 * 
+	 * @throws IOException If network error.
 	 */
 
-	public static String getRedirectsAsRegex(String template, Wiki wiki) throws Throwable
+	public static String getRedirectsAsRegex(String template, Wiki wiki) throws IOException
 	{
-		String r = "(?si)\\{\\{\\s*?(Template:)??\\s*?(" + namespaceStrip(template);
+		String r = "(?si)\\{{2}?\\s*?(Template:)??\\s*?(" + namespaceStrip(template);
 		for (String str : wiki.whatLinksHere(template, true, Wiki.TEMPLATE_NAMESPACE))
 			r += "|" + namespaceStrip(str);
-		r += ").*?\\}\\}";
+		r += ").*?\\}{2}?";
 
 		return r;
 	}
@@ -72,11 +73,12 @@ public class FbotParse
 	 * @param reason Edit summary to use
 	 * @param wiki The wiki object to use.
 	 * 
-	 * @throws Throwable
+	 * @throws IOException If network error.
+	 * 
 	 * 
 	 */
 
-	public static void templateReplace(String template, String replacementText, String reason, Wiki wiki) throws Throwable
+	public static void templateReplace(String template, String replacementText, String reason, Wiki wiki) throws IOException
 	{
 		String[] list = wiki.whatTranscludesHere(template);
 		if (template.startsWith("Template:"))
@@ -184,12 +186,12 @@ public class FbotParse
 	 * @param wiki The wiki object to use
 	 * 
 	 * @return The template we parsed out, in the form {{TEMPLATE|ARG1|ARG2|...}} or NULL, if we didn't find the specified template.
+	 * @throws IOException If network error
 	 * 
-	 * @throws Throwable if Big boom
 	 * 
 	 */
 
-	public static String parseTemplateFromPage(String text, String template, boolean redirects, Wiki wiki) throws Throwable
+	public static String parseTemplateFromPage(String text, String template, boolean redirects, Wiki wiki) throws IOException
 	{
 		if (redirects)
 			return parseFromPageRegex(text, FbotParse.getRedirectsAsRegex("Template:" + template, wiki));
