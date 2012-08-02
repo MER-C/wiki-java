@@ -376,12 +376,13 @@ public class FbotUtil
 	 * specified text; this is useful for parsing out comments and/or unwanted crap.
 	 * 
 	 * @param s The String to use (must be delimited by new line chars)
-	 * @param ignorelist If an item in the list starts with a String in this list, it won't
+	 * @param prefix Adds a prefix to the beginning of each element.  Specify "" for no prefix.
+	 * @param ignorelist If an item in the list contains a String in this list, it won't
 	 * be included in the final result.  Whatever you do, don't put an empty string in here;
 	 * you'll be sorry :3
 	 */
 	
-	public static String[] listify(String s, String... ignorelist)
+	public static String[] listify(String s, String prefix, String... ignorelist)
 	{
 		ArrayList<String> l = new ArrayList<String>();
 		Scanner m = new Scanner(s);
@@ -389,7 +390,7 @@ public class FbotUtil
 		{
 			String b = m.nextLine().trim();
 			if(b.length() > 0)
-				l.add(b);
+				l.add(prefix + b);
 		}
 		
 		if(ignorelist.length > 0)
@@ -401,7 +402,7 @@ public class FbotUtil
 				boolean good = true;
 				
 				for(String bad : ignorelist)
-					if(a.startsWith(bad))
+					if(a.contains(bad))
 						good = false;
 				
 				if(good)
