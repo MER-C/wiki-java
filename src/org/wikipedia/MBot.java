@@ -324,23 +324,23 @@ public class MBot
 		{
 			for (String s : l)
 			{
-				try
+				boolean success = false;
+				do
 				{
-					boolean success = false;
-					do
+					try
 					{
 						wiki.delete(s, reason[0]);
 						success = true;
-					} while (!success);
-				}
-				catch (Throwable e)
-				{
-					e.printStackTrace();
-					System.err.println("Trying again.");
-				}
+					}
+					catch (Throwable e)
+					{
+						e.printStackTrace();
+						System.err.println("Trying again.");
+					}
+
+				} while (!success);
 			}
 		}
-
 		
 		/**
 		 * Adds text to the beginning of a page.  Skips over a page if we get <i>any</i> exceptions

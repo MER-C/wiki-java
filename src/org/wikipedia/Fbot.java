@@ -76,7 +76,7 @@ public class Fbot
 
 	public static void loginPX(Wiki wiki, String user) throws IOException, FailedLoginException, FileNotFoundException
 	{
-		HashMap<String, String> c = FbotUtil.buildReasonCollection("px");
+		HashMap<String, String> c = FbotUtil.buildReasonCollection("./px");
 		String px = c.get(user);
 
 		if (px == null)
