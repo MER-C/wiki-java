@@ -3311,7 +3311,7 @@ public class Wiki implements Serializable
     public boolean userExists(String username) throws IOException
     {
         username = URLEncoder.encode(username, "UTF-8");
-        return !fetch(query + "list=users&ususers=" + username, "userExists").contains("missing=\"\"");
+        return !fetch(query + "list=users&ususers=" + username, "userExists").contains("invalid=\"\"");
     }
 
     /**
@@ -6123,7 +6123,13 @@ public class Wiki implements Serializable
             text.append("\n");
         }
         in.close();
-        return text.toString();
+        String temp = text.toString();
+        if (temp.contains("<error code="))
+            // Something *really* bad happened. Most of these are self-explanatory
+            // and are indicative of bugs (not necessarily in this framework) or 
+            // can be avoided entirely.
+            throw new UnknownError("MW API error. Server response was: " + temp);
+        return temp;
     }
 
     /**

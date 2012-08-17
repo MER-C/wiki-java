@@ -37,7 +37,7 @@ public class WikiTests
         LogManager.getLogManager().readConfiguration();
         Wiki enWiki = new Wiki("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-        
+/*           
         // random
         System.out.println(enWiki.random());
         System.out.println(enWiki.random());
@@ -46,7 +46,7 @@ public class WikiTests
         System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
         System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
         
-/*       
+    
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
             System.out.println(page);
@@ -150,5 +150,9 @@ public class WikiTests
 
         System.out.println(enWiki.getPageText("Main Page"));
         */
+        
+        // user exists
+        System.out.println(enWiki.userExists("MER-C")); // true
+        System.out.println(enWiki.userExists("127.0.0.1")); // false
     }
 }
