@@ -1,13 +1,14 @@
 package org.wikipedia;
 
 import java.awt.GridLayout;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-
 import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -15,10 +16,12 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 /**
- * Contains static MediaWiki bot/API methods built off MER-C's Wiki.java.
- * Please report bugs <a href=http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here</a>!
- * Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here</a>!
- * This code and project are licensed under the terms of the <a href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
+ * Contains static MediaWiki bot/API methods built off MER-C's Wiki.java. Please report bugs <a
+ * href=
+ * http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here
+ * </a>! Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here</a>!
+ * This code and project are licensed under the terms of the <a
+ * href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
  * 
  * @see org.wikipedia.FbotUtil
  * @see org.wikipedia.MBot
@@ -46,11 +49,10 @@ public class Fbot
 	 * 
 	 * @throws IOException If we had a network error
 	 * @throws FailedLoginException If we had bad login information
-	 * 
-	 * 
 	 */
 
-	public static void loginAndSetPrefs(Wiki wiki, String user, char[] p, int throttle) throws IOException, FailedLoginException
+	public static void loginAndSetPrefs(Wiki wiki, String user, char[] p, int throttle) throws IOException,
+			FailedLoginException
 	{
 		wiki.setMaxLag(-1);
 		wiki.login(user, p);
@@ -58,8 +60,9 @@ public class Fbot
 	}
 
 	/**
-	 * Method reads in user/password combinations from a text file titled "px" (no extension) to log in user. In file, format should be
-	 * "USERNAME:PASSWORD", separated by colon, one entry per line.
+	 * Method reads in user/password combinations from a text file titled "px" (no extension) to log
+	 * in user. In file, format should be "USERNAME:PASSWORD", separated by colon, one entry per
+	 * line.
 	 * 
 	 * @param wiki Wiki object to perform changes on
 	 * @param user Which account? (no "User:" prefix)
@@ -67,10 +70,9 @@ public class Fbot
 	 * @throws IOException If we encountered a network error
 	 * @throws FailedLoginException If user credentials do not match
 	 * @throws FileNotFoundException If "px" (not "px.txt") does not exist.
-	 * @throws UnsupportedOperationException if a non-recognized user is
-	 * specified.
+	 * @throws UnsupportedOperationException if a non-recognized user is specified.
 	 * 
-	 * @see #loginAndSetPrefs
+	 * @see #loginAndSetPrefs(Wiki, String, char[], int)
 	 * 
 	 */
 
@@ -80,7 +82,8 @@ public class Fbot
 		String px = c.get(user);
 
 		if (px == null)
-			throw new UnsupportedOperationException("Did not find a Username in the specified file matching String value in user param");
+			throw new UnsupportedOperationException(
+					"Did not find a Username in the specified file matching String value in user param");
 
 		loginAndSetPrefs(wiki, user, px.toCharArray(), 1);
 	}
@@ -90,7 +93,7 @@ public class Fbot
 	 * 
 	 * @param wiki Wiki object to perform changes on
 	 * 
-	 * @see #loginAndSetPrefs
+	 * @see #loginAndSetPrefs(Wiki, String, char[], int)
 	 * 
 	 */
 	public static void guiLogin(Wiki wiki)
@@ -104,7 +107,8 @@ public class Fbot
 		JPasswordField px = new JPasswordField(12);
 		pl.add(px);
 
-		int ok = JOptionPane.showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		int ok = JOptionPane
+				.showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (ok != JOptionPane.OK_OPTION)
 			System.exit(1);
 		try
@@ -125,18 +129,19 @@ public class Fbot
 	}
 
 	/**
-	 * Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a Redirect.
+	 * Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a
+	 * Redirect.
 	 * 
 	 * @param redirect The title of the redirect to get the target for.
 	 * @param wiki The wiki object to use.
 	 * 
-	 * @throws Throwable If there was a network issue, non-existent page issue, or if we tried to access a Special: page.
-	 * @throws UnsupportedOperationException If the page was not a redirect page.
-	 * 
 	 * @return String The title of the redirect's target.
+	 * 
+	 * @throws UnsupportedOperationException If the page was not a redirect page.
+	 * @throws IOException If network error
 	 */
 
-	public static String getRedirectTarget(String redirect, Wiki wiki) throws Throwable
+	public static String getRedirectTarget(String redirect, Wiki wiki) throws IOException
 	{
 		String text = wiki.getPageText(redirect).trim();
 
@@ -152,12 +157,12 @@ public class Fbot
 	 * @param page The page to check for.
 	 * @param wiki The wiki object to use.
 	 * 
-	 * @throws Throwable
-	 * 
 	 * @return True if the page exists.
+	 * 
+	 * @throws IOException If network error
 	 */
 
-	public static boolean exists(String page, Wiki wiki) throws Throwable
+	public static boolean exists(String page, Wiki wiki) throws IOException
 	{
 		return ((Boolean) wiki.getPageInfo(page).get("exists")).booleanValue();
 	}
@@ -171,11 +176,15 @@ public class Fbot
 	 * @param footerText Ending description text. Specify "" for no end.
 	 * @param wiki The wiki object to use.
 	 * 
-	 * @throws Throwable
+	 * @throws IOException If network error
+	 * @throws LoginException If we have bad login credentials or if you don't have permission to
+	 *            edit.
+	 * 
 	 * 
 	 */
 
-	public static void dbrDump(String page, String[] list, String headerText, String footerText, Wiki wiki) throws Throwable
+	public static void dbrDump(String page, String[] list, String headerText, String footerText, Wiki wiki)
+			throws LoginException, IOException
 	{
 		String dump = headerText + "  This report last updated as of ~~~~~\n";
 		for (String s : list)
@@ -214,7 +223,8 @@ public class Fbot
 	 * 
 	 * @param list The array to use
 	 * @param reason The reason to use while deleting
-	 * @param talkReason The reason to use when deleting talk pages of the pages we're deleting. Specify "null" if talk pages are not to be deleted
+	 * @param talkReason The reason to use when deleting talk pages of the pages we're deleting.
+	 *           Specify "null" if talk pages are not to be deleted
 	 * @param wiki The wiki object to use.
 	 * 
 	 * @return An array containing the elements we were unable to delete.
@@ -260,7 +270,6 @@ public class Fbot
 	 * @param wiki The wiki object to use.
 	 * 
 	 */
-
 	public static void addTextList(String[] pages, String text, String summary, Wiki wiki)
 	{
 		for (String page : pages)
@@ -307,9 +316,9 @@ public class Fbot
 
 	/**
 	 * Creates Wiki objects with the specified username, password, and domain. </br></br>
-	 * <b>PRECONDITION:</b> Username, password, and domain <span style="color:Red;font-weight:bold">MUST</span> be valid.
-	 * Method will continue to loop until credentials are accepted so you might just find yourself in an infinite loop if
-	 * they're not!
+	 * <b>PRECONDITION:</b> Username, password, and domain <span
+	 * style="color:Red;font-weight:bold">MUST</span> be valid. Method will continue to loop until
+	 * credentials are accepted so you might just find yourself in an infinite loop if they're not!
 	 * 
 	 * @param u The username to use
 	 * @param p The password to use
@@ -337,26 +346,75 @@ public class Fbot
 		}
 		return wiki;
 	}
-	
-	
+
 	/**
 	 * Downloads a file
 	 * 
-	 * @param title The title of the file to download <ins>on the Wiki</ins> <b>excluding</b> the "<tt>File:</tt>" prefix.
-	 * @param localpath The pathname to save this file to (e.g. "<tt>/Users/Fastily/Example.jpg</tt>").  Note that if a file 
-	 * with that name already exists at that pathname, it <span style="color:Red;font-weight:bold">will</span> be overwritten!
+	 * @param title The title of the file to download <ins>on the Wiki</ins> <b>excluding</b> the "
+	 *           <tt>File:</tt>" prefix.
+	 * @param localpath The pathname to save this file to (e.g. "<tt>/Users/Fastily/Example.jpg</tt>
+	 *           "). Note that if a file with that name already exists at that pathname, it <span
+	 *           style="color:Red;font-weight:bold">will</span> be overwritten!
 	 * @param wiki The wiki object to use.
 	 * 
 	 * @throws IOException If we had a network error
-	 * @throws FileNotFoundException If <tt>localpath</tt> cannot be resolved to a pathname on the local system.
+	 * @throws FileNotFoundException If <tt>localpath</tt> cannot be resolved to a pathname on the
+	 *            local system.
 	 * 
 	 * 
 	 */
 	public static void downloadFile(String title, String localpath, Wiki wiki) throws IOException, FileNotFoundException
 	{
-		FileOutputStream fos = new FileOutputStream(localpath); 
+		FileOutputStream fos = new FileOutputStream(localpath);
 		fos.write(wiki.getImage(title));
 		fos.close();
 	}
-	
+
+	/**
+	 * Deletes a page/uploads a file but catches common exceptions. Does not catch login errors, bad
+	 * permission errors and network errors.
+	 * 
+	 * @param wiki The wiki object to use
+	 * @param page The page to delete or file path to uplaod.
+	 * @param reason The reason/text to use.
+	 * @param code The code to use, either "delete" or "uplaod", accordingly.
+	 * 
+	 * @throws LoginException If we have bad credentials, or lack permission to delete.
+	 * @throws IOException If we had a network error.
+	 */
+	public static void superAction(Wiki wiki, String page, String reason, String code) throws LoginException,
+			IOException
+	{
+		boolean success = false;
+		short i = 0;
+		do
+		{
+			try
+			{
+				if (code.equals("delete"))
+					wiki.delete(page, reason);
+				else
+					if (code.equals("upload"))
+						wiki.upload(new File(page), page, reason, "");
+					else
+						throw new UnsupportedOperationException(code + " is not a valid code!");
+				success = true;
+			}
+			catch (LoginException e)
+			{
+				throw e;
+			}
+			catch (IOException e)
+			{
+				if (i++ > 4)
+					throw e;
+				e.printStackTrace();
+				System.err.println("Network error? Try: " + i + " of 5");
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+		} while (!success);
+	}
 }

@@ -3,6 +3,7 @@ package org.wikipedia;
 import java.io.File;
 import java.io.IOException;
 import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
 
 /**
  * Class consisting of stand-alone, multi-threaded bot methods. These methods
@@ -324,21 +325,19 @@ public class MBot
 		{
 			for (String s : l)
 			{
-				boolean success = false;
-				do
+				try
 				{
-					try
-					{
-						wiki.delete(s, reason[0]);
-						success = true;
-					}
-					catch (Throwable e)
-					{
-						e.printStackTrace();
-						System.err.println("Trying again.");
-					}
-
-				} while (!success);
+					Fbot.superAction(wiki, s, reason[0], "delete");
+				}
+				catch(LoginException e)
+				{
+					e.printStackTrace();
+					System.exit(1);
+				}
+				catch(IOException e)
+				{
+				}
+				
 			}
 		}
 		
