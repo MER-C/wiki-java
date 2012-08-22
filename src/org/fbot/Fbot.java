@@ -1,4 +1,4 @@
-package org.wikipedia;
+package org.fbot;
 
 import java.awt.GridLayout;
 import java.io.File;
@@ -14,6 +14,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import org.wikipedia.Wiki;
 
 /**
  * Contains static MediaWiki bot/API methods built off MER-C's Wiki.java. Please report bugs <a
