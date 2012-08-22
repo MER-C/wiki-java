@@ -21,7 +21,7 @@ package test;
 
 import java.io.*;
 import java.util.logging.LogManager;
-import org.wikipedia.Fbot;
+import org.fbot.Fbot;
 import org.wikipedia.Wiki;
 
 /**

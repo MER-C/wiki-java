@@ -1,9 +1,10 @@
-package org.wikipedia;
+package org.fbot;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.wikipedia.Wiki;
 
 /**
  * Consists of parser methods for use with MediaWiki syntax.

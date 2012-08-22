@@ -1,9 +1,10 @@
-package org.wikipedia;
+package org.fbot;
 
 import java.io.File;
 import java.io.IOException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
+import org.wikipedia.Wiki;
 
 /**
  * Class consisting of stand-alone, multi-threaded bot methods. These methods

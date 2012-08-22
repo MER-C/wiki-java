@@ -1,4 +1,4 @@
-package org.wikipedia;
+package org.fbot;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,6 +17,7 @@ import java.util.Scanner;
 import java.util.TimeZone;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
+import org.wikipedia.Wiki;
 
 /**
  * Miscellaneous utility methods for Fbot. Contains several non-wiki related functions whose uses
@@ -87,11 +88,10 @@ public class FbotUtil
 				String[] temp;
 				if (i == 0)
 					temp = Arrays.copyOfRange(z, 0, z.length / splits);
+				else if (i == splits - 1)
+					temp = Arrays.copyOfRange(z, z.length / splits * (splits - 1), z.length);
 				else
-					if (i == splits - 1)
-						temp = Arrays.copyOfRange(z, z.length / splits * (splits - 1), z.length);
-					else
-						temp = Arrays.copyOfRange(z, z.length / splits * (i), z.length / splits * (i + 1));
+					temp = Arrays.copyOfRange(z, z.length / splits * (i), z.length / splits * (i + 1));
 
 				xf[i] = temp;
 			}
@@ -118,9 +118,8 @@ public class FbotUtil
 			String fn = f.getName();
 			if (f.isDirectory() && !fn.startsWith("."))
 				listFilesR(f, fl);
-			else
-				if (isUploadable(fn))
-					fl.add(f);
+			else if (isUploadable(fn))
+				fl.add(f);
 		}
 	}
 
@@ -468,17 +467,17 @@ public class FbotUtil
 		}
 
 		/**
-		 * Performs non-empty argument assertion.  If the double[] passed in is of length ==  0,
-		 * you'll get a IllegalArgumentException.
+		 * Performs non-empty argument assertion. If the double[] passed in is of length == 0, you'll
+		 * get a IllegalArgumentException.
 		 * 
 		 * @param ds The array to check
 		 */
 		private static void verify(double... ds)
 		{
-			if(ds.length == 0)
+			if (ds.length == 0)
 				throw new IllegalArgumentException("'ds' must have a minimum of length 1!");
 		}
-		
+
 		/**
 		 * Calculates the mean of a set of data.
 		 * 
@@ -511,36 +510,37 @@ public class FbotUtil
 			return bb.length % 2 == 1 ? bb[bb.length / 2] : (bb[bb.length / 2] + bb[bb.length / 2 - 1]) / 2;
 		}
 
-		
 		/**
 		 * Calculates variance of a dataset. σ^2 = (Σ(X-μ)^2)/N
+		 * 
 		 * @param ds The data set to determine the variance of
 		 * @return The variance of the dataset, or 0 if you left ds blank.
 		 */
 		public static double variance(double... ds)
 		{
 			verify(ds);
-			
+
 			double mean = mean(ds);
 			double var = 0;
 
 			for (int i = 0; i < ds.length; i++)
 				var += Math.pow(ds[i] - mean, 2);
 
-			return var;
+			return var/ds.length;
 		}
 
 		/**
 		 * Performs standard deviation on a set of data
 		 * 
 		 * @param ds The dataset to use
-		 * @return The standard deviation (i.e. mean distance of each item in the data set from the mean of the data)
+		 * @return The standard deviation (i.e. mean distance of each item in the data set from the
+		 *         mean of the data)
 		 */
 		public static double standardDeviation(double... ds)
 		{
 			verify(ds);
 			return Math.sqrt(variance(ds));
 		}
-		
+
 	}
 }
