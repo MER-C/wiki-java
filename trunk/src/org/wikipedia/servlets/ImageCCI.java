@@ -113,6 +113,11 @@ public class ImageCCI extends HttpServlet
         // search enwiki upload log
         Wiki.User wpuser = enWiki.getUser(user);
         HashSet<String> wpUploads = new HashSet<String>(10000);
+        if (wpuser == null)
+        {
+            buffer.append("Error: user does not exist!");
+            return;
+        }
         Wiki.LogEntry[] entries = enWiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, wpuser, "", Wiki.ALL_NAMESPACES);
         for (int i = 0; i < entries.length; i++)
             wpUploads.add((String)entries[i].getTarget());
@@ -120,9 +125,12 @@ public class ImageCCI extends HttpServlet
         // search commons upload log
         Wiki.User comuser = commons.getUser(user);
         HashSet<String> commonsUploads = new HashSet<String>(10000);
-        entries = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, comuser, "", Wiki.ALL_NAMESPACES);
-        for (int i = 0; i < entries.length; i++)
-            commonsUploads.add((String)entries[i].getTarget());
+        if (comuser != null)
+        {
+            entries = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, comuser, "", Wiki.ALL_NAMESPACES);
+            for (int i = 0; i < entries.length; i++)
+                commonsUploads.add((String)entries[i].getTarget());
+        }
 
         // search for transferred images
         HashSet<String> commonsTransfer = new HashSet<String>(10000);
