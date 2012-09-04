@@ -3311,7 +3311,7 @@ public class Wiki implements Serializable
     public boolean userExists(String username) throws IOException
     {
         username = URLEncoder.encode(username, "UTF-8");
-        return !fetch(query + "list=users&ususers=" + username, "userExists").contains("invalid=\"\"");
+        return fetch(query + "list=users&ususers=" + username, "userExists").contains("userid=\"");
     }
 
     /**
