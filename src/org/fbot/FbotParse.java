@@ -9,9 +9,9 @@ import org.wikipedia.Wiki;
 /**
  * Consists of parser methods for use with MediaWiki syntax.
  * 
- * @see org.wikipedia.Fbot
- * @see org.wikipedia.FbotUtil
- * @see org.wikipedia.MBot
+ * @see org.fbot.Fbot
+ * @see org.fbot.FbotUtil
+ * @see org.fbot.MBot
  * 
  * @author Fastily
  */

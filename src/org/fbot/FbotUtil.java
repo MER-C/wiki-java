@@ -1,5 +1,7 @@
 package org.fbot;
 
+import java.awt.Container;
+import java.awt.Dimension;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,16 +18,18 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.TimeZone;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.SpringLayout;
 import org.wikipedia.Wiki;
 
 /**
  * Miscellaneous utility methods for Fbot. Contains several non-wiki related functions whose uses
  * extend beyond Wikis.
  * 
- * @see org.wikipedia.Fbot
- * @see org.wikipedia.MBot
- * @see org.wikipedia.FbotParse
+ * @see org.fbot.Fbot
+ * @see org.fbot.MBot
+ * @see org.fbot.FbotParse
  * 
  * @author Fastily
  */
@@ -450,44 +454,103 @@ public class FbotUtil
 		JOptionPane.showMessageDialog(null, t, "Critical Error!", JOptionPane.PLAIN_MESSAGE);
 	}
 
+	
 	/**
-	 * Class containing some general central tendancy calculators.
+	 * Creates a JPanel form with a SpringLayout.  Fields are dynamically resized when the window size is
+	 * modified by the user.  
+	 * @param cl The list of containers to work with.  Elements should be in the order, e.g. JLabel1, JTextField1,
+	 * JLabel 2, JTextField2, etc.
+	 * 
+	 * @return A JPanel with a SpringLayout in a form.
+	 * @throws UnsupportedOperationException If cl.length == 0 || cl.length % 2 == 1
+	 */
+	public static JPanel buildForm(Container...cl)
+	{
+		SpringLayout l = new SpringLayout();
+		JPanel pl = new JPanel(l);
+		
+		//Sanity check.  There must be at least two elements in cl
+		if(cl.length == 0 || cl.length % 2 == 1)
+			throw new UnsupportedOperationException("Either cl is empty or has an odd number of elements!");
+	   
+		for(Container c : cl)
+			pl.add(c);
+		
+		l.putConstraint(SpringLayout.WEST, cl[0], 5, SpringLayout.WEST, pl);
+		l.putConstraint(SpringLayout.NORTH, cl[0], 5, SpringLayout.NORTH, pl);
+		l.putConstraint(SpringLayout.WEST, cl[1], 5, SpringLayout.EAST, cl[0]);
+		l.putConstraint(SpringLayout.NORTH, cl[1], 5, SpringLayout.NORTH, pl);
+		l.putConstraint(SpringLayout.EAST, pl, 5, SpringLayout.EAST, cl[1]);
+		
+	   for(int i = 2; i < cl.length; i+=2)
+	   {
+	   	
+			l.putConstraint(SpringLayout.WEST, cl[i], 5, SpringLayout.WEST, pl);
+			l.putConstraint(SpringLayout.NORTH, cl[i], 10, SpringLayout.SOUTH, cl[i-2]);
+			l.putConstraint(SpringLayout.WEST, cl[i+1], 5, SpringLayout.EAST, cl[i]);
+			l.putConstraint(SpringLayout.NORTH, cl[i+1], 5, SpringLayout.SOUTH, cl[i-1]);
+			l.putConstraint(SpringLayout.EAST, pl, 5, SpringLayout.EAST, cl[i+1]);
+	   }
+	   
+	   pl.setPreferredSize(new Dimension(500, 250));
+	   
+	   return pl;
+	}
+	
+	
+	/**
+	 * Class containing some general central tendency calculators.
 	 * 
 	 * @author Fastily
 	 * 
 	 */
-	public static class FStats
+	public class FStats
 	{
 		/**
-		 * Empty constructor, hiding from Javadoc
+		 * Represents the dataset we'll be using.
 		 */
-		private FStats()
-		{
-			// do nothing
-		}
-
+		private double[] ds;
+		
 		/**
-		 * Performs non-empty argument assertion. If the double[] passed in is of length == 0, you'll
-		 * get a IllegalArgumentException.
+		 * Constructs an FStats object.  You must provide an array/list of items with >0 items.
 		 * 
-		 * @param ds The array to check
+		 * @param ds The array of doubles representing the data set to use.
+		 * @throws IllegalArgumentException If you did not provide an array of length > 0.
 		 */
-		private static void verify(double... ds)
+		public FStats(double... ds)
 		{
 			if (ds.length == 0)
 				throw new IllegalArgumentException("'ds' must have a minimum of length 1!");
+			this.ds = ds;
 		}
 
 		/**
+		 * Sets the dataset of doubles.
+		 * 
+		 * @param ds The array to set the internal dataset to.
+		 */
+		public void setDataset(double...ds)
+		{
+			this.ds = ds;
+		}
+		
+		/**
+		 * Fetches the internal double[] representing the dataset.
+		 * 
+		 * @return The internal double[] representing the dataset
+		 */
+		public double[] getDataset()
+		{
+			return ds;
+		}
+		
+		/**
 		 * Calculates the mean of a set of data.
 		 * 
-		 * @param ds The data set to determine the mean of
-		 * @return The mean of the data, or 0 if you left ds blank.
+		 * @return The population mean of the data.
 		 */
-		public static double mean(double... ds)
+		public double mean()
 		{
-			verify(ds);
-
 			double m = 0;
 			for (double d : ds)
 				m += d;
@@ -495,15 +558,12 @@ public class FbotUtil
 		}
 
 		/**
-		 * Calculates the median of a set of data. Automatically sorts.
+		 * Calculates the median of a set of data. 
 		 * 
-		 * @param ds The data set to determine the median of
-		 * @return The median of the data, or 0 if you left ds blank.
+		 * @return The median of the data.
 		 */
-		public static double median(double... ds)
+		public double median()
 		{
-			verify(ds);
-
 			double[] bb = Arrays.copyOf(ds, ds.length);
 			Arrays.sort(bb);
 
@@ -511,16 +571,13 @@ public class FbotUtil
 		}
 
 		/**
-		 * Calculates variance of a dataset. σ^2 = (Σ(X-μ)^2)/N
+		 * Calculates variance of a dataset.
 		 * 
-		 * @param ds The data set to determine the variance of
-		 * @return The variance of the dataset, or 0 if you left ds blank.
+		 * @return The variance of the dataset.
 		 */
-		public static double variance(double... ds)
+		public double variance()
 		{
-			verify(ds);
-
-			double mean = mean(ds);
+			double mean = this.mean();
 			double var = 0;
 
 			for (int i = 0; i < ds.length; i++)
@@ -532,15 +589,16 @@ public class FbotUtil
 		/**
 		 * Performs standard deviation on a set of data
 		 * 
-		 * @param ds The dataset to use
 		 * @return The standard deviation (i.e. mean distance of each item in the data set from the
 		 *         mean of the data)
 		 */
-		public static double standardDeviation(double... ds)
+		public double standardDeviation()
 		{
-			verify(ds);
-			return Math.sqrt(variance(ds));
+			return Math.sqrt(this.variance());
 		}
 
 	}
+	
+	
+	
 }

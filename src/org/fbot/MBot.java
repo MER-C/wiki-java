@@ -17,9 +17,9 @@ import org.wikipedia.Wiki;
  * <a href="http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new">here</a> (fast)
  * or on the project's Google Code <a href="http://code.google.com/p/wiki-java/issues/list">issue tracker</a> (slow).
  * 
- * @see org.wikipedia.Fbot
- * @see org.wikipedia.FbotUtil
- * @see org.wikipedia.FbotParse
+ * @see org.fbot.Fbot
+ * @see org.fbot.FbotUtil
+ * @see org.fbot.FbotParse
  * 
  * @author Fastily
  */
@@ -76,7 +76,9 @@ public class MBot
 
 	public MBot(String user, char[] px, String domain, int instances, String[] list, String... reason) throws FailedLoginException, IOException
 	{
-		new Wiki(domain).login(user, px); // Testing for bad login credentials & network errors
+		Wiki t = new Wiki(domain); // Testing for bad login credentials & network errors
+		t.setMaxLag(-1); //DB lag is a pain
+		t.login(user, px);
 
 		lists = FbotUtil.arraySplitter(list, instances); // determine number of splits
 
@@ -88,43 +90,6 @@ public class MBot
 		this.reason = reason;
 	}
 
-	
-	/**
-	 * Hard sets the number of Wiki objects (instances) used by this MBot object.  The only
-	 * reason you should be calling this method is if you are planning on working on a larger data
-	 * set but wish to retain the settings of the original MBot.  This method is provided for
-	 * convenience only; it's a better idea to create a new MBot object.
-	 * 
-	 * @param user The username to use with these Wiki objects
-	 * @param px The password to use with these Wiki objects
-	 * @param domain The domain to use with these Wiki objects
-	 * @param instances The number of instances to hard set the MBot object to use.  Note that you
-	 * may not reduce the number of Wiki objects, only increase.
-	 * 
-	 * @throws IOException If we encountered a network error
-	 * @throws FailedLoginException If login credentials do not match/exist.
-	 * 
-	 * @see #setList(String[])
-	 */
-	
-	public synchronized void setInstances(String user, char[] px, String domain, int instances) throws IOException, FailedLoginException
-	{
-
-		if (wikis.length < instances)
-		{
-			new Wiki(domain).login(user, px); // Testing for bad login credentials & network errors
-			Wiki[] wl = new Wiki[instances];
-
-			System.arraycopy(wikis, 0, wl, 0, wikis.length);
-
-			for (int i = wikis.length - 1; i < instances; i++)
-				wl[i] = Fbot.wikiFactory(user, px, domain);
-
-			wikis = wl;
-
-		}
-	}
-	
 	/**
 	 * Gets the number of instances this MBot object is using.
 	 * 
@@ -133,31 +98,7 @@ public class MBot
 	public int getInstances()
 	{
 		return wikis.length;
-	}
-	
-	
-	/**
-	 * Sets the list to be used by this MBot object.  If you're using <tt>setInstances()</tt>,
-	 * call it before you call this method!
-	 * 
-	 * @param list The array of Strings to set the lists array to.
-	 * 
-	 * @see #setInstances(String, char[], String, int)
-	 */
-	public synchronized void setList(String[] list)
-	{
-		lists = FbotUtil.arraySplitter(list, wikis.length);
-	}
-	
-	/**
-	 * Sets the reason(s) to be used by this MBot object.
-	 * 
-	 * @param reason The reason(s) to use when setting the reason(s) list.
-	 */
-	public synchronized void setReason(String... reason)
-	{
-		this.reason = reason;
-	}
+	}	
 	
 	/**
 	 * Uploads files specified in the constructor. Interprets the <tt>list</tt> param
@@ -280,6 +221,7 @@ public class MBot
 					break;
 				case ADD_TEXT:
 					this.addText();
+					break;
 				default:
 					throw new UnsupportedOperationException("Invalid option used!");
 			}

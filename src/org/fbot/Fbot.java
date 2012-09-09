@@ -1,6 +1,5 @@
 package org.fbot;
 
-import java.awt.GridLayout;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -24,10 +23,10 @@ import org.wikipedia.Wiki;
  * This code and project are licensed under the terms of the <a
  * href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
  * 
- * @see org.wikipedia.FbotUtil
- * @see org.wikipedia.MBot
+ * @see org.fbot.FbotUtil
+ * @see org.fbot.MBot
  * @see org.wikipedia.Wiki
- * @see org.wikipedia.FbotParse
+ * @see org.fbot.FbotParse
  * 
  * @author Fastily
  */
@@ -41,23 +40,43 @@ public class Fbot
 	}
 
 	/**
-	 * Generic login method which turns off maxlag and allows for setting of throttle.
+	 * Generic login method which turns off maxlag and throttle
 	 * 
 	 * @param wiki Wiki object to perform changes on
 	 * @param user User to login as, without "User:" prefix
 	 * @param p User's password, in the form of a char array.
-	 * @param throttle Seconds to wait in between making edits
 	 * 
-	 * @throws IOException If we had a network error
-	 * @throws FailedLoginException If we had bad login information
 	 */
 
-	public static void loginAndSetPrefs(Wiki wiki, String user, char[] p, int throttle) throws IOException,
-			FailedLoginException
+	public static void loginAndSetPrefs(Wiki wiki, String user, char[] p)
 	{
+		wiki.setThrottle(1);
 		wiki.setMaxLag(-1);
-		wiki.login(user, p);
-		wiki.setThrottle(throttle);
+
+		int i = 0;
+		while (i < 4)
+		{
+			try
+			{
+				wiki.login(user, p);
+				break;
+			}
+			catch (IOException e)
+			{
+				System.err.println("IOException; Try " + ++i + "/5");
+				if (i == 5)
+				{
+					e.printStackTrace();
+					System.exit(1);
+				}
+
+			}
+			catch (FailedLoginException e)
+			{
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
 	}
 
 	/**
@@ -68,8 +87,6 @@ public class Fbot
 	 * @param wiki Wiki object to perform changes on
 	 * @param user Which account? (no "User:" prefix)
 	 * 
-	 * @throws IOException If we encountered a network error
-	 * @throws FailedLoginException If user credentials do not match
 	 * @throws FileNotFoundException If "px" (not "px.txt") does not exist.
 	 * @throws UnsupportedOperationException if a non-recognized user is specified.
 	 * 
@@ -77,7 +94,7 @@ public class Fbot
 	 * 
 	 */
 
-	public static void loginPX(Wiki wiki, String user) throws IOException, FailedLoginException, FileNotFoundException
+	public static void loginPX(Wiki wiki, String user) throws FileNotFoundException
 	{
 		HashMap<String, String> c = FbotUtil.buildReasonCollection("./px");
 		String px = c.get(user);
@@ -86,7 +103,7 @@ public class Fbot
 			throw new UnsupportedOperationException(
 					"Did not find a Username in the specified file matching String value in user param");
 
-		loginAndSetPrefs(wiki, user, px.toCharArray(), 1);
+		loginAndSetPrefs(wiki, user, px.toCharArray());
 	}
 
 	/**
@@ -99,35 +116,34 @@ public class Fbot
 	 */
 	public static void guiLogin(Wiki wiki)
 	{
-
-		JPanel pl = new JPanel(new GridLayout(2, 2));
-		pl.add(new JLabel("Username:"));
 		JTextField u = new JTextField(12);
-		pl.add(u);
-		pl.add(new JLabel("Password:"));
 		JPasswordField px = new JPasswordField(12);
-		pl.add(px);
+		JPanel pl = FbotUtil.buildForm(new JLabel("Username:", JLabel.TRAILING), u, new JLabel("Password:",
+				JLabel.TRAILING), px);
 
 		int ok = JOptionPane
 				.showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 		if (ok != JOptionPane.OK_OPTION)
-			System.exit(1);
-		try
-		{
-			loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword(), 10);
-		}
-		catch (FailedLoginException e)
-		{
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(null, "Username and password do not match on Database, program will now exit");
-			System.exit(1);
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-			System.err.println("Network Error, program will now exit.");
-		}
+			System.exit(0);
+
+		loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword());
+		wiki.setThrottle(8);
+
 	}
+
+	/*
+	 * JPanel pl = new JPanel(new GridLayout(2, 2)); pl.add(new JLabel("Username:")); JTextField u =
+	 * new JTextField(12); pl.add(u); pl.add(new JLabel("Password:")); JPasswordField px = new
+	 * JPasswordField(12); pl.add(px);
+	 * 
+	 * int ok = JOptionPane .showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION,
+	 * JOptionPane.PLAIN_MESSAGE); if (ok != JOptionPane.OK_OPTION) System.exit(1); try {
+	 * loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword(), 10); } catch
+	 * (FailedLoginException e) { e.printStackTrace(); JOptionPane.showMessageDialog(null,
+	 * "Username and password do not match on Database, program will now exit"); System.exit(1); }
+	 * catch (IOException e) { e.printStackTrace();
+	 * System.err.println("Network Error, program will now exit."); }
+	 */
 
 	/**
 	 * Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a
@@ -332,19 +348,8 @@ public class Fbot
 	public static Wiki wikiFactory(String u, char[] p, String domain)
 	{
 		Wiki wiki = new Wiki(domain);
-		try
-		{
-			boolean success = false;
-			do
-			{
-				loginAndSetPrefs(wiki, u, p, 1);
-				success = true;
-			} while (!success);
-		}
-		catch (Throwable e)
-		{
-			e.printStackTrace();
-		}
+		loginAndSetPrefs(wiki, u, p);
+
 		return wiki;
 	}
 
@@ -394,11 +399,10 @@ public class Fbot
 			{
 				if (code.equals("delete"))
 					wiki.delete(page, reason);
+				else if (code.equals("upload"))
+					wiki.upload(new File(page), page, reason, "");
 				else
-					if (code.equals("upload"))
-						wiki.upload(new File(page), page, reason, "");
-					else
-						throw new UnsupportedOperationException(code + " is not a valid code!");
+					throw new UnsupportedOperationException(code + " is not a valid code!");
 				success = true;
 			}
 			catch (LoginException e)
