@@ -40,7 +40,8 @@ public class Fbot
 	}
 
 	/**
-	 * Generic login method which turns off maxlag and throttle
+	 * Generic login method which turns off maxlag and throttle. Catches IOExceptions 8 times, and
+	 * then exits program.
 	 * 
 	 * @param wiki Wiki object to perform changes on
 	 * @param user User to login as, without "User:" prefix
@@ -53,30 +54,27 @@ public class Fbot
 		wiki.setThrottle(1);
 		wiki.setMaxLag(-1);
 
-		int i = 0;
-		while (i < 4)
+		short i = 0;
+		boolean success = false;
+		do
 		{
 			try
 			{
 				wiki.login(user, p);
-				break;
+				success = true;
 			}
 			catch (IOException e)
 			{
-				System.err.println("IOException; Try " + ++i + "/5");
-				if (i == 5)
-				{
-					e.printStackTrace();
+				System.out.println("Encountered IOException.  This was try #" + i);
+				if (++i > 8)
 					System.exit(1);
-				}
-
 			}
 			catch (FailedLoginException e)
 			{
 				e.printStackTrace();
 				System.exit(1);
 			}
-		}
+		} while (!success);
 	}
 
 	/**
@@ -118,32 +116,16 @@ public class Fbot
 	{
 		JTextField u = new JTextField(12);
 		JPasswordField px = new JPasswordField(12);
-		JPanel pl = FbotUtil.buildForm(new JLabel("Username:", JLabel.TRAILING), u, new JLabel("Password:",
+		JPanel pl = FbotUtil.buildForm("Login", new JLabel("Username:", JLabel.TRAILING), u, new JLabel("Password:",
 				JLabel.TRAILING), px);
 
-		int ok = JOptionPane
-				.showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-		if (ok != JOptionPane.OK_OPTION)
+		if (JOptionPane.showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
 			System.exit(0);
 
 		loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword());
-		wiki.setThrottle(8);
+		wiki.setThrottle(5);
 
 	}
-
-	/*
-	 * JPanel pl = new JPanel(new GridLayout(2, 2)); pl.add(new JLabel("Username:")); JTextField u =
-	 * new JTextField(12); pl.add(u); pl.add(new JLabel("Password:")); JPasswordField px = new
-	 * JPasswordField(12); pl.add(px);
-	 * 
-	 * int ok = JOptionPane .showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION,
-	 * JOptionPane.PLAIN_MESSAGE); if (ok != JOptionPane.OK_OPTION) System.exit(1); try {
-	 * loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword(), 10); } catch
-	 * (FailedLoginException e) { e.printStackTrace(); JOptionPane.showMessageDialog(null,
-	 * "Username and password do not match on Database, program will now exit"); System.exit(1); }
-	 * catch (IOException e) { e.printStackTrace();
-	 * System.err.println("Network Error, program will now exit."); }
-	 */
 
 	/**
 	 * Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a
