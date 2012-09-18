@@ -1,7 +1,7 @@
 package org.fbot;
 
-import java.awt.Container;
-import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -17,10 +17,11 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.TimeZone;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
-import javax.swing.SpringLayout;
 import org.wikipedia.Wiki;
 
 /**
@@ -456,149 +457,50 @@ public class FbotUtil
 
 	
 	/**
-	 * Creates a JPanel form with a SpringLayout.  Fields are dynamically resized when the window size is
+	 * Creates a form in the form of a JPanel.  Fields are dynamically resized when the window size is
 	 * modified by the user.  
+	 * 
+	 * @param Title Title to use in the border.  Specify null if you don't want one. Specify empty string if you want just border.
 	 * @param cl The list of containers to work with.  Elements should be in the order, e.g. JLabel1, JTextField1,
 	 * JLabel 2, JTextField2, etc.
 	 * 
 	 * @return A JPanel with a SpringLayout in a form.
 	 * @throws UnsupportedOperationException If cl.length == 0 || cl.length % 2 == 1
 	 */
-	public static JPanel buildForm(Container...cl)
+	public static JPanel buildForm(String title, JComponent...cl)
 	{
-		SpringLayout l = new SpringLayout();
-		JPanel pl = new JPanel(l);
+		JPanel pl = new JPanel(new GridBagLayout());
 		
 		//Sanity check.  There must be at least two elements in cl
 		if(cl.length == 0 || cl.length % 2 == 1)
 			throw new UnsupportedOperationException("Either cl is empty or has an odd number of elements!");
 	   
-		for(Container c : cl)
-			pl.add(c);
+		if(title != null)
+		   pl.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder(title), BorderFactory.createEmptyBorder(5,5,5,5)));
 		
-		l.putConstraint(SpringLayout.WEST, cl[0], 5, SpringLayout.WEST, pl);
-		l.putConstraint(SpringLayout.NORTH, cl[0], 5, SpringLayout.NORTH, pl);
-		l.putConstraint(SpringLayout.WEST, cl[1], 5, SpringLayout.EAST, cl[0]);
-		l.putConstraint(SpringLayout.NORTH, cl[1], 5, SpringLayout.NORTH, pl);
-		l.putConstraint(SpringLayout.EAST, pl, 5, SpringLayout.EAST, cl[1]);
+		GridBagConstraints c = new GridBagConstraints();
+		c.fill = GridBagConstraints.HORIZONTAL;
 		
-	   for(int i = 2; i < cl.length; i+=2)
-	   {
-	   	
-			l.putConstraint(SpringLayout.WEST, cl[i], 5, SpringLayout.WEST, pl);
-			l.putConstraint(SpringLayout.NORTH, cl[i], 10, SpringLayout.SOUTH, cl[i-2]);
-			l.putConstraint(SpringLayout.WEST, cl[i+1], 5, SpringLayout.EAST, cl[i]);
-			l.putConstraint(SpringLayout.NORTH, cl[i+1], 5, SpringLayout.SOUTH, cl[i-1]);
-			l.putConstraint(SpringLayout.EAST, pl, 5, SpringLayout.EAST, cl[i+1]);
-	   }
-	   
-	   pl.setPreferredSize(new Dimension(500, 250));
+		for(int i = 0; i < cl.length; i+=2)
+		{	
+			c.gridx = 0;
+			c.gridy = i;
+			c.anchor = GridBagConstraints.EAST; //should anchor East
+			pl.add(cl[i], c);
+			
+			c.anchor = GridBagConstraints.CENTER; //reset anchor to default
+			
+			c.weightx = 0.5; //Fill weights
+			c.gridx = 1;
+			c.gridy = i;
+			c.ipady = 5; //sometimes components render funky when there is no extra vertical buffer
+ 			pl.add(cl[i+1], c);
+ 			
+ 			//reset default values for next iteration
+ 			c.weightx = 0;
+ 			c.ipady = 0;
+		}
 	   
 	   return pl;
 	}
-	
-	
-	/**
-	 * Class containing some general central tendency calculators.
-	 * 
-	 * @author Fastily
-	 * 
-	 */
-	public class FStats
-	{
-		/**
-		 * Represents the dataset we'll be using.
-		 */
-		private double[] ds;
-		
-		/**
-		 * Constructs an FStats object.  You must provide an array/list of items with >0 items.
-		 * 
-		 * @param ds The array of doubles representing the data set to use.
-		 * @throws IllegalArgumentException If you did not provide an array of length > 0.
-		 */
-		public FStats(double... ds)
-		{
-			if (ds.length == 0)
-				throw new IllegalArgumentException("'ds' must have a minimum of length 1!");
-			this.ds = ds;
-		}
-
-		/**
-		 * Sets the dataset of doubles.
-		 * 
-		 * @param ds The array to set the internal dataset to.
-		 */
-		public void setDataset(double...ds)
-		{
-			this.ds = ds;
-		}
-		
-		/**
-		 * Fetches the internal double[] representing the dataset.
-		 * 
-		 * @return The internal double[] representing the dataset
-		 */
-		public double[] getDataset()
-		{
-			return ds;
-		}
-		
-		/**
-		 * Calculates the mean of a set of data.
-		 * 
-		 * @return The population mean of the data.
-		 */
-		public double mean()
-		{
-			double m = 0;
-			for (double d : ds)
-				m += d;
-			return m / ds.length;
-		}
-
-		/**
-		 * Calculates the median of a set of data. 
-		 * 
-		 * @return The median of the data.
-		 */
-		public double median()
-		{
-			double[] bb = Arrays.copyOf(ds, ds.length);
-			Arrays.sort(bb);
-
-			return bb.length % 2 == 1 ? bb[bb.length / 2] : (bb[bb.length / 2] + bb[bb.length / 2 - 1]) / 2;
-		}
-
-		/**
-		 * Calculates variance of a dataset.
-		 * 
-		 * @return The variance of the dataset.
-		 */
-		public double variance()
-		{
-			double mean = this.mean();
-			double var = 0;
-
-			for (int i = 0; i < ds.length; i++)
-				var += Math.pow(ds[i] - mean, 2);
-
-			return var/ds.length;
-		}
-
-		/**
-		 * Performs standard deviation on a set of data
-		 * 
-		 * @return The standard deviation (i.e. mean distance of each item in the data set from the
-		 *         mean of the data)
-		 */
-		public double standardDeviation()
-		{
-			return Math.sqrt(this.variance());
-		}
-
-	}
-	
-	
-	
 }
