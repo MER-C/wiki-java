@@ -81,7 +81,16 @@ public class SpamArchiveSearch extends HttpServlet
         }
         buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
         if (query != null)
-            archivesearch(query, buffer);
+        {
+            try
+            {
+                archivesearch(query, buffer);
+            }
+            catch (IOException ex)
+            {
+                buffer.append(ex.toString());
+            }
+        }
 
         // put a footer
         buffer.append(ServletUtils.generateFooter("Spam archive search tool"));
