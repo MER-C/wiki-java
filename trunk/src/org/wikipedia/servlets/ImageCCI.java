@@ -81,7 +81,14 @@ public class ImageCCI extends HttpServlet
             // create a download prompt
             response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
             out = response.getWriter();
-            churn(user, buffer);
+            try
+            {
+                churn(user, buffer);
+            }
+            catch (IOException ex)
+            {
+                buffer.append(ex.toString());
+            }
         }
         else
         {

@@ -83,7 +83,16 @@ public class XWikiLinksearch extends HttpServlet
         }
         buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
         if (domain != null)
-            linksearch(domain, buffer);
+        {
+            try
+            {
+                linksearch(domain, buffer);
+            }
+            catch (IOException ex)
+            {
+                buffer.append(ex.toString());
+            }
+        }
 
         // put a footer
         buffer.append(ServletUtils.generateFooter("Cross-wiki linksearch tool"));
