@@ -4161,7 +4161,10 @@ public class Wiki implements Serializable
                 String title = line.substring(x + 7, y);
                 String link = line.substring(y + 7, z);
                 ret[0].add(decode(title));
-                ret[1].add(new URL(link));
+                if (link.charAt(0) == '/') // protocol relative url
+                    ret[1].add(new URL(protocol + ":" + link));
+                else
+                    ret[1].add(new URL(link));
                 x = z;
             }
         }
