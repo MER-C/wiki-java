@@ -6211,7 +6211,7 @@ public class Wiki implements Serializable
             if (value instanceof String)
             {
                 out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-                out.writeBytes((String)value);
+                out.write(((String)value).getBytes("UTF-8"));
             }
             else if (value instanceof byte[])
             {
