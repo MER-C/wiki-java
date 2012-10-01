@@ -106,7 +106,7 @@ public class XWikiLinksearch extends HttpServlet
 
         // header
         buffer.append("<!doctype html>\n<html>\n<head>\n<title>Cross-wiki linksearch</title>");
-        buffer.append("\n</head>\n\n<body>\n<p>This tool searches the top 20 Wikipedias for a ");
+        buffer.append("\n</head>\n\n<body>\n<p>This tool searches various Wikimedia projects for a ");
         buffer.append("specific link. Enter a domain name (example.com, not *.example.com or ");
         buffer.append("http://example.com) below. This process takes up to 20 seconds.\n");
 
