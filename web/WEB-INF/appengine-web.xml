@@ -6,4 +6,5 @@
   <static-error-handlers>
     <handler file="timeout.html"/>
   </static-error-handlers>
+  <threadsafe>false</threadsafe>
 </appengine-web-app>
