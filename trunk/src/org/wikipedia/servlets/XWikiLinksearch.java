@@ -1,5 +1,5 @@
 /**
- *  @(#)XWikiLinksearch.java 0.01 14/02/2011
+ *  @(#)XWikiLinksearch.java 0.02 01/10/2012
  *  Copyright (C) 2011 - 2012 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -29,10 +29,48 @@ import org.wikipedia.Wiki;
 /**
  *  A crude replacement for Eagle's cross-wiki linksearch tool. 
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
 public class XWikiLinksearch extends HttpServlet
 {
+    // wiki groups
+    public static final Wiki[] top20wikis, top40wikis, importantwikis;
+    
+    /**
+     *  Initializes wiki groups.
+     */
+    static
+    {
+        // top 20 Wikipedias
+        String[] temp = { "en", "de", "fr", "nl", "it", "pl", "es", "ru", "ja", "pt",
+            "zh", "sv", "vi", "uk", "ca", "no", "fi", "cs", "hu", "fa" };
+        top20wikis = new Wiki[20];
+        for (int i = 0; i < temp.length; i++)
+            top20wikis[i] = new Wiki(temp[i] + ".wikipedia.org");
+        
+        // top 40 Wikipedias
+        top40wikis = new Wiki[40];
+        System.arraycopy(top20wikis, 0, top40wikis, 0, 20);
+        temp = new String[] { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk",
+            "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
+        for (int i = 0; i < temp.length; i++)
+            top40wikis[20 + i] = new Wiki(temp[i] + ".wikipedia.org");
+        
+        // a collection of important wikis
+        temp = new String[] { "en", "de", "fr" };
+        importantwikis = new Wiki[15];
+        for (int i = 0; i < temp.length; i++)
+        {
+            importantwikis[4 * i    ] = new Wiki(temp[i] + ".wikipedia.org");
+            importantwikis[4 * i + 1] = new Wiki(temp[i] + ".wiktionary.org");
+            importantwikis[4 * i + 2] = new Wiki(temp[i] + ".wikibooks.org");
+            importantwikis[4 * i + 3] = new Wiki(temp[i] + ".wikiquote.org");
+            // importantwikis[5 * i + 4] = new Wiki(temp[i] + ".wikivoyage.org");
+        }
+        importantwikis[12] = new Wiki("meta.wikimedia.org");
+        importantwikis[13] = new Wiki("commons.wikimedia.org");
+        importantwikis[14] = new Wiki("mediawiki.org");
+    }
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
      *  which is in either the current or home directory.
@@ -44,7 +82,8 @@ public class XWikiLinksearch extends HttpServlet
         if (domain == null)
             System.exit(0);
         StringBuilder builder = new StringBuilder(10000);
-        linksearch(domain, builder);
+        linksearch(domain, builder, top40wikis);
+        linksearch(domain, builder, importantwikis);
         out.write(builder.toString());
         out.close();
     }
@@ -71,22 +110,38 @@ public class XWikiLinksearch extends HttpServlet
         buffer.append("specific link. Enter a domain name (example.com, not *.example.com or ");
         buffer.append("http://example.com) below. This process takes up to 20 seconds.\n");
 
-        // form for input
         String domain = request.getParameter("link");
-        buffer.append("<form action=\"./linksearch.jsp\" method=GET>\n<p>Domain to search: ");
-        buffer.append("<input type=text name=link");
+        String set = request.getParameter("set");
+        buffer.append("<form action=\"./linksearch.jsp\" method=GET>\n");
+        // wiki set combo box
+        buffer.append("<table>");
+        buffer.append("<tr><td>Wikis to search:\n<td>");
+        LinkedHashMap<String, String> options = new LinkedHashMap<String, String>(10);
+        options.put("top20", "Top 20 Wikipedias");
+        options.put("top40", "Top 40 Wikipedias");
+        options.put("major", "Major Wikimedia projects");
+        buffer.append(ServletUtils.generateComboBox("set", options, set));
+        // domain name text box
+        buffer.append("<tr><td>Domain to search: <td><input type=text name=link");
         if (domain != null)
         {
             buffer.append(" value=\"");
             buffer.append(ServletUtils.sanitize(domain));
             buffer.append("\"");
         }
-        buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
+        buffer.append(">\n</table>\n<input type=submit value=\"Search\">\n</form>\n");
         if (domain != null)
         {
             try
             {
-                linksearch(domain, buffer);
+                if (set == null || set.equals("top20"))
+                    linksearch(domain, buffer, top20wikis);
+                else if (set.equals("top40"))
+                    linksearch(domain, buffer, top40wikis);
+                else if (set.equals("major"))
+                    linksearch(domain, buffer, importantwikis);
+                else
+                    buffer.append("ERROR: Invalid wiki set.");
             }
             catch (IOException ex)
             {
@@ -95,36 +150,34 @@ public class XWikiLinksearch extends HttpServlet
         }
 
         // put a footer
+        buffer.append("<br><br>");
         buffer.append(ServletUtils.generateFooter("Cross-wiki linksearch tool"));
         out.write(buffer.toString());
         out.close();
     }
 
-    public static void linksearch(String domain, StringBuilder buffer) throws IOException
+    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis) throws IOException
     {
-        String[] wikis = { "en", "de", "fr", "pl", "it", "ja", "es", "nl", "pt", "ru",
-            "sv", "zh", "ca", "no", "fi", "uk", "hu", "cs", "ro" };
         buffer.append("<hr>\n<h2>Searching for links to ");
         buffer.append(ServletUtils.sanitize(domain));
         buffer.append(".\n");
-        for (int i = 0; i < wikis.length; i++)
+        for (Wiki wiki : wikis)
         {
-            Wiki wiki = new Wiki(wikis[i] + ".wikipedia.org");
             wiki.setUsingCompressedRequests(false); // This is Google's fault.
-            wiki.setMaxLag(0);
+            wiki.setMaxLag(-1);
             ArrayList[] temp = wiki.linksearch("*." + domain, "http");
             // silly api designs aplenty here!
             ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
             temp[0].addAll(temp2[0]);
             temp[1].addAll(temp2[1]);
             buffer.append("<h3>Results for ");
-            buffer.append(wikis[i]);
-            buffer.append(".wikipedia.org:</h3>\n<p><ol>\n");
+            buffer.append(wiki.getDomain());
+            buffer.append(":</h3>\n<p><ol>\n");
             for (int j = 0; j < temp[0].size(); j++)
             {
                 buffer.append("<li><a href=\"//");
-                buffer.append(wikis[i]);
-                buffer.append(".wikipedia.org/wiki/");
+                buffer.append(wiki.getDomain());
+                buffer.append("/wiki/");
                 buffer.append((String)temp[0].get(j));
                 buffer.append("\">");
                 buffer.append((String)temp[0].get(j));
@@ -137,8 +190,8 @@ public class XWikiLinksearch extends HttpServlet
             buffer.append("</ol>\n<p>");
             buffer.append(temp[0].size());
             buffer.append(" links found. (<a href=\"//");
-            buffer.append(wikis[i]);
-            buffer.append(".wikipedia.org/wiki/Special:Linksearch/*.");
+            buffer.append(wiki.getDomain());
+            buffer.append("/wiki/Special:Linksearch/*.");
             buffer.append(ServletUtils.sanitize(domain));
             buffer.append("\">Linksearch</a>)\n");
         }

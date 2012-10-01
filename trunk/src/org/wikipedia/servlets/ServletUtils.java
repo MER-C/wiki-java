@@ -19,6 +19,8 @@
 
 package org.wikipedia.servlets;
 
+import java.util.*;
+
 /**
  *  Common servlet code so that I can maintain it easier.
  *  @author MER-C
@@ -60,7 +62,41 @@ public class ServletUtils
         sb.append("<a href=\"http://code.google.com/p/wiki-java\">here</a>. Report ");
         sb.append("bugs at <a href=\"//en.wikipedia.org/wiki/User_talk:MER-C\">my ");
         sb.append("talk page</a>\n(fast) or the tracker associated with the source ");
-        sb.append("(slow).\n\n</body>\n</html>");
+        sb.append("(slow).\n\n<p><a href=\"./linksearch.jsp\">Cross-wiki linksearch</a> ");
+        sb.append("|\n<a href=\"./imagecci.jsp\">Image Contribution surveyor</a> |\n");
+        sb.append("<a href=\"./spamarchivesearch.jsp\">Spam blacklist archive search</a>");
+        sb.append("</body>\n</html>");
         return sb.toString();
+    }
+    
+    /**
+     *  Generates a HTML combo box.
+     *  @param param the form parameter for the combo box
+     *  @param options a map, where key = option value, value = what is displayed
+     *  to the user in the order that they are specified
+     *  @param selected the initially selected option value (may be null, in which
+     */
+    public static String generateComboBox(String param, LinkedHashMap<String, String> options, String selected)
+    {
+        StringBuilder temp = new StringBuilder(500);
+        temp.append("<select name=\"");
+        temp.append(param);
+        temp.append("\">\n");
+        for (Map.Entry<String, String> entry : options.entrySet())
+        {
+            temp.append("<option value=\"");
+            temp.append(entry.getKey());
+            if (selected == null || selected.equals(entry.getKey()))
+            {
+                temp.append("\" selected>");
+                selected = entry.getKey();
+            }
+            else
+                temp.append("\">");
+            temp.append(entry.getValue());
+            temp.append("</option>\n");
+        }
+        temp.append("</select>\n");
+        return temp.toString();
     }
 }
