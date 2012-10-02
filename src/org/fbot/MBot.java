@@ -43,6 +43,11 @@ public class MBot
 	private static final short ADD_TEXT = 103;
 	
 	/**
+	 * Represents the option for replacing text in MBot.
+	 */
+	private static final short REPLACE_TEXT = 104;
+	
+	/**
 	 * The list of Wiki objects we'll be acting on.
 	 */
 
@@ -121,9 +126,11 @@ public class MBot
 	/**
 	 * Adds text to the beginning of each page specified in the <tt>list</tt> param
 	 * in the constructor.  You <b>MUST</b> have <ins>two</ins> Strings in the reason param of
-	 * the constructor.  The first param shall be interpreted as the edit summary to use for
-	 * each edit and the second param shall be interpreted as the text to add!  If you specify more
-	 * than two params, the rest shall be ignored.  If an exception occurs when editing, that page will
+	 * the constructor.  The first param shall be interpreted as the text to add to the top of the page. 
+	 * The second param shall be interpreted as the text to add to the end of the page. The third param
+	 * shall be interpreted as the edit summary to use. Note that you may use an empty string as a filler
+	 * if you don't want text added to the top of a page or the end of the page. If you specify more
+	 * than three params, the rest shall be ignored.  If an exception occurs while adding text, that page will
 	 * be skipped over.
 	 * 
 	 * @throws UnsupportedOperationException If you did not specify at least two reasons in the constructor.
@@ -131,8 +138,8 @@ public class MBot
 	
 	public synchronized void addText()
 	{
-		if(reason.length < 2)
-			throw new UnsupportedOperationException("You must provide at LEAST one arg in 'reason' for addText()");
+		if(reason.length < 3)
+			throw new UnsupportedOperationException("You must provide at least THREE args in 'reason' for addText()");
 		this.generateThreadsAndRun(ADD_TEXT);
 	}
 	/**
@@ -154,6 +161,23 @@ public class MBot
 		this.generateThreadsAndRun(DELETE);
 	}
 
+	/**
+	 * Replaces text of files specified in the constructor.  Interprets <tt>list</tt> param in constructor as a list of wiki
+	 * pages and attempts to perform text replacement on them on the specified Wiki with specified constructor. The first reason 
+	 * param shall be interpreted as the regex matching the text to replace. The second reason shall be interpreted as the text 
+	 * to replace any regex-matching text with.  The third reason shall be interpreted as the edit summary to use when making this 
+	 * text replacement.  If we encounter any exceptions while trying to perform text replacement, we'll skip the page.  If you
+	 * specify more than three arguments, only the first three shall be used in the text replacement operation.
+	 * 
+	 * @throws UnsupportedOperationException If you did not specify at least three reasons in the constructor.
+	 */
+	public synchronized void replaceText()
+	{
+		if(reason.length < 3)
+			throw new UnsupportedOperationException("You must probvide a minimum of THREE args in 'reason' for replaceText()");
+		this.generateThreadsAndRun(REPLACE_TEXT);
+	}
+	
 	/**
 	 * Generic method to generate threads and set run mode. Splits arrays into smaller parts based on the
 	 * wikis.length parameter. Will only generate as many threads as splits (i.e. # of threads = [0, wikis.length]).
@@ -222,6 +246,9 @@ public class MBot
 				case ADD_TEXT:
 					this.addText();
 					break;
+				case REPLACE_TEXT:
+					this.replaceText();
+					break;
 				default:
 					throw new UnsupportedOperationException("Invalid option used!");
 			}
@@ -285,7 +312,7 @@ public class MBot
 		}
 		
 		/**
-		 * Adds text to the beginning of a page.  Skips over a page if we get <i>any</i> exceptions
+		 * Adds text to the beginning and end of a page.  Skips over a page if we get <i>any</i> exceptions/errors.
 		 */
 		
 		private void addText()
@@ -294,7 +321,7 @@ public class MBot
 		  {
 			  try
 			  {
-				  wiki.edit(s, reason[1] + "\n" + wiki.getPageText(s), reason[0]);
+				  wiki.edit(s, reason[0] + wiki.getPageText(s) + reason[1], reason[2]);
 			  }
 			  catch(Throwable e)
 			  {
@@ -303,6 +330,25 @@ public class MBot
 			  }
 		  }
 			
+		}
+		
+		/**
+		 * Performs text replacement via regex.  Skips over a page if we get <i>any</i> exceptions/errors.
+		 */
+		private void replaceText()
+		{
+			for(String s : l)
+			{
+				try
+				{
+					wiki.edit(s, wiki.getPageText(s).replaceAll(reason[0], reason[1]), reason[2]);
+				}
+				catch(Throwable e)
+				{
+					e.printStackTrace();
+					System.err.println("Encountered an issue of some sort, skipping " + s);
+				}
+			}
 		}
 	}
 }

@@ -549,8 +549,9 @@ public class Wiki implements Serializable
      *  *Using HTTPS on Wikimedia sites
      *  *Server-side cache management (maxage and smaxage API parameters)
      *
+     *  \nWritten by Tedder 
+     *  
      *  @since 0.24
-     *  @author Tedder
      */
     protected void initVars()
     {
@@ -2115,13 +2116,12 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the list of links used on a particular page.
+     *  Gets the list of links used on a particular page.  Patch somewhat by wim.jongman
      *
      *  @param title a page
      *  @return the list of links used in the page
      *  @throws IOException if a network error occurs
      *  @since 0.24
-     *  @author Patch somewhat by wim.jongman
      */
     public String[] getLinksOnPage(String title) throws IOException
     {
