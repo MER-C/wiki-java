@@ -1586,6 +1586,10 @@ public class Wiki implements Serializable
         String text = fetch(url.toString(), "getSectionText");
         if (text.contains("<error code=\"rvnosuchsection\""))
             throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
+        // if the section does not contain any text, <rev xml:space=\"preserve\"> 
+        // will not have a separate closing tag
+        if (!text.contains("</rev>"))
+            return "";
         int a = text.indexOf("<rev xml:space=\"preserve\">") + 26;
         int b = text.indexOf("</rev>", a);
         return decode(text.substring(a, b));
@@ -3167,7 +3171,8 @@ public class Wiki implements Serializable
      *  @param reason an upload summary (defaults to <tt>contents</tt>, use ""
      *  to not specify one)
      *  @throws CredentialNotFoundException if not logged in
-     *  @throws CredentialException if page is protected and we can't upload
+     *  @throws CredentialException if (page is protected OR file is on a central
+     *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws IOException if a network/local filesystem error occurs
      *  @throws AccountLockedException if user is blocked
@@ -3259,8 +3264,14 @@ public class Wiki implements Serializable
                     filekey = response.substring(a, response.indexOf('\"', a));
                     continue;
                 }
+                // TODO: check for more specific errors here
+                if (response.contains("error code=\"fileexists-shared-forbidden\""))
+                {
+                    CredentialException ex = new CredentialException("Cannot overwrite file hosted on central repository.");
+                    logger.logp(Level.WARNING, "Wiki", "upload()", "[" + getDomain() + "] Cannot upload - permission denied.", ex);
+                    throw ex;
+                }
                 checkErrors(response, "upload");
-                // TODO: check for specific errors here
             }
             catch (IOException e)
             {
