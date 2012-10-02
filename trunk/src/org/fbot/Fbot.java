@@ -10,7 +10,6 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import org.wikipedia.Wiki;
@@ -18,8 +17,8 @@ import org.wikipedia.Wiki;
 /**
  * Contains static MediaWiki bot/API methods built off MER-C's Wiki.java. Please report bugs <a
  * href=
- * http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here
- * </a>! Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here</a>!
+ * http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here!</a>
+ * Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here!</a>
  * This code and project are licensed under the terms of the <a
  * href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
  * 
@@ -77,8 +76,10 @@ public class Fbot
 		} while (!success);
 	}
 
+	
+	
 	/**
-	 * Method reads in user/password combinations from a text file titled "px" (no extension) to log
+	 * Method reads in user/password combinations from a text file (UTF-8) titled "px" (no extension) to log
 	 * in user. In file, format should be "USERNAME:PASSWORD", separated by colon, one entry per
 	 * line.
 	 * 
@@ -88,7 +89,7 @@ public class Fbot
 	 * @throws FileNotFoundException If "px" (not "px.txt") does not exist.
 	 * @throws UnsupportedOperationException if a non-recognized user is specified.
 	 * 
-	 * @see #loginAndSetPrefs(Wiki, String, char[], int)
+	 * @see #loginAndSetPrefs(Wiki, String, char[])
 	 * 
 	 */
 
@@ -109,24 +110,45 @@ public class Fbot
 	 * 
 	 * @param wiki Wiki object to perform changes on
 	 * 
-	 * @see #loginAndSetPrefs(Wiki, String, char[], int)
+	 * @see #loginAndSetPrefs(Wiki, String, char[])
 	 * 
 	 */
 	public static void guiLogin(Wiki wiki)
 	{
-		JTextField u = new JTextField(12);
-		JPasswordField px = new JPasswordField(12);
-		JPanel pl = FbotUtil.buildForm("Login", new JLabel("Username:", JLabel.TRAILING), u, new JLabel("Password:",
-				JLabel.TRAILING), px);
-
-		if (JOptionPane.showConfirmDialog(null, pl, "Login", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
-			System.exit(0);
-
-		loginAndSetPrefs(wiki, u.getText().trim(), px.getPassword());
+		String[] b = showLoginScreen("Login");
+		wiki.setMaxLag(-1);
+		try
+		{
+		  wiki.login(b[0], b[1].toCharArray());
+		}
+		catch(Throwable e)
+		{
+			JOptionPane.showMessageDialog(null, "Username/Password did not match or we encountered a network issue.  Program will now exit.");
+			System.exit(1);
+		}
 		wiki.setThrottle(5);
-
 	}
 
+
+	/**
+	 * Creates and shows user a login screen, returning user login details in a String array.  Does not check to see if login details are 
+	 * valid.
+	 * 
+	 * @param title The title of the login window
+	 * @return An array of length 2, in the form {username, password}.
+	 */
+	public static String[] showLoginScreen(String title)
+	{
+		JTextField u = new JTextField(12);
+		JPasswordField px = new JPasswordField(12);
+		
+		if (JOptionPane.showConfirmDialog(null, FbotUtil.buildForm(title, new JLabel("Username:", JLabel.TRAILING), u, new JLabel("Password:",
+				JLabel.TRAILING), px), title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)
+			System.exit(0);
+		
+		return new String[] { u.getText().trim(), new String(px.getPassword()) };
+	}
+	
 	/**
 	 * Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a
 	 * Redirect.

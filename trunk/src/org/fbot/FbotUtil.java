@@ -2,10 +2,12 @@ package org.fbot;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -145,7 +147,8 @@ public class FbotUtil
 
 	/**
 	 * Creates a HashMap from a file. Key and Value must be separated by colons. One newline per
-	 * entry. Example line: "KEY:VALUE". Useful for storing deletion/editing reasons.
+	 * entry. Example line: "KEY:VALUE". Useful for storing deletion/editing reasons.  The text file to read
+	 * from must be in UTF-8 encoding.
 	 * 
 	 * @param path The path of the file to read from
 	 * 
@@ -157,7 +160,7 @@ public class FbotUtil
 	{
 		HashMap<String, String> l = new HashMap<String, String>();
 
-		for (String s : loadFromFile(path, ""))
+		for (String s : loadFromFile(path, "", "UTF-8"))
 		{
 			int i = s.indexOf(":");
 			l.put(s.substring(0, i), s.substring(i + 1));
@@ -217,15 +220,16 @@ public class FbotUtil
 	 * 
 	 * @param file The abstract filename of the file to load from.
 	 * @param prefix Append prefix/namespace to items? If not, specify <tt>""</tt>.
+	 * @param encoding The text encoding of the file to load from.
 	 * 
 	 * @return The resulting array
 	 * 
 	 * @throws FileNotFoundException If the specified file was not found.
 	 */
 
-	public static String[] loadFromFile(String file, String prefix) throws FileNotFoundException
+	public static String[] loadFromFile(String file, String prefix, String encoding) throws FileNotFoundException
 	{
-		Scanner m = new Scanner(new File(file));
+		Scanner m = new Scanner(new File(file), encoding);
 		ArrayList<String> l = new ArrayList<String>();
 		while (m.hasNextLine())
 			l.add(prefix + m.nextLine().trim());
@@ -362,14 +366,15 @@ public class FbotUtil
 	 * There seems to be an issue with reading in non-standard ascii characters at the moment.
 	 * 
 	 * @param f The file to read from
+	 * @param encoding The endcoding standard to use. (e.g. UTF-8, UTF-16)
 	 * 
 	 * @return The contents of the file as a String.
 	 * 
 	 * @throws FileNotFoundException If the file specified does not exist.
 	 */
-	public static String fileToString(File f) throws FileNotFoundException
+	public static String fileToString(File f, String encoding) throws FileNotFoundException
 	{
-		Scanner m = new Scanner(f);
+		Scanner m = new Scanner(f, encoding);
 		String s = "";
 		while (m.hasNextLine())
 			s += m.nextLine().trim() + "\n";
@@ -460,7 +465,7 @@ public class FbotUtil
 	 * Creates a form in the form of a JPanel.  Fields are dynamically resized when the window size is
 	 * modified by the user.  
 	 * 
-	 * @param Title Title to use in the border.  Specify null if you don't want one. Specify empty string if you want just border.
+	 * @param title Title to use in the border.  Specify null if you don't want one. Specify empty string if you want just border.
 	 * @param cl The list of containers to work with.  Elements should be in the order, e.g. JLabel1, JTextField1,
 	 * JLabel 2, JTextField2, etc.
 	 * 
@@ -503,4 +508,20 @@ public class FbotUtil
 	   
 	   return pl;
 	}
+	
+	/**
+	 * Writes a string to a file.
+	 * 
+	 * @param text The text to write to file
+	 * @param file The file to use, abstract or absolute pathname
+	 * 
+	 * @throws IOException If we encountered a read/write error
+	 */
+	public static void writeToFile(String text, String file) throws IOException
+	{
+		BufferedWriter out = new BufferedWriter(new FileWriter(new File(file)));
+		out.write(text);
+		out.close();
+	}
+	
 }
