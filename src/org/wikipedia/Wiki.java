@@ -30,16 +30,16 @@ import javax.security.auth.login.*; // useful exception types
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.6 (6.0) or greater. Uses the <a
- *  href="http://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most operations.
- *  It is recommended that the server runs the latest version of MediaWiki
- *  (1.18), otherwise some functions may not work.
+ *  href="http://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for 
+ *  most operations. It is recommended that the server runs the latest version
+ *  of MediaWiki (1.20), otherwise some functions may not work.
  *  <p>
- *  Extended documentation is available <a href="http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. All
- *  wikilinks are relative to the English Wikipedia and all timestamps are in
+ *  Extended documentation is available <a href="http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. 
+ *  All wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
  *  </p>
  *  Please file bug reports <a href="http://en.wikipedia.org/w/index.php?title=User_talk:MER-C&action=edit&section=new">here</a> (fast)
- *  or at the Google code bug <a href="http://code.google.com/p/wiki-java/issues/list">tracker</a> (slow).
+ *  or at the <a href="http://code.google.com/p/wiki-java/issues/list">Google code bug tracker</a> (slow).
  *
  *  @author MER-C and contributors
  *  @version 0.26
@@ -6091,9 +6091,8 @@ public class Wiki implements Serializable
      *  useful for subclasses.
      *
      *  Here we also check the database lag and wait if it exceeds
-     *  <tt>maxlag</tt>. See [[mw:Manual:Maxlag parameter]] for the server-side
-     *  analog (which isn't implemented here, because I'm too lazy to retry
-     *  the request).
+     *  <tt>maxlag</tt>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  here</a> for how this works.
      *
      *  @param url the url to fetch
      *  @param caller the caller of this method
@@ -6395,7 +6394,7 @@ public class Wiki implements Serializable
     {
         // check if we are logged out
         // bug 18 says cookies are returned with + instead of _
-        String username = user.getUsername().replace('_', '+');
+        String username = URLEncoder.encode(user.getUsername().replace('_', '+'), "UTF-8");
         if (!cookies.containsValue(username))
         {
             logger.log(Level.SEVERE, "Cookies have expired");
