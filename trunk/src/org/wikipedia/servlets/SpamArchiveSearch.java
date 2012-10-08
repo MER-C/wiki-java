@@ -114,12 +114,12 @@ public class SpamArchiveSearch extends HttpServlet
         // search
         // there's some silly api bugs
         ArrayList<String[]> results = new ArrayList<String[]>(20);
-        results.addAll(Arrays.asList(meta.search(query + " prefix:Talk:Spam_blacklist")));
-        results.addAll(Arrays.asList(enwiki.search(query + " prefix:MediaWiki_talk:Spam-blacklist")));
-        results.addAll(Arrays.asList(enwiki.search(query + " prefix:MediaWiki_talk:Spam-whitelist")));
-        results.addAll(Arrays.asList(enwiki.search(query + " prefix:Wikipedia_talk:WikiProject_Spam")));
-        results.addAll(Arrays.asList(enwiki.search(query + " prefix:Wikipedia:Reliable_sources/Noticeboard")));
-        results.addAll(Arrays.asList(enwiki.search(query + " prefix:Wikipedia:External_links/Noticeboard")));
+        results.addAll(Arrays.asList(meta.search(query + " \"spam blacklist\"", Wiki.TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enwiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enwiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enwiki.search(query + " \"wikiproject spam\"", Wiki.PROJECT_TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enwiki.search(query + " \"reliable sources noticeboard\"", Wiki.PROJECT_NAMESPACE)));
+        results.addAll(Arrays.asList(enwiki.search(query + " \"external links noticeboard\"", Wiki.PROJECT_NAMESPACE)));
 
         // write to output
         buffer.append("<ul>\n");
