@@ -1,5 +1,5 @@
 /**
- *  @(#)Wiki.java 0.26 24/04/2012
+ *  @(#)Wiki.java 0.27 15/10/2012
  *  Copyright (C) 2007 - 2012 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
@@ -42,7 +42,7 @@ import javax.security.auth.login.*; // useful exception types
  *  or at the <a href="http://code.google.com/p/wiki-java/issues/list">Google code bug tracker</a> (slow).
  *
  *  @author MER-C and contributors
- *  @version 0.26
+ *  @version 0.27
  */
 public class Wiki implements Serializable
 {
@@ -443,7 +443,7 @@ public class Wiki implements Serializable
         unknown;
     }
 
-    private static final String version = "0.26";
+    private static final String version = "0.27";
 
     // the domain of the wiki
     private String domain;
