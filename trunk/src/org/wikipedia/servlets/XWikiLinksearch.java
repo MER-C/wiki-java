@@ -46,15 +46,23 @@ public class XWikiLinksearch extends HttpServlet
             "zh", "sv", "vi", "uk", "ca", "no", "fi", "cs", "hu", "fa" };
         top20wikis = new Wiki[20];
         for (int i = 0; i < temp.length; i++)
+        {
             top20wikis[i] = new Wiki(temp[i] + ".wikipedia.org");
+            top20wikis[i].setUsingCompressedRequests(false); // This is Google's fault.
+            top20wikis[i].setMaxLag(-1);
+        }
         
         // top 40 Wikipedias
         top40wikis = new Wiki[40];
         System.arraycopy(top20wikis, 0, top40wikis, 0, 20);
         temp = new String[] { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk",
             "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
-        for (int i = 0; i < temp.length; i++)
-            top40wikis[20 + i] = new Wiki(temp[i] + ".wikipedia.org");
+        for (int i = 20; i < temp.length; i++)
+        {
+            top40wikis[i] = new Wiki(temp[i - 20] + ".wikipedia.org");
+            top40wikis[i].setUsingCompressedRequests(false); // This is Google's fault.
+            top40wikis[i].setMaxLag(-1);
+        }
         
         // a collection of important wikis
         temp = new String[] { "en", "de", "fr" };
@@ -70,6 +78,11 @@ public class XWikiLinksearch extends HttpServlet
         importantwikis[12] = new Wiki("meta.wikimedia.org");
         importantwikis[13] = new Wiki("commons.wikimedia.org");
         importantwikis[14] = new Wiki("mediawiki.org");
+        for (int i = 0; i < importantwikis.length; i++)
+        {
+            importantwikis[i].setUsingCompressedRequests(false);
+            importantwikis[i].setMaxLag(-1);
+        }
     }
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
@@ -93,7 +106,7 @@ public class XWikiLinksearch extends HttpServlet
      *  http://code.google.com/appengine/docs/quotas.html here } and { @link
      *  http://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
      *  here } for what you can and cannot do in this environment. More
-     *  precisely, at ~1s / wiki, we cannot search more than 30 wikis.
+     *  precisely, at ~1s / wiki, we cannot search more than 40 wikis.
      *  <p>
      *  This servlet runs at { @link http://wikipediatools.appspot.com/linksearch.jsp }.
      */
@@ -163,8 +176,6 @@ public class XWikiLinksearch extends HttpServlet
         buffer.append(".\n");
         for (Wiki wiki : wikis)
         {
-            wiki.setUsingCompressedRequests(false); // This is Google's fault.
-            wiki.setMaxLag(-1);
             ArrayList[] temp = wiki.linksearch("*." + domain, "http");
             // silly api designs aplenty here!
             ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
