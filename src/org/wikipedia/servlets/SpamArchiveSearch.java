@@ -33,6 +33,21 @@ import org.wikipedia.Wiki;
  */
 public class SpamArchiveSearch extends HttpServlet
 {
+    private static final Wiki enWiki, meta;
+    
+    /**
+     *  Initialize all Wiki objects.
+     */
+    static
+    {
+        enWiki = new Wiki("en.wikipedia.org");
+        meta = new Wiki("meta.wikimedia.org");
+        enWiki.setUsingCompressedRequests(false); // This is Google's fault.
+        meta.setUsingCompressedRequests(false);
+        enWiki.setMaxLag(0);
+        meta.setMaxLag(0);
+    }
+    
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
      *  which is in either the current or home directory.
@@ -104,22 +119,15 @@ public class SpamArchiveSearch extends HttpServlet
         buffer.append(ServletUtils.sanitize(query));
         buffer.append("\".</h2>\n");
 
-        Wiki enwiki = new Wiki("en.wikipedia.org");
-        Wiki meta = new Wiki("meta.wikimedia.org");
-        enwiki.setUsingCompressedRequests(false); // This is Google's fault.
-        meta.setUsingCompressedRequests(false);
-        enwiki.setMaxLag(0);
-        meta.setMaxLag(0);
-
         // search
         // there's some silly api bugs
         ArrayList<String[]> results = new ArrayList<String[]>(20);
         results.addAll(Arrays.asList(meta.search(query + " \"spam blacklist\"", Wiki.TALK_NAMESPACE)));
-        results.addAll(Arrays.asList(enwiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
-        results.addAll(Arrays.asList(enwiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
-        results.addAll(Arrays.asList(enwiki.search(query + " \"wikiproject spam\"", Wiki.PROJECT_TALK_NAMESPACE)));
-        results.addAll(Arrays.asList(enwiki.search(query + " \"reliable sources noticeboard\"", Wiki.PROJECT_NAMESPACE)));
-        results.addAll(Arrays.asList(enwiki.search(query + " \"external links noticeboard\"", Wiki.PROJECT_NAMESPACE)));
+        results.addAll(Arrays.asList(enWiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enWiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enWiki.search(query + " \"wikiproject spam\"", Wiki.PROJECT_TALK_NAMESPACE)));
+        results.addAll(Arrays.asList(enWiki.search(query + " \"reliable sources noticeboard\"", Wiki.PROJECT_NAMESPACE)));
+        results.addAll(Arrays.asList(enWiki.search(query + " \"external links noticeboard\"", Wiki.PROJECT_NAMESPACE)));
 
         // write to output
         buffer.append("<ul>\n");
