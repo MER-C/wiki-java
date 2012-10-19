@@ -22,7 +22,7 @@ package test;
 import java.io.*;
 import java.util.*;
 import java.util.logging.LogManager;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  Tests for Wiki.java that do not require being logged in.
@@ -132,11 +132,15 @@ public class WikiTests
         System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
         System.out.println(enWiki.getFirstRevision("dgfhdfjklg"));
         System.out.println(enWiki.getTopRevision("dgfhdfjklg"));
-
+*/
         // contribs
         for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
             System.out.println(revision);
-
+        // contribs
+        Calendar c = new GregorianCalendar(2008, 0, 1);
+        for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
+            System.out.println(revision);
+/*
         // recentchanges
         for (Wiki.Revision revision : enWiki.recentChanges(51))
             System.out.println(revision);
@@ -149,10 +153,13 @@ public class WikiTests
         System.out.println(enWiki.getRevision(473467375L).diff(Wiki.PREVIOUS_REVISION));
 
         System.out.println(enWiki.getPageText("Main Page"));
-        */
         
         // user exists
         System.out.println(enWiki.userExists("MER-C")); // true
         System.out.println(enWiki.userExists("127.0.0.1")); // false
+               
+        System.out.println(ParserUtils.revisionsToWikitext(enWiki, enWiki.recentChanges(51)));
+        System.out.println(ParserUtils.revisionsToHTML(enWiki, enWiki.recentChanges(51)));
+        * */ 
     }
 }

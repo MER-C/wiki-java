@@ -23,7 +23,7 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.util.*;
 
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  Instructions:
@@ -138,7 +138,7 @@ public class IndianEducationCCI
             if (temp.isEmpty())
                 out.write("No userspace edits.\n");
             else
-                out.write(Wiki.formatList(temp.toArray(new String[0])));
+                out.write(ParserUtils.formatList(temp.toArray(new String[0])));
             out.write("\n");
 
             // survey images
@@ -150,7 +150,7 @@ public class IndianEducationCCI
             if (uploads.length == 0)
                 out.write("No local uploads.\n");
             else
-                out.write(Wiki.formatList(list.toArray(new String[0])));
+                out.write(ParserUtils.formatList(list.toArray(new String[0])));
             out.write("\n");
 
             // commons
@@ -162,7 +162,7 @@ public class IndianEducationCCI
             if (uploads.length == 0)
                 out.write("No Commons uploads.\n");
             else
-                out.write(Wiki.formatList(list.toArray(new String[0])));
+                out.write(ParserUtils.formatList(list.toArray(new String[0])));
             out.write("\n");
         }
         out.flush();
