@@ -49,8 +49,7 @@ public class SpamArchiveSearch extends HttpServlet
     }
     
     /**
-     *  Main for testing/offline stuff. The results are found in results.html,
-     *  which is in either the current or home directory.
+     *  Main for testing/offline stuff. 
      */
     public static void main(String[] args) throws IOException
     {

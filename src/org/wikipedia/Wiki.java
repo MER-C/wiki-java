@@ -1122,77 +1122,6 @@ public class Wiki implements Serializable
     // STATIC MEMBERS
 
     /**
-     *   Parses a list of links into its individual elements. Such a list
-     *   should be in the form:
-     *
-     *  <pre>
-     *  * [[Main Page]]
-     *  * [[Wikipedia:Featured picture candidates]]
-     *  * [[:File:Example.png]]
-     *  </pre>
-     *
-     *  in which case <tt>{ "Main Page", "Wikipedia:Featured picture
-     *  candidates", "File:Example.png" }</tt> is the return value.
-     *
-     *  @param list a list of pages
-     *  @see #formatList
-     *  @return an array of the page titles
-     *  @since 0.11
-     */
-    public static String[] parseList(String list)
-    {
-        StringTokenizer tokenizer = new StringTokenizer(list, "[]");
-        ArrayList<String> titles = new ArrayList<String>(667);
-        tokenizer.nextToken(); // skip the first token
-        while (tokenizer.hasMoreTokens())
-        {
-            String token = tokenizer.nextToken();
-
-            // skip any containing new lines or double letters
-            if (token.contains("\n"))
-                continue;
-            if (token.isEmpty())
-                continue;
-
-            // trim the starting colon, if present
-            if (token.startsWith(":"))
-                token = token.substring(1);
-
-            titles.add(token);
-        }
-        return titles.toArray(new String[0]);
-    }
-
-    /**
-     *  Formats a list of pages, say, generated from one of the query methods
-     *  into something that would be editor-friendly. Does the exact opposite
-     *  of <tt>parseList()</tt>, i.e. { "Main Page", "Wikipedia:Featured
-     *  picture candidates", "File:Example.png" } becomes the string:
-     *
-     *  <pre>
-     *  *[[:Main Page]]
-     *  *[[:Wikipedia:Featured picture candidates]]
-     *  *[[:File:Example.png]]
-     *  </pre>
-     *
-     *  @param pages an array of page titles
-     *  @return see above
-     *  @see #parseList
-     *  @since 0.14
-     */
-    public static String formatList(String[] pages)
-    {
-        StringBuilder buffer = new StringBuilder(10000);
-        for (int i = 0; i < pages.length; i++)
-        {
-            buffer.append("*[[:");
-            buffer.append(pages[i]);
-            buffer.append("]]\n");
-        }
-        return buffer.toString();
-    }
-
-    /**
      *  Determines the intersection of two lists of pages a and b.
      *  Such lists might be generated from the various list methods below.
      *  Examples from the English Wikipedia:
@@ -2152,7 +2081,7 @@ public class Wiki implements Serializable
                 plcontinue = URLEncoder.encode(line.substring(x, y), "UTF-8");
             }
             else
-                plcontinue = "";
+                plcontinue = null;
 
             // parse the list
             // typical form: <pl ns="6" title="page name" />
@@ -2163,7 +2092,7 @@ public class Wiki implements Serializable
                 a = b;
             }
         }
-        while (!plcontinue.isEmpty());
+        while (plcontinue != null);
         links.remove(0); // remove the first one, as that is an artifact of the parsing process
     	log(Level.INFO, "Successfully retrieved links used on " + title + " (" + links.size() + " links)", "getLinksOnPage");
     	return links.toArray(new String[0]);
@@ -2315,7 +2244,7 @@ public class Wiki implements Serializable
                 rvstart = line.substring(a, b);
             }
             else
-                rvstart = "done";
+                rvstart = null;
 
             // parse stuff
             while (line.contains("<rev "))
@@ -2326,7 +2255,7 @@ public class Wiki implements Serializable
                 line = line.substring(b);
             }
         }
-        while (!rvstart.equals("done"));
+        while (rvstart != null);
         log(Level.INFO, "Successfully retrieved page history of " + title + " (" + revisions.size() + " revisions)", "getPageHistory");
         return revisions.toArray(new Revision[0]);
     }
@@ -2835,89 +2764,6 @@ public class Wiki implements Serializable
         return revision;
     }
 
-    /**
-     *  Turns a list of revisions into human-readable wikitext. Be careful, as
-     *  slowness may result when copying large amounts of wikitext produced by
-     *  this method, or by the wiki trying to parse it. Takes the form of:
-     *
-     *  <p>*(diff link) 2009-01-01 00:00 User (talk | contribs) (edit summary)
-     *  @param revisions a list of revisions
-     *  @return those revisions as wikitext
-     *  @since 0.20
-     */
-    public String revisionsToWikitext(Revision[] revisions)
-    {
-        StringBuilder sb = new StringBuilder(revisions.length * 100);
-        for (int i = 0; i < revisions.length; i++)
-        {
-            // base oldid link
-            StringBuilder base2 = new StringBuilder(50);
-            base2.append("<span class=\"plainlinks\">[");
-            base2.append(base);
-            base2.append(revisions[i].getPage().replace(" ", "_"));
-            base2.append("&oldid=");
-            base2.append(revisions[i].getRevid());
-
-            // diff link
-            sb.append("*(");
-            sb.append(base2);
-            sb.append("&diff=prev diff]</span>) ");
-
-            // timestamp, link to oldid
-            Calendar timestamp = revisions[i].getTimestamp();
-            sb.append(base2);
-            sb.append(" ");
-            sb.append(timestamp.get(Calendar.YEAR));
-            sb.append("-");
-            int month = timestamp.get(Calendar.MONTH) + 1;
-            if (month < 9)
-                sb.append("0");
-            sb.append(month);
-            sb.append("-");
-            int day = timestamp.get(Calendar.DAY_OF_MONTH);
-            if (day < 10)
-                sb.append("0");
-            sb.append(day);
-            sb.append(" ");
-            int hour = timestamp.get(Calendar.HOUR);
-            if (hour < 10)
-                sb.append("0");
-            sb.append(hour);
-            sb.append(":");
-            int minute = timestamp.get(Calendar.MINUTE);
-            if (minute < 10)
-                sb.append("0");
-            sb.append(minute);
-            sb.append("]</span> ");
-
-            // user
-            String user2 = revisions[i].getUser();
-            sb.append("[[User:");
-            sb.append(user2);
-            sb.append("|");
-            sb.append(user2);
-            sb.append("]] ([[User talk:");
-            sb.append(user2);
-            sb.append("|talk]] | [[Special:Contributions/");
-            sb.append(user2);
-            sb.append("|contribs]]) (");
-
-            // edit summary - nowiki any templates
-            String summary = revisions[i].getSummary();
-            if (summary.contains("}}"))
-            {
-                int a = summary.indexOf(("}}"));
-                sb.append(summary.substring(0, a));
-                sb.append("<nowiki>}}</nowiki>");
-                sb.append(summary.substring(a + 2));
-            }
-            else
-                sb.append(summary);
-            sb.append(")\n");
-        }
-        return sb.toString();
-    }
-
     // IMAGE METHODS
 
     /**
@@ -3398,7 +3244,7 @@ public class Wiki implements Serializable
      *  Gets the contributions of a user in a particular namespace. Equivalent
      *  to [[Special:Contributions]]. Be careful when using this method because
      *  the user may have a high edit count e.g. <tt>enWiki.contribs("MER-C",
-     *  Wiki.MAIN_NAMESPACE).length</tt> > 30000.
+     *  Wiki.MAIN_NAMESPACE).length</tt> > 50000.
      *
      *  @param user the user or IP to get contributions for
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -3408,7 +3254,7 @@ public class Wiki implements Serializable
      */
     public Revision[] contribs(String user, int... ns) throws IOException
     {
-        return contribs(user, "", null, ns);
+        return contribs(user, "", null, null, ns);
     }
 
     /**
@@ -3421,8 +3267,10 @@ public class Wiki implements Serializable
      *  @return the contributions of that range
      *  @throws IOException if a network error occurs
      *  @throws NumberFormatException if we aren't able to parse the range
+     *  @deprecated doesn't support IPv6, and I am way too lazy to make it do so
      *  @since 0.17
      */
+    @Deprecated
     public Revision[] rangeContribs(String range) throws IOException
     {
         // sanitize range
@@ -3436,13 +3284,13 @@ public class Wiki implements Serializable
         switch (size)
         {
             case 8:
-                return contribs("", numbers[0] + ".", null);
+                return contribs("", numbers[0] + ".", null, null);
             case 16:
-                return contribs("", numbers[0] + "." + numbers[1] + ".", null);
+                return contribs("", numbers[0] + "." + numbers[1] + ".", null, null);
             case 24:
-                return contribs("", numbers[0] + "." + numbers[1] + "." + numbers[2] + ".", null);
+                return contribs("", numbers[0] + "." + numbers[1] + "." + numbers[2] + ".", null, null);
             case 32: // not that people are silly enough to do this...
-                return contribs(range.substring(0, range.length() - 3), "", null);
+                return contribs(range.substring(0, range.length() - 3), "", null, null);
             default:
                 throw new NumberFormatException("Range is not supported.");
         }
@@ -3450,17 +3298,24 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. Equivalent to [[Special:Contributions]].
+     *  addresses. Equivalent to [[Special:Contributions]]. To fetch contribs
+     *  for an IP range, specify part of an IP address e.g. prefix="127.0." 
+     *  for 127.0.0.0/16; for IPv6 addresses use e.g. prefix="2001:db8:0:0:0:".
+     *  MediaWiki always fully expands IPv6 addresses and converts all digits
+     *  A through F to uppercase. (No sanitization is done on IP addresses). Be
+     *  careful when using <tt>prefix</tt> as it may take too long and/or cause OOM.
      *
-     *  @param user the user to get contributions for
-     *  @param offset fetch edits no older than this date
+     *  @param user the user to get contributions for.
+     *  @param start fetch edits no newer than this date
+     *  @param end fetch edits no older than this date
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param prefix a prefix of usernames. Overrides <tt>user</tt>.
+     *  @param prefix a prefix of usernames. Overrides <tt>user</tt>.  Use "" to
+     *  not specify one.
      *  @return contributions of this user
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
-    public Revision[] contribs(String user, String prefix, Calendar offset, int... ns) throws IOException
+    public Revision[] contribs(String user, String prefix, Calendar end, Calendar start, int... ns) throws IOException
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
@@ -3476,23 +3331,33 @@ public class Wiki implements Serializable
             temp.append(prefix);
         }
         constructNamespaceString(temp, "uc", ns);
-        temp.append("&ucstart=");
+        // end refers to the *oldest* allowable edit and vice versa
+        if (end != null)
+        {
+            temp.append("&ucend=");
+            temp.append(calendarToTimestamp(end));
+        }
+        if (start != null)
+        {
+            temp.append("&ucstart=");
+            temp.append(calendarToTimestamp(start));
+        }
         ArrayList<Revision> revisions = new ArrayList<Revision>(7500);
-        String ucstart = calendarToTimestamp(offset == null ? makeCalendar() : offset);
+        String uccontinue = "";
 
         // fetch data
         do
         {
-            String line = fetch(temp.toString() + ucstart, "contribs");
+            String line = fetch(temp.toString() + uccontinue, "contribs");
 
             // set offset parameter
-            int aa = line.indexOf("ucstart=\"") + 9;
-            if (aa < 9)
-                ucstart = "done"; // depleted list
+            int aa = line.indexOf("uccontinue=\"") + 12;
+            if (aa < 12)
+                uccontinue = null; // depleted list
             else
             {
                 int bb = line.indexOf('\"', aa);
-                ucstart = line.substring(aa, bb);
+                uccontinue = "&uccontinue=" + URLEncoder.encode(line.substring(aa, bb), "UTF-8");
             }
             // parse revisions
             while (line.contains("<item"))
@@ -3503,7 +3368,7 @@ public class Wiki implements Serializable
                 line = line.substring(b);
             }
         }
-        while (!ucstart.equals("done"));
+        while (uccontinue != null);
 
         // clean up
         log(Level.INFO, "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + revisions.size() + " edits)", "contribs");
@@ -3702,7 +3567,7 @@ public class Wiki implements Serializable
                 wrcontinue = "&wrcontinue=" + URLEncoder.encode(line.substring(a, b), "UTF-8");
             }
             else
-                wrcontinue = "done";
+                wrcontinue = null;
             // parse the xml
             while (line.contains("<wr "))
             {
@@ -3715,7 +3580,7 @@ public class Wiki implements Serializable
                 line = line.substring(b);
             }
         }
-        while (!wrcontinue.equals("done"));
+        while (wrcontinue != null);
         // log
         log(Level.INFO, "Successfully retrieved raw watchlist (" + watchlist.size() + " items)", "getRawWatchlist");
         return watchlist.toArray(new String[0]);
@@ -3911,7 +3776,7 @@ public class Wiki implements Serializable
                 next = line.substring(a, line.indexOf("\" />", a));
             }
             else
-                next = "done";
+                next = null;
 
             // parse
             while (line.contains("title"))
@@ -3922,7 +3787,7 @@ public class Wiki implements Serializable
                 line = line.substring(y + 4);
             }
         }
-        while (!next.equals("done"));
+        while (next != null);
         log(Level.INFO, "Successfully retrieved usages of File:" + image + " (" + pages.size() + " items)", "imageUsage");
         return pages.toArray(new String[0]);
     }
@@ -3981,7 +3846,7 @@ public class Wiki implements Serializable
                 next = "&blcontinue=" + line.substring(a, b);
             }
             else
-                next = "done";
+                next = null;
 
             // parse items
             while (line.contains("title"))
@@ -3992,7 +3857,7 @@ public class Wiki implements Serializable
                 line = line.substring(y + 4);
             }
         }
-        while (!next.equals("done"));
+        while (next != null);
 
         log(Level.INFO, "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + pages.size() + " items)", "whatLinksHere");
         return pages.toArray(new String[0]);
@@ -4080,7 +3945,7 @@ public class Wiki implements Serializable
                 next = line.substring(a, line.indexOf("\" />", a));
             }
             else
-                next = "done";
+                next = null;
 
             // parse
             for (int x = line.indexOf("title=\""); x >= 0; x = line.indexOf("title=\"", x))
@@ -4090,7 +3955,7 @@ public class Wiki implements Serializable
                 x = y;
             }
         }
-        while (!next.equals("done"));
+        while (next != null);
         log(Level.INFO, "Successfully retrieved contents of Category:" + name + " (" + members.size() + " items)", "getCategoryMembers");
         return members.toArray(new String[0]);
     }
@@ -4271,7 +4136,7 @@ public class Wiki implements Serializable
                 bkstart = line.substring(a, line.indexOf('\"', a));
             }
             else
-                bkstart = "done";
+                bkstart = null;
 
             // parse xml
             while (entries.size() < amount && line.contains("<block "))
@@ -4283,7 +4148,7 @@ public class Wiki implements Serializable
                 line = line.substring(b);
             }
         }
-        while (!bkstart.equals("done") && entries.size() < amount);
+        while (bkstart != null && entries.size() < amount);
 
         // log statement
         StringBuilder logRecord = new StringBuilder("Successfully fetched IP block list ");
@@ -4500,7 +4365,7 @@ public class Wiki implements Serializable
                 lestart = line.substring(ab, line.indexOf('\"', ab));
             }
             else
-                lestart = "done";
+                lestart = null;
 
             // parse xml. We need to repeat the test because the XML may contain more than the required amount.
             while (line.contains("<item") && entries.size() < amount)
@@ -4519,7 +4384,7 @@ public class Wiki implements Serializable
                     entries.add(entry);
             }
         }
-        while (entries.size() < amount && !lestart.equals("done"));
+        while (entries.size() < amount && lestart != null);
 
         // log the success
         console.append(" (");
@@ -4888,7 +4753,7 @@ public class Wiki implements Serializable
 
             // don't set a continuation if no max, min, prefix or protection level
             if (maximum < 0 && minimum < 0 && prefix.isEmpty() && level == NO_PROTECTION)
-                next = "done";
+                next = null;
             // find next value
             else if (line.contains("apfrom="))
             {
@@ -4897,7 +4762,7 @@ public class Wiki implements Serializable
                 next = URLEncoder.encode(line.substring(a, b), "UTF-8");
             }
             else
-                next = "done";
+                next = null;
 
             // find the pages
             while (line.contains("<p "))
@@ -4908,7 +4773,7 @@ public class Wiki implements Serializable
                 line = line.substring(b);
             }
         }
-        while (!next.equals("done"));
+        while (next != null);
 
         // tidy up
         log(Level.INFO, "Successfully retrieved page list (" + pages.size() + " pages)", "listPages");
@@ -5199,7 +5064,7 @@ public class Wiki implements Serializable
                 iwblcontinue = line.substring(a, b);
             }
             else
-                iwblcontinue = "";
+                iwblcontinue = null;
             // parse
             // form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wroclaw" iwprefix="pl" iwtitle="Main_Page" />
             for (int x = line.indexOf("<iw "); x >= 0;  x = line.indexOf("<iw ", x))
@@ -5218,7 +5083,7 @@ public class Wiki implements Serializable
                 x = f;
             }
         }
-        while(!iwblcontinue.isEmpty());
+        while(iwblcontinue != null);
         log(Level.INFO, "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)", "getInterWikiBacklinks");
         return links.toArray(new String[0][0]);
     }

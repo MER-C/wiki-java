@@ -15,6 +15,10 @@
         <servlet-name>SpamArchiveSearch</servlet-name>
         <servlet-class>org.wikipedia.servlets.SpamArchiveSearch</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>PrefixContribs</servlet-name>
+        <servlet-class>org.wikipedia.servlets.PrefixContribs</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>Linksearch</servlet-name>
         <url-pattern>/linksearch.jsp</url-pattern>
@@ -26,6 +30,10 @@
     <servlet-mapping>
         <servlet-name>SpamArchiveSearch</servlet-name>
         <url-pattern>/spamarchivesearch.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PrefixContribs</servlet-name>
+        <url-pattern>/prefixcontribs.jsp</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>30</session-timeout>
