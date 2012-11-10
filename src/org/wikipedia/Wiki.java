@@ -5135,6 +5135,7 @@ public class Wiki implements Serializable
          *                                                            // [[Special:Emailuser]] or emailUser() (boolean)
          *      "blocked"   => false,                                 // whether the user is blocked (boolean)
          *      "gender"    => Gender.MALE                            // the user's gender (Gender)
+         *      "created"   => 20060101000000                         // when the user account was created (Calendar)
          *  }
          *  </pre>
          *  @return (see above)
@@ -5143,7 +5144,7 @@ public class Wiki implements Serializable
          */
         public HashMap<String, Object> getUserInfo() throws IOException
         {
-            String info = fetch(query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender&ususers="
+            String info = fetch(query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers="
                 + URLEncoder.encode(username, "UTF-8"), "getUserInfo");
             HashMap<String, Object> ret = new HashMap<String, Object>(10);
 
@@ -5163,6 +5164,11 @@ public class Wiki implements Serializable
             b = info.indexOf('\"', a);
             ret.put("gender", Gender.valueOf(info.substring(a, b)));
 
+            // registration date
+            a = info.indexOf("registration=\"") + 14;
+            b = info.indexOf('\"', a);
+            ret.put("created", timestampToCalendar(convertTimestamp(info.substring(a, b))));
+            
             // groups
             ArrayList<String> temp = new ArrayList<String>(50);
             for (int x = info.indexOf("<g>"); x >= 0; x = info.indexOf("<g>", x))
