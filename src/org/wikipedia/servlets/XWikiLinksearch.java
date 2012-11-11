@@ -66,18 +66,19 @@ public class XWikiLinksearch extends HttpServlet
         
         // a collection of important wikis
         temp = new String[] { "en", "de", "fr" };
-        importantwikis = new Wiki[15];
+        importantwikis = new Wiki[17];
         for (int i = 0; i < temp.length; i++)
         {
-            importantwikis[4 * i    ] = new Wiki(temp[i] + ".wikipedia.org");
-            importantwikis[4 * i + 1] = new Wiki(temp[i] + ".wiktionary.org");
-            importantwikis[4 * i + 2] = new Wiki(temp[i] + ".wikibooks.org");
-            importantwikis[4 * i + 3] = new Wiki(temp[i] + ".wikiquote.org");
-            // importantwikis[5 * i + 4] = new Wiki(temp[i] + ".wikivoyage.org");
+            importantwikis[5 * i    ] = new Wiki(temp[i] + ".wikipedia.org");
+            importantwikis[5 * i + 1] = new Wiki(temp[i] + ".wiktionary.org");
+            importantwikis[5 * i + 2] = new Wiki(temp[i] + ".wikibooks.org");
+            importantwikis[5 * i + 3] = new Wiki(temp[i] + ".wikiquote.org");
+            importantwikis[5 * i + 4] = new Wiki(temp[i] + ".wikivoyage.org");
         }
-        importantwikis[12] = new Wiki("meta.wikimedia.org");
-        importantwikis[13] = new Wiki("commons.wikimedia.org");
-        importantwikis[14] = new Wiki("mediawiki.org");
+        // not a typo, fr.wikivoyage does not exist yet
+        importantwikis[14] = new Wiki("meta.wikimedia.org");
+        importantwikis[15] = new Wiki("commons.wikimedia.org");
+        importantwikis[16] = new Wiki("mediawiki.org");
         for (int i = 0; i < importantwikis.length; i++)
         {
             importantwikis[i].setUsingCompressedRequests(false);
