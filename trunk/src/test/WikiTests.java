@@ -30,7 +30,7 @@ import org.wikipedia.*;
  */
 public class WikiTests
 {
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws Exception
     {
         // setup stuff
         System.setProperty("wiki.level", "100");
@@ -82,10 +82,13 @@ public class WikiTests
         }
 
         // getInterWikiBacklinks()
-        String[][] blah2 = enWiki.getInterWikiBacklinks("de", "");
+        String[][] blah2 = enWiki.getInterWikiBacklinks("wikitravel");
         for (String[] entry : blah2)
-            System.out.println(entry[0] + " => " + entry[1]);
-
+        {
+            if (enWiki.namespace(entry[0]) == Wiki.TEMPLATE_NAMESPACE)
+                System.out.println("*[[" + entry[0] + "]] => " + entry[1]);
+        }
+            
         // getLinksOnPage
         for (String link : enWiki.getLinksOnPage("List of craters on Venus"))
             System.out.println(link);
@@ -132,7 +135,7 @@ public class WikiTests
         System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
         System.out.println(enWiki.getFirstRevision("dgfhdfjklg"));
         System.out.println(enWiki.getTopRevision("dgfhdfjklg"));
-*/
+
         // contribs
         for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
             System.out.println(revision);
@@ -140,7 +143,7 @@ public class WikiTests
         Calendar c = new GregorianCalendar(2008, 0, 1);
         for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
             System.out.println(revision);
-/*
+
         // recentchanges
         for (Wiki.Revision revision : enWiki.recentChanges(51))
             System.out.println(revision);
@@ -161,5 +164,9 @@ public class WikiTests
         System.out.println(ParserUtils.revisionsToWikitext(enWiki, enWiki.recentChanges(51)));
         System.out.println(ParserUtils.revisionsToHTML(enWiki, enWiki.recentChanges(51)));
         * */ 
+        
+        // query page
+        for (String page : enWiki.queryPage("Uncategorizedpages"))
+            System.out.println(page);
     }
 }

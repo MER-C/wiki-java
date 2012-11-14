@@ -4779,6 +4779,61 @@ public class Wiki implements Serializable
         log(Level.INFO, "Successfully retrieved page list (" + pages.size() + " pages)", "listPages");
         return pages.toArray(new String[0]);
     }
+    
+    /**
+     *  Fetches data from one of a set of miscellaneous special pages.
+     *  WARNING: some of these may be *CACHED*, *DISABLED* and/or *LIMITED* on 
+     *  large wikis.
+     * 
+     *  @param page one of { Ancientpages, BrokenRedirects, Deadendpages, 
+     *  Disambiguations, DoubleRedirects, Listredirects, Lonelypages, Longpages,
+     *  Mostcategories, Mostimages, Mostinterwikis, Mostlinkedcategories,
+     *  Mostlinkedtemplates, Mostlinked, Mostrevisions, Fewestrevisions, Shortpages,
+     *  Uncategorizedcategories, Uncategorizedpages, Uncategorizedimages,
+     *  Uncategorizedtemplates, Unusedcategories, Unusedimages, Wantedcategories,
+     *  Wantedfiles, Wantedpages, Wantedtemplates, Unwatchedpages, Unusedtemplates, 
+     *  Withoutinterwiki }. This parameter is *case sensitive*.
+     *  @return the list of pages returned by that particular special page
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if page=Unwatchedpages and we cannot
+     *  read it
+     *  @since 0.28
+     */
+    public String[] queryPage(String page) throws IOException, CredentialNotFoundException
+    {
+        if (page.equals("Unwatchedpages") && (user == null || !user.isAllowedTo("unwatchedpages")))
+            throw new CredentialNotFoundException("User does not have the \"unwatchedpages\" permission.");
+        
+        String url = query + "action=query&list=querypage&qplimit=max&qppage=" + page + "&qpcontinue=";
+        String offset = "";
+        ArrayList<String> pages = new ArrayList<String>(1333);
+        
+        do
+        {
+            String line = fetch(url + offset, "queryPage");
+            if (line.contains("qpoffset"))
+            {
+                int a = line.indexOf("qpoffset=\"") + 10;
+                int b = line.indexOf("\"", a);
+                offset = line.substring(a, b);
+            }
+            else
+                offset = null;
+            
+            // parse
+            // form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
+            for (int x = line.indexOf(" title=\"") + 8; x >= 8; x = line.indexOf(" title=\"", x) + 8)
+            {
+                int b = line.indexOf("\"", x);
+                pages.add(decode(line.substring(x, b)));
+                x = b;
+            }
+        }
+        while (offset != null);
+        int temp = pages.size();
+        log(Level.INFO, "Successfully retrieved [[Special:" + page + "]] (" + temp + " pages)", "queryPage");
+        return pages.toArray(new String[temp]);
+    }
 
     /**
      *  Fetches the <tt>amount</tt> most recently created pages in the main
@@ -4965,7 +5020,9 @@ public class Wiki implements Serializable
             }
         }
         while (revisions.size() < amount);
-        return revisions.toArray(new Revision[0]);
+        int temp = revisions.size();
+        log(Level.INFO, "Successfully retrieved recent changes (" + temp + " revisions)", "recentChanges");
+        return revisions.toArray(new Revision[temp]);
     }
 
     /**
