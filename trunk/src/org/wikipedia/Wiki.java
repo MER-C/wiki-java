@@ -1419,7 +1419,7 @@ public class Wiki implements Serializable
             String working = line.substring(x + 8, y);
             int ns = Integer.parseInt(working.substring(0, working.indexOf('"')));
             String name = working.substring(working.indexOf('>') + 1);
-            namespaces.put(name, new Integer(ns));
+            namespaces.put(normalize(name), new Integer(ns));
             line = line.substring(y + 5);
         }
         log(Level.INFO, "Successfully retrieved namespace list (" + (namespaces.size() + 1) + " namespaces)", "namespace");
@@ -6236,7 +6236,6 @@ public class Wiki implements Serializable
                 case '[':
                 case ']':
                 case '|':
-                case '#':
                     throw new IllegalArgumentException(s + " is an illegal title");
                 case ' ':
                     temp[i] = '_';
