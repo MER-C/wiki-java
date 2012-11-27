@@ -48,7 +48,7 @@ public class FbotUtil
 	}
 
 	/**
-	 * Returns a randomized String [A-Z].
+	 * Returns a randomized String [A-Za-z].
 	 * 
 	 * @param len The length of the String to return
 	 * 
@@ -61,12 +61,16 @@ public class FbotUtil
 
 		String s = "";
 		for (int i = 0; i < len; i++)
-			s += (char) (r.nextInt(25) + 65);
+		{
+			char c = (char) (r.nextInt(57) + 65);
+			if(c < 91 || c > 96)
+			    s += c;
+		}
 		return s;
 	}
 
 	/**
-	 * Splits an array of Strings into an array of smaller arrays. Useful for multithreaded bots.
+	 * Splits an array of objects into an array of smaller arrays. Useful for multithreaded bots.
 	 * CAVEAT: if splits > z.length, splits will be set to z.length.
 	 * 
 	 * @param z The array we'll be splitting
@@ -288,7 +292,7 @@ public class FbotUtil
 
 	public static boolean isUploadable(String f)
 	{
-		return f.matches("(?i).*?\\.(png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga|pdf)");
+		return f.matches("(?i).+?\\.(png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga|pdf)");
 	}
 
 	/**

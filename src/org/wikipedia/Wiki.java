@@ -1929,7 +1929,8 @@ public class Wiki implements Serializable
      *  more than that.
      *
      *  @param title a page
-     *  @return the list of images used in the page
+     *  @return the list of images used in the page.  Note that each String in the array will begin with the
+     *  prefix "File:" 
      *  @throws IOException if a network error occurs
      *  @since 0.16
      */
