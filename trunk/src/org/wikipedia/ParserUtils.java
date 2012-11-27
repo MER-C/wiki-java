@@ -195,7 +195,7 @@ public class ParserUtils
      *  @param wiki the parent wiki of the revisions
      *  @param revisions the revisions to convert
      *  @return (see above)
-     *  @see revisionsToWikitext(Wiki.Revision[])
+     *  @see #revisionsToWikitext(Wiki wiki, Wiki.Revision[] revisions)
      */
     public static String revisionsToHTML(Wiki wiki, Wiki.Revision[] revisions)
     {
