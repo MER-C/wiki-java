@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.TimeZone;
 import javax.swing.BorderFactory;
@@ -28,10 +27,9 @@ import org.wikipedia.Wiki;
 
 /**
  * Miscellaneous utility methods for Fbot. Contains several non-wiki related functions whose uses
- * extend beyond Wikis.
+ * can potentially extend beyond Wikis.
  * 
  * @see org.fbot.Fbot
- * @see org.fbot.MBot
  * @see org.fbot.FbotParse
  * 
  * @author Fastily
@@ -45,28 +43,6 @@ public class FbotUtil
 	private FbotUtil()
 	{
 		// does nothing
-	}
-
-	/**
-	 * Returns a randomized String [A-Za-z].
-	 * 
-	 * @param len The length of the String to return
-	 * 
-	 * @return The random string
-	 */
-
-	public static String generateRandomString(int len)
-	{
-		Random r = new Random();
-
-		String s = "";
-		for (int i = 0; i < len; i++)
-		{
-			char c = (char) (r.nextInt(57) + 65);
-			if(c < 91 || c > 96)
-			    s += c;
-		}
-		return s;
 	}
 
 	/**
@@ -107,30 +83,6 @@ public class FbotUtil
 				xf[i] = temp;
 			}
 			return xf;
-		}
-	}
-
-	/**
-	 * Recursively fetches a list of Wiki-uploadable files in contained in the specified directory
-	 * and its subfolders.
-	 * 
-	 * @param dir The top directory to start with
-	 * @param fl The ArrayList to add the files we found to.
-	 * 
-	 * @throws UnsupportedOperationException If dir is not a directory.
-	 */
-
-	public static void listFilesR(File dir, ArrayList<File> fl)
-	{
-		if (!dir.exists() || !dir.isDirectory())
-			throw new UnsupportedOperationException("Not a directory:  " + dir.getName());
-		for (File f : dir.listFiles())
-		{
-			String fn = f.getName();
-			if (f.isDirectory() && !fn.startsWith("."))
-				listFilesR(f, fl);
-			else if (isUploadable(fn))
-				fl.add(f);
 		}
 	}
 
@@ -262,54 +214,6 @@ public class FbotUtil
 
 		in.close();
 		out.close();
-	}
-
-	/**
-	 * Appends a byte to the end of a file.
-	 * 
-	 * @param f The file to write to.
-	 * @param a An int representing the byte to be written
-	 * 
-	 * @throws FileNotFoundException If the source file could not be found
-	 * @throws IOException If we encountered some sort of read/write error
-	 */
-
-	public static void writeByte(String f, int a) throws FileNotFoundException, IOException
-	{
-		FileOutputStream out = new FileOutputStream(new File(f), true);
-		out.write(a);
-		out.close();
-	}
-
-	/**
-	 * Determines if a file is uploadable to a WMF Wiki. Uploadable files currently are
-	 * (png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga|pdf).
-	 * 
-	 * @param f The filename to check
-	 * 
-	 * @return True if the file is uploadable to a WMF wiki.
-	 */
-
-	public static boolean isUploadable(String f)
-	{
-		return f.matches("(?i).+?\\.(png|gif|jpg|jpeg|xcf|mid|ogg|ogv|svg|djvu|tiff|tif|oga|pdf)");
-	}
-
-	/**
-	 * Reverses an array of Objects.
-	 * 
-	 * @param array The array to create a reversed shallow copy of.
-	 * 
-	 * @return The reversed array (shallow copy of 'array').
-	 */
-
-	public static Object[] reverseArray(Object[] array)
-	{
-		Object[] l = new Object[array.length];
-		for (int i = 0; i < array.length; i++)
-			l[i] = array[array.length - 1 - i];
-
-		return l;
 	}
 
 	/**

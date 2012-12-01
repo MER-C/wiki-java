@@ -1,13 +1,10 @@
 package org.fbot;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import javax.security.auth.login.FailedLoginException;
-import javax.security.auth.login.LoginException;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
@@ -15,15 +12,12 @@ import javax.swing.JTextField;
 import org.wikipedia.Wiki;
 
 /**
- * Contains static MediaWiki bot/API methods built off MER-C's Wiki.java. Please report bugs <a
- * href=
- * http://commons.wikimedia.org/w/index.php?title=User_talk:Fastily&action=edit&section=new>here!</a>
+ * Contains static MediaWiki bot/API methods built off MER-C's Wiki.java. 
  * Visit our Google Code Project home <a href="http://code.google.com/p/wiki-java/">here!</a>
  * This code and project are licensed under the terms of the <a
  * href="http://www.gnu.org/copyleft/gpl.html">GNU GPL v3 license</a>
  * 
  * @see org.fbot.FbotUtil
- * @see org.fbot.MBot
  * @see org.wikipedia.Wiki
  * @see org.fbot.FbotParse
  * 
@@ -74,35 +68,6 @@ public class Fbot
 				System.exit(1);
 			}
 		} while (!success);
-	}
-
-	
-	
-	/**
-	 * Method reads in user/password combinations from a text file (UTF-8) titled "px" (no extension) to log
-	 * in user. In file, format should be "USERNAME:PASSWORD", separated by colon, one entry per
-	 * line.
-	 * 
-	 * @param wiki Wiki object to perform changes on
-	 * @param user Which account? (no "User:" prefix)
-	 * 
-	 * @throws FileNotFoundException If "px" (not "px.txt") does not exist.
-	 * @throws UnsupportedOperationException if a non-recognized user is specified.
-	 * 
-	 * @see #loginAndSetPrefs(Wiki, String, char[])
-	 * 
-	 */
-
-	public static void loginPX(Wiki wiki, String user) throws FileNotFoundException
-	{
-		HashMap<String, String> c = FbotUtil.buildReasonCollection("./px");
-		String px = c.get(user);
-
-		if (px == null)
-			throw new UnsupportedOperationException(
-					"Did not find a Username in the specified file matching String value in user param");
-
-		loginAndSetPrefs(wiki, user, px.toCharArray());
 	}
 
 	/**
@@ -186,32 +151,6 @@ public class Fbot
 	public static boolean exists(String page, Wiki wiki) throws IOException
 	{
 		return ((Boolean) wiki.getPageInfo(page).get("exists")).booleanValue();
-	}
-
-	/**
-	 * A template that could be used when listing pages. Follows *[[:<tt>TITLE</tt>]]\n.
-	 * 
-	 * @param page Page to dump report into.
-	 * @param list The list of pages that need to be dumped
-	 * @param headerText Leading description text. Specify "" for no lead.
-	 * @param footerText Ending description text. Specify "" for no end.
-	 * @param wiki The wiki object to use.
-	 * 
-	 * @throws IOException If network error
-	 * @throws LoginException If we have bad login credentials or if you don't have permission to
-	 *            edit.
-	 * 
-	 * 
-	 */
-
-	public static void dbrDump(String page, String[] list, String headerText, String footerText, Wiki wiki)
-			throws LoginException, IOException
-	{
-		String dump = headerText + "  This report last updated as of ~~~~~\n";
-		for (String s : list)
-			dump += "*[[:" + s + "]]\n";
-		dump += "\n" + footerText;
-		wiki.edit(page, dump, "Updating list");
 	}
 
 	/**
@@ -336,28 +275,6 @@ public class Fbot
 	}
 
 	/**
-	 * Creates Wiki objects with the specified username, password, and domain. </br></br>
-	 * <b>PRECONDITION:</b> Username, password, and domain <span
-	 * style="color:Red;font-weight:bold">MUST</span> be valid. Method will continue to loop until
-	 * credentials are accepted so you might just find yourself in an infinite loop if they're not!
-	 * 
-	 * @param u The username to use
-	 * @param p The password to use
-	 * @param domain The domain to use (e.g. "commons.wikimedia.org")
-	 * 
-	 * @return The resulting Wiki object
-	 * 
-	 */
-
-	public static Wiki wikiFactory(String u, char[] p, String domain)
-	{
-		Wiki wiki = new Wiki(domain);
-		loginAndSetPrefs(wiki, u, p);
-
-		return wiki;
-	}
-
-	/**
 	 * Downloads a file
 	 * 
 	 * @param title The title of the file to download <ins>on the Wiki</ins> <b>excluding</b> the "
@@ -378,52 +295,5 @@ public class Fbot
 		FileOutputStream fos = new FileOutputStream(localpath);
 		fos.write(wiki.getImage(title));
 		fos.close();
-	}
-
-	/**
-	 * Deletes a page/uploads a file but catches common exceptions. Does not catch login errors, bad
-	 * permission errors and network errors.
-	 * 
-	 * @param wiki The wiki object to use
-	 * @param page The page to delete or file path to uplaod.
-	 * @param reason The reason/text to use.
-	 * @param code The code to use, either "delete" or "uplaod", accordingly.
-	 * 
-	 * @throws LoginException If we have bad credentials, or lack permission to delete.
-	 * @throws IOException If we had a network error.
-	 */
-	public static void superAction(Wiki wiki, String page, String reason, String code) throws LoginException,
-			IOException
-	{
-		boolean success = false;
-		short i = 0;
-		do
-		{
-			try
-			{
-				if (code.equals("delete"))
-					wiki.delete(page, reason);
-				else if (code.equals("upload"))
-					wiki.upload(new File(page), page, reason, "");
-				else
-					throw new UnsupportedOperationException(code + " is not a valid code!");
-				success = true;
-			}
-			catch (LoginException e)
-			{
-				throw e;
-			}
-			catch (IOException e)
-			{
-				if (i++ > 4)
-					throw e;
-				e.printStackTrace();
-				System.err.println("Network error? Try: " + i + " of 5");
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		} while (!success);
 	}
 }
