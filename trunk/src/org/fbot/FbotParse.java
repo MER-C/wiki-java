@@ -11,7 +11,6 @@ import org.wikipedia.Wiki;
  * 
  * @see org.fbot.Fbot
  * @see org.fbot.FbotUtil
- * @see org.fbot.MBot
  * 
  * @author Fastily
  */
