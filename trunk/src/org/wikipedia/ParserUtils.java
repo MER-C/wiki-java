@@ -70,7 +70,7 @@ public class ParserUtils
                 token = token.substring(1);
             titles.add(token);
         }
-        return titles.toArray(new String[0]);
+        return titles.toArray(new String[titles.size()]);
     }
 
     /**
@@ -203,13 +203,18 @@ public class ParserUtils
         buffer.append("<ul style=\"font-family: monospace\">\n");
         for (Wiki.Revision rev : revisions)
         {
-            // date
+            // diff link
             String page = rev.getPage();
-            buffer.append("<li><a href=\"");
-            buffer.append(wiki.base);
-            buffer.append(page.replace(' ', '_'));
-            buffer.append("&oldid=");
-            buffer.append(rev.getRevid());
+            StringBuilder temp2 = new StringBuilder("<a href=\"");
+            temp2.append(wiki.base);
+            temp2.append(page.replace(' ', '_'));
+            temp2.append("&oldid=");
+            temp2.append(rev.getRevid());
+            buffer.append("<li>(");
+            buffer.append(temp2);
+            buffer.append("&diff=prev\">prev</a>) ");
+            // date
+            buffer.append(temp2);
             buffer.append("\">");
             Calendar timestamp = rev.getTimestamp();
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
