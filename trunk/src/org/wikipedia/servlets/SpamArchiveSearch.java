@@ -78,8 +78,8 @@ public class SpamArchiveSearch extends HttpServlet
         StringBuilder buffer = new StringBuilder(10000);
 
         // header
-        buffer.append("<!doctype html>\n<html>\n<head>\n<title>Spam archive search</title>");
-        buffer.append("\n</head>\n\n<body>\n<p>This tool searches various spam related noticeboards ");
+        buffer.append(ServletUtils.generateHead("Spam archive search"));
+        buffer.append("<p>This tool searches various spam related noticeboards ");
         buffer.append("for a given query string. If you want to search a domain name, please enclose\n");
         buffer.append("it in quotation marks.");
 

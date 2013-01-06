@@ -94,8 +94,8 @@ public class ImageCCI extends HttpServlet
         {
             response.setContentType("text/html; charset=utf-8");
             out = response.getWriter();
-            buffer.append("<!doctype html>\n<html>\n<head>\n<title>Image contribution surveyor");
-            buffer.append( "</title>\n</head>\n\n<body>\n<p>This tool generates a listing of a user's ");
+            buffer.append(ServletUtils.generateHead("Image contribution surveyor"));
+            buffer.append("<p>This tool generates a listing of a user's ");
             buffer.append("image uploads (regardless of whether they are deleted) for use at\n");
             buffer.append("<a href=\"//en.wikipedia.org/wiki/WP:CCI\">Contributor copyright ");
             buffer.append("investigations.</a>\n");

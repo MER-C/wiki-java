@@ -65,8 +65,8 @@ public class PrefixContribs extends HttpServlet
         StringBuilder buffer = new StringBuilder(50000);
         
         // header
-        buffer.append("<!doctype html>\n<html>\n<head>\n<title>Prefix contributions</title>");
-        buffer.append("\n</head>\n\n<body>\n<p>This tool retrieves contributions of an IP ");
+        buffer.append(ServletUtils.generateHead("Prefix contributions"));
+        buffer.append("<p>This tool retrieves contributions of an IP ");
         buffer.append("range or username prefix for the last 7 days. To search for an IP\n");
         buffer.append("range, use a search key of (say) 111.222. for 111.222.0.0/16. /24s ");
         buffer.append("and IPv6 addresses work similarly.\nNo sanitization is performed on ");

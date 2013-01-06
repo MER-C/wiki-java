@@ -118,8 +118,8 @@ public class XWikiLinksearch extends HttpServlet
         StringBuilder buffer = new StringBuilder(10000);
 
         // header
-        buffer.append("<!doctype html>\n<html>\n<head>\n<title>Cross-wiki linksearch</title>");
-        buffer.append("\n</head>\n\n<body>\n<p>This tool searches various Wikimedia projects for a ");
+        buffer.append(ServletUtils.generateHead("Cross-wiki linksearch"));
+        buffer.append("<p>This tool searches various Wikimedia projects for a ");
         buffer.append("specific link. Enter a domain name (example.com, not *.example.com or ");
         buffer.append("http://example.com) below. This process takes up to 20 seconds.\n");
 
