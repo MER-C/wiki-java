@@ -45,6 +45,21 @@ public class ServletUtils
     }
     
     /**
+     *  Generates a HTML head with the given title.
+     *  @param title the page title
+     */
+    public static String generateHead(String title)
+    {
+        // don't forget to update timeout.html and index.html
+        StringBuilder sb = new StringBuilder(500);
+        sb.append("<!doctype html>\n<html>\n<head>\n<title>");
+        sb.append(title);
+        sb.append("</title>\n<link rel=stylesheet href=\"styles.css\">");
+        sb.append("\n</head>\n\n<body>\n");
+        return sb.toString();
+    }
+    
+    /**
      *  Generates a boilerplate GPLv3 footer given a tool name
      *  @param toolname the name of the tool
      */
