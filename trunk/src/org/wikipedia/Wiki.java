@@ -25,7 +25,7 @@ import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 import java.util.zip.GZIPInputStream;
-import javax.security.auth.login.*; // useful exception types
+import javax.security.auth.login.*;
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
@@ -938,7 +938,12 @@ public class Wiki implements Serializable
             throw new FailedLoginException("Login failed: unknown reason.");
         }
     }
-
+    //Enables login while using a string password
+    public synchronized void login(String username, String password) throws IOException, FailedLoginException
+    {
+        login(username,password.toCharArray());
+    }
+    
     /**
      *  Logs out of the wiki. This method is thread safe (so that we don't log
      *  out during an edit). All operations are conducted offline, so you can
@@ -3925,9 +3930,10 @@ public class Wiki implements Serializable
      */
     public String[] getCategoryMembers(String name, int... ns) throws IOException
     {
+        name = name.replaceAll("^Category:","");
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:");
-        url.append(URLEncoder.encode(normalize(name), "UTF-8"));
+        url.append(URLEncoder.encode(normalize(name), "UTF-8"));//TODO regex replace to make sure start of string does not already have Category:
         constructNamespaceString(url, "cm", ns);
 
         // work around an arbitrary and silly limitation
