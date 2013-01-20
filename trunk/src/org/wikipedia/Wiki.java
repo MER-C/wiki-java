@@ -3921,40 +3921,41 @@ public class Wiki implements Serializable
     /**
      *  Gets the members of a category.
      *
-     *  @param name the name of the category (e.g. Candidates for speedy
-     *  deletion, not Category:Candidates for speedy deletion)
+     *  @param name the name of the category (with or without namespace attached)
+     *  @param subcat do you want to return members of sub-categories also? (optional)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
-     *  @since 0.03
-     */
-    public String[] getCategoryMembers(String name, int... ns) throws IOException
+     *  @since 0.03 
+    */
+    public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
     {
-        name = name.replaceAll("^Category:","");
+        
+        name = name.replaceAll("^Category:","");// enables us to give the function a category with or without namespace
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:");
-        url.append(URLEncoder.encode(normalize(name), "UTF-8"));//TODO regex replace to make sure start of string does not already have Category:
-        constructNamespaceString(url, "cm", ns);
-
-        // work around an arbitrary and silly limitation
-        ArrayList<String> members = new ArrayList<String>(6667); // enough for most cats
+        url.append(URLEncoder.encode(normalize(name), "UTF-8"));
+        constructNamespaceString(url, "cm",ns);
+        ArrayList<String> members = new ArrayList<>();
+        ArrayList<String> submembers = new ArrayList<>();
         String next = "";
         do
         {
-            if (!members.isEmpty())
+            // if members isnot empty get the continued query
+            if (!members.isEmpty()) {
                 next = "&cmcontinue=" + URLEncoder.encode(next, "UTF-8");
+            }
             String line = fetch(url.toString() + next, "getCategoryMembers");
 
-            // parse
+            // parse cmcontinue if it is there
             if (line.contains("cmcontinue"))
             {
                 int a = line.indexOf("cmcontinue") + 12;
                 next = line.substring(a, line.indexOf("\" />", a));
             }
-            else
-                next = null;
+            else { next = null; }
 
-            // parse
+            // parse each name adding to members list
             for (int x = line.indexOf("title=\""); x >= 0; x = line.indexOf("title=\"", x))
             {
                 int y = line.indexOf("\" />", x);
@@ -3963,9 +3964,29 @@ public class Wiki implements Serializable
             }
         }
         while (next != null);
+        
+        // check to see if we also want subcats
+        if(subcat == true)
+        {
+            for(String member : members)// for each page returned
+            {
+                if(member.startsWith("Category:"))// if one of the members was a category
+                {
+                    String[] members2 = getCategoryMembers(member, subcat, ns);// also get that category
+                    submembers.addAll(Arrays.asList(members2));// and add to list to be returned
+                }
+            }
+        }
+        
+        members.addAll(submembers);// combine main and sub cats
+        
+        //TODO: if the Category namespace was not specificly requested then remove all requests with Category: in them
+        
         log(Level.INFO, "Successfully retrieved contents of Category:" + name + " (" + members.size() + " items)", "getCategoryMembers");
         return members.toArray(new String[0]);
     }
+    public String[] getCategoryMembers(String name, int... ns) throws IOException
+    { return getCategoryMembers(name,false,ns); } // deal with no subcat
 
     /**
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
@@ -6265,8 +6286,9 @@ public class Wiki implements Serializable
      */
     protected void constructNamespaceString(StringBuilder sb, String id, int... namespaces)
     {
-        if (namespaces.length == 0)
+        if (namespaces.length == 0) {
             return;
+        }
         sb.append("&");
         sb.append(id);
         sb.append("namespace=");
@@ -6275,7 +6297,13 @@ public class Wiki implements Serializable
             sb.append(namespace);
             sb.append("%7C");
         }
-        sb.delete(sb.length() - 3, sb.length());
+        // if the request is from category members (we want to add category namespace if it isnt already there for recursion)
+        if(id.equals("cm") && sb.toString().contains("14%7C") == false) 
+        {
+            sb.append("14");//add the cat namespace
+            sb.append("%7C");
+        }
+        sb.delete(sb.length() - 3, sb.length()); // get rid of the final "%7C" if added
     }
     
     /**
