@@ -1954,8 +1954,9 @@ public class Wiki implements Serializable
             a = b;
         }
         images.remove(0); // artifact of parsing process
-        log(Level.INFO, "Successfully retrieved images used on " + title + " (" + images.size() + " images)", "getImagesOnPage");
-        return images.toArray(new String[0]);
+        int temp = images.size();
+        log(Level.INFO, "Successfully retrieved images used on " + title + " (" + temp + " images)", "getImagesOnPage");
+        return images.toArray(new String[temp]);
     }
 
     /**
@@ -1983,8 +1984,9 @@ public class Wiki implements Serializable
             categories.add(line.substring(a, b));
             line = line.substring(b);
         }
-        log(Level.INFO, "Successfully retrieved categories of " + title + " (" + categories.size() + " categories)", "getCategories");
-        return categories.toArray(new String[0]);
+        int temp = categories.size();
+        log(Level.INFO, "Successfully retrieved categories of " + title + " (" + temp + " categories)", "getCategories");
+        return categories.toArray(new String[temp]);
     }
 
     /**
@@ -2100,8 +2102,9 @@ public class Wiki implements Serializable
         }
         while (plcontinue != null);
         links.remove(0); // remove the first one, as that is an artifact of the parsing process
-    	log(Level.INFO, "Successfully retrieved links used on " + title + " (" + links.size() + " links)", "getLinksOnPage");
-    	return links.toArray(new String[0]);
+        int size = links.size();
+    	log(Level.INFO, "Successfully retrieved links used on " + title + " (" + size + " links)", "getLinksOnPage");
+    	return links.toArray(new String[size]);
     }
 
     /**
@@ -3219,7 +3222,7 @@ public class Wiki implements Serializable
         }
         while (members.size() < number);
         log(Level.INFO, "Successfully retrieved user list (" + number + " users starting at " + start + ")", "allUsers");
-        return members.toArray(new String[0]);
+        return members.toArray(new String[number]);
     }
 
     /**
@@ -3377,8 +3380,9 @@ public class Wiki implements Serializable
         while (uccontinue != null);
 
         // clean up
-        log(Level.INFO, "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + revisions.size() + " edits)", "contribs");
-        return revisions.toArray(new Revision[0]);
+        int size = revisions.size();
+        log(Level.INFO, "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + size + " edits)", "contribs");
+        return revisions.toArray(new Revision[size]);
     }
 
     /**
@@ -3667,8 +3671,9 @@ public class Wiki implements Serializable
             }
         }
         while(!done);
-        log(Level.INFO, "Successfully retrieved watchlist (" + wl.size() + " items)", "watchlist");
-        return wl.toArray(new Revision[0]);
+        int size = wl.size();
+        log(Level.INFO, "Successfully retrieved watchlist (" + size + " items)", "watchlist");
+        return wl.toArray(new Revision[size]);
     }
 
     // LISTS
@@ -3794,8 +3799,9 @@ public class Wiki implements Serializable
             }
         }
         while (next != null);
-        log(Level.INFO, "Successfully retrieved usages of File:" + image + " (" + pages.size() + " items)", "imageUsage");
-        return pages.toArray(new String[0]);
+        int size = pages.size();
+        log(Level.INFO, "Successfully retrieved usages of File:" + image + " (" + size + " items)", "imageUsage");
+        return pages.toArray(new String[size]);
     }
 
     /**
@@ -3865,8 +3871,9 @@ public class Wiki implements Serializable
         }
         while (next != null);
 
-        log(Level.INFO, "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + pages.size() + " items)", "whatLinksHere");
-        return pages.toArray(new String[0]);
+        int size = pages.size();
+        log(Level.INFO, "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + size + " items)", "whatLinksHere");
+        return pages.toArray(new String[size]);
     }
 
     /**
@@ -3936,8 +3943,8 @@ public class Wiki implements Serializable
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:");
         url.append(URLEncoder.encode(normalize(name), "UTF-8"));
         constructNamespaceString(url, "cm",ns);
-        ArrayList<String> members = new ArrayList<>();
-        ArrayList<String> submembers = new ArrayList<>();
+        ArrayList<String> members = new ArrayList<String>();
+        ArrayList<String> submembers = new ArrayList<String>();
         String next = "";
         do
         {
@@ -5175,63 +5182,6 @@ public class Wiki implements Serializable
 
     // INNER CLASSES
 
-     /**
-     *  Subclass for wiki pages.
-     */
-    public class Page implements Cloneable
-    {
-        private String fullname;
-
-        /**
-         *  Creates a new page object. Does not create a new page on the
-         *  wiki
-         *  @param fullname the page (with namespace)
-         */
-        protected Page(String fullname)
-        {
-            this.fullname = fullname;
-        }
-        
-         /**
-         *  Gets this pages's fullname.
-         *  @return this page's fullname
-         */
-        public String getFullname()
-        {
-            return fullname;
-        }
-        
-         /**
-         *  Gets this pages's namespace.
-         *  @return this page's namespace
-         */
-        public String getNamespace()
-        {
-            return fullname.split(":", 2)[0];
-        }
-        
-        /**
-         *  Gets this pages's namespace.
-         *  @return this page's namespace
-         *//**TODO: Make this return a number for use in API when asked
-        public Integer getNamespaceno()
-        {
-        
-            return 0;
-        }*/
-        
-         /**
-         *  Gets this pages's name.
-         *  @return this page's name (no namespace)
-         */
-        public String getName()
-        {
-            return fullname.split(":", 2)[1];
-        }
-        
-
-    }
-    
     /**
      *  Subclass for wiki users.
      *  @since 0.05

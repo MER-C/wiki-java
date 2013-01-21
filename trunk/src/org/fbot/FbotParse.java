@@ -42,9 +42,9 @@ public class FbotParse
 
 	public static String getRedirectsAsRegex(String template, Wiki wiki) throws IOException
 	{
-		String r = "(?si)\\{{2}?\\s*?(Template:)??\\s*?(" + namespaceStrip(template);
+		String r = "(?si)\\{{2}?\\s*?(Template:)??\\s*?(" + namespaceStrip(template, wiki);
 		for (String str : wiki.whatLinksHere(template, true, Wiki.TEMPLATE_NAMESPACE))
-			r += "|" + namespaceStrip(str);
+			r += "|" + namespaceStrip(str, wiki);
 		r += ").*?\\}{2}?";
 
 		return r;
@@ -82,7 +82,7 @@ public class FbotParse
 	{
 		String[] list = wiki.whatTranscludesHere(template);
 		if (template.startsWith("Template:"))
-			template = namespaceStrip(template);
+			template = namespaceStrip(template, wiki);
 
 		for (String page : list)
 		{
@@ -103,16 +103,15 @@ public class FbotParse
 	 * returned.
 	 * 
 	 * @param title The String to remove a namespace identifier from.
-	 * 
+	 * @param wiki the home wiki
 	 * @return The String without a namespace identifier.
+         * @throws IOException if a network error occurs (rare)
 	 * 
 	 */
-	public static String namespaceStrip(String title)
+	public static String namespaceStrip(String title, Wiki wiki) throws IOException
 	{
-		int i = title.indexOf(":");
-		if (i > 0)
-			return title.substring(i + 1);
-		return title;
+		String ns = wiki.namespaceIdentifier(wiki.namespace(title));
+                return ns.isEmpty() ? title : title.substring(ns.length() + 1);
 	}
 
 	/**
