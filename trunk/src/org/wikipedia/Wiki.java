@@ -5175,6 +5175,63 @@ public class Wiki implements Serializable
 
     // INNER CLASSES
 
+     /**
+     *  Subclass for wiki pages.
+     */
+    public class Page implements Cloneable
+    {
+        private String fullname;
+
+        /**
+         *  Creates a new page object. Does not create a new page on the
+         *  wiki
+         *  @param fullname the page (with namespace)
+         */
+        protected Page(String fullname)
+        {
+            this.fullname = fullname;
+        }
+        
+         /**
+         *  Gets this pages's fullname.
+         *  @return this page's fullname
+         */
+        public String getFullname()
+        {
+            return fullname;
+        }
+        
+         /**
+         *  Gets this pages's namespace.
+         *  @return this page's namespace
+         */
+        public String getNamespace()
+        {
+            return fullname.split(":", 2)[0];
+        }
+        
+        /**
+         *  Gets this pages's namespace.
+         *  @return this page's namespace
+         *//**TODO: Make this return a number for use in API when asked
+        public Integer getNamespaceno()
+        {
+        
+            return 0;
+        }*/
+        
+         /**
+         *  Gets this pages's name.
+         *  @return this page's name (no namespace)
+         */
+        public String getName()
+        {
+            return fullname.split(":", 2)[1];
+        }
+        
+
+    }
+    
     /**
      *  Subclass for wiki users.
      *  @since 0.05
