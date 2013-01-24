@@ -1378,7 +1378,8 @@ public class Wiki implements Serializable
     /**
      *  For a given namespace denoted as an integer, fetch the corresponding
      *  identification string e.g. <tt>namespaceIdentifier(1)</tt> should return
-     *  "Talk". (This does the exact opposite to <tt>namespace()</tt>.
+     *  "Talk" on en.wp. (This does the exact opposite to <tt>namespace()</tt>). 
+     *  Strings returned are localized.
      * 
      *  @param namespace an integer corresponding to a namespace. If it does not
      *  correspond to a namespace, we assume you mean the main namespace (i.e.
@@ -3937,8 +3938,7 @@ public class Wiki implements Serializable
     */
     public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
     {
-        
-        name = name.replaceAll("^Category:","");// enables us to give the function a category with or without namespace
+        name = name.replaceAll("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:");
         url.append(URLEncoder.encode(normalize(name), "UTF-8"));
@@ -3989,8 +3989,9 @@ public class Wiki implements Serializable
         
         //TODO: if the Category namespace was not specificly requested then remove all requests with Category: in them
         
-        log(Level.INFO, "Successfully retrieved contents of Category:" + name + " (" + members.size() + " items)", "getCategoryMembers");
-        return members.toArray(new String[0]);
+        int size = members.size();
+        log(Level.INFO, "Successfully retrieved contents of Category:" + name + " (" + size + " items)", "getCategoryMembers");
+        return members.toArray(new String[size]);
     }
     public String[] getCategoryMembers(String name, int... ns) throws IOException
     { return getCategoryMembers(name,false,ns); } // deal with no subcat
