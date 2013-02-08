@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
  */
 public class WikiUnitTest
 {
-    private static Wiki enWiki, deWiki;
+    private static Wiki enWiki, deWiki, arWiki;
     
     public WikiUnitTest()
     {
@@ -26,9 +26,10 @@ public class WikiUnitTest
         enWiki.setMaxLag(-1);
         deWiki = new Wiki("de.wikipedia.org");
         deWiki.setMaxLag(-1);
+        arWiki = new Wiki("ar.wikipedia.org");
+        arWiki.setMaxLag(-1);
     }
     
-    @Test
     public void namespace() throws Exception
     {
         assertEquals("NS: en, category", Wiki.CATEGORY_NAMESPACE, enWiki.namespace("Category:CSD"));
@@ -36,6 +37,7 @@ public class WikiUnitTest
         assertEquals("NS: main ns fail2", Wiki.MAIN_NAMESPACE, enWiki.namespace("Some Category: Blah"));
         assertEquals("NS: i18n fail", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Kategorie:Begriffsklärung"));
         // assertEquals("NS: mixed i18n", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Category:Begriffsklärung"));
+        assertEquals("NS: rtl fail", Wiki.CATEGORY_NAMESPACE, arWiki.namespace("تصنيف:صفحات_للحذف_السريع"));
     }
     @Test
     public void namespaceIdentifier() throws Exception
