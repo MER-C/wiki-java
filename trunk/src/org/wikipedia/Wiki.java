@@ -549,8 +549,7 @@ public class Wiki implements Serializable
      *  *Using HTTPS on Wikimedia sites
      *  *Server-side cache management (maxage and smaxage API parameters)
      *
-     *  \nWritten by Tedder 
-     *  
+     *  @author Tedder 
      *  @since 0.24
      */
     protected void initVars()
@@ -1182,7 +1181,7 @@ public class Wiki implements Serializable
         ArrayList<String> aa = new ArrayList<String>(5000); // silly workaroiund
         aa.addAll(Arrays.asList(a));
         aa.removeAll(Arrays.asList(b));
-        return aa.toArray(new String[0]);
+        return aa.toArray(new String[aa.size()]);
     }
 
     // PAGE METHODS
@@ -1470,7 +1469,7 @@ public class Wiki implements Serializable
             // we would want to use the ternary operator here but other things can go wrong
             if (characters[i] != '1' && characters[i] != '0')
                 throw new UnknownError("Unable to parse output. Perhaps the ParserFunctions extension is not installed, or this is a bug.");
-            ret[i] = (characters[i] == '1') ? true : false;
+            ret[i] = (characters[i] == '1');
         }
         return ret;
     }
@@ -1899,16 +1898,12 @@ public class Wiki implements Serializable
      *  @param titles the titles of the page to purge
      *  @param links update the links tables 
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
      *  @since 0.17
      */
-    public void purge(boolean links, String... titles) throws IOException, CredentialNotFoundException
+    public void purge(boolean links, String... titles) throws IOException
     {
-        if (user == null)
-            throw new CredentialNotFoundException("You need to be logged in to purge pages via the API.");
-        StringBuilder url = new StringBuilder(apiUrl);
+        StringBuilder url = new StringBuilder(100);
         StringBuilder log = new StringBuilder("Successfully purged { \""); // log statement
-        url.append("action=purge");
         if (links)
             url.append("&forcelinkupdate");
         url.append("&titles=");
@@ -1924,8 +1919,10 @@ public class Wiki implements Serializable
             else
                 log.append("\" }");
         }
-        fetch(url.toString(), "purge");
-        // System.out.writeln(fetch(url.toString(), "purge", false)); // for debugging purposes
+        if (user == null)
+            post(apiUrl + "action=purge", url.toString(), "purge");
+        else
+            fetch(apiUrl + "action=purge" + url.toString(), "purge");
         log(Level.INFO, log.toString(), "purge"); // done, log
     }
 
@@ -2920,8 +2917,9 @@ public class Wiki implements Serializable
             duplicates.add("File:" + line.substring(a, b));
             line = line.substring(b);
         }
-        log(Level.INFO, "Successfully retrieved duplicates of File:" + file + " (" + duplicates.size() + " files)", "getDuplicates");
-        return duplicates.toArray(new String[0]);
+        int size = duplicates.size();
+        log(Level.INFO, "Successfully retrieved duplicates of File:" + file + " (" + size + " files)", "getDuplicates");
+        return duplicates.toArray(new String[size]);
     }
 
     /**

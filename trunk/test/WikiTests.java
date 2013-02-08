@@ -51,7 +51,7 @@ public class WikiTests
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
             System.out.println(page);
-*/
+
         // getCategoryMembers()
         for (String page : enWiki.getCategoryMembers("Place of death missing"))
             System.out.println(page);
@@ -59,7 +59,7 @@ public class WikiTests
             System.out.println(page);
         for (String page : deWiki.getCategoryMembers("Kategorie:Wikipedia:Wartungsseite (MerlBot)", true, Wiki.PROJECT_NAMESPACE))
             System.out.println(page);
-/*
+
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
@@ -168,5 +168,8 @@ public class WikiTests
         for (String page : enWiki.queryPage("Uncategorizedpages"))
             System.out.println(page);
          */ 
+        
+        // purge
+        enWiki.purge(false, "Main Page");
     }
 }
