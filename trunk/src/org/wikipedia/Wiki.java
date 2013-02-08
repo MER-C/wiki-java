@@ -1154,7 +1154,7 @@ public class Wiki implements Serializable
         ArrayList<String> aa = new ArrayList<String>(5000); // silly workaroiund
         aa.addAll(Arrays.asList(a));
         aa.retainAll(Arrays.asList(b));
-        return aa.toArray(new String[0]);
+        return aa.toArray(new String[aa.size()]);
     }
 
     /**
@@ -1278,7 +1278,7 @@ public class Wiki implements Serializable
                 else
                 {
                     s = line.substring(z + 30); // cut out edit tag
-                    info.put("protection", line.contains("level=\"sysop\"") ? SEMI_AND_MOVE_PROTECTION : SEMI_PROTECTION);
+                    info.put("protection", s.contains("level=\"sysop\"") ? SEMI_AND_MOVE_PROTECTION : SEMI_PROTECTION);
                 }
             }
             else
@@ -2020,8 +2020,9 @@ public class Wiki implements Serializable
             templates.add(decode(line.substring(a, b)));
             line = line.substring(b);
         }
-        log(Level.INFO, "Successfully retrieved templates used on " + title + " (" + templates.size() + " templates)", "getTemplates");
-        return templates.toArray(new String[0]);
+        int size = templates.size();
+        log(Level.INFO, "Successfully retrieved templates used on " + title + " (" + size + " templates)", "getTemplates");
+        return templates.toArray(new String[size]);
     }
 
     /**
@@ -2034,7 +2035,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.18
      */
-    public HashMap<String, String> getInterwikiLinks(String title) throws IOException
+    public HashMap<String, String> getInterWikiLinks(String title) throws IOException
     {
         String url = apiUrl + "action=parse&prop=langlinks&llimit=max&page=" + URLEncoder.encode(title, "UTF-8");
         String line = fetch(url, "getInterwikiLinks");
@@ -2266,8 +2267,9 @@ public class Wiki implements Serializable
             }
         }
         while (rvstart != null);
-        log(Level.INFO, "Successfully retrieved page history of " + title + " (" + revisions.size() + " revisions)", "getPageHistory");
-        return revisions.toArray(new Revision[0]);
+        int size = revisions.size();
+        log(Level.INFO, "Successfully retrieved page history of " + title + " (" + size + " revisions)", "getPageHistory");
+        return revisions.toArray(new Revision[size]);
     }
 
     /**
@@ -2781,8 +2783,7 @@ public class Wiki implements Serializable
      *  To recover the old behavior (BufferedImage), use
      *  <tt>ImageIO.read(new ByteArrayInputStream(getImage("Example.jpg")));</tt>
      *
-     *  @param title the title of the image (i.e. Example.jpg, not
-     *  File:Example.jpg)
+     *  @param title the title of the image (may contain "File")
      *  @return the image data
      *  @throws IOException if a network error occurs
      *  @since 0.10
@@ -2797,8 +2798,7 @@ public class Wiki implements Serializable
      *  in a <tt>byte[]</tt>. To recover the old behavior (BufferedImage), use
      *  <tt>ImageIO.read(new ByteArrayInputStream(getImage("Example.jpg")));</tt>
      *
-     *  @param title the title of the image without the File: prefix (i.e.
-     *  Example.jpg, not File:Example.jpg)
+     *  @param title the title of the image (may contain "File")
      *  @param width the width of the thumbnail (use -1 for actual width)
      *  @param height the height of the thumbnail (use -1 for actual height)
      *  @return the image data
@@ -2810,6 +2810,7 @@ public class Wiki implements Serializable
         // @revised 0.24 BufferedImage => byte[]
 
         // this is a two step process - first we fetch the image url
+        title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
         url.append("prop=imageinfo&iiprop=url&titles=File:");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
@@ -2848,7 +2849,7 @@ public class Wiki implements Serializable
      *  * mime (MIME type, String)
      *  * plus EXIF metadata (Strings)
      *
-     *  @param file the image to get metadata for, without the File: prefix
+     *  @param file the image to get metadata for (may contain "File")
      *  @return the metadata for the image
      *  @throws IOException if a network error occurs
      *  @since 0.20
@@ -2856,8 +2857,9 @@ public class Wiki implements Serializable
     public HashMap<String, Object> getFileMetadata(String file) throws IOException
     {
         // This seems a good candidate for bulk queries.
-
+        // TODO: support prop=videoinfo
         // fetch
+        file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=File:" 
                 + URLEncoder.encode(normalize(file), "UTF-8");
         String line = fetch(url, "getFileMetadata");
@@ -2897,13 +2899,14 @@ public class Wiki implements Serializable
      *  duplicates, there's no good reason why there should be more than that.
      *  Equivalent to [[Special:FileDuplicateSearch]].
      *
-     *  @param file the file for checking duplicates (without the File:)
+     *  @param file the file for checking duplicates (may contain "File")
      *  @return the duplicates of that file
      *  @throws IOException if a network error occurs
      *  @since 0.18
      */
     public String[] getDuplicates(String file) throws IOException
     {
+        file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=duplicatefiles&dflimit=max&titles=File:" + URLEncoder.encode(file, "UTF-8");
         String line = fetch(url, "getDuplicates");
 
@@ -2927,13 +2930,14 @@ public class Wiki implements Serializable
      *  title, Wiki.FILE_NAMESPACE)</tt>, as the image may have been deleted.
      *  This returns only the live history of an image.
      *
-     *  @param title the title of the image, excluding the File prefix
+     *  @param title the title of the image (may contain File)
      *  @return the image history of the image
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
     public LogEntry[] getImageHistory(String title) throws IOException
     {
+        title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" 
                 + URLEncoder.encode(normalize(title), "UTF-8");
         String line = fetch(url, "getImageHistory");
@@ -3021,7 +3025,7 @@ public class Wiki implements Serializable
      *  and subject to the throttle.
      *
      *  @param file the image file
-     *  @param filename the target file name (Example.png, not File:Example.png)
+     *  @param filename the target file name (may contain File)
      *  @param contents the contents of the image description page, set to ""
      *  if overwriting an existing file
      *  @param reason an upload summary (defaults to <tt>contents</tt>, use ""
@@ -3050,6 +3054,7 @@ public class Wiki implements Serializable
             throw ex;
         }
         statusCheck();
+        filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
 
         // protection and token
         HashMap<String, Object> info = getPageInfo("File:" + filename);
@@ -3560,7 +3565,7 @@ public class Wiki implements Serializable
 
         // cache
         if (watchlist != null && cache)
-            return watchlist.toArray(new String[0]);
+            return watchlist.toArray(new String[watchlist.size()]);
 
         // set up some things
         String url = query + "list=watchlistraw&wrlimit=max";
@@ -3593,8 +3598,9 @@ public class Wiki implements Serializable
         }
         while (wrcontinue != null);
         // log
-        log(Level.INFO, "Successfully retrieved raw watchlist (" + watchlist.size() + " items)", "getRawWatchlist");
-        return watchlist.toArray(new String[0]);
+        int size = watchlist.size();
+        log(Level.INFO, "Successfully retrieved raw watchlist (" + size + " items)", "getRawWatchlist");
+        return watchlist.toArray(new String[size]);
     }
 
     /**
@@ -3922,8 +3928,9 @@ public class Wiki implements Serializable
             }
         }
         while (!next.equals("done"));
-        log(Level.INFO, "Successfully retrieved transclusions of " + title + " (" + pages.size() + " items)", "whatTranscludesHere");
-        return pages.toArray(new String[0]);
+        int size = pages.size();
+        log(Level.INFO, "Successfully retrieved transclusions of " + title + " (" + size + " items)", "whatTranscludesHere");
+        return pages.toArray(new String[size]);
     }
     
     /**
@@ -4220,11 +4227,12 @@ public class Wiki implements Serializable
             logRecord.append(" to ");
             logRecord.append(end.getTime().toString());
         }
+        int size = entries.size();
         logRecord.append(" (");
-        logRecord.append(entries.size());
+        logRecord.append(size);
         logRecord.append(" entries)");
         log(Level.INFO, logRecord.toString(), "getIPBlockList");
-        return entries.toArray(new LogEntry[0]);
+        return entries.toArray(new LogEntry[size]);
      }
 
     /**
@@ -4440,11 +4448,12 @@ public class Wiki implements Serializable
         while (entries.size() < amount && lestart != null);
 
         // log the success
+        int size = entries.size();
         console.append(" (");
-        console.append(entries.size());
+        console.append(size);
         console.append(" entries)");
         log(Level.INFO, console.toString(), "getLogEntries");
-        return entries.toArray(new LogEntry[0]);
+        return entries.toArray(new LogEntry[size]);
     }
 
     /**
@@ -4623,7 +4632,7 @@ public class Wiki implements Serializable
             ArrayList<String> temp = new ArrayList<String>(10);
             while (tk.hasMoreTokens())
                 temp.add(tk.nextToken());
-            details = temp.toArray(new String[0]);
+            details = temp.toArray(new String[temp.size()]);
         }
 
         return new LogEntry(type, action, reason, performer, target, timestamp, details);
@@ -4829,8 +4838,9 @@ public class Wiki implements Serializable
         while (next != null);
 
         // tidy up
-        log(Level.INFO, "Successfully retrieved page list (" + pages.size() + " pages)", "listPages");
-        return pages.toArray(new String[0]);
+        int size = pages.size();
+        log(Level.INFO, "Successfully retrieved page list (" + size + " pages)", "listPages");
+        return pages.toArray(new String[size]);
     }
     
     /**
@@ -5160,7 +5170,7 @@ public class Wiki implements Serializable
         ArrayList<String[]> links = new ArrayList<String[]>(500);
         do
         {
-            String line = "";
+            String line;
             if (iwblcontinue.isEmpty())
                 line = fetch(url.toString(), "getInterWikiBacklinks");
             else
@@ -5287,7 +5297,7 @@ public class Wiki implements Serializable
                 temp.add(info.substring(x + 3, y));
                 x = y;
             }
-            String[] temp2 = temp.toArray(new String[0]);
+            String[] temp2 = temp.toArray(new String[temp.size()]);
             // cache
             if (this.equals(getCurrentUser()))
                 groups = temp2;
@@ -5301,7 +5311,7 @@ public class Wiki implements Serializable
                 temp.add(info.substring(x + 3, y));
                 x = y;
             }
-            temp2 = temp.toArray(new String[0]);
+            temp2 = temp.toArray(new String[temp.size()]);
             // cache
             if (this.equals(getCurrentUser()))
                 rights = temp2;
@@ -5636,6 +5646,7 @@ public class Wiki implements Serializable
          *  @return whether this object is equal to
          *  @since 0.18
          */
+        @Override
         public int compareTo(Wiki.LogEntry other)
         {
             if (timestamp.equals(other.timestamp))
@@ -5979,6 +5990,7 @@ public class Wiki implements Serializable
          *  @return whether this object is equal to
          *  @since 0.18
          */
+        @Override
         public int compareTo(Wiki.Revision other)
         {
             if (timestamp.equals(other.timestamp))
@@ -6465,7 +6477,7 @@ public class Wiki implements Serializable
      */
     private void grabCookies(URLConnection u)
     {
-        String headerName = null;
+        String headerName;
         for (int i = 1; (headerName = u.getHeaderFieldKey(i)) != null; i++)
             if (headerName.equals("Set-Cookie"))
             {
