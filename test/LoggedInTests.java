@@ -19,7 +19,7 @@
 
 import java.io.*;
 import java.util.logging.LogManager;
-import org.fbot.Fbot;
+import org.wikiutils.LoginUtils;;
 import org.wikipedia.Wiki;
 
 /**
@@ -35,7 +35,7 @@ public class LoggedInTests
         // login and override defaults
         System.setProperty("wiki.level", "100");
         LogManager.getLogManager().readConfiguration();
-        Fbot.guiLogin(wiki);
+        LoginUtils.guiLogin(wiki);
         wiki.setThrottle(5);
 
         // raw watchlist
