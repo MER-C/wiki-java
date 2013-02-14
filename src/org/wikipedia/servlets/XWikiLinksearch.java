@@ -66,7 +66,7 @@ public class XWikiLinksearch extends HttpServlet
         
         // a collection of important wikis
         temp = new String[] { "en", "de", "fr" };
-        importantwikis = new Wiki[18];
+        importantwikis = new Wiki[19];
         for (int i = 0; i < temp.length; i++)
         {
             importantwikis[5 * i    ] = new Wiki(temp[i] + ".wikipedia.org");
@@ -78,6 +78,7 @@ public class XWikiLinksearch extends HttpServlet
         importantwikis[15] = new Wiki("meta.wikimedia.org");
         importantwikis[16] = new Wiki("commons.wikimedia.org");
         importantwikis[17] = new Wiki("mediawiki.org");
+        importantwikis[18] = new Wiki("wikidata.org");
         for (int i = 0; i < importantwikis.length; i++)
         {
             importantwikis[i].setUsingCompressedRequests(false);

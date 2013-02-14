@@ -170,6 +170,10 @@ public class WikiTests
          */ 
         
         // purge
-        enWiki.purge(false, "Main Page");
+        // enWiki.purge(false, "Main Page");
+        
+        // getPageInfo
+        String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
+        enWiki.getPageInfo(pages); // use a debugger, please
     }
 }
