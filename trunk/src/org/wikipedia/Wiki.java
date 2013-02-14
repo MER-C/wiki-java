@@ -460,7 +460,8 @@ public class Wiki implements Serializable
     private ArrayList<String> watchlist = null;
 
     // preferences
-    private int max = 500; // awkward workaround
+    private int max = 500;
+    private int slowmax = 50;
     protected static final Logger logger = Logger.getLogger("wiki"); // only one required
     private int throttle = 10000; // throttle
     private int maxlag = 5;
@@ -915,7 +916,11 @@ public class Wiki implements Serializable
         {
             user = new User(username);
             boolean apihighlimit = user.isAllowedTo("apihighlimits");
-            max = apihighlimit ? 5000 : 500;
+            if (apihighlimit)
+            {
+                max = 5000;
+                slowmax = 500;
+            }
             log(Level.INFO, "Successfully logged in as " + username + ", highLimit = " + apihighlimit, "login");
         }
         else
@@ -955,6 +960,7 @@ public class Wiki implements Serializable
         cookies.clear();
         user = null;
         max = 500;
+        slowmax = 50;
         log(Level.INFO, "Logged out", "logout");
     }
 
@@ -1213,7 +1219,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets various page info. Returns:
+     *  Gets miscellaneous page info. Returns:
      *  <pre>
      *  {
      *      "displaytitle" => "iPod"         , // the title of the page that is actually displayed (String)
@@ -1232,88 +1238,111 @@ public class Wiki implements Serializable
      *      "watchtoken"   => "\+"             // watchlist token (String)
      *  }
      *  </pre>
-     *  @param page the page to get info for
+     *  @param pages the pages to get info for
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public HashMap<String, Object> getPageInfo(String page) throws IOException
+    public HashMap[] getPageInfo(String... pages) throws IOException
     {
-        // fetch
-        StringBuilder url = new StringBuilder(query);
-        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle&titles=");
-        url.append(URLEncoder.encode(normalize(page), "UTF-8"));
-        String line = fetch(url.toString(), "getPageInfo");
-        HashMap<String, Object> info = new HashMap<String, Object>(15);
-
-        // does the page exist?
-        boolean exists = !line.contains("missing=\"\"");
-        info.put("exists", exists);
-        if (exists)
+        HashMap[] info = new HashMap[pages.length];
+        String urlstart = query + "prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle&titles=";
+        StringBuilder url = new StringBuilder(urlstart);
+        int k = 0;
+        for (int i = 0; i < pages.length; i++)
         {
-            // last edit time
-            int a = line.indexOf("touched=\"") + 9;
-            int b = line.indexOf('\"', a);
-            info.put("lastpurged", timestampToCalendar(convertTimestamp(line.substring(a, b))));
-
-            // last revid
-            a = line.indexOf("lastrevid=\"") + 11;
-            b = line.indexOf('\"', a);
-            info.put("lastrevid", Long.parseLong(line.substring(a, b)));
-
-            // size
-            a = line.indexOf("length=\"") + 8;
-            b = line.indexOf('\"', a);
-            info.put("size", Integer.parseInt(line.substring(a, b)));
-
-            // parse protection level
-            // FIXME: this probably needs to be rewritten
-            int z = line.indexOf("type=\"edit\"");
-            if (z != -1)
+            info[i] = new HashMap(15);
+            url.append(URLEncoder.encode(normalize(pages[i]), "UTF-8"));
+            // send off in batches of slowmax
+            if (i % slowmax == slowmax - 1 || i == pages.length - 1)
             {
-                String s = line.substring(z, z + 30);
-                if (s.contains("sysop"))
-                    info.put("protection", FULL_PROTECTION);
-                else
+                String line = fetch(url.toString(), "getPageInfo");
+                // start parsing
+                int x;
+                String item;
+                for (int j = 0; ; j = x)
                 {
-                    s = line.substring(z + 30); // cut out edit tag
-                    info.put("protection", s.contains("level=\"sysop\"") ? SEMI_AND_MOVE_PROTECTION : SEMI_PROTECTION);
+                    x = line.indexOf("</page>", j) + 1;
+                    if (x == 0)
+                        break; // no more pages in this query
+                    item = line.substring(j, x);
+                    
+                    // does the page exist?
+                    boolean exists = !item.contains("missing=\"\"");
+                    info[k].put("exists", exists);
+                    if (exists)
+                    {
+                        // last edit time
+                        int a = item.indexOf("touched=\"") + 9;
+                        int b = item.indexOf('\"', a);
+                        info[k].put("lastpurged", timestampToCalendar(convertTimestamp(item.substring(a, b))));
+
+                        // last revid
+                        a = item.indexOf("lastrevid=\"") + 11;
+                        b = item.indexOf('\"', a);
+                        info[k].put("lastrevid", Long.parseLong(item.substring(a, b)));
+
+                        // size
+                        a = item.indexOf("length=\"") + 8;
+                        b = item.indexOf('\"', a);
+                        info[k].put("size", Integer.parseInt(item.substring(a, b)));
+
+                        // parse protection level
+                        // FIXME: this probably needs to be rewritten
+                        int z = item.indexOf("type=\"edit\"");
+                        if (z != -1)
+                        {
+                            String s = item.substring(z, z + 30);
+                            if (s.contains("sysop"))
+                                info[k].put("protection", FULL_PROTECTION);
+                            else
+                            {
+                                s = item.substring(z + 30); // cut out edit tag
+                                info[k].put("protection", s.contains("level=\"sysop\"") ? SEMI_AND_MOVE_PROTECTION : SEMI_PROTECTION);
+                            }
+                        }
+                        else
+                            info[k].put("protection", item.contains("type=\"move\"") ? MOVE_PROTECTION : NO_PROTECTION);
+                    }
+                    else
+                    {
+                        info[k].put("lastedited", null);
+                        info[k].put("lastrevid", -1L);
+                        info[k].put("size", -1);
+                        // is the page create protected?
+                        info[k].put("protection", item.contains("type=\"create\"") ? PROTECTED_DELETED_PAGE : NO_PROTECTION);
+                    }
+
+                    // cascade protection
+                    info[k].put("cascade", item.contains("cascade=\"\""));
+
+                    // displaytitle
+                    int a = item.indexOf("displaytitle=\"") + 14;
+                    int b = item.indexOf('\"', a);
+                    info[k].put("displaytitle", item.substring(a, b));
+
+                    // edit/move/upload/protect/delete token
+                    a = item.indexOf("edittoken=\"") + 11;
+                    b = item.indexOf('\"', a);
+                    info[k].put("token", item.substring(a, b));
+
+                    // watchlist token 
+                    a = item.indexOf("watchtoken=\"") + 12;
+                    b = item.indexOf('\"', a);
+                    info[k].put("watchtoken", line.substring(a, b));
+
+                    // timestamp
+                    info[k].put("timestamp", makeCalendar());
+                    k++;
                 }
+                // reset url
+                url = new StringBuilder(urlstart);
             }
             else
-                info.put("protection", line.contains("type=\"move\"") ? MOVE_PROTECTION : NO_PROTECTION);
-        }
-        else
-        {
-            info.put("lastedited", null);
-            info.put("lastrevid", -1L);
-            info.put("size", -1);
-            // is the page create protected?
-            info.put("protection", line.contains("type=\"create\"") ? PROTECTED_DELETED_PAGE : NO_PROTECTION);
+                url.append("%7C");
         }
 
-        // cascade protection
-        info.put("cascade", line.contains("cascade=\"\""));
-
-        // displaytitle
-        int a = line.indexOf("displaytitle=\"") + 14;
-        int b = line.indexOf('\"', a);
-        info.put("displaytitle", line.substring(a, b));
-
-        // edit/move/upload/protect/delete token
-        a = line.indexOf("edittoken=\"") + 11;
-        b = line.indexOf('\"', a);
-        info.put("token", line.substring(a, b));
-        
-        // watchlist token
-        a = line.indexOf("watchtoken=\"") + 12;
-        b = line.indexOf('\"', a);
-        info.put("watchtoken", line.substring(a, b));
-
-        // timestamp
-        info.put("timestamp", makeCalendar());
-
-        log(Level.INFO, "Successfully retrieved page info for " + page, "getPageInfo");
+        log(Level.INFO, "Successfully retrieved page info for " + Arrays.toString(pages), "getPageInfo");
         return info;
     }
 
@@ -1329,7 +1358,7 @@ public class Wiki implements Serializable
      */
     public int getProtectionLevel(String title) throws IOException
     {
-        HashMap<String, Object> info = getPageInfo(title);
+        HashMap info = getPageInfo(title)[0];
         if ((Boolean)info.get("cascade"))
             return FULL_PROTECTION;
         return (Integer)info.get("protection");
@@ -1441,36 +1470,10 @@ public class Wiki implements Serializable
      */
     public boolean[] exists(String... titles) throws IOException
     {
-        // @revised 0.15 optimized for multiple queries, now up to 500x faster!
-        // TODO: remove dependence on ParserFunctions
-        StringBuilder wikitext = new StringBuilder(15000);
-        StringBuilder parsed = new StringBuilder(1000);
+        boolean[] ret = new boolean[titles.length];
+        HashMap[] info = getPageInfo(titles);
         for (int i = 0; i < titles.length; i++)
-        {
-            // build up the parser string
-            wikitext.append("{{#ifexist:");
-            wikitext.append(titles[i]);
-            wikitext.append("|1|0}}"); // yay! binary! (well, almost)
-
-            // Send them off in batches of 500. Change this if your expensive
-            // parser function limit is different.
-            if (i % 500 == 499 || i == titles.length - 1)
-            {
-                parsed.append(parseAndCleanup(wikitext.toString()));
-                wikitext = new StringBuilder(15000);
-            }
-        }
-
-        // now parse the resulting "binary"
-        char[] characters = parsed.toString().toCharArray();
-        boolean[] ret = new boolean[characters.length];
-        for (int i = 0; i < characters.length; i++)
-        {
-            // we would want to use the ternary operator here but other things can go wrong
-            if (characters[i] != '1' && characters[i] != '0')
-                throw new UnknownError("Unable to parse output. Perhaps the ParserFunctions extension is not installed, or this is a bug.");
-            ret[i] = (characters[i] == '1');
-        }
+            ret[i] = (Boolean)info[i].get("exists");
         return ret;
     }
 
@@ -1685,7 +1688,7 @@ public class Wiki implements Serializable
         statusCheck();
 
         // protection and token
-        HashMap<String, Object> info = getPageInfo(title);
+        HashMap info = getPageInfo(title)[0];
         int level = (Integer)info.get("protection");
         // check protection level
         if (!checkRights(level, false))
@@ -1837,7 +1840,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Cannot delete: Permission denied");
 
         // protection and token
-        HashMap<String, Object> info = getPageInfo(title);
+        HashMap info = getPageInfo(title)[0];
         if (!(Boolean)info.get("exists"))
         {
             logger.log(Level.INFO, "Page \"{0}\" does not exist.", title);
@@ -2333,7 +2336,7 @@ public class Wiki implements Serializable
         // TODO: image renaming? TEST ME (MediaWiki, that is).
 
         // protection and token
-        HashMap<String, Object> info = getPageInfo(title);
+        HashMap info = getPageInfo(title)[0];
         // determine whether the page exists
         if (!(Boolean)info.get("exists"))
             throw new IllegalArgumentException("Tried to move a non-existant page!");
@@ -2603,7 +2606,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
         // protection and token
-        HashMap<String, Object> info = getPageInfo(rev.getPage());
+        HashMap info = getPageInfo(rev.getPage())[0];
         int level = (Integer)info.get("protection");
         // check protection level
         if (!checkRights(level, false))
@@ -3055,7 +3058,7 @@ public class Wiki implements Serializable
         filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
 
         // protection and token
-        HashMap<String, Object> info = getPageInfo("File:" + filename);
+        HashMap info = getPageInfo("File:" + filename)[0];
         int level = (Integer)info.get("protection");
         // check protection level
         if (!checkRights(level, false))
@@ -3107,7 +3110,7 @@ public class Wiki implements Serializable
                 params.put("chunk\"; filename=\"" + file.getName(), by);
                 
                 // Each chunk presumably requires a new edit token
-                wpEditToken = (String)getPageInfo("File:" + filename).get("token");
+                wpEditToken = (String)getPageInfo("File:" + filename)[0].get("token");
             }
                 
             // done
@@ -3421,7 +3424,7 @@ public class Wiki implements Serializable
             logger.log(Level.WARNING, "User {0} is not emailable", user.getUsername());
             return;
         }
-        String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
+        String token = (String)getPageInfo("User:" + user.getUsername())[0].get("token");
         if (!cookies.containsValue(user.getUsername()))
         {
             logger.log(Level.SEVERE, "Cookies have expired.");
@@ -3467,69 +3470,73 @@ public class Wiki implements Serializable
 
     /**
      *  Adds a page to the watchlist. You need to be logged in to use this.
-     *  @param title the page to add to the watchlist
+     *  @param titles the pages to add to the watchlist
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @see #unwatch
      *  @since 0.18
      */
-    public void watch(String title) throws IOException, CredentialNotFoundException
+    public void watch(String... titles) throws IOException, CredentialNotFoundException
     {
         /*
          *  Ideally, we would have a setRawWatchlist() equivalent in the API, and as such
-         *  make title(s) varargs. Then we can do away with watchInternal() and this method
-         *  will consist of the following:
+         *  not have to send title.length requests. Then we can do away with watchInternal() 
+         *  and this method will consist of the following:
          *
          *  watchlist.addAll(Arrays.asList(titles);
          *  setRawWatchlist(watchlist.toArray(new String[0]));
          */
-        watchInternal(title, false);
-        watchlist.add(title);
+        watchInternal(false, titles);
+        watchlist.addAll(Arrays.asList(titles));
     }
 
     /**
-     *  Removes a page from the watchlist. You need to be logged in to use
+     *  Removes pages from the watchlist. You need to be logged in to use
      *  this. (Does not do anything if the page is not watched).
      *
-     *  @param title the page to remove from the watchlist.
+     *  @param titles the pages to remove from the watchlist.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @see #watch
      *  @since 0.18
      */
-    public void unwatch(String title) throws IOException, CredentialNotFoundException
+    public void unwatch(String... titles) throws IOException, CredentialNotFoundException
     {
-        watchInternal(title, true);
-        watchlist.remove(title);
+        watchInternal(true, titles);
+        watchlist.removeAll(Arrays.asList(titles));
     }
 
     /**
      *  Internal method for interfacing with the watchlist, since the API URLs
      *  for (un)watching are very similar.
      *
-     *  @param title the title to (un)watch
-     *  @param unwatch whether we should unwatch this page
+     *  @param titles the titles to (un)watch
+     *  @param unwatch whether we should unwatch these pages
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @see #watch
      *  @see #unwatch
      *  @since 0.18
      */
-    protected void watchInternal(String title, boolean unwatch) throws IOException, CredentialNotFoundException
+    protected void watchInternal(boolean unwatch, String... titles) throws IOException, CredentialNotFoundException
     {
         // create the watchlist cache
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        StringBuilder data = new StringBuilder("title=");
-        data.append(URLEncoder.encode(normalize(title), "UTF-8"));
-        if (unwatch)
-            data.append("&unwatch");
-        String watchToken = (String)getPageInfo(title).get("watchtoken");
-        data.append("&token=");
-        data.append(URLEncoder.encode(watchToken, "UTF-8"));
-        post(apiUrl + "action=watch", data.toString(), state);
-        log(Level.INFO, "Successfully " + state + "ed " + title, state);
+        HashMap[] info = getPageInfo(titles);
+        for (int i = 0; i < titles.length; i++)
+        {
+            StringBuilder data = new StringBuilder("title=");
+            data.append(URLEncoder.encode(normalize(titles[i]), "UTF-8"));
+            if (unwatch)
+                data.append("&unwatch");
+            data.append("&token=");
+            String watchToken = (String)info[i].get("watchtoken");
+            data.append(URLEncoder.encode(watchToken, "UTF-8"));
+            post(apiUrl + "action=watch", data.toString(), state);
+        }
+        log(Level.INFO, "Successfully " + state + "ed " + Arrays.toString(titles), state);
     }
 
     /**
@@ -3762,7 +3769,7 @@ public class Wiki implements Serializable
     /**
      *  Returns a list of pages in the specified namespaces which use the
      *  specified image.
-     *  @param image the image (Example.png, not File:Example.png)
+     *  @param image the image (may contain File:)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the list of pages that use this image
      *  @throws IOException if a network error occurs
@@ -3771,6 +3778,7 @@ public class Wiki implements Serializable
     public String[] imageUsage(String image, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
+        image = image.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         url.append("list=imageusage&iulimit=max&iutitle=File:");
         url.append(URLEncoder.encode(normalize(image), "UTF-8"));
         constructNamespaceString(url, "iu", ns);

@@ -50,13 +50,15 @@ public class LoggedInTests
         // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
         
         // watch
-        // wiki.watch("Main Page");
-        
+        wiki.watch("Main Page", "Blah");
+        wiki.unwatch("Main Page", "Blah");
+/*        
         // watchlist
         for (Wiki.Revision item : wiki.watchlist(false))
             System.out.println(item);
         
         // upload
         wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test4.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]]. ∑∑ƒ∂ß", "hello ∑∑ƒ∂ß");
+*/
     }
 }
