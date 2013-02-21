@@ -19,7 +19,7 @@
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.LogManager;
+import java.util.logging.*;
 import org.wikipedia.*;
 
 /**
@@ -32,12 +32,16 @@ public class WikiTests
     public static void main(String[] args) throws Exception
     {
         // setup stuff
-        System.setProperty("wiki.level", "100");
-        LogManager.getLogManager().readConfiguration();
+        //Logger wiki = Logger.getLogger("wiki");
+        //wiki.setLevel(Level.ALL);
+        //for (Handler h : wiki.getHandlers())
+        //    h.setLevel(Level.ALL);
         Wiki enWiki = new Wiki("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         Wiki deWiki = new Wiki("de.wikipedia.org");
         deWiki.setMaxLag(-1);
+        
+
 /*           
         // random
         System.out.println(enWiki.random());
@@ -167,13 +171,19 @@ public class WikiTests
         // query page
         for (String page : enWiki.queryPage("Uncategorizedpages"))
             System.out.println(page);
-         */ 
         
         // purge
-        // enWiki.purge(false, "Main Page");
+        enWiki.purge(false, "Main Page");
         
         // getPageInfo
         String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
         enWiki.getPageInfo(pages); // use a debugger, please
+        */
+        
+        // list users
+        for (String user : enWiki.allUsers("AB", 51))
+            System.out.println(user);
+        for (String user : enWiki.allUsersWithPrefix("AB "))
+            System.out.println(user);
     }
 }
