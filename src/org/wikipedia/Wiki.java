@@ -3190,7 +3190,7 @@ public class Wiki implements Serializable
         username = URLEncoder.encode(normalize(username), "UTF-8");
         return fetch(query + "list=users&ususers=" + username, "userExists").contains("userid=\"");
     }
-
+    
     /**
      *  Gets the specified number of users (as a String) starting at the
      *  given string, in alphabetical order. Equivalent to [[Special:Listusers]].
@@ -3203,33 +3203,84 @@ public class Wiki implements Serializable
      */
     public String[] allUsers(String start, int number) throws IOException
     {
+        return allUsers(start, number, "");
+    }
+    
+    /**
+     *  Returns all usernames with the given prefix.
+     *  @param prefix a username prefix (without User:)
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.28
+     */
+    public String[] allUsersWithPrefix(String prefix) throws IOException
+    {
+        return allUsers("", -1, prefix);
+    }
+     
+    /**
+     *  Gets the specified number of users (as a String) starting at the
+     *  given string, in alphabetical order. Equivalent to [[Special:Listusers]].
+     *
+     *  @param start the string to start enumeration
+     *  @param number the number of users to return
+     *  @param prefix list all users with this prefix (overrides start and amount),
+     *  use "" to not specify one
+     *  @return a String[] containing the usernames
+     *  @throws IOException if a network error occurs
+     *  @since 0.28
+     */
+    public String[] allUsers(String start, int number, String prefix) throws IOException
+    {
         // sanitise
-        String url = query + "list=allusers&aulimit=" + (number > max ? max : number) + "&aufrom=";
-
-        // work around an arbitrary and silly limitation
+        max = 50;
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=allusers&aulimit=");
+        String next = "";
+        if (prefix.isEmpty())
+        {
+            url.append(number > max ? max : number);
+            next = URLEncoder.encode(start, "UTF-8");
+        }
+        else
+        {
+            url.append(max);
+            url.append("&auprefix=");
+            url.append(URLEncoder.encode(normalize(prefix), "UTF-8"));
+        }
         ArrayList<String> members = new ArrayList<String>(6667); // enough for most requests
-        String next = URLEncoder.encode(start, "UTF-8");
         do
         {
-            next = URLEncoder.encode(next, "UTF-8");
-            String line = fetch(url + next, "allUsers");
+            String temp = url.toString();
+            if (!next.isEmpty())
+                temp += ("&aufrom=" + URLEncoder.encode(next, "UTF-8"));
+            String line = fetch(temp, "allUsers");
 
             // parse
-            int a = line.indexOf("aufrom=\"") + 8;
-            next = line.substring(a, line.indexOf("\" />", a));
-            // FIXME: MediaWiki bug: return to me!
-            for (int w = line.indexOf("<u "); w >= 0 && members.size() < number; w = line.indexOf("<u ", w))
-            //while (line.contains("<u ") && members.size() < number)
+            if (line.contains("aufrom=\""))
+            {
+                int a = line.indexOf("aufrom=\"") + 8;
+                next = line.substring(a, line.indexOf("\" />", a));
+            }
+            else
+                next = null;
+            for (int w = line.indexOf("<u "); w >= 0; w = line.indexOf("<u ", w))
             {
                 int x = line.indexOf("name=\"", w) + 6;
                 int y = line.indexOf("\"", x);
-                members.add(line.substring(x, y));
+                members.add(decode(line.substring(x, y)));
+                if (members.size() == number)
+                {
+                    next = null;
+                    break;
+                }
                 w = y;
             }
         }
-        while (members.size() < number);
-        log(Level.INFO, "Successfully retrieved user list (" + number + " users starting at " + start + ")", "allUsers");
-        return members.toArray(new String[number]);
+        while (next != null);
+        int size = members.size();
+        log(Level.INFO, "Successfully retrieved user list (" + size + " users)", "allUsers");
+        return members.toArray(new String[size]);
     }
 
     /**
@@ -3663,7 +3714,6 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "wl", ns);
         
         ArrayList<Revision> wl = new ArrayList<Revision>(667);
-        boolean done = false;
         String wlstart = "";
         do
         {
@@ -3674,7 +3724,7 @@ public class Wiki implements Serializable
                 wlstart = line.substring(a, line.indexOf('\"', a));
             }
             else
-                done = true;
+                wlstart = null;
             for (int i = line.indexOf("<item "); i >= 0; i = line.indexOf("<item ", i))
             {
                 int j = line.indexOf("/>", i);
@@ -3682,7 +3732,7 @@ public class Wiki implements Serializable
                 i = j;
             }
         }
-        while(!done);
+        while(wlstart != null);
         int size = wl.size();
         log(Level.INFO, "Successfully retrieved watchlist (" + size + " items)", "watchlist");
         return wl.toArray(new Revision[size]);
@@ -4340,6 +4390,8 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, User user, String target, int namespace) throws IOException
     {
+        // TODO: add leaction
+        
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
         url.append("list=logevents&leprop=title%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails");
