@@ -124,10 +124,13 @@ public class WikiTests
         }
         System.out.println();
 
-        //getLogEntries() - user rights log
+        //getLogEntries()
         for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
-
+*/
+        for (Wiki.LogEntry entry : enWiki.getLogEntries(501, Wiki.DELETION_LOG, "restore"))
+            System.out.println(entry);
+        /*
         for(String[] result : enWiki.search("WikiProject Spam zola enterprises", Wiki.PROJECT_TALK_NAMESPACE))
             System.out.println(Arrays.toString(result));
  
@@ -178,12 +181,12 @@ public class WikiTests
         // getPageInfo
         String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
         enWiki.getPageInfo(pages); // use a debugger, please
-        */
         
         // list users
         for (String user : enWiki.allUsers("AB", 51))
             System.out.println(user);
         for (String user : enWiki.allUsersWithPrefix("AB "))
             System.out.println(user);
+            */
     }
 }
