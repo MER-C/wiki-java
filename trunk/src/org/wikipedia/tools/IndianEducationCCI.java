@@ -143,7 +143,7 @@ public class IndianEducationCCI
 
             // survey images
             out.write(";Local uploads\n");
-            Wiki.LogEntry[] uploads = enWiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, u, "", Wiki.ALL_NAMESPACES);
+            Wiki.LogEntry[] uploads = enWiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, "", u, "", Wiki.ALL_NAMESPACES);
             HashSet<String> list = new HashSet<String>(10000);
             for (int i = 0; i < uploads.length; i++)
                 list.add((String)uploads[i].getTarget());
@@ -155,7 +155,7 @@ public class IndianEducationCCI
 
             // commons
             out.write(";Commons uploads\n");
-            uploads = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, u, "", Wiki.ALL_NAMESPACES);
+            uploads = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, "", u, "", Wiki.ALL_NAMESPACES);
             list.clear();
             for (int i = 0; i < uploads.length; i++)
                 list.add((String)uploads[i].getTarget());

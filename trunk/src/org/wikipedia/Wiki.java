@@ -4224,7 +4224,8 @@ public class Wiki implements Serializable
 
         // url base
         StringBuilder urlBase = new StringBuilder(query);
-        urlBase.append("list=blocks");
+        urlBase.append("list=blocks&bklimit=");
+        urlBase.append(amount < max ? amount : max);
         if (end != null)
         {
             urlBase.append("&bkend=");
@@ -4235,8 +4236,6 @@ public class Wiki implements Serializable
             urlBase.append("&bkusers=");
             urlBase.append(user);
         }
-        urlBase.append("&bklimit=");
-        urlBase.append(amount < max ? amount : max);
         urlBase.append("&bkstart=");
 
         // connection
@@ -4303,7 +4302,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getLogEntries(int amount) throws IOException
     {
-        return getLogEntries(null, null, amount, ALL_LOGS, null, "", ALL_NAMESPACES);
+        return getLogEntries(null, null, amount, ALL_LOGS, "", null, "", ALL_NAMESPACES);
     }
 
     /**
@@ -4315,7 +4314,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getLogEntries(User user) throws IOException
     {
-        return getLogEntries(null, null, Integer.MAX_VALUE, ALL_LOGS, user, "", ALL_NAMESPACES);
+        return getLogEntries(null, null, Integer.MAX_VALUE, ALL_LOGS, "", user, "", ALL_NAMESPACES);
     }
 
     /**
@@ -4329,7 +4328,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getLogEntries(String target) throws IOException
     {
-        return getLogEntries(null, null, Integer.MAX_VALUE, ALL_LOGS, null, target, ALL_NAMESPACES);
+        return getLogEntries(null, null, Integer.MAX_VALUE, ALL_LOGS, "", null, target, ALL_NAMESPACES);
     }
 
     /**
@@ -4347,7 +4346,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getLogEntries(Calendar start, Calendar end) throws IOException
     {
-        return getLogEntries(start, end, Integer.MAX_VALUE, ALL_LOGS, null, "", ALL_NAMESPACES);
+        return getLogEntries(start, end, Integer.MAX_VALUE, ALL_LOGS, "", null, "", ALL_NAMESPACES);
     }
 
     /**
@@ -4357,13 +4356,15 @@ public class Wiki implements Serializable
      *
      *  @param amount the number of entries to get
      *  @param type what log to get (e.g. DELETION_LOG)
+     *  @param action what action to get (e.g. delete, undelete, etc.), use "" to
+     *  not specify one
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the log type doesn't exist
      *  @return the specified log entries
      */
-    public LogEntry[] getLogEntries(int amount, String type) throws IOException
+    public LogEntry[] getLogEntries(int amount, String type, String action) throws IOException
     {
-        return getLogEntries(null, null, amount, type, null, "", ALL_NAMESPACES);
+        return getLogEntries(null, null, amount, type, action, null, "", ALL_NAMESPACES);
     }
 
     /**
@@ -4378,6 +4379,8 @@ public class Wiki implements Serializable
      *  end are defined, this is ignored. Use Integer.MAX_VALUE to not
      *  specify one.
      *  @param log what log to get (e.g. DELETION_LOG)
+     *  @param action what action to get (e.g. delete, undelete, etc.), use "" to
+     *  not specify one
      *  @param user the user performing the action. Use null not to specify
      *  one.
      *  @param target the target of the action. Use "" not to specify one.
@@ -4388,43 +4391,34 @@ public class Wiki implements Serializable
      *  @return the specified log entries
      *  @since 0.08
      */
-    public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, User user, String target, int namespace) throws IOException
+    public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, String action, 
+            User user, String target, int namespace) throws IOException
     {
-        // TODO: add leaction
-        
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
-        url.append("list=logevents&leprop=title%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails");
-        StringBuilder console = new StringBuilder("Successfully retrieved "); // logger statement
+        url.append("list=logevents&leprop=title%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails&lelimit=");
 
         // check for amount
         if (amount < 1)
             throw new IllegalArgumentException("Tried to retrieve less than one log entry!");
-
+        url.append(amount > max || namespace != ALL_NAMESPACES ? max : amount);
+        
         // log type
         if (!log.equals(ALL_LOGS))
         {
-            url.append("&letype=");
-            url.append(log);
+            if (action.isEmpty())
+            {
+                url.append("&letype=");
+                url.append(log);
+            }
+            else
+            {
+                url.append("&leaction=");
+                url.append(log);
+                url.append("/");
+                url.append(action);
+            }      
         }
-
-        // specific log types
-        if (log.equals(USER_CREATION_LOG))
-            console.append("user creation");
-        else if (log.equals(DELETION_LOG))
-            console.append("deletion");
-        else if (log.equals(PROTECTION_LOG))
-            console.append("protection");
-        else if (log.equals(USER_RIGHTS_LOG))
-            console.append("user rights");
-        else if (log.equals(USER_RENAME_LOG))
-            console.append("user rename");
-        else
-        {
-            console.append(" ");
-            console.append(log);
-        }
-        console.append(" log ");
 
         // check for user parameter
         if (user != null)
@@ -4432,9 +4426,6 @@ public class Wiki implements Serializable
             url.append("&leuser=");
              // should already be normalized since we have a User object
             url.append(URLEncoder.encode(user.getUsername(), "UTF-8"));
-            console.append("for ");
-            console.append(user.getUsername());
-            console.append(" ");
         }
 
         // check for target
@@ -4442,14 +4433,7 @@ public class Wiki implements Serializable
         {
             url.append("&letitle=");
             url.append(URLEncoder.encode(normalize(target), "UTF-8"));
-            console.append("on ");
-            console.append(target);
-            console.append(" ");
         }
-
-        // set maximum
-        url.append("&lelimit=");
-        url.append(amount > max || namespace != ALL_NAMESPACES ? max : amount);
 
         // check for start/end dates
         String lestart = ""; // we need to account for lestart being the continuation parameter too.
@@ -4458,17 +4442,11 @@ public class Wiki implements Serializable
             if (end != null && start.before(end)) //aargh
                 throw new IllegalArgumentException("Specified start date is before specified end date!");
             lestart = calendarToTimestamp(start).toString();
-            console.append("from ");
-            console.append(start.getTime().toString());
-            console.append(" ");
         }
         if (end != null)
         {
             url.append("&leend=");
             url.append(calendarToTimestamp(end));
-            console.append("to ");
-            console.append(end.getTime().toString());
-            console.append(" ");
         }
 
         // only now we can actually start to retrieve the logs
@@ -4506,8 +4484,10 @@ public class Wiki implements Serializable
         while (entries.size() < amount && lestart != null);
 
         // log the success
+        StringBuilder console = new StringBuilder("Successfully retrieved log (type=");
+        console.append(log);
         int size = entries.size();
-        console.append(" (");
+        console.append(", ");
         console.append(size);
         console.append(" entries)");
         log(Level.INFO, console.toString(), "getLogEntries");
@@ -5424,7 +5404,7 @@ public class Wiki implements Serializable
          */
         public LogEntry[] blockLog() throws IOException
         {
-            return getLogEntries(null, null, Integer.MAX_VALUE, BLOCK_LOG, null, "User:" + username, USER_NAMESPACE);
+            return getLogEntries(null, null, Integer.MAX_VALUE, BLOCK_LOG, "", null, "User:" + username, USER_NAMESPACE);
         }
 
         /**
