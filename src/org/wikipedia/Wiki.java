@@ -549,8 +549,8 @@ public class Wiki implements Serializable
      *
      *  *Using HTTPS on Wikimedia sites
      *  *Server-side cache management (maxage and smaxage API parameters)
-     *
-     *  @author Tedder 
+     *  
+     *  </br></br>Contributed by Tedder 
      *  @since 0.24
      */
     protected void initVars()

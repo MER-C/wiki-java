@@ -36,7 +36,7 @@ public class GUIUtils
 	 * Shows a JOptionPane with the stacktrace/backtrace for the Throwable passed in. Useful in GUI
 	 * applications.
 	 * 
-	 * @param e
+	 * @param e The Throwable object to print a stack trace for
 	 */
 	public static void showStackTrace(Throwable e)
 	{
