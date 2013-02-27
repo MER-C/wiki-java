@@ -148,4 +148,45 @@ public class WikiUtils
 			}
 		}
 	}
+	
+	/**
+	 * Performs null edit on a list of pages by wiki. PRECONDITION: wiki object must be logged in
+	 * 
+	 * @param wiki The wiki object to use
+	 * @param l The list of pages to null edit.
+	 */
+	public static void nullEdit(Wiki wiki, String...l)
+	{
+		for(String s : l)
+		{
+			try
+			{
+				wiki.edit(s, wiki.getPageText(s), "");
+			}
+			catch(Throwable e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * Determines if a category is empty.
+	 * 
+	 * @param wiki The wiki object to use
+	 * @param cat Category name, with or without "Category:" prefix, in any language, is fine.
+	 * 
+	 * @return True if the category is empty.
+	 */
+	public static boolean categoryIsEmpty(Wiki wiki, String cat)
+	{
+		try
+		{
+		   return wiki.getCategoryMembers(ParseUtils.namespaceStrip(cat, wiki)).length == 0;
+		}
+		catch(Throwable e)
+		{
+			return false;
+		}
+	}
 }

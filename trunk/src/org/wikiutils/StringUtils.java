@@ -116,6 +116,6 @@ public class StringUtils
 		int i = fn.lastIndexOf('.');
 		if (i == -1)
 			return null;
-		return fn.substring(i + 1);
+		return fn.substring(i + 1).toLowerCase();
 	}
 }
