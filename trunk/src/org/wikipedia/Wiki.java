@@ -46,6 +46,15 @@ import javax.security.auth.login.*;
  */
 public class Wiki implements Serializable
 {
+    // Master TODO list:
+    // *Finish getUploads
+    // *Put a way to get the next and previous oldid in Revision.class. Populate
+    //  this automatically for getPageHistory().
+    // *Admin stuff (low priority)
+    // *More multiqueries
+    // *Generators (hard)
+    // *Make handling of protection less bad
+    
     // NAMESPACES
 
     /**
@@ -2943,13 +2952,16 @@ public class Wiki implements Serializable
                 + URLEncoder.encode(normalize(title), "UTF-8");
         String line = fetch(url, "getImageHistory");
         ArrayList<LogEntry> history = new ArrayList<LogEntry>(40);
+        String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
         while (line.contains("<ii "))
         {
             int a = line.indexOf("<ii");
             int b = line.indexOf('>', a);
-            LogEntry entry = parseLogEntry(line.substring(a, b), 2);
-            entry.target = title;
-            history.add(entry);
+            LogEntry le = parseLogEntry(line.substring(a, b));
+            le.target = prefixtitle;
+            le.type = UPLOAD_LOG;
+            le.action = "overwrite";
+            history.add(le);
             line = line.substring(b);
         }
 
@@ -3016,6 +3028,75 @@ public class Wiki implements Serializable
             line = line.substring(b + 10);
         }
         return null;
+    }
+    
+    /**
+     *  Gets the uploads of a user.
+     *  @param user the user to get uploads for
+     *  @return a list of all live images the user has uploaded
+     *  @throws IOException if a network error occurs
+     *  @since 0.28
+     */
+    public LogEntry[] getUploads(User user) throws IOException
+    {
+        return getUploads(user, null, null);
+    }
+    
+    /**
+     *  Gets the uploads of a user between the specified times.
+     *  @param user the user to get uploads for
+     *  @param start the date to start enumeration (use null to not specify one)
+     *  @param end the date to end enumeration (use null to not specify one)
+     *  @return a list of all live images the user has uploaded
+     *  @throws IOException if a network error occurs
+     */
+    public LogEntry[] getUploads(User user, Calendar start, Calendar end) throws IOException
+    {
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=allimages&ailimit=max&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser="); // ?
+        url.append(user.getUsername());
+        if (start != null)
+        {
+            url.append("&aistart=");
+            url.append(calendarToTimestamp(start));
+        }
+        if (end != null)
+        {
+            url.append("&aiend=");
+            url.append(calendarToTimestamp(end));
+        }
+        ArrayList<LogEntry> uploads = new ArrayList(700);
+        String aicontinue = "";
+        do
+        {
+            if (!aicontinue.isEmpty())
+                aicontinue = "&aicontinue" + aicontinue;
+            String line = fetch(url.toString() + aicontinue, "getUploads");
+            if (line.contains("aicontinue=\""))
+            {
+                int a = line.indexOf("aicontinue=\"") + 12;
+                int b = line.indexOf('\"', a);
+                aicontinue = line.substring(a, b);
+            }
+            else
+                aicontinue = null;
+            
+            for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", i))
+            {
+                int b = line.indexOf("/>", i);
+                LogEntry le = parseLogEntry(line.substring(i, b));
+                le.type = UPLOAD_LOG;
+                le.action = "upload"; // unless it's an overwrite?
+                le.user = user;
+                uploads.add(le);
+                i = b;
+            }
+        }
+        while (aicontinue != null);
+        
+        int size = uploads.size();
+        log(Level.INFO, "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)", "getUploads");
+        return uploads.toArray(new LogEntry[size]);
     }
 
     /**
@@ -4177,7 +4258,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getIPBlockList(String user) throws IOException
     {
-        return getIPBlockList(user, null, null, 1);
+        return getIPBlockList(user, null, null);
     }
 
     /**
@@ -4192,7 +4273,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getIPBlockList(Calendar start, Calendar end) throws IOException
     {
-        return getIPBlockList("", start, end, Integer.MAX_VALUE);
+        return getIPBlockList("", start, end);
     }
 
     /**
@@ -4207,14 +4288,12 @@ public class Wiki implements Serializable
      *  "127.0.0.0/16") but not an autoblock (e.g. "#123456").
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
-     *  @param amount the number of blocks to retrieve. Use
-     *  <tt>Integer.MAX_VALUE</tt> to not specify one.
      *  @return a LogEntry[] of the blocks
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
-    protected LogEntry[] getIPBlockList(String user, Calendar start, Calendar end, int amount) throws IOException
+    protected LogEntry[] getIPBlockList(String user, Calendar start, Calendar end) throws IOException
     {
         // quick param check
         if (start != null && end != null)
@@ -4225,7 +4304,7 @@ public class Wiki implements Serializable
         // url base
         StringBuilder urlBase = new StringBuilder(query);
         urlBase.append("list=blocks&bklimit=");
-        urlBase.append(amount < max ? amount : max);
+        urlBase.append(max);
         if (end != null)
         {
             urlBase.append("&bkend=");
@@ -4254,16 +4333,35 @@ public class Wiki implements Serializable
                 bkstart = null;
 
             // parse xml
-            while (entries.size() < amount && line.contains("<block "))
+            while (line.contains("<block "))
             {
                 // find entry
                 int a = line.indexOf("<block ");
                 int b = line.indexOf("/>", a);
-                entries.add(parseLogEntry(line.substring(a, b), 1));
+                String temp = line.substring(a, b);
+                LogEntry le = parseLogEntry(temp);
+                le.type = BLOCK_LOG;
+                le.action = "block";
+                // parseLogEntries parses block target into le.user due to mw.api 
+                // attribute name
+                if (le.user == null)
+                {
+                    // autoblock
+                    a = temp.indexOf("id=\"") + 4;
+                    b = temp.indexOf("\"", b);
+                    le.target = "#" + temp.substring(a, b);
+                }
+                else
+                    le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
+                // parse blocker for real
+                a = temp.indexOf("by=\"") + 4;
+                b = temp.indexOf("\"", a);
+                le.user = new User(decode(temp.substring(a, b)));
+                entries.add(le);
                 line = line.substring(b);
             }
         }
-        while (bkstart != null && entries.size() < amount);
+        while (bkstart != null);
 
         // log statement
         StringBuilder logRecord = new StringBuilder("Successfully fetched IP block list ");
@@ -4473,7 +4571,7 @@ public class Wiki implements Serializable
                 int b = line.indexOf("><item", a);
                 if (b < 0) // last entry
                     b = line.length();
-                LogEntry entry = parseLogEntry(line.substring(a, b), 0);
+                LogEntry entry = parseLogEntry(line.substring(a, b));
                 line = line.substring(b);
 
                 // namespace processing
@@ -4502,25 +4600,14 @@ public class Wiki implements Serializable
      *  null.
      *
      *  @param xml the xml to parse
-     *  @param caller 1 if ipblocklist, 2 if imagehistory
      *  @return the parsed log entry
      *  @since 0.18
      */
-    protected LogEntry parseLogEntry(String xml, int caller)
+    protected LogEntry parseLogEntry(String xml)
     {
-        // if the caller is not getLogEntries(), we can take a shortcut.
-        String type, action = null;
-        if (caller == 1)
-        {
-            type = BLOCK_LOG;
-            action = "block";
-        }
-        else if (caller == 2)
-        {
-            type = UPLOAD_LOG;
-            action = "overwrite";
-        }
-        else
+        // note that we can override these in the calling method
+        String type = "", action = "";
+        if (xml.contains("type=\"")) // only getLogEntries
         {
             // log type
             int a = xml.indexOf("type=\"") + 6;
@@ -4544,54 +4631,29 @@ public class Wiki implements Serializable
             reason = "";
         else
         {
-            int a = caller == 1 ? xml.indexOf("reason=\"") + 8 : xml.indexOf("comment=\"") + 9;
+            int a = xml.contains("reason=\"") ? xml.indexOf("reason=\"") + 8 : xml.indexOf("comment=\"") + 9;
             int b = xml.indexOf('\"', a);
             reason = decode(xml.substring(a, b));
         }
 
-        // target, performer
-        String target = null;
+        // generic performer name (won't work for ipblocklist, overridden there)
         User performer = null;
-        if (caller == 1) // RevisionDeleted entries don't appear in ipblocklist
-        {
-            // performer
-            int a = xml.indexOf("by=\"") + 4;
-            int b = xml.indexOf('\"', a);
-            performer = new User(decode(xml.substring(a, b)));
-
-            // target
-            a = xml.indexOf("user=\"") + 6;
-            if (a < 6) // autoblock, use block ID instead
-            {
-                a = xml.indexOf("id=\"") + 4;
-                b = xml.indexOf("\" ", a);
-                target = "#" + xml.substring(a, b);
-            }
-            else
-            {
-                b = xml.indexOf("\" ", a);
-                target = decode(xml.substring(a, b));
-            }
-        }
-        // normal logs, not oversighted
-        else if (!xml.contains("userhidden=\"") && xml.contains("title=\""))
+        if (xml.contains("user=\""))
         {
             // performer
             int a = xml.indexOf("user=\"") + 6;
             int b = xml.indexOf("\" ", a);
             performer = new User(decode(xml.substring(a, b)));
-
+        }
+        
+        // generic target name
+        String target = null;
+        if (xml.contains("title=\""))
+        {
             // target
-            a = xml.indexOf("title=\"") + 7;
-            b = xml.indexOf("\" ", a);
+            int a = xml.indexOf("title=\"") + 7;
+            int b = xml.indexOf("\" ", a);
             target = decode(xml.substring(a, b));
-        }
-        else if (caller == 2)
-        {
-           // no title here, we can set that in getImageHistory
-            int a = xml.indexOf("user=\"") + 6;
-            int b = xml.indexOf("\" ", a);
-            performer = new User(decode(xml.substring(a, b)));
         }
 
         // timestamp
@@ -4599,7 +4661,7 @@ public class Wiki implements Serializable
         int b = a + 20;
         String timestamp = convertTimestamp(xml.substring(a, b));
 
-        // details
+        // details: TODO: make this a HashMap
         Object details = null;
         if (xml.contains("commenthidden")) // oversighted
             details = null;
@@ -4613,7 +4675,7 @@ public class Wiki implements Serializable
         {
             a = xml.indexOf("<block") + 7;
             String s = xml.substring(a);
-            int c = caller == 1 ? s.indexOf("expiry=") + 8 : s.indexOf("duration=") + 10;
+            int c = xml.contains("expiry=\"") ? s.indexOf("expiry=") + 8 : s.indexOf("duration=") + 10;
             if (c > 10) // not an unblock
             {
                 int d = s.indexOf('\"', c);
@@ -5417,7 +5479,7 @@ public class Wiki implements Serializable
         public boolean isBlocked() throws IOException
         {
             // @revised 0.18 now check for errors after each edit, including blocks
-            return getIPBlockList(username, null, null, 1).length != 0;
+            return getIPBlockList(username, null, null).length != 0;
         }
 
         /**
@@ -5666,9 +5728,9 @@ public class Wiki implements Serializable
             s.append(calendarToTimestamp(timestamp));
             s.append(",target=");
             s.append(target == null ? "[hidden]" : target);
-            s.append(",reason=");
+            s.append(",reason=\"");
             s.append(reason == null ? "[hidden]" : reason);
-            s.append(",details=");
+            s.append("\",details=");
             if (details instanceof Object[])
                 s.append(Arrays.asList((Object[])details)); // crude formatting hack
             else
