@@ -1,6 +1,6 @@
 /**
- *  @(#)IndianEducationCCI.java 0.01 04/11/2011
- *  Copyright (C) 2011 MER-C
+ *  @(#)ContributionSurveyor.java 0.02 01/03/2011
+ *  Copyright (C) 2011-2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -26,41 +26,36 @@ import java.util.*;
 import org.wikipedia.*;
 
 /**
- *  Instructions:
- *  # Compile. You need my bot framework to do so.
- *  # Place a duplicate free IEP student list in the same directory as
- *    IndianEducationCCI.class with filename "iepstudents.txt".
- *  # Run and wait.
+ *  Mass contribution surveyor for use at [[WP:CCI]]. Please use the dedicated
+ *  contribution surveyors when possible!
  *
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
-public class IndianEducationCCI
+public class ContributionSurveyor
 {
     public static void main(String[] args) throws IOException
     {
         Wiki enWiki = new Wiki("en.wikipedia.org");
         Wiki commons = new Wiki("commons.wikimedia.org");
-        // this program started in June
-        GregorianCalendar cal = new GregorianCalendar(2011, 05, 01);
 
         // file I/O
+        // file must contain list of 
         ArrayList<String> users = new ArrayList<String>(1500);
         BufferedReader in = new BufferedReader(new InputStreamReader(
-            IndianEducationCCI.class.getResourceAsStream("iepstudents.txt")));
+            ContributionSurveyor.class.getResourceAsStream("users.txt")));
         String line;
         while ((line = in.readLine()) != null)
             users.add(line.substring(5)); // lop off the User: prefix
-        FileWriter out = new FileWriter("iep.txt");
+        FileWriter out = new FileWriter("masscci.txt");
 
         for (String user : users)
         {
             // determine if user exists; if so, stats
-            Wiki.User u = enWiki.getUser(user);
-            int editcount = 0;
-            if (u != null)
-                editcount = u.countEdits();
-            else
+            Wiki.User wpuser = enWiki.getUser(user);
+            Wiki.User comuser = commons.getUser(user);
+            int editcount = wpuser.countEdits();
+            if (wpuser == null)
             {
                 System.out.println(user + " is not a registered user.");
                 continue;
@@ -70,14 +65,6 @@ public class IndianEducationCCI
             out.write("*{{user5|" + user + "}}\n");
             out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
                 ", Deleted edits: " + (editcount - contribs.length) + "\n\n");
-            // any user with over 200 live edits should be handled by the dedicated
-            // contribution surveyor
-            if (contribs.length >= 200)
-            {
-                out.write("User has too many live edits for this hack. Use the [http://"
-                    + " toolserver.org/~dcoetzee/contributionsurveyor/index.php Contribution Surveyor].\n\n");
-                continue;
-            }
             out.write(";Mainspace edits");
 
             // survey mainspace edits
@@ -90,12 +77,8 @@ public class IndianEducationCCI
                 if (ns != Wiki.MAIN_NAMESPACE)
                     continue;
                 // compute diff size; too small => skip
-                Wiki.Revision[] history = enWiki.getPageHistory(title, revision.getTimestamp(), cal);
-                if (history.length == 0)
-                {
-                    System.out.println(user + " has contributions prior to the IEP.");
-                    continue;
-                }
+                // TODO: replace with something less bad
+                Wiki.Revision[] history = enWiki.getPageHistory(title);
                 int size = history.length == 1 ? revision.getSize() : revision.getSize() - history[1].getSize();
                 if (size < 150)
                     continue;
@@ -142,28 +125,32 @@ public class IndianEducationCCI
             out.write("\n");
 
             // survey images
-            out.write(";Local uploads\n");
-            Wiki.LogEntry[] uploads = enWiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, "", u, "", Wiki.ALL_NAMESPACES);
-            HashSet<String> list = new HashSet<String>(10000);
-            for (int i = 0; i < uploads.length; i++)
-                list.add((String)uploads[i].getTarget());
-            if (uploads.length == 0)
-                out.write("No local uploads.\n");
-            else
+            Wiki.LogEntry[] uploads = enWiki.getUploads(wpuser);
+            if (uploads.length > 0)
+            {
+                out.write(";Local uploads\n");
+                HashSet<String> list = new HashSet<String>(10000);
+                for (int i = 0; i < uploads.length; i++)
+                    list.add((String)uploads[i].getTarget());
                 out.write(ParserUtils.formatList(list.toArray(new String[0])));
-            out.write("\n");
+                out.write("\n");
+            }
+            else
+                out.write("No local uploads.\n");
 
             // commons
-            out.write(";Commons uploads\n");
-            uploads = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, "", u, "", Wiki.ALL_NAMESPACES);
-            list.clear();
-            for (int i = 0; i < uploads.length; i++)
-                list.add((String)uploads[i].getTarget());
-            if (uploads.length == 0)
-                out.write("No Commons uploads.\n");
-            else
+            uploads = commons.getUploads(comuser);
+            if (uploads.length > 0)
+            {
+                out.write(";Commons uploads\n");
+                HashSet<String> list = new HashSet<String>(10000);
+                for (int i = 0; i < uploads.length; i++)
+                    list.add((String)uploads[i].getTarget());
                 out.write(ParserUtils.formatList(list.toArray(new String[0])));
-            out.write("\n");
+                out.write("\n");
+            }
+            else
+                out.write("No Commons uploads.\n");
         }
         out.flush();
         out.close();

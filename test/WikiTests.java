@@ -127,9 +127,18 @@ public class WikiTests
         //getLogEntries()
         for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
-*/
         for (Wiki.LogEntry entry : enWiki.getLogEntries(501, Wiki.DELETION_LOG, "restore"))
             System.out.println(entry);
+        */
+        // getUploads
+        Wiki.User user = enWiki.getUser("Wizardman");
+        for (Wiki.LogEntry entry : enWiki.getUploads(user))
+            System.out.println(entry);
+        
+        // ipblocklist
+        for (Wiki.LogEntry entry : enWiki.getIPBlockList("Alice"))
+            System.out.println(entry);
+
         /*
         for(String[] result : enWiki.search("WikiProject Spam zola enterprises", Wiki.PROJECT_TALK_NAMESPACE))
             System.out.println(Arrays.toString(result));

@@ -125,7 +125,7 @@ public class ImageCCI extends HttpServlet
             buffer.append("Error: user does not exist!");
             return;
         }
-        Wiki.LogEntry[] entries = enWiki.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, "", wpuser, "", Wiki.ALL_NAMESPACES);
+        Wiki.LogEntry[] entries = enWiki.getUploads(wpuser);
         for (int i = 0; i < entries.length; i++)
             wpUploads.add((String)entries[i].getTarget());
 
@@ -134,7 +134,7 @@ public class ImageCCI extends HttpServlet
         HashSet<String> commonsUploads = new HashSet<String>(10000);
         if (comuser != null)
         {
-            entries = commons.getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG, "", comuser, "", Wiki.ALL_NAMESPACES);
+            entries = commons.getUploads(comuser);
             for (int i = 0; i < entries.length; i++)
                 commonsUploads.add((String)entries[i].getTarget());
         }
