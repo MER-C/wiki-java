@@ -47,7 +47,6 @@ import javax.security.auth.login.*;
 public class Wiki implements Serializable
 {
     // Master TODO list:
-    // *Finish getUploads
     // *Put a way to get the next and previous oldid in Revision.class. Populate
     //  this automatically for getPageHistory().
     // *Admin stuff (low priority)
@@ -2276,9 +2275,18 @@ public class Wiki implements Serializable
             }
         }
         while (rvstart != null);
+        // populate previous/next
         int size = revisions.size();
+        Revision[] temp = revisions.toArray(new Revision[size]);
+        for (int i = 0; i < size; i++)
+        {
+            if (i != 0)
+                temp[i].next = temp[i - 1].revid;
+            if (i != size - 1)
+                temp[i].previous = temp[i + 1].revid;
+        }
         log(Level.INFO, "Successfully retrieved page history of " + title + " (" + size + " revisions)", "getPageHistory");
-        return revisions.toArray(new Revision[size]);
+        return temp;
     }
 
     /**
@@ -2433,7 +2441,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets a revision based on a given oldid. Automatically fills out all
-     *  attributes of that revision except <tt>rcid</tt>.
+     *  attributes of that revision except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
      *
      *  @param oldid a particular oldid
      *  @return the revision corresponding to that oldid. If a particular
@@ -4671,7 +4679,7 @@ public class Wiki implements Serializable
             b = xml.indexOf("\" />", a);
             details = decode(decode(xml.substring(a, b))); // the new title
         }
-        else if (type.equals(BLOCK_LOG))
+        else if (type.equals(BLOCK_LOG) || xml.contains("<block"))
         {
             a = xml.indexOf("<block") + 7;
             String s = xml.substring(a);
@@ -5764,6 +5772,7 @@ public class Wiki implements Serializable
         private boolean minor, bot, rvnew;
         private String summary;
         private long revid, rcid = -1;
+        private long previous = -1, next = -1;
         private Calendar timestamp;
         private String user;
         private String title;
@@ -6077,6 +6086,10 @@ public class Wiki implements Serializable
             sb.append(size);
             sb.append(",rcid=");
             sb.append(rcid == -1 ? "unset" : rcid);
+            sb.append(",previous=");
+            sb.append(previous);
+            sb.append(",next=");
+            sb.append(next);
             sb.append(",rollbacktoken=");
             sb.append(rollbacktoken == null ? "null" : rollbacktoken);
             sb.append("]");
@@ -6096,6 +6109,28 @@ public class Wiki implements Serializable
             if (timestamp.equals(other.timestamp))
                 return 0; // might not happen, but
             return timestamp.after(other.timestamp) ? 1 : -1;
+        }
+        
+        /**
+         *  Gets the previous revision.
+         *  @return the previous revision, or null if this is the first revision
+         *  @throws IOException if a network error occurs
+         *  @since 0.28
+         */
+        public Revision getPrevious() throws IOException
+        {
+            return previous == -1 ? null : getRevision(previous);
+        }
+        
+        /**
+         *  Gets the next revision.
+         *  @return the next revision, or null if this is the last revision
+         *  @throws IOException if a network error occurs
+         *  @since 0.28
+         */
+        public Revision getNext() throws IOException
+        {
+            return next == -1 ? null : getRevision(previous);
         }
 
         /**
@@ -6259,6 +6294,8 @@ public class Wiki implements Serializable
         URLConnection connection = new URL(url).openConnection();
         setCookies(connection);
         connection.setDoOutput(true);
+        connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
+        connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         connection.connect();
         OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
         out.write(text);
@@ -6297,6 +6334,8 @@ public class Wiki implements Serializable
         connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
         setCookies(connection);
         connection.setDoOutput(true);
+        connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
+        connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         connection.connect();
         boundary = "--" + boundary + "\r\n";
         
