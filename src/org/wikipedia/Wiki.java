@@ -2279,12 +2279,8 @@ public class Wiki implements Serializable
         int size = revisions.size();
         Revision[] temp = revisions.toArray(new Revision[size]);
         for (int i = 0; i < size; i++)
-        {
             if (i != 0)
                 temp[i].next = temp[i - 1].revid;
-            if (i != size - 1)
-                temp[i].previous = temp[i + 1].revid;
-        }
         log(Level.INFO, "Successfully retrieved page history of " + title + " (" + size + " revisions)", "getPageHistory");
         return temp;
     }
@@ -2775,9 +2771,9 @@ public class Wiki implements Serializable
             size = 0;
 
         Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, rvnew, size);
+        // set rcid
         if (xml.contains("rcid=\""))
         {
-            // set rcid
             a = xml.indexOf("rcid=\"") + 6;
             b = xml.indexOf('\"', a);
             revision.setRcid(Long.parseLong(xml.substring(a, b)));
@@ -2789,6 +2785,20 @@ public class Wiki implements Serializable
             a = xml.indexOf("rollbacktoken=\"") + 15;
             b = xml.indexOf('\"', a);
             revision.setRollbackToken(xml.substring(a, b));
+        }
+        
+        // previous revision
+        if (xml.contains("parentid")) // page history/getRevision
+        {
+            a = xml.indexOf("parentid=\"") + 10;
+            b = xml.indexOf('\"', a);
+            revision.previous = Long.parseLong(xml.substring(a, b));
+        }
+        else if (xml.contains("old_revid")) // watchlist
+        {
+            a = xml.indexOf("old_revid=\"") + 11;
+            b = xml.indexOf('\"', a);
+            revision.previous = Long.parseLong(xml.substring(a, b));
         }
         return revision;
     }
@@ -2974,10 +2984,11 @@ public class Wiki implements Serializable
         }
 
         // crude hack: action adjusting for first image (in the history, not our list)
-        LogEntry last = history.get(history.size() - 1);
+        int size = history.size();
+        LogEntry last = history.get(size - 1);
         last.action = "upload";
-        history.set(history.size() - 1, last);
-        return history.toArray(new LogEntry[0]);
+        history.set(size - 1, last);
+        return history.toArray(new LogEntry[size]);
     }
 
     /**
@@ -5772,7 +5783,7 @@ public class Wiki implements Serializable
         private boolean minor, bot, rvnew;
         private String summary;
         private long revid, rcid = -1;
-        private long previous = -1, next = -1;
+        private long previous = 0, next = 0;
         private Calendar timestamp;
         private String user;
         private String title;
@@ -6112,25 +6123,27 @@ public class Wiki implements Serializable
         }
         
         /**
-         *  Gets the previous revision.
+         *  Gets the previous revision. 
          *  @return the previous revision, or null if this is the first revision
+         *  or this object was spawned via contribs().
          *  @throws IOException if a network error occurs
          *  @since 0.28
          */
         public Revision getPrevious() throws IOException
         {
-            return previous == -1 ? null : getRevision(previous);
+            return previous == 0 ? null : getRevision(previous);
         }
         
         /**
          *  Gets the next revision.
          *  @return the next revision, or null if this is the last revision
+         *  or this object was spawned via contribs().
          *  @throws IOException if a network error occurs
          *  @since 0.28
          */
         public Revision getNext() throws IOException
         {
-            return next == -1 ? null : getRevision(previous);
+            return next == 0 ? null : getRevision(previous);
         }
 
         /**
