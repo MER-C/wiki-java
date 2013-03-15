@@ -63,10 +63,11 @@ public class WikiTests
             System.out.println(page);
         for (String page : deWiki.getCategoryMembers("Kategorie:Wikipedia:Wartungsseite (MerlBot)", true, Wiki.PROJECT_NAMESPACE))
             System.out.println(page);
-
+*/
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
+        /*
         for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq"))
             System.out.println(rev);
 
