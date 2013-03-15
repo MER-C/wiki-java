@@ -63,11 +63,11 @@ public class WikiTests
             System.out.println(page);
         for (String page : deWiki.getCategoryMembers("Kategorie:Wikipedia:Wartungsseite (MerlBot)", true, Wiki.PROJECT_NAMESPACE))
             System.out.println(page);
-*/
+        
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
-        /*
+
         for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq"))
             System.out.println(rev);
 
@@ -130,7 +130,7 @@ public class WikiTests
             System.out.println(entry);
         for (Wiki.LogEntry entry : enWiki.getLogEntries(501, Wiki.DELETION_LOG, "restore"))
             System.out.println(entry);
-        */
+
         // getUploads
         Wiki.User user = enWiki.getUser("Wizardman");
         for (Wiki.LogEntry entry : enWiki.getUploads(user))
@@ -140,7 +140,7 @@ public class WikiTests
         for (Wiki.LogEntry entry : enWiki.getIPBlockList("Alice"))
             System.out.println(entry);
 
-        /*
+        // search
         for(String[] result : enWiki.search("WikiProject Spam zola enterprises", Wiki.PROJECT_TALK_NAMESPACE))
             System.out.println(Arrays.toString(result));
  
@@ -163,11 +163,11 @@ public class WikiTests
         Calendar c = new GregorianCalendar(2008, 0, 1);
         for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
             System.out.println(revision);
-
+*/
         // recentchanges
         for (Wiki.Revision revision : enWiki.recentChanges(51))
             System.out.println(revision);
-
+/*
         // getImageHistory
         for (Wiki.LogEntry entry : enWiki.getImageHistory("Davis Motor Car Company logo.jpg"))
             System.out.println(entry);
