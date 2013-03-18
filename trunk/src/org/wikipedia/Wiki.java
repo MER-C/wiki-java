@@ -1243,7 +1243,8 @@ public class Wiki implements Serializable
      *                                         // not exist
      *      "cascade"      => false          , // whether this page is cascade protected (Boolean)
      *      "timestamp"    => makeCalendar() , // when this method was called (Calendar)
-     *      "watchtoken"   => "\+"             // watchlist token (String)
+     *      "watchtoken"   => "\+"           , // watchlist token (String)
+     *      "watchers"     => 34               // number of watchers (Integer), may be restricted
      *  }
      *  </pre>
      *  @param pages the pages to get info for
@@ -1254,7 +1255,7 @@ public class Wiki implements Serializable
     public HashMap[] getPageInfo(String... pages) throws IOException
     {
         HashMap[] info = new HashMap[pages.length];
-        String urlstart = query + "prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle&titles=";
+        String urlstart = query + "prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=";
         StringBuilder url = new StringBuilder(urlstart);
         int k = 0;
         for (int i = 0; i < pages.length; i++)
@@ -1334,11 +1335,22 @@ public class Wiki implements Serializable
                     b = item.indexOf('\"', a);
                     info[k].put("token", item.substring(a, b));
 
-                    // watchlist token 
-                    a = item.indexOf("watchtoken=\"") + 12;
-                    b = item.indexOf('\"', a);
-                    info[k].put("watchtoken", line.substring(a, b));
+                    // watchlist token
+                    if (user != null)
+                    {
+                        a = item.indexOf("watchtoken=\"") + 12;
+                        b = item.indexOf('\"', a);
+                        info[k].put("watchtoken", line.substring(a, b));
+                    }
 
+                    // number of watchers
+                    if (line.contains("watchers="))
+                    {
+                        a = item.indexOf("watchers=\"") + 10;
+                        b = item.indexOf('\"', a);
+                        info[k].put("watchers", Integer.parseInt(line.substring(a, b)));
+                    }
+                    
                     // timestamp
                     info[k].put("timestamp", makeCalendar());
                     k++;
