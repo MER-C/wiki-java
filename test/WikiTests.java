@@ -163,11 +163,11 @@ public class WikiTests
         Calendar c = new GregorianCalendar(2008, 0, 1);
         for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
             System.out.println(revision);
-*/
+
         // recentchanges
         for (Wiki.Revision revision : enWiki.recentChanges(51))
             System.out.println(revision);
-/*
+
         // getImageHistory
         for (Wiki.LogEntry entry : enWiki.getImageHistory("Davis Motor Car Company logo.jpg"))
             System.out.println(entry);
@@ -187,11 +187,11 @@ public class WikiTests
         
         // purge
         enWiki.purge(false, "Main Page");
-        
+*/        
         // getPageInfo
         String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
         enWiki.getPageInfo(pages); // use a debugger, please
-        
+/*        
         // list users
         for (String user : enWiki.allUsers("AB", 51))
             System.out.println(user);
