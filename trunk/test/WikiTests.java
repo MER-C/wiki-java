@@ -63,7 +63,7 @@ public class WikiTests
             System.out.println(page);
         for (String page : deWiki.getCategoryMembers("Kategorie:Wikipedia:Wartungsseite (MerlBot)", true, Wiki.PROJECT_NAMESPACE))
             System.out.println(page);
-        
+
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
             System.out.println(rev);
@@ -159,6 +159,7 @@ public class WikiTests
         // contribs
         for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
             System.out.println(revision);
+
         // contribs
         Calendar c = new GregorianCalendar(2008, 0, 1);
         for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
@@ -187,11 +188,11 @@ public class WikiTests
         
         // purge
         enWiki.purge(false, "Main Page");
-*/        
+   
         // getPageInfo
         String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
         enWiki.getPageInfo(pages); // use a debugger, please
-/*        
+     
         // list users
         for (String user : enWiki.allUsers("AB", 51))
             System.out.println(user);

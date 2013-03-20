@@ -2291,8 +2291,14 @@ public class Wiki implements Serializable
         int size = revisions.size();
         Revision[] temp = revisions.toArray(new Revision[size]);
         for (int i = 0; i < size; i++)
+        {
             if (i != 0)
                 temp[i].next = temp[i - 1].revid;
+            if (i != size - 1)
+                temp[i].sizediff = temp[i].size - temp[i + 1].size;
+            else
+                temp[i].sizediff = temp[i].size;
+        }
         log(Level.INFO, "Successfully retrieved page history of " + title + " (" + size + " revisions)", "getPageHistory");
         return temp;
     }
@@ -2811,6 +2817,20 @@ public class Wiki implements Serializable
             a = xml.indexOf("old_revid=\"") + 11;
             b = xml.indexOf('\"', a);
             revision.previous = Long.parseLong(xml.substring(a, b));
+        }
+        
+        // sizediff
+        if (xml.contains("oldlen=\"")) // recentchanges
+        {
+            a = xml.indexOf("oldlen=\"") + 8;
+            b = xml.indexOf('\"', a);
+            revision.sizediff = revision.size - Integer.parseInt(xml.substring(a, b));
+        }
+        else if (xml.contains("sizediff=\""))
+        {
+            a = xml.indexOf("sizediff=\"") + 10;
+            b = xml.indexOf('\"', a);
+            revision.sizediff = Integer.parseInt(xml.substring(a, b));
         }
         return revision;
     }
@@ -3498,7 +3518,7 @@ public class Wiki implements Serializable
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
-        temp.append("list=usercontribs&uclimit=max&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize&");
+        temp.append("list=usercontribs&uclimit=max&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff&");
         if (prefix.isEmpty())
         {
             temp.append("ucuser=");
@@ -5801,6 +5821,7 @@ public class Wiki implements Serializable
         private String title;
         private String rollbacktoken = null;
         private int size = 0;
+        private int sizediff = 0;
 
         /**
          *  Constructs a new Revision object.
@@ -6081,6 +6102,16 @@ public class Wiki implements Serializable
         public int getSize()
         {
             return size;
+        }
+        
+        /**
+         *  Returns the change in page size caused by this revision. 
+         *  @return see above
+         *  @since 0.28
+         */
+        public int getSizeDiff()
+        {
+            return sizediff;
         }
 
         /**

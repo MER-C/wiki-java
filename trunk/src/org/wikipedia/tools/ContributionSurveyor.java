@@ -40,7 +40,7 @@ public class ContributionSurveyor
         Wiki commons = new Wiki("commons.wikimedia.org");
 
         // file I/O
-        // file must contain list of 
+        // file must contain list of users, one per line
         ArrayList<String> users = new ArrayList<String>(1500);
         BufferedReader in = new BufferedReader(new InputStreamReader(
             ContributionSurveyor.class.getResourceAsStream("users.txt")));
@@ -77,9 +77,7 @@ public class ContributionSurveyor
                 if (ns != Wiki.MAIN_NAMESPACE)
                     continue;
                 // compute diff size; too small => skip
-                // TODO: replace with something less bad
-                Wiki.Revision[] history = enWiki.getPageHistory(title);
-                int size = history.length == 1 ? revision.getSize() : revision.getSize() - history[1].getSize();
+                int size = revision.getSizeDiff();
                 if (size < 150)
                     continue;
                 // place to dump diffs
