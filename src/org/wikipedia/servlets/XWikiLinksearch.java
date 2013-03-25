@@ -96,8 +96,8 @@ public class XWikiLinksearch extends HttpServlet
         if (domain == null)
             System.exit(0);
         StringBuilder builder = new StringBuilder(10000);
-        linksearch(domain, builder, top40wikis);
-        linksearch(domain, builder, importantwikis);
+        linksearch(domain, builder, top40wikis, true);
+        linksearch(domain, builder, importantwikis, true);
         out.write(builder.toString());
         out.close();
     }
@@ -143,17 +143,23 @@ public class XWikiLinksearch extends HttpServlet
             buffer.append(ServletUtils.sanitize(domain));
             buffer.append("\"");
         }
-        buffer.append(">\n</table>\n<input type=submit value=\"Search\">\n</form>\n");
+        // https checkbox
+        boolean https = (request.getParameter("https") != null);
+        buffer.append(">\n</table>\n<input type=checkbox name=\"https\" value=\"1\"");
+        if (https)
+            buffer.append(" checked");
+        buffer.append(">Include HTTPS (timeout more likely)<br>\n");
+        buffer.append("\n<input type=submit value=\"Search\">\n</form>\n");
         if (domain != null)
         {
             try
             {
                 if (set == null || set.equals("top20"))
-                    linksearch(domain, buffer, top20wikis);
+                    linksearch(domain, buffer, top20wikis, https);
                 else if (set.equals("top40"))
-                    linksearch(domain, buffer, top40wikis);
+                    linksearch(domain, buffer, top40wikis, https);
                 else if (set.equals("major"))
-                    linksearch(domain, buffer, importantwikis);
+                    linksearch(domain, buffer, importantwikis, https);
                 else
                     buffer.append("ERROR: Invalid wiki set.");
             }
@@ -170,7 +176,7 @@ public class XWikiLinksearch extends HttpServlet
         out.close();
     }
 
-    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis) throws IOException
+    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis, boolean https) throws IOException
     {
         buffer.append("<hr>\n<h2>Searching for links to ");
         buffer.append(ServletUtils.sanitize(domain));
@@ -179,9 +185,12 @@ public class XWikiLinksearch extends HttpServlet
         {
             ArrayList[] temp = wiki.linksearch("*." + domain, "http");
             // silly api designs aplenty here!
-            ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
-            temp[0].addAll(temp2[0]);
-            temp[1].addAll(temp2[1]);
+            if (https)
+            {
+                ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
+                temp[0].addAll(temp2[0]);
+                temp[1].addAll(temp2[1]);
+            }
             buffer.append("<h3>Results for ");
             buffer.append(wiki.getDomain());
             buffer.append(":</h3>\n<p><ol>\n");
