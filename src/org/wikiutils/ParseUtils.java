@@ -195,7 +195,7 @@ public class ParseUtils
 	{
 		int i = p.indexOf("=");
 		if (i == -1)
-			return p;
+			return p.replace("}}", "").trim();
 		else
 			return p.substring(i + 1).replace("}}", "").trim();
 	}
@@ -205,21 +205,16 @@ public class ParseUtils
 	 * 
 	 * @param text Text to search
 	 * @param template The Template (in template namespace) to look for. DO NOT add namespace prefix.
-	 * @param redirects Whether to incorporate redirects to this template or not.
+	 * @param redirects Specify <tt>true</tt> to incorporate redirects in this parse job for this template.
 	 * @param wiki The wiki object to use
 	 * 
 	 * @return The template we parsed out, in the form {{TEMPLATE|ARG1|ARG2|...}} or NULL, if we didn't find the specified template.
 	 * @throws IOException If network error
-	 * 
-	 * 
 	 */
 
 	public static String parseTemplateFromPage(String text, String template, boolean redirects, Wiki wiki) throws IOException
 	{
-		if (redirects)
-			return parseFromPageRegex(text, getRedirectsAsRegex("Template:" + template, wiki));
-		else
-			return parseFromPageRegex(text, "(?si)\\{\\{\\s*?(Template:)??\\s*?(" + template + ").*?\\}\\}");
+		return redirects ? parseFromPageRegex(text, getRedirectsAsRegex("Template:" + template, wiki)) : parseFromPageRegex(text, "(?si)\\{\\{\\s*?(Template:)??\\s*?(" + template + ").*?\\}\\}");
 	}
 
 	/**

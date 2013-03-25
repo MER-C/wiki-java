@@ -2,6 +2,7 @@ package org.wikiutils;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+
 import org.wikipedia.Wiki;
 
 /**
@@ -166,4 +168,31 @@ public class IOUtils
 		fos.close();
 	}
 	
+	/**
+	 * Recursively searches a directory for any files (not directories).  
+	 * 
+	 * @param f The root directory to start searching in.
+	 * @param fl Any files we find will be added to this list.
+	 * @param ff Optional FileFilter.  Specify null to not use one.
+	 * 
+	 */
+	public static void listFilesR(File f, ArrayList<File> fl, FileFilter ff)
+	{
+		if(!f.isDirectory() || !f.exists())
+			throw new IllegalArgumentException("File passed in is not a directory or is non-existent!");
+		
+		File[] cfl;
+		if(ff == null)
+			cfl = f.listFiles();
+		else
+			cfl = f.listFiles(ff);
+		
+		for(File z : cfl)
+		{
+			if(z.isDirectory())
+				listFilesR(z, fl, ff);
+			else
+				fl.add(z);
+		}
+	}
 }
