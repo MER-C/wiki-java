@@ -1,5 +1,6 @@
 package org.wikiutils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -109,6 +110,33 @@ public class CollectionUtils
 					return true;
 			return false;
 		}
+	}
+
+	/**
+	 * Uses a list of truth values to extract corresponding objects from an another array. Useful
+	 * assistant method for Wiki.exists(). If ol.length != bl.length, the method returns null.
+	 * Caveat: You will have to cast each item individally if you wish to treat it as anything other
+	 * than an Object.
+	 * 
+	 * @param ol The object list to use
+	 * @param bl The corresponding boolean list
+	 * @param searchvalue The values to look for in bl. Any value in bl matching searchvalue at a
+	 *           given index will cause the corresponding object in ol to be extracted and returned
+	 *           in the new array.
+	 * 
+	 * @return An Object array containing the corresponding values from bl.
+	 */
+	public static Object[] fetchCorresponding(Object[] ol, boolean[] bl, boolean searchvalue)
+	{
+		if (ol.length != bl.length)
+			return null;
+
+		ArrayList<Object> l = new ArrayList<Object>();
+		for (int i = 0; i < ol.length; i++)
+			if (bl[i] == searchvalue)
+				l.add(ol[i]);
+
+		return l.toArray(new Object[0]);
 	}
 
 }

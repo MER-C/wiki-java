@@ -19,39 +19,38 @@ import org.wikipedia.Wiki;
  */
 public class WikiUtils
 {
-	
+
 	/**
 	 * Hiding constructor from JavaDoc
 	 */
 	private WikiUtils()
 	{
 	}
-	
+
 	/**
-	 * Returns all the items in an array that are within the specified namespace.
+	 * Returns all the items in an array that are within the specified namespace. e.g.
+	 * <tt>listNamespaceSort(list, WIKI.FILE_NAMESPACE, wiki);</tt>
 	 * 
-	 * @param list The list of items to use
-	 * @param namespace The namespace of items to return
 	 * @param wiki The wiki object to use.
+	 * @param ns The namespace filter.  Items in this namespace shall be returned.
+	 * @param pages The titles (including namespace) to check.
 	 * 
 	 * @return The list of items in the list that were in the specified namespace.
 	 * 
-	 * @throws IOException If we had an issue populating namespace cache
+	 * @throws IOException Network error
 	 * 
 	 */
 
-	public static String[] listNamespaceSort(String[] list, int namespace, Wiki wiki) throws IOException
+	public static String[] listNamespaceSort(Wiki wiki, int ns, String...pages) throws IOException
 	{
 		ArrayList<String> l = new ArrayList<String>();
-		for (String s : list)
-		{
-			if (wiki.namespace(s) == namespace)
+		for (String s : pages)
+			if (wiki.namespace(s) == ns)
 				l.add(s);
-		}
 
 		return l.toArray(new String[0]);
 	}
-	
+
 	/**
 	 * Deletes all the elements in an array and their associated talk pages
 	 * 
@@ -94,8 +93,7 @@ public class WikiUtils
 		}
 		return f.toArray(new String[0]);
 	}
-	
-	
+
 	/**
 	 * Attempts to add specified text to the end of each page in a list.
 	 * 
@@ -111,7 +109,7 @@ public class WikiUtils
 		{
 			try
 			{
-				wiki.edit(page, wiki.getPageText(text) + text, summary);
+				wiki.edit(page, wiki.getPageText(page).trim() + text, summary);
 			}
 			catch (Throwable e)
 			{
@@ -119,28 +117,23 @@ public class WikiUtils
 			}
 		}
 	}
-	
+
 	/**
-	 * Replaces a file with another for a given list of pages.
+	 * Generic find and replace method.
 	 * 
-	 * @param list The list of pages to perform replacement on
-	 * @param file The file to be replaced, without the "File:" prefix
-	 * @param replacement The file to replace the first file with, without the "File:" prefix
+	 * @param find The text to be found. You can use a regex for this
+	 * @param replacement The text to replace any text matching the <tt>find</tt> field
 	 * @param summary The edit summary to use
-	 * @param wiki The wiki object to use.
-	 * 
+	 * @param wiki The wiki object to use
+	 * @param pages The wiki pages to act upon.
 	 */
-
-	public static void fileReplace(String[] list, String file, String replacement, String summary, Wiki wiki)
+	public static void findAndReplace(String find, String replacement, String summary, Wiki wiki, String... pages)
 	{
-		file = file.replace("_", " "); // need to guarantee that we aren't using underscores
-		String regex = "(?i)(" + file + "|" + file.replace(" ", "_") + ")";
-
-		for (String page : list)
+		for (String s : pages)
 		{
 			try
 			{
-				wiki.edit(page, wiki.getPageText(page).replaceAll(regex, replacement), summary);
+				wiki.edit(s, wiki.getPageText(s).replaceAll(find, replacement), summary);
 			}
 			catch (Throwable e)
 			{
@@ -148,28 +141,28 @@ public class WikiUtils
 			}
 		}
 	}
-	
+
 	/**
 	 * Performs null edit on a list of pages by wiki. PRECONDITION: wiki object must be logged in
 	 * 
 	 * @param wiki The wiki object to use
 	 * @param l The list of pages to null edit.
 	 */
-	public static void nullEdit(Wiki wiki, String...l)
+	public static void nullEdit(Wiki wiki, String... l)
 	{
-		for(String s : l)
+		for (String s : l)
 		{
 			try
 			{
 				wiki.edit(s, wiki.getPageText(s), "");
 			}
-			catch(Throwable e)
+			catch (Throwable e)
 			{
 				e.printStackTrace();
 			}
 		}
 	}
-	
+
 	/**
 	 * Determines if a category is empty.
 	 * 
@@ -182,9 +175,9 @@ public class WikiUtils
 	{
 		try
 		{
-		   return wiki.getCategoryMembers(ParseUtils.namespaceStrip(cat, wiki)).length == 0;
+			return wiki.getCategoryMembers(ParseUtils.namespaceStrip(cat, wiki)).length == 0;
 		}
-		catch(Throwable e)
+		catch (Throwable e)
 		{
 			return false;
 		}
