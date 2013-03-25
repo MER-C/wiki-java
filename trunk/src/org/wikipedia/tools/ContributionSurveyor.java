@@ -36,6 +36,8 @@ public class ContributionSurveyor
 {
     public static void main(String[] args) throws IOException
     {
+        // TODO: more sane input, make images optional, remove duplicate code (see ImageCCI.java)
+        
         Wiki enWiki = new Wiki("en.wikipedia.org");
         Wiki commons = new Wiki("commons.wikimedia.org");
 

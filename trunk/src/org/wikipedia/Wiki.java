@@ -47,8 +47,6 @@ import javax.security.auth.login.*;
 public class Wiki implements Serializable
 {
     // Master TODO list:
-    // *Put a way to get the next and previous oldid in Revision.class. Populate
-    //  this automatically for getPageHistory().
     // *Admin stuff (low priority)
     // *More multiqueries
     // *Generators (hard)
