@@ -2072,7 +2072,7 @@ public class Wiki implements Serializable
             interwikis.put(language, page);
             line = line.substring(b);
         }
-        log(Level.INFO, "Successfully retrieved categories used on " + title, "getCategories");
+        log(Level.INFO, "Successfully retrieved interwiki links on " + title, "getCategories");
         return interwikis;
     }
 
@@ -2184,7 +2184,7 @@ public class Wiki implements Serializable
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
         String line = fetch(url.toString(), "getTopRevision");
-        int a = line.indexOf("<rev");
+        int a = line.indexOf("<rev "); // important space
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
             return null;
@@ -2205,7 +2205,7 @@ public class Wiki implements Serializable
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
         String line = fetch(url.toString(), "getFirstRevision");
-        int a = line.indexOf("<rev");
+        int a = line.indexOf("<rev "); // important space!
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
             return null;
