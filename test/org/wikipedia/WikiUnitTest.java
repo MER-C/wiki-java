@@ -30,6 +30,7 @@ public class WikiUnitTest
         arWiki.setMaxLag(-1);
     }
     
+    @Test
     public void namespace() throws Exception
     {
         assertEquals("NS: en, category", Wiki.CATEGORY_NAMESPACE, enWiki.namespace("Category:CSD"));
@@ -38,7 +39,10 @@ public class WikiUnitTest
         assertEquals("NS: i18n fail", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Kategorie:Begriffsklärung"));
         // assertEquals("NS: mixed i18n", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Category:Begriffsklärung"));
         assertEquals("NS: rtl fail", Wiki.CATEGORY_NAMESPACE, arWiki.namespace("تصنيف:صفحات_للحذف_السريع"));
+        assertArrayEquals("NS: vectorized", new int[] { Wiki.MAIN_NAMESPACE, 100 }, 
+            enWiki.namespace(new String[] { "Main Page", "Portal:Hello" }));
     }
+    
     @Test
     public void namespaceIdentifier() throws Exception
     {
@@ -51,5 +55,17 @@ public class WikiUnitTest
     {
         assertTrue("I should exist!", enWiki.userExists("MER-C"));
         assertFalse("Anon should not exist", enWiki.userExists("127.0.0.1"));
+    }
+    
+    @Test
+    public void getFirstRevision() throws Exception
+    {
+        assertNull("Non-existent page", enWiki.getFirstRevision("dgfhdfjklg"));
+    }
+    
+    @Test
+    public void getLastRevision() throws Exception
+    {
+        assertNull("Non-existent page", enWiki.getTopRevision("dgfhdfjklg"));
     }
 }
