@@ -152,9 +152,6 @@ public class WikiTests
         byte[] b = enWiki.getImage("GD - Yesterday.jpg");
 
         System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
-        System.out.println(enWiki.getFirstRevision("Wikipedia:Sandbox"));
-        System.out.println(enWiki.getFirstRevision("dgfhdfjklg"));
-        System.out.println(enWiki.getTopRevision("dgfhdfjklg"));
 
         // contribs
         for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
@@ -180,7 +177,6 @@ public class WikiTests
                
         System.out.println(ParserUtils.revisionsToWikitext(enWiki, enWiki.recentChanges(51)));
         System.out.println(ParserUtils.revisionsToHTML(enWiki, enWiki.recentChanges(51)));
-        
         
         // query page
         for (String page : enWiki.queryPage("Uncategorizedpages"))
