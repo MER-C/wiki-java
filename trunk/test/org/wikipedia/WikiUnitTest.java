@@ -48,6 +48,7 @@ public class WikiUnitTest
     {
         assertEquals("NSIdentifier: wrong identifier", "Category", enWiki.namespaceIdentifier(Wiki.CATEGORY_NAMESPACE));
         assertEquals("NSIdentifier: i18n fail", "Kategorie", deWiki.namespaceIdentifier(Wiki.CATEGORY_NAMESPACE));
+        assertEquals("NSIdentifier: custom namespace", "Portal", enWiki.namespaceIdentifier(100));
     }
     
     @Test
@@ -67,5 +68,11 @@ public class WikiUnitTest
     public void getLastRevision() throws Exception
     {
         assertNull("Non-existent page", enWiki.getTopRevision("dgfhdfjklg"));
+    }
+    
+    @Test
+    public void getTemplates() throws Exception
+    {
+        assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkfhsdklj"));
     }
 }

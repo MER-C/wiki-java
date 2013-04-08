@@ -194,6 +194,26 @@ public class WikiTests
             System.out.println(user);
         for (String user : enWiki.allUsersWithPrefix("AB "))
             System.out.println(user);
-            */
+        
+        // interwikis
+        for (Map.Entry entry : enWiki.getInterWikiLinks("Main Page").entrySet())
+            System.out.println("[[:" + entry.getKey() + ":" + entry.getValue() + "]]");
+            
+        // linksearch
+        ArrayList[] blah = enWiki.linksearch("bom.gov.au");
+        for (int i = 0; i < blah[0].size(); i++)
+            System.out.println(blah[0].get(i) + " --- " + blah[1].get(i));
+
+        // getOldImage/image history
+        Wiki.LogEntry[] entries = enWiki.getImageHistory("File:Bohemian Rhapsody.png");
+        for (Wiki.LogEntry entry : entries)
+            System.out.println(entry);
+        FileOutputStream out = new FileOutputStream("hello.png");
+        out.write(enWiki.getOldImage(entries[0]));
+        out.close();
+        */
+        
+        for (String page : enWiki.getTemplates("User:MER-C/Sandbox"))
+            System.out.println(page);
     }
 }
