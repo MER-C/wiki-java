@@ -1,6 +1,6 @@
 /**
  *  @(#)RangeContribs.java 0.01 15/10/2012
- *  Copyright (C) 2012 MER-C
+ *  Copyright (C) 2012 - 2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -60,6 +60,8 @@ public class PrefixContribs extends HttpServlet
      */
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        if (ServletUtils.checkBlacklist(request, response))
+            return;
         response.setContentType("text/html; charset=UTF-8");
         PrintWriter out = response.getWriter();
         StringBuilder buffer = new StringBuilder(50000);

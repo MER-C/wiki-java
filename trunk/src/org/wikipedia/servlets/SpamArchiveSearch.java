@@ -1,6 +1,6 @@
 /**
  *  @(#)SpamArchiveSearch.java 0.01 06/07/2011
- *  Copyright (C) 2011 - 2012 MER-C
+ *  Copyright (C) 2011 - 2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -73,6 +73,8 @@ public class SpamArchiveSearch extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        if (ServletUtils.checkBlacklist(request, response))
+            return;
         response.setContentType("text/html; charset=UTF-8");
         PrintWriter out = response.getWriter();
         StringBuilder buffer = new StringBuilder(10000);

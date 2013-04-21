@@ -1,6 +1,6 @@
 /**
  *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2012 MER-C
+ *  Copyright (C) 2011 - 2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -19,7 +19,9 @@
 
 package org.wikipedia.servlets;
 
+import java.io.IOException;
 import java.util.*;
+import javax.servlet.http.*;
 
 /**
  *  Common servlet code so that I can maintain it easier.
@@ -27,6 +29,22 @@ import java.util.*;
  */
 public class ServletUtils
 {
+    /**
+     *  User agent blacklist (returns 403). robots.txt exists for a reason.
+     *  Follow it!
+     *  @param request the HTTP request
+     *  @param response the server response
+     *  @return hit if this is a bad useragent
+     */
+    public static boolean checkBlacklist(HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        String useragent = request.getHeader("User-Agent");
+        boolean hit = useragent.contains("Tweetmeme") || useragent.contains("Bing");
+        if (hit)
+            response.sendError(403, "robots.txt exists for a reason. Follow it!");
+        return hit;
+    }
+    
     /**
      *  Strips < > and other unwanted stuff that leads to XSS attacks.
      *  Borrowed from http://greatwebguy.com/programming/java/simple-cross-site-scripting-xss-servlet-filter
