@@ -1,6 +1,6 @@
 /**
  *  @(#)ImageCCI.java 0.02 23/11/2011
- *  Copyright (C) 2011 - 2012 MER-C
+ *  Copyright (C) 2011 - 2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -72,6 +72,8 @@ public class ImageCCI extends HttpServlet
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        if (ServletUtils.checkBlacklist(request, response))
+            return;
         String user = request.getParameter("user");
         StringBuilder buffer = new StringBuilder(10000);
         PrintWriter out;

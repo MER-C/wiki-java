@@ -1,6 +1,6 @@
 /**
  *  @(#)Wiki.java 0.27 15/10/2012
- *  Copyright (C) 2007 - 2012 MER-C and contributors
+ *  Copyright (C) 2007 - 2013 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -1487,7 +1487,7 @@ public class Wiki implements Serializable
             namespaces.put(normalize(decode(line.substring(b, c))), new Integer(ns));
         }
 
-        log(Level.INFO, "Successfully retrieved namespace list (" + (namespaces.size() + 1) + " namespaces)", "namespace");
+        log(Level.INFO, "Successfully retrieved namespace list (" + (namespaces.size()) + " namespaces)", "namespace");
      }
     
     /**

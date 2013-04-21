@@ -1,6 +1,6 @@
 /**
  *  @(#)WMFWiki.java 0.01 29/03/2011
- *  Copyright (C) 2011 - 2012 MER-C
+ *  Copyright (C) 2011 - 2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -31,8 +31,6 @@ import java.util.logging.*;
  */
 public class WMFWiki extends Wiki
 {
-    private static final Logger logger = Logger.getLogger("wiki");
-
     /**
      *  Creates a new WMF wiki that represents the English Wikipedia.
      */
@@ -78,7 +76,8 @@ public class WMFWiki extends Wiki
                 continue;
             wikis.add(new WMFWiki(line.substring(a, b)));
         }
-        logger.log(Level.INFO, "Successfully retrieved site matrix ({0} wikis).", wikis.size());
-        return wikis.toArray(new WMFWiki[0]);
+        int size = wikis.size();
+        logger.log(Level.INFO, "Successfully retrieved site matrix ({0} wikis).", size);
+        return wikis.toArray(new WMFWiki[size]);
     }
 }
