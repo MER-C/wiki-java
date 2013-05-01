@@ -1,5 +1,6 @@
 package org.wikiutils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Scanner;
 import org.wikipedia.Wiki;
@@ -110,6 +111,7 @@ public class StringUtils
 	 * 
 	 * @param fn The filename to parse (e.g. Example.jpg)
 	 * @return The extension of the file, without the "." Returns null if this file has no extension.
+	 * @see #getFileExt(File)
 	 */
 	public static String getFileExt(String fn)
 	{
@@ -117,5 +119,21 @@ public class StringUtils
 		if (i == -1)
 			return null;
 		return fn.substring(i + 1).toLowerCase();
+	}
+	
+	/**
+	 * Parses out the extension of a file.
+	 * 
+	 * @param f The file to get an extension from
+	 * @throws IllegalArgumentException If <tt>f</tt> is a directory.
+	 * @return The extension of the file, without the "."
+	 * 
+	 * @see #getFileExt(String)
+	 */
+	public static String getFileExt(File f)
+	{
+		if(f.isDirectory())
+			throw new IllegalArgumentException("Specified param CANNOT be a directory");
+		return getFileExt(f.getName());
 	}
 }
