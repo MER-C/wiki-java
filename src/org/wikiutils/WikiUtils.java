@@ -95,30 +95,6 @@ public class WikiUtils
 	}
 
 	/**
-	 * Attempts to add specified text to the end of each page in a list.
-	 * 
-	 * @param pages The list of pages to use
-	 * @param text The text to append
-	 * @param summary Edit summary to use.
-	 * @param wiki The wiki object to use.
-	 * 
-	 */
-	public static void addTextList(String[] pages, String text, String summary, Wiki wiki)
-	{
-		for (String page : pages)
-		{
-			try
-			{
-				wiki.edit(page, wiki.getPageText(page).trim() + text, summary);
-			}
-			catch (Throwable e)
-			{
-				e.printStackTrace();
-			}
-		}
-	}
-
-	/**
 	 * Generic find and replace method.
 	 * 
 	 * @param find The text to be found. You can use a regex for this
@@ -154,7 +130,9 @@ public class WikiUtils
 		{
 			try
 			{
+				System.err.println("Attempting null edit on '" + s + "'");
 				wiki.edit(s, wiki.getPageText(s), "");
+				
 			}
 			catch (Throwable e)
 			{

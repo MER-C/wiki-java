@@ -2,6 +2,7 @@ package org.wikiutils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.wikipedia.Wiki;
 
 /**
  * Contains a few generic data structure related methods.
@@ -34,25 +35,25 @@ public class CollectionUtils
 	 * 
 	 */
 
-	public static String[][] arraySplitter(String[] z, int splits)
+	public static Object[][] arraySplitter(Object[] z, int splits)
 	{
 
 		if (splits > z.length)
 			splits = z.length;
 
-		String[][] xf;
+		Object[][] xf;
 
 		if (splits == 0)
 		{
-			xf = new String[][] { z };
+			xf = new Object[][] { z };
 			return xf;
 		}
 		else
 		{
-			xf = new String[splits][];
+			xf = new Object[splits][];
 			for (int i = 0; i < splits; i++)
 			{
-				String[] temp;
+				Object[] temp;
 				if (i == 0)
 					temp = Arrays.copyOfRange(z, 0, z.length / splits);
 				else if (i == splits - 1)
@@ -139,4 +140,15 @@ public class CollectionUtils
 		return l.toArray(new Object[0]);
 	}
 
+	/**
+	 * Determines if two String arrays share any elements.
+	 * 
+	 * @param a List 1
+	 * @param b List 2
+	 * @return True if the two lists share any elements.
+	 */
+	public static boolean arraysShareElement(String[] a, String[] b)
+	{
+		return Wiki.intersection(a, b).length > 0;
+	}
 }
