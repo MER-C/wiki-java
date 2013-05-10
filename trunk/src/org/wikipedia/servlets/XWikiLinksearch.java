@@ -41,28 +41,22 @@ public class XWikiLinksearch extends HttpServlet
      */
     static
     {
-        // top 20 Wikipedias
-        String[] temp = { "en", "de", "fr", "nl", "it", "pl", "es", "ru", "ja", "pt",
-            "zh", "sv", "vi", "uk", "ca", "no", "fi", "cs", "hu", "fa" };
+        String[] temp = { 
+            // top 20 Wikipedias
+            "en", "de", "fr", "nl", "it", "pl", "es", "ru", "ja",  "pt",
+            "zh", "sv", "vi", "uk", "ca", "no", "fi", "cs", "hu",  "fa",
+            // 20-40
+            "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr",  "kk",
+            "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
         top20wikis = new Wiki[20];
+        top40wikis = new Wiki[40];
         for (int i = 0; i < temp.length; i++)
         {
-            top20wikis[i] = new Wiki(temp[i] + ".wikipedia.org");
-            top20wikis[i].setUsingCompressedRequests(false); // This is Google's fault.
-            top20wikis[i].setMaxLag(-1);
-        }
-        
-        // top 40 Wikipedias
-        top40wikis = new Wiki[40];
-        System.arraycopy(top20wikis, 0, top40wikis, 0, 20);
-        temp = new String[] { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk",
-            "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
-        for (int i = 20; i < temp.length; i++)
-        {
-            top40wikis[i] = new Wiki(temp[i - 20] + ".wikipedia.org");
+            top40wikis[i] = new Wiki(temp[i] + ".wikipedia.org");
             top40wikis[i].setUsingCompressedRequests(false); // This is Google's fault.
             top40wikis[i].setMaxLag(-1);
         }
+        System.arraycopy(top40wikis, 0, top20wikis, 0, 20);
         
         // a collection of important wikis
         temp = new String[] { "en", "de", "fr" };

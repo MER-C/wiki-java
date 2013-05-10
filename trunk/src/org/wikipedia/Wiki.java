@@ -282,52 +282,20 @@ public class Wiki implements Serializable
      *  Denotes a non-protected page.
      *  @since 0.09
      */
-    public static final int NO_PROTECTION = -1;
+    public static final String NO_PROTECTION = "all";
 
     /**
-     *  Denotes semi-protection (i.e. only autoconfirmed users can edit this page)
-     *  [edit=autoconfirmed;move=autoconfirmed].
+     *  Denotes semi-protection (i.e. only autoconfirmed users can perform a
+     *  particular action).
      *  @since 0.09
      */
-    public static final int SEMI_PROTECTION = 1;
+    public static final String SEMI_PROTECTION = "autoconfirmed";
 
     /**
-     *  Denotes full protection (i.e. only admins can edit this page)
-     *  [edit=sysop;move=sysop].
+     *  Denotes full protection (i.e. only admins can perfom a particular action).
      *  @since 0.09
      */
-    public static final int FULL_PROTECTION = 2;
-
-    /**
-     *  Denotes move protection (i.e. only admins can move this page) [move=sysop].
-     *  We don't define semi-move protection because only autoconfirmed users
-     *  can move pages anyway.
-     *  @since 0.09
-     */
-    public static final int MOVE_PROTECTION = 3;
-
-    /**
-     *  Denotes move and semi-protection (i.e. autoconfirmed editors can edit the
-     *  page, but you need to be a sysop to move) [edit=autoconfirmed;move=sysop].
-     *  Naturally, this value (4) is equal to SEMI_PROTECTION (1) +
-     *  MOVE_PROTECTION (3).
-     *
-     *  @since 0.09
-     */
-    public static final int SEMI_AND_MOVE_PROTECTION = 4;
-
-    /**
-     *  Denotes protected deleted pages [create=sysop].
-     *  @since 0.12
-     */
-     public static final int PROTECTED_DELETED_PAGE = 5;
-
-    /**
-     *  Denotes protected images where the corresponding image description
-     *  page can be edited.
-     *  @since 0.21
-     */
-     public static final int UPLOAD_PROTECTION = 6;
+    public static final String FULL_PROTECTION = "sysop";
 
     // ASSERTION MODES
 
@@ -337,13 +305,6 @@ public class Wiki implements Serializable
      *  @since 0.11
      */
     public static final int ASSERT_NONE = 0;
-
-    /**
-     *  Assert that we are logged in (i.e. 1).
-     *  @see #setAssertionMode
-     *  @since 0.11
-     */
-    public static final int ASSERT_LOGGED_IN = 1;
 
     /**
      *  Assert that we have a bot flag (i.e. 2).
@@ -1235,7 +1196,8 @@ public class Wiki implements Serializable
      *  <pre>
      *  {
      *      "displaytitle" => "iPod"         , // the title of the page that is actually displayed (String)
-     *      "protection"   => NO_PROTECTION  , // the protection level of the page (Integer)
+     *      "protection"   => NO_PROTECTION  , // the {@link #protect(java.lang.String, java.util.HashMap) 
+     *                                         // protection state} of the page (HashMap)
      *      "token"        => "\+"           , // an edit token for the page, must be logged
      *                                         // in to be non-trivial (String)
      *      "exists"       => true           , // whether the page exists (Boolean)
@@ -1245,7 +1207,6 @@ public class Wiki implements Serializable
      *                                         // does not exist
      *      "size"         => 5000           , // the size of the page (Integer), -1 if the page does
      *                                         // not exist
-     *      "cascade"      => false          , // whether this page is cascade protected (Boolean)
      *      "timestamp"    => makeCalendar() , // when this method was called (Calendar)
      *      "watchtoken"   => "\+"           , // watchlist token (String)
      *      "watchers"     => 34               // number of watchers (Integer), may be restricted
@@ -1270,15 +1231,13 @@ public class Wiki implements Serializable
             if (i % slowmax == slowmax - 1 || i == pages.length - 1)
             {
                 String line = fetch(url.toString(), "getPageInfo");
-                // start parsing
-                int x;
-                String item;
-                for (int j = 0; ; j = x)
+                // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
+                // <protection />
+                // </page>
+                for (int j = line.indexOf("<page "); j > 0; j = line.indexOf("<page ", ++j))
                 {
-                    x = line.indexOf("</page>", j) + 1;
-                    if (x == 0)
-                        break; // no more pages in this query
-                    item = line.substring(j, x);
+                    int x = line.indexOf("</page>", j);
+                    String item = line.substring(j, x);
                     
                     // does the page exist?
                     boolean exists = !item.contains("missing=\"\"");
@@ -1288,43 +1247,52 @@ public class Wiki implements Serializable
                         info[k].put("lastpurged", timestampToCalendar(convertTimestamp(parseAttribute(item, "touched", 0))));
                         info[k].put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
                         info[k].put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
-                    
-                        // parse protection level
-                        // FIXME: this probably needs to be rewritten
-                        int z = item.indexOf("type=\"edit\"");
-                        if (z != -1)
-                        {
-                            String s = item.substring(z, z + 30);
-                            if (s.contains("sysop"))
-                                info[k].put("protection", FULL_PROTECTION);
-                            else
-                            {
-                                s = item.substring(z + 30); // cut out edit tag
-                                info[k].put("protection", s.contains("level=\"sysop\"") ? SEMI_AND_MOVE_PROTECTION : SEMI_PROTECTION);
-                            }
-                        }
-                        else
-                            info[k].put("protection", item.contains("type=\"move\"") ? MOVE_PROTECTION : NO_PROTECTION);
                     }
                     else
                     {
                         info[k].put("lastedited", null);
                         info[k].put("lastrevid", -1L);
                         info[k].put("size", -1);
-                        // is the page create protected?
-                        info[k].put("protection", item.contains("type=\"create\"") ? PROTECTED_DELETED_PAGE : NO_PROTECTION);
                     }
+                    
+                    // parse protection level
+                    // expected form: <pr type="edit" level="sysop" expiry="infinity" cascade="" />
+                    HashMap<String, Object> protectionstate = new HashMap<String, Object>();
+                    for (int z = item.indexOf("<pr "); z > 0; z = item.indexOf("<pr ", ++z))
+                    {
+                        String type = parseAttribute(item, "type", z);
+                        String level = parseAttribute(item, "level", z);
+                        protectionstate.put(type, level);
+                        //if (level != NO_PROTECTION)
+                            String expiry = parseAttribute(item, "expiry", z);
+                            if (expiry.equals("infinity"))
+                                protectionstate.put(type + "expiry", null);
+                            else
+                                protectionstate.put(type + "expiry", timestampToCalendar(expiry));
+                        // protected via cascade
+                        if (item.contains("source=\""))
+                            protectionstate.put("cascadesource", parseAttribute(item, "source", z));
+                    }
+                    protectionstate.put("cascade", item.contains("cascade=\"\""));
+                    // MediaWiki namespace
+                    if (namespace(pages[k]) == MEDIAWIKI_NAMESPACE)
+                    {
+                        protectionstate.put("edit", FULL_PROTECTION);
+                        protectionstate.put("move", FULL_PROTECTION);
+                        if (!exists)
+                            protectionstate.put("create", FULL_PROTECTION);
+                    }
+                    info[k].put("protection", protectionstate);
                     
                     info[k].put("displaytitle", parseAttribute(item, "displaytitle", 0));
                     info[k].put("token", parseAttribute(item, "edittoken", 0));
-                    info[k].put("cascade", item.contains("cascade=\"\""));
 
                     // watchlist token
                     if (user != null)
                         info[k].put("watchtoken", parseAttribute(item, "watchtoken", 0));
 
                     // number of watchers
-                    if (line.contains("watchers="))
+                    if (line.contains("watchers=\""))
                         info[k].put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
                     
                     // timestamp
@@ -1340,24 +1308,6 @@ public class Wiki implements Serializable
 
         log(Level.INFO, "Successfully retrieved page info for " + Arrays.toString(pages), "getPageInfo");
         return info;
-    }
-
-    /**
-     *  Gets the protection status of a page.
-     *
-     *  @param title the title of the page
-     *  @return one of the various protection levels (i.e,. NO_PROTECTION,
-     *  SEMI_PROTECTION, MOVE_PROTECTION, FULL_PROTECTION,
-     *  SEMI_AND_MOVE_PROTECTION, PROTECTED_DELETED_PAGE)
-     *  @throws IOException if a network error occurs
-     *  @since 0.10
-     */
-    public int getProtectionLevel(String title) throws IOException
-    {
-        HashMap info = getPageInfo(title);
-        if ((Boolean)info.get("cascade"))
-            return FULL_PROTECTION;
-        return (Integer)info.get("protection");
     }
     
     /**
@@ -1718,9 +1668,7 @@ public class Wiki implements Serializable
 
         // protection and token
         HashMap info = getPageInfo(title);
-        int level = (Integer)info.get("protection");
-        // check protection level
-        if (!checkRights(level, false))
+        if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
             logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
@@ -1868,7 +1816,7 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("delete"))
             throw new CredentialNotFoundException("Cannot delete: Permission denied");
 
-        // protection and token
+        // edit token
         HashMap info = getPageInfo(title);
         if (!(Boolean)info.get("exists"))
         {
@@ -2337,9 +2285,7 @@ public class Wiki implements Serializable
         // determine whether the page exists
         if (!(Boolean)info.get("exists"))
             throw new IllegalArgumentException("Tried to move a non-existant page!");
-        int level = (Integer)info.get("protection");
-        // check protection level
-        if (!checkRights(level, true))
+        if (!checkRights(info, "move"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
             logger.logp(Level.WARNING, "Wiki", "move()", "[" + getDomain() + "] Cannot move - permission denied.", ex);
@@ -2402,6 +2348,45 @@ public class Wiki implements Serializable
         {
             // nobody cares
         }
+    }
+   
+    /**
+     *  Protects a page. Structure of <tt>protectionstate</tt> (everything is 
+     *  optional, if a value is not present, then the corresponding values will 
+     *  be left untouched):
+     *  <pre>
+     *  {
+     *     edit => one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
+     *     editexpiry => Calendar, // expiry time for edit protection, null = indefinite
+     *     move, moveexpiry, // as above, prevents page moving
+     *     create, createexpiry, // as above, prevents page creation (no effect on existing pages)
+     *     upload, uploadexpiry, // as above, prevents uploading of files (FILE_NAMESPACE only)
+     *     cascade => Boolean // Enables cascading protection (requires edit=FULL_PROTECTION). Default: false.
+     *     cascadesource => String // souce of cascading protection (here ignored)
+     *  };
+     *  </pre>
+     *   
+     *  @param page the page 
+     *  @param protectionstate (see above). <tt>null</tt> unprotects.
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialException if we cannot protect
+     */
+    public synchronized void protect(String page, HashMap<String, Object> protectionstate) throws IOException, CredentialException
+    {
+        if (user == null || !user.isAllowedTo("protect"))
+            throw new CredentialNotFoundException("Cannot protect: permission denied.");
+        throw new UnsupportedOperationException("Not implemented yet!");
+    }
+    
+    /**
+     *  Completely unprotects a page.
+     *  @param page the page to unprotect
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialException if we cannot protect
+     */
+    public void unprotect(String page) throws IOException, CredentialException
+    {
+        protect(page, null);
     }
 
     /**
@@ -2604,9 +2589,7 @@ public class Wiki implements Serializable
 
         // protection and token
         HashMap info = getPageInfo(rev.getPage());
-        int level = (Integer)info.get("protection");
-        // check protection level
-        if (!checkRights(level, false))
+        if (!checkRights(info, "edit"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
             logger.logp(Level.WARNING, "Wiki", "undo()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
@@ -3083,9 +3066,7 @@ public class Wiki implements Serializable
 
         // protection and token
         HashMap info = getPageInfo("File:" + filename);
-        int level = (Integer)info.get("protection");
-        // check protection level
-        if (!checkRights(level, false))
+        if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
             logger.logp(Level.WARNING, "Wiki", "upload()", "[" + getDomain() + "] Cannot upload - permission denied.", ex);
@@ -3491,7 +3472,7 @@ public class Wiki implements Serializable
             return;
         }
         String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
-        if (!cookies.containsValue(user.getUsername()))
+        if (token.equals("\\+"))
         {
             logger.log(Level.SEVERE, "Cookies have expired.");
             logout();
@@ -4528,26 +4509,10 @@ public class Wiki implements Serializable
                 details = null;
             else
             {
+                // FIXME: return a protectionstate here
                 int a = xml.indexOf("<param>") + 7;
                 int b = xml.indexOf("</param>", a);
-                String temp = xml.substring(a, b);
-                if (action.equals("move_prot")) // moved protection settings
-                    details = temp;
-                else if (action.equals("protect") || action.equals("modify"))
-                {
-                    if (temp.contains("create=sysop"))
-                        details = PROTECTED_DELETED_PAGE;
-                    else if (temp.contains("edit=sysop"))
-                        details = FULL_PROTECTION;
-                    else if (temp.contains("move=autoconfirmed"))
-                        details = SEMI_PROTECTION;
-                    else if (temp.contains("edit=autoconfirmed"))
-                        details = SEMI_AND_MOVE_PROTECTION;
-                    else if (temp.contains("move=sysop"))
-                        details = MOVE_PROTECTION;
-                    else
-                        details = -2; // unrecognized
-                }
+                details = xml.substring(a, b);
             }
         }
         else if (type.equals(USER_RENAME_LOG))
@@ -4581,7 +4546,7 @@ public class Wiki implements Serializable
      */
     public String[] prefixIndex(String prefix) throws IOException
     {
-        return listPages(prefix, NO_PROTECTION, ALL_NAMESPACES, -1, -1);
+        return listPages(prefix, null, ALL_NAMESPACES, -1, -1);
     }
 
     /**
@@ -4594,7 +4559,7 @@ public class Wiki implements Serializable
      */
     public String[] shortPages(int cutoff) throws IOException
     {
-        return listPages("", NO_PROTECTION, MAIN_NAMESPACE, -1, cutoff);
+        return listPages("", null, MAIN_NAMESPACE, -1, cutoff);
     }
 
     /**
@@ -4608,7 +4573,7 @@ public class Wiki implements Serializable
      */
     public String[] shortPages(int cutoff, int namespace) throws IOException
     {
-        return listPages("", NO_PROTECTION, namespace, -1, cutoff);
+        return listPages("", null, namespace, -1, cutoff);
     }
 
     /**
@@ -4621,7 +4586,7 @@ public class Wiki implements Serializable
      */
     public String[] longPages(int cutoff) throws IOException
     {
-        return listPages("", NO_PROTECTION, MAIN_NAMESPACE, cutoff, -1);
+        return listPages("", null, MAIN_NAMESPACE, cutoff, -1);
     }
 
     /**
@@ -4635,35 +4600,34 @@ public class Wiki implements Serializable
      */
     public String[] longPages(int cutoff, int namespace) throws IOException
     {
-        return listPages("", NO_PROTECTION, namespace, cutoff, -1);
+        return listPages("", null, namespace, cutoff, -1);
     }
 
     /**
      *  Lists pages with titles containing a certain prefix with a certain
-     *  protection level and in a certain namespace. Equivalent to
+     *  protection state and in a certain namespace. Equivalent to
      *  [[Special:Allpages]], [[Special:Prefixindex]], [[Special:Protectedpages]]
      *  and [[Special:Allmessages]] (if namespace == MEDIAWIKI_NAMESPACE).
      *  WARNING: Limited to 500 values (5000 for bots), unless a prefix or
      *  protection level is specified.
      *
      *  @param prefix the prefix of the title. Use "" to not specify one.
-     *  @param level a protection level. Use NO_PROTECTION to not specify one.
-     *  WARNING: it is not currently possible to specify a combination of both
-     *  semi and move protection
+     *  @param protectionstate a {@link #protect protection state}, use null
+     *  to not specify one
      *  @param namespace a namespace. ALL_NAMESPACES is not suppported, an
      *  UnsupportedOperationException will be thrown.
      *  @return the specified list of pages
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, int level, int namespace) throws IOException
+    public String[] listPages(String prefix, HashMap<String, Object> protectionstate, int namespace) throws IOException
     {
-        return listPages(prefix, level, namespace, -1, -1);
+        return listPages(prefix, protectionstate, namespace, -1, -1);
     }
 
     /**
      *  Lists pages with titles containing a certain prefix with a certain
-     *  protection level and in a certain namespace. Equivalent to
+     *  protection state and in a certain namespace. Equivalent to
      *  [[Special:Allpages]], [[Special:Prefixindex]], [[Special:Protectedpages]]
      *  [[Special:Allmessages]] (if namespace == MEDIAWIKI_NAMESPACE),
      *  [[Special:Shortpages]] and [[Special:Longpages]]. WARNING: Limited to
@@ -4671,9 +4635,8 @@ public class Wiki implements Serializable
      *  protection level is specified.
      *
      *  @param prefix the prefix of the title. Use "" to not specify one.
-     *  @param level a protection level. Use NO_PROTECTION to not specify one.
-     *  WARNING: it is not currently possible to specify a combination of both
-     *  semi and move protection
+     *  @param protectionstate a {@link #protect protection state}, use null
+     *  to not specify one
      *  @param namespace a namespace. ALL_NAMESPACES is not suppported, an
      *  UnsupportedOperationException will be thrown.
      *  @param minimum the minimum size in bytes these pages can be. Use -1 to
@@ -4684,7 +4647,8 @@ public class Wiki implements Serializable
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, int level, int namespace, int minimum, int maximum) throws IOException
+    public String[] listPages(String prefix, HashMap<String, Object> protectionstate, int namespace, int minimum, 
+        int maximum) throws IOException
     {
         // @revised 0.15 to add short/long pages
         // No varargs namespace here because MW API only supports one namespace
@@ -4704,25 +4668,26 @@ public class Wiki implements Serializable
             throw new UnsupportedOperationException("ALL_NAMESPACES not supported in MediaWiki API.");
         url.append("&apnamespace=");
         url.append(namespace);
-        switch (level) // protection level
+        if (protectionstate != null)
         {
-            case NO_PROTECTION: // squelch, this is the default
-                break;
-            case SEMI_PROTECTION:
-                url.append("&apprlevel=autoconfirmed&apprtype=edit");
-                break;
-            case FULL_PROTECTION:
-                url.append("&apprlevel=sysop&apprtype=edit");
-                break;
-            case MOVE_PROTECTION:
-                url.append("&apprlevel=sysop&apprtype=move");
-                break;
-            case SEMI_AND_MOVE_PROTECTION: // squelch, not implemented
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid protection level!");
+            for (Map.Entry<String, Object> entry : protectionstate.entrySet())
+            {
+                String key = entry.getKey();
+                if (!key.contains("expiry") && !key.equals("cascade"))
+                {
+                    url.append("&apprtype=");
+                    url.append(key);
+                    url.append("&apprlevel=");
+                    url.append((String)entry.getValue());
+                }
+                if (key.equals("cascade"))
+                {
+                    url.append("&apprfiltercascade=");
+                    url.append((Boolean)entry.getValue() ? "cascading" : "noncascading");
+                }
+            }
         }
-		// max and min
+        // max and min
         if (minimum != -1)
         {
             url.append("&apminsize=");
@@ -4746,7 +4711,7 @@ public class Wiki implements Serializable
             String line = fetch(s, "listPages");
 
             // don't set a continuation if no max, min, prefix or protection level
-            if (maximum < 0 && minimum < 0 && prefix.isEmpty() && level == NO_PROTECTION)
+            if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
                 next = null;
             // find next value
             else if (line.contains("apfrom="))
@@ -6317,54 +6282,44 @@ public class Wiki implements Serializable
      *  Checks whether the currently logged on user has sufficient rights to
      *  edit/move a protected page.
      *
-     *  @param level a protection level
-     *  @param move whether the action is a move
+     *  @param pageinfo the output from <tt>getPageInfo()</tt>
+     *  @param action what we are doing
      *  @return whether the user can perform the specified action
-     *  @throws IOException if we can't get the user rights
+     *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws AccountLockedException if user is blocked
-     *  @throws AssertionError if any defined assertions are false
      *  @since 0.10
      */
-    protected boolean checkRights(int level, boolean move) throws IOException, CredentialException
+    protected boolean checkRights(HashMap<String, Object> pageinfo, String action) throws IOException, CredentialException
     {
-        // check if we are logged out
-        // bug 18 says cookies are returned with + instead of _
-        String username = URLEncoder.encode(user.getUsername().replace('_', ' '), "UTF-8");
-        if (!cookies.containsValue(username))
+        // Check if we are logged out. Easiest way is via the edit token.
+        String token = (String)pageinfo.get("token");
+        if (token.equals("\\+") && user != null)
         {
-            logger.log(Level.SEVERE, "Cookies have expired");
+            logger.log(Level.SEVERE, "Session has expired!");
             logout();
             throw new CredentialExpiredException("Cookies have expired.");
         }
-
-        // admins can do anything, this also covers FULL_PROTECTION
-        if (user.isA("sysop"))
-            return true;
-        switch (level)
+        // check protection
+        HashMap<String, Object> protectionstate = (HashMap<String, Object>)pageinfo.get("protection");
+        if (protectionstate.containsKey(action))
         {
-            case NO_PROTECTION:
-                return true;
-            case SEMI_PROTECTION:
-                return user != null; // not logged in => can't edit
-            case MOVE_PROTECTION:
-            case SEMI_AND_MOVE_PROTECTION:
-                return !move; // fall through is OK: the user cannot move a protected page
-            // cases PROTECTED_DELETED_PAGE and FULL_PROTECTION are unnecessary
-            default:
-                return false;
+            String level = (String)protectionstate.get(action);
+            if (level.equals(SEMI_PROTECTION))
+                return user.isAllowedTo("autoconfirmed");
+            if (level.equals(FULL_PROTECTION))
+                return user.isA("sysop");
         }
+        return false;
     }
 
     /**
      *  Performs a status check, including assertions.
      *  @throws AssertionError if any assertions are false
-     *  @throws AccountLockedException if the user is blocked
      *  @throws IOException if a network error occurs
      *  @see #setAssertionMode
      *  @since 0.11
      */
-    protected void statusCheck() throws IOException, CredentialException
+    protected void statusCheck() throws IOException
     {
         // @revised 0.18 was assertions(), put some more stuff in here
 
@@ -6384,8 +6339,6 @@ public class Wiki implements Serializable
             statuscounter++;
 
         // do some more assertions
-        if ((assertion & ASSERT_LOGGED_IN) == ASSERT_LOGGED_IN)
-            assert (user != null) : "Not logged in"; // Does this ever happen?
         if ((assertion & ASSERT_BOT) == ASSERT_BOT)
             assert user.isA("bot") : "Not a bot";
     }
@@ -6450,8 +6403,7 @@ public class Wiki implements Serializable
         sb.append(domain);
         sb.append("] ");
         sb.append(text);
-        sb.append('.');
-        logger.logp(level, "Wiki", method + "()", sb.toString());
+        logger.logp(level, "Wiki", method, sb.toString());
     }
 
     /**
@@ -6474,7 +6426,7 @@ public class Wiki implements Serializable
      */
     protected void logurl(String url, String method)
     {
-        logger.logp(Level.FINE, "Wiki", method + "()", "Fetching URL " + url);
+        logger.logp(Level.FINE, "Wiki", method, "Fetching URL {0}", url);
     }
 
     // calendar/timestamp methods

@@ -74,5 +74,6 @@ public class WikiUnitTest
     public void getTemplates() throws Exception
     {
         assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkfhsdklj"));
+        assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("WP:AN"));
     }
 }
