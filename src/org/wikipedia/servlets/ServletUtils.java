@@ -39,7 +39,7 @@ public class ServletUtils
     public static boolean checkBlacklist(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         String useragent = request.getHeader("User-Agent");
-        boolean hit = useragent.contains("Tweetmeme") || useragent.contains("Bing");
+        boolean hit = useragent.contains("Tweetmeme") || useragent.contains("bing.com");
         if (hit)
             response.sendError(403, "robots.txt exists for a reason. Follow it!");
         return hit;

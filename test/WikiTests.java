@@ -1,6 +1,6 @@
 /**
  *  @(#)WikiTests.java
- *  Copyright (C) 2011 MER-C
+ *  Copyright (C) 2011 - 2013 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -211,9 +211,14 @@ public class WikiTests
         FileOutputStream out = new FileOutputStream("hello.png");
         out.write(enWiki.getOldImage(entries[0]));
         out.close();
+
         */
         
-        for (String page : enWiki.getTemplates("User:MER-C/Sandbox"))
+        // allpages
+        HashMap<String, Object> protect = new HashMap<>();
+        protect.put("cascade", true);
+        protect.put("edit", Wiki.FULL_PROTECTION);
+        for (String page : enWiki.listPages("", protect, Wiki.MAIN_NAMESPACE, -1, -1))
             System.out.println(page);
     }
 }
