@@ -4509,7 +4509,7 @@ public class Wiki implements Serializable
                 details = null;
             else
             {
-                // FIXME: return a protectionstate here
+                // FIXME: return a protectionstate here?
                 int a = xml.indexOf("<param>") + 7;
                 int b = xml.indexOf("</param>", a);
                 details = xml.substring(a, b);
@@ -4670,22 +4670,28 @@ public class Wiki implements Serializable
         url.append(namespace);
         if (protectionstate != null)
         {
+            StringBuilder apprtype = new StringBuilder("&apprtype=");
+            StringBuilder apprlevel = new StringBuilder("&apprlevel=");
             for (Map.Entry<String, Object> entry : protectionstate.entrySet())
             {
                 String key = entry.getKey();
-                if (!key.contains("expiry") && !key.equals("cascade"))
-                {
-                    url.append("&apprtype=");
-                    url.append(key);
-                    url.append("&apprlevel=");
-                    url.append((String)entry.getValue());
-                }
                 if (key.equals("cascade"))
                 {
                     url.append("&apprfiltercascade=");
                     url.append((Boolean)entry.getValue() ? "cascading" : "noncascading");
                 }
+                else if (!key.contains("expiry"))
+                {
+                    apprtype.append(key);
+                    apprtype.append("%7C");
+                    apprlevel.append((String)entry.getValue());
+                    apprlevel.append("%7C");
+                }      
             }
+            apprtype.delete(apprtype.length() - 3, apprtype.length());
+            apprlevel.delete(apprlevel.length() - 3, apprlevel.length());
+            url.append(apprtype);
+            url.append(apprlevel);
         }
         // max and min
         if (minimum != -1)
@@ -4707,15 +4713,15 @@ public class Wiki implements Serializable
             // connect and read
             String s = url.toString();
             if (!next.isEmpty())
-                s += ("&apfrom=" + next);
+                s += ("&apcontinue=" + next);
             String line = fetch(s, "listPages");
 
             // don't set a continuation if no max, min, prefix or protection level
             if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
                 next = null;
             // find next value
-            else if (line.contains("apfrom="))
-                next = URLEncoder.encode(parseAttribute(line, "apfrom", 0), "UTF-8");
+            else if (line.contains("apcontinue="))
+                next = URLEncoder.encode(parseAttribute(line, "apcontinue", 0), "UTF-8");
             else
                 next = null;
 
@@ -6426,7 +6432,7 @@ public class Wiki implements Serializable
      */
     protected void logurl(String url, String method)
     {
-        logger.logp(Level.FINE, "Wiki", method, "Fetching URL {0}", url);
+        logger.logp(Level.INFO, "Wiki", method, "Fetching URL {0}", url);
     }
 
     // calendar/timestamp methods
