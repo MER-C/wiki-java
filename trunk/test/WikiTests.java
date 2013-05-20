@@ -220,5 +220,10 @@ public class WikiTests
         protect.put("edit", Wiki.FULL_PROTECTION);
         for (String page : enWiki.listPages("", protect, Wiki.MAIN_NAMESPACE, -1, -1))
             System.out.println(page);
+        protect = new HashMap<>();
+        protect.put("upload", Wiki.FULL_PROTECTION);
+        protect.put("edit", Wiki.FULL_PROTECTION);
+        for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1))
+            System.out.println(page);
     }
 }
