@@ -1292,7 +1292,7 @@ public class Wiki implements Serializable
                         info[k].put("watchtoken", parseAttribute(item, "watchtoken", 0));
 
                     // number of watchers
-                    if (line.contains("watchers=\""))
+                    if (item.contains("watchers=\""))
                         info[k].put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
                     
                     // timestamp
@@ -6315,7 +6315,7 @@ public class Wiki implements Serializable
             if (level.equals(FULL_PROTECTION))
                 return user.isA("sysop");
         }
-        return false;
+        return true;
     }
 
     /**
