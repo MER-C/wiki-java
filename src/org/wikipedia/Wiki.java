@@ -856,21 +856,14 @@ public class Wiki implements Serializable
      */
     public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
     {
-        // @revised 0.11 to remove screen scraping
-        // @revised 0.23 readded screen scraping
-
-        // Scrape a login token from Special:Userlogin. Login tokens should be
-        // available through prop=info !
-        String blah = fetch(base + "Special:Userlogin", "login");
-        int a = blah.indexOf("wpLoginToken") + 21;
-        int b = blah.indexOf('\"', a);
-        String wpLoginToken = blah.substring(a, b);
-
         // post login request
         username = normalize(username);
         StringBuilder buffer = new StringBuilder(500);
         buffer.append("lgname=");
         buffer.append(URLEncoder.encode(username, "UTF-8"));
+        // fetch token
+        String response = post(apiUrl + "action=login", buffer.toString(), "login");
+        String wpLoginToken = parseAttribute(response, "token", 0);
         buffer.append("&lgpassword=");
         buffer.append(URLEncoder.encode(new String(password), "UTF-8"));
         buffer.append("&lgtoken=");
