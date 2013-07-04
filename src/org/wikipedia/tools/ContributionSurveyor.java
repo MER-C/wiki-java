@@ -22,6 +22,7 @@ package org.wikipedia.tools;
 
 import java.io.*;
 import java.util.*;
+import javax.swing.JFileChooser;
 
 import org.wikipedia.*;
 
@@ -36,33 +37,124 @@ public class ContributionSurveyor
 {
     public static void main(String[] args) throws IOException
     {
-        // TODO: more sane input, make images optional 
-        
-        Wiki enWiki = new Wiki("en.wikipedia.org");
-        Wiki commons = new Wiki("commons.wikimedia.org");
+        // placeholders
+        boolean images = false, userspace = false;
+        Wiki homewiki = new Wiki("en.wikipedia.org");
+        File out = null;
+        String wikipage = null;
+        String infile = null;
 
+        // parse arguments
+        for (int i = 0; i < args.length; i++)
+        {
+            String arg = args[i];
+            switch (arg)
+            {
+                case "--help":
+                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.ContributionSurveyor [options]\n\n"
+                        + "DESCRIPTION:\n\tSurvey the contributions of a large number of wiki editors.\n\n"
+                        + "\t--help\n\t\tPrints this screen and exits.\n"
+                        + "\t--images\n\t\tSurvey images both on the home wiki and Commons.\n"
+                        + "\t--infile file\n\t\tUse file as the list of users, shows a filechooser if not "
+                            + "specified.\n"
+                        + "\t--wiki example.wikipedia.org\n\t\tUse example.wikipedia.org as the home wiki. \n\t\t"
+                            + "Default: en.wikipedia.org.\n"
+                        + "\t--outfile file\n\t\tSave results to file, shows a filechooser if not specified.\n"
+                        + "\t--wikipage 'Main Page'\n\t\tFetch a list of users at the wiki page Main Page.\n"
+                        + "\t--userspace\n\t\tSurvey userspace as well.\n");
+
+                    System.exit(0);
+                case "--images":
+                    images = true;
+                    break;
+                case "--infile":
+                    infile = args[++i];
+                    break;
+                case "--userspace":
+                    userspace = true;
+                    break;
+                case "--wiki":
+                    homewiki = new Wiki(args[++i]);
+                    break;
+                case "--outfile":
+                    out = new File(args[++i]);
+                    break;
+                case "--wikipage":
+                    wikipage = args[++i];
+                    break;
+            }
+        }
         // file I/O
         // file must contain list of users, one per line
         ArrayList<String> users = new ArrayList<String>(1500);
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            ContributionSurveyor.class.getResourceAsStream("users.txt")));
-        String line;
-        while ((line = in.readLine()) != null)
-            users.add(line.substring(5)); // lop off the User: prefix
-        FileWriter out = new FileWriter("masscci.txt");
-
+        if (wikipage == null)
+        {
+            BufferedReader in = null;
+            if (infile == null)
+            {
+                JFileChooser fc = new JFileChooser();
+                fc.setDialogTitle("Select user list");
+                if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+                    in = new BufferedReader(new FileReader(fc.getSelectedFile()));
+                else
+                {
+                    System.out.println("Error: No input file selected.");
+                    System.exit(0);
+                }
+            }
+            else
+                in = new BufferedReader(new FileReader(infile));
+            String line;
+            while ((line = in.readLine()) != null)
+                users.add(line.substring(5)); // lop off the User: prefix
+        }
+        else
+        {
+            String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
+            for (String temp : list)
+                if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
+                    users.add(temp.substring(5));
+        }
+        if (out == null)
+        {
+            JFileChooser fc = new JFileChooser();
+            fc.setDialogTitle("Select output file");
+            if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
+                out = fc.getSelectedFile();
+            else
+            {
+                System.out.println("Error: No output file selected.");
+                System.exit(0);
+            }
+        }
+        contributionSurvey(homewiki, users.toArray(new String[users.size()]), out, userspace, images);
+    }
+    
+    /**
+     *  Performs a mass contribution survey.
+     *  @param homewiki the wiki to survey on
+     *  @param users the users to survey
+     *  @param output the output file to write to
+     *  @param userspace whether to survey output
+     *  @param images whether to survey images (searches Commons as well)
+     *  @throws IOException if a network error occurs
+     *  @since 0.02
+     */
+    public static void contributionSurvey(Wiki homewiki, String[] users, File output, boolean userspace, boolean images) throws IOException
+    {
+        FileWriter out = new FileWriter(output);
+        Wiki commons = new Wiki("commons.wikimedia.org");
         for (String user : users)
         {
             // determine if user exists; if so, stats
-            Wiki.User wpuser = enWiki.getUser(user);
-            Wiki.User comuser = commons.getUser(user);
+            Wiki.User wpuser = homewiki.getUser(user);
             int editcount = wpuser.countEdits();
             if (wpuser == null)
             {
                 System.out.println(user + " is not a registered user.");
                 continue;
             }
-            Wiki.Revision[] contribs = enWiki.contribs(user);
+            Wiki.Revision[] contribs = homewiki.contribs(user);
             out.write("===" + user + "===\n");
             out.write("*{{user5|" + user + "}}\n");
             out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
@@ -75,7 +167,7 @@ public class ContributionSurveyor
             {
                 String title = revision.getPage();
                 // check only mainspace edits
-                int ns = enWiki.namespace(title);
+                int ns = homewiki.namespace(title);
                 if (ns != Wiki.MAIN_NAMESPACE)
                     continue;
                 // compute diff size; too small => skip
@@ -107,50 +199,57 @@ public class ContributionSurveyor
             out.write("\n\n");
 
             // survey userspace
-            out.write(";Userspace edits\n");
-            HashSet<String> temp = new HashSet(50);
-            for (Wiki.Revision revision : contribs)
+            if (userspace)
             {
-                String title = revision.getPage();
-                // check only userspace edits
-                int ns = enWiki.namespace(title);
-                if (ns != Wiki.USER_NAMESPACE)
-                    continue;
-                temp.add(title);
+                out.write(";Userspace edits\n");
+                HashSet<String> temp = new HashSet(50);
+                for (Wiki.Revision revision : contribs)
+                {
+                    String title = revision.getPage();
+                    // check only userspace edits
+                    int ns = homewiki.namespace(title);
+                    if (ns != Wiki.USER_NAMESPACE)
+                        continue;
+                    temp.add(title);
+                }
+                if (temp.isEmpty())
+                    out.write("No userspace edits.\n");
+                else
+                    out.write(ParserUtils.formatList(temp.toArray(new String[0])));
+                out.write("\n");
             }
-            if (temp.isEmpty())
-                out.write("No userspace edits.\n");
-            else
-                out.write(ParserUtils.formatList(temp.toArray(new String[0])));
-            out.write("\n");
 
             // survey images
-            Wiki.LogEntry[] uploads = enWiki.getUploads(wpuser);
-            if (uploads.length > 0)
+            if (images)
             {
-                out.write(";Local uploads\n");
-                HashSet<String> list = new HashSet<String>(10000);
-                for (int i = 0; i < uploads.length; i++)
-                    list.add((String)uploads[i].getTarget());
-                out.write(ParserUtils.formatList(list.toArray(new String[0])));
-                out.write("\n");
-            }
-            else
-                out.write("No local uploads.\n");
+                Wiki.User comuser = commons.getUser(user);
+                Wiki.LogEntry[] uploads = homewiki.getUploads(wpuser);
+                if (uploads.length > 0)
+                {
+                    out.write(";Local uploads\n");
+                    HashSet<String> list = new HashSet<String>(10000);
+                    for (int i = 0; i < uploads.length; i++)
+                        list.add((String)uploads[i].getTarget());
+                    out.write(ParserUtils.formatList(list.toArray(new String[0])));
+                    out.write("\n");
+                }
+                else
+                    out.write("No local uploads.\n");
 
-            // commons
-            uploads = commons.getUploads(comuser);
-            if (uploads.length > 0)
-            {
-                out.write(";Commons uploads\n");
-                HashSet<String> list = new HashSet<String>(10000);
-                for (int i = 0; i < uploads.length; i++)
-                    list.add((String)uploads[i].getTarget());
-                out.write(ParserUtils.formatList(list.toArray(new String[0])));
-                out.write("\n");
+                // commons
+                uploads = commons.getUploads(comuser);
+                if (uploads.length > 0)
+                {
+                    out.write(";Commons uploads\n");
+                    HashSet<String> list = new HashSet<String>(10000);
+                    for (int i = 0; i < uploads.length; i++)
+                        list.add((String)uploads[i].getTarget());
+                    out.write(ParserUtils.formatList(list.toArray(new String[0])));
+                    out.write("\n");
+                }
+                else
+                    out.write("No Commons uploads.\n");
             }
-            else
-                out.write("No Commons uploads.\n");
         }
         out.flush();
         out.close();
