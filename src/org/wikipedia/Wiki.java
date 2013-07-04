@@ -2988,7 +2988,7 @@ public class Wiki implements Serializable
             url.append("&aiend=");
             url.append(calendarToTimestamp(end));
         }
-        ArrayList<LogEntry> uploads = new ArrayList(700);
+        ArrayList<LogEntry> uploads = new ArrayList<LogEntry>();
         String aicontinue = "";
         do
         {

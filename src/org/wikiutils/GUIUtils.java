@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -123,5 +124,16 @@ public class GUIUtils
 			System.exit(0);
 
 		return fc.getSelectedFiles();
+	}
+	
+	/**
+	 * Returns a trailing JLabel with specified String.
+	 * 
+	 * @param s The string to make into a label.
+	 * @return The JLabel.
+	 */
+	public static JLabel makeLabel(String s)
+	{
+		return new JLabel(s, JLabel.TRAILING);
 	}
 }

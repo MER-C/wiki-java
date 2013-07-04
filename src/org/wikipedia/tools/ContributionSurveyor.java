@@ -22,7 +22,6 @@ package org.wikipedia.tools;
 
 import java.io.*;
 import java.util.*;
-// import javax.swing.*;
 
 import org.wikipedia.*;
 
@@ -37,37 +36,10 @@ public class ContributionSurveyor
 {
     public static void main(String[] args) throws IOException
     {
-        boolean images = false, userspace = false;
-        Wiki homewiki = new Wiki("en.wikipedia.org");
+        // TODO: more sane input, make images optional 
+        
+        Wiki enWiki = new Wiki("en.wikipedia.org");
         Wiki commons = new Wiki("commons.wikimedia.org");
-
-        // parse arguments
-        for (int i = 0; i < args.length; i++)
-        {
-            String arg = args[i];
-            switch (arg)
-            {
-                case "--help":
-                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.ContributionSurveyor [options]\n\n"
-                        + "DESCRIPTION:\n\tSurvey the contributions of a large number of wiki editors.\n\n"
-                        + "\t--help\n\t\tPrints this screen and exits.\n"
-                        + "\t--images\n\t\tSurvey images both on the home wiki and Commons.\n"
-                        + "\t--userspace\n\t\tSurvey userspace as well.\n"
-                        + "\t--wiki example.wikipedia.org\n\t\tUse example.wikipedia.org as the home wiki. \n\t\t"
-                            + "Default: en.wikipedia.org.");
-                    System.exit(0);
-                case "--images":
-                    images = true;
-                    break;
-                case "--userspace":
-                    userspace = true;
-                    break;
-                case "--wiki":
-                    homewiki = new Wiki(args[++i]);
-                    break;
-            }
-        }
-        // TODO: more sane input
 
         // file I/O
         // file must contain list of users, one per line
@@ -82,14 +54,15 @@ public class ContributionSurveyor
         for (String user : users)
         {
             // determine if user exists; if so, stats
-            Wiki.User wpuser = homewiki.getUser(user);
+            Wiki.User wpuser = enWiki.getUser(user);
+            Wiki.User comuser = commons.getUser(user);
             int editcount = wpuser.countEdits();
             if (wpuser == null)
             {
                 System.out.println(user + " is not a registered user.");
                 continue;
             }
-            Wiki.Revision[] contribs = homewiki.contribs(user);
+            Wiki.Revision[] contribs = enWiki.contribs(user);
             out.write("===" + user + "===\n");
             out.write("*{{user5|" + user + "}}\n");
             out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
@@ -102,7 +75,7 @@ public class ContributionSurveyor
             {
                 String title = revision.getPage();
                 // check only mainspace edits
-                int ns = homewiki.namespace(title);
+                int ns = enWiki.namespace(title);
                 if (ns != Wiki.MAIN_NAMESPACE)
                     continue;
                 // compute diff size; too small => skip
@@ -134,57 +107,50 @@ public class ContributionSurveyor
             out.write("\n\n");
 
             // survey userspace
-            if (userspace)
+            out.write(";Userspace edits\n");
+            HashSet<String> temp = new HashSet(50);
+            for (Wiki.Revision revision : contribs)
             {
-                out.write(";Userspace edits\n");
-                HashSet<String> temp = new HashSet(50);
-                for (Wiki.Revision revision : contribs)
-                {
-                    String title = revision.getPage();
-                    // check only userspace edits
-                    int ns = homewiki.namespace(title);
-                    if (ns != Wiki.USER_NAMESPACE)
-                        continue;
-                    temp.add(title);
-                }
-                if (temp.isEmpty())
-                    out.write("No userspace edits.\n");
-                else
-                    out.write(ParserUtils.formatList(temp.toArray(new String[0])));
-                out.write("\n");
+                String title = revision.getPage();
+                // check only userspace edits
+                int ns = enWiki.namespace(title);
+                if (ns != Wiki.USER_NAMESPACE)
+                    continue;
+                temp.add(title);
             }
+            if (temp.isEmpty())
+                out.write("No userspace edits.\n");
+            else
+                out.write(ParserUtils.formatList(temp.toArray(new String[0])));
+            out.write("\n");
 
             // survey images
-            if (images)
+            Wiki.LogEntry[] uploads = enWiki.getUploads(wpuser);
+            if (uploads.length > 0)
             {
-                Wiki.User comuser = commons.getUser(user);
-                Wiki.LogEntry[] uploads = homewiki.getUploads(wpuser);
-                if (uploads.length > 0)
-                {
-                    out.write(";Local uploads\n");
-                    HashSet<String> list = new HashSet<String>(10000);
-                    for (int i = 0; i < uploads.length; i++)
-                        list.add((String)uploads[i].getTarget());
-                    out.write(ParserUtils.formatList(list.toArray(new String[0])));
-                    out.write("\n");
-                }
-                else
-                    out.write("No local uploads.\n");
-
-                // commons
-                uploads = commons.getUploads(comuser);
-                if (uploads.length > 0)
-                {
-                    out.write(";Commons uploads\n");
-                    HashSet<String> list = new HashSet<String>(10000);
-                    for (int i = 0; i < uploads.length; i++)
-                        list.add((String)uploads[i].getTarget());
-                    out.write(ParserUtils.formatList(list.toArray(new String[0])));
-                    out.write("\n");
-                }
-                else
-                    out.write("No Commons uploads.\n");
+                out.write(";Local uploads\n");
+                HashSet<String> list = new HashSet<String>(10000);
+                for (int i = 0; i < uploads.length; i++)
+                    list.add((String)uploads[i].getTarget());
+                out.write(ParserUtils.formatList(list.toArray(new String[0])));
+                out.write("\n");
             }
+            else
+                out.write("No local uploads.\n");
+
+            // commons
+            uploads = commons.getUploads(comuser);
+            if (uploads.length > 0)
+            {
+                out.write(";Commons uploads\n");
+                HashSet<String> list = new HashSet<String>(10000);
+                for (int i = 0; i < uploads.length; i++)
+                    list.add((String)uploads[i].getTarget());
+                out.write(ParserUtils.formatList(list.toArray(new String[0])));
+                out.write("\n");
+            }
+            else
+                out.write("No Commons uploads.\n");
         }
         out.flush();
         out.close();
