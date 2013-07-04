@@ -104,8 +104,8 @@ public class LoginUtils
 	 */
 	public static String[] showLoginScreen(String title)
 	{
-		JTextField u = new JTextField(12);
-		JPasswordField px = new JPasswordField(12);
+		JTextField u = new JTextField(20);
+		JPasswordField px = new JPasswordField(20);
 		
 		if (JOptionPane.showConfirmDialog(null, GUIUtils.buildForm(title, new JLabel("Username:", JLabel.TRAILING), u, new JLabel("Password:",
 				JLabel.TRAILING), px), title, JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION)

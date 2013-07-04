@@ -160,4 +160,35 @@ public class WikiUtils
 			return false;
 		}
 	}
+	
+	/**
+	 * Removes all titles of a certain namespace. 
+	 * 
+	 * @param wiki The wiki object to use.
+	 * @param titles The list of titles to use.
+	 * @param ns The namespaces to filter out.
+	 * @return A new list of titles with this change.
+	 * @throws IOException Eh?
+	 */
+	public static String[] namespaceFilter(Wiki wiki, String[] titles, int... ns) throws IOException
+	{
+		ArrayList<String> l = new ArrayList<String>();
+		for(String s : titles)
+		{
+			boolean flag = false;
+			for(int i : ns)
+				if(wiki.namespace(s) == i)
+				{
+					flag = true;
+					break;
+				}
+			
+			if(!flag)
+				l.add(s);
+		}
+		
+		return l.toArray(new String[0]);		
+		
+	}
+	
 }
