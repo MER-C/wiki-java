@@ -63,12 +63,12 @@ public class SpamArchiveSearch extends HttpServlet
 
     /**
      *  This servlet is intended to run on Google App Engine, see { @link
-     *  http://code.google.com/appengine/docs/quotas.html here } and { @link
-     *  http://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
+     *  https://code.google.com/appengine/docs/quotas.html here } and { @link
+     *  https://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
      *  here } for what you can and cannot do in this environment. More
      *  precisely, at ~1s / wiki, we cannot search more than 30 wikis.
      *  <p>
-     *  This servlet runs at { @link http://wikipediatools.appspot.com/linksearch.jsp }.
+     *  This servlet runs at { @link https://wikipediatools.appspot.com/linksearch.jsp }.
      */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException

@@ -87,7 +87,7 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2012. This tool is free software: ");
+        sb.append(": Copyright (C) MER-C 2007-2013. This tool is free software: ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of ");
         sb.append("the GNU General Public License as published by the Free ");
         sb.append("Software Foundation, either version 3 of the License, or (at ");

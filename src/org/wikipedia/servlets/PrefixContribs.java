@@ -47,11 +47,11 @@ public class PrefixContribs extends HttpServlet
     
     /**
      *  This servlet is intended to run on Google App Engine, see { @link
-     *  http://code.google.com/appengine/docs/quotas.html here } and { @link
-     *  http://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
+     *  https://code.google.com/appengine/docs/quotas.html here } and { @link
+     *  https://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
      *  here } for what you can and cannot do in this environment. The 
      *  <p>
-     *  This servlet runs at http://wikipediatools.appspot.com/prefixcontribs.jsp .
+     *  This servlet runs at https://wikipediatools.appspot.com/prefixcontribs.jsp .
      *
      * @param request servlet request
      * @param response servlet response
