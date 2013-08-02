@@ -20,6 +20,7 @@
 package org.wikipedia.servlets;
 
 import java.io.*;
+import java.net.*;
 import java.util.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
@@ -98,12 +99,12 @@ public class XWikiLinksearch extends HttpServlet
 
     /**
      *  This servlet is intended to run on Google App Engine, see { @link
-     *  http://code.google.com/appengine/docs/quotas.html here } and { @link
-     *  http://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
+     *  https://code.google.com/appengine/docs/quotas.html here } and { @link
+     *  https://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
      *  here } for what you can and cannot do in this environment. More
      *  precisely, at ~1s / wiki, we cannot search more than 40 wikis.
      *  <p>
-     *  This servlet runs at { @link http://wikipediatools.appspot.com/linksearch.jsp }.
+     *  This servlet runs at { @link https://wikipediatools.appspot.com/linksearch.jsp }.
      */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -159,6 +160,10 @@ public class XWikiLinksearch extends HttpServlet
                 else
                     buffer.append("ERROR: Invalid wiki set.");
             }
+            catch (MalformedURLException ex)
+            {
+                buffer.append("<span style=\"color:red\">ERROR: malformed URL!</span>");
+            }
             catch (IOException ex)
             {
                 buffer.append(ex.toString());
@@ -176,7 +181,7 @@ public class XWikiLinksearch extends HttpServlet
     {
         buffer.append("<hr>\n<h2>Searching for links to ");
         buffer.append(ServletUtils.sanitize(domain));
-        buffer.append(".\n");
+        buffer.append("</h2>\n");
         for (Wiki wiki : wikis)
         {
             ArrayList[] temp = wiki.linksearch("*." + domain, "http");
