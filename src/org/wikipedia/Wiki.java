@@ -30,16 +30,16 @@ import javax.security.auth.login.*;
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.6 (6.0) or greater. Uses the <a
- *  href="http://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for 
+ *  href="https://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for 
  *  most operations. It is recommended that the server runs the latest version
  *  of MediaWiki (1.20), otherwise some functions may not work.
  *  <p>
- *  Extended documentation is available <a href="http://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. 
+ *  Extended documentation is available <a href="https://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. 
  *  All wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
  *  </p>
- *  Please file bug reports <a href="http://en.wikipedia.org/w/index.php?title=User_talk:MER-C&action=edit&section=new">here</a> (fast)
- *  or at the <a href="http://code.google.com/p/wiki-java/issues/list">Google code bug tracker</a> (slow).
+ *  Please file bug reports <a href="https://en.wikipedia.org/w/index.php?title=User_talk:MER-C&action=edit&section=new">here</a> (fast)
+ *  or at the <a href="https://code.google.com/p/wiki-java/issues/list">Google code bug tracker</a> (slow).
  *
  *  @author MER-C and contributors
  *  @version 0.27
@@ -514,7 +514,7 @@ public class Wiki implements Serializable
      *  Override/edit this if you need to change the API and human interface
      *  url configuration of the wiki. Some example uses:
      *
-     *  *Using HTTPS on Wikimedia sites
+     *  *Your wiki not supporting HTTPS
      *  *Server-side cache management (maxage and smaxage API parameters)
      *  
      *  </br></br>Contributed by Tedder 
@@ -522,7 +522,7 @@ public class Wiki implements Serializable
      */
     protected void initVars()
     {
-        String temp = "http://" + domain + scriptPath;
+        String temp = "https://" + domain + scriptPath;
         // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
         // parameter]]. Let's exploit it.
         if (maxlag >= 0)
@@ -1002,7 +1002,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the version of MediaWiki this wiki runs e.g. 1.20wmf5 (54b4fcb).
-     *  See also http://gerrit.wikimedia.org/ .
+     *  See also https://gerrit.wikimedia.org/ .
      *  @return the version of MediaWiki used
      *  @throws IOException if a network error occurs
      *  @since 0.14
@@ -4977,7 +4977,7 @@ public class Wiki implements Serializable
      *  This does not resolve nested interwiki prefixes, e.g. [[wikt:fr:Test]].
      *
      *  <p>
-     *  For WMF wikis, see <a href="http://meta.wikimedia.org/wiki/Interwiki_map">
+     *  For WMF wikis, see <a href="https://meta.wikimedia.org/wiki/Interwiki_map">
      *  the interwiki map</a>for where some prefixes link to.
      *
      *  @param prefix the interwiki prefix that denotes a wiki
@@ -5009,7 +5009,7 @@ public class Wiki implements Serializable
      *  </pre>
      *
      *  <p>
-     *  For WMF wikis, see <a href="http://meta.wikimedia.org/wiki/Interwiki_map">
+     *  For WMF wikis, see <a href="https://meta.wikimedia.org/wiki/Interwiki_map">
      *  the interwiki map</a>for where some prefixes link to.
      *
      *  @param prefix the interwiki prefix to search
@@ -5592,7 +5592,7 @@ public class Wiki implements Serializable
 
         /**
          *  Returns a HTML rendered diff table; see the table at the <a
-         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param other another revision on the same page. 
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
@@ -5607,7 +5607,7 @@ public class Wiki implements Serializable
          *  Returns a HTML rendered diff table between this revision and the
          *  given text. Useful for emulating the "show changes" functionality.
          *  See the table at the <a 
-         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
@@ -5620,7 +5620,7 @@ public class Wiki implements Serializable
 
         /**
          *  Returns a HTML rendered diff table; see the table at the <a
-         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param oldid the oldid of a revision on the same page. NEXT_REVISION,
          *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
          *  effect.
@@ -5635,7 +5635,7 @@ public class Wiki implements Serializable
 
         /**
          *  Fetches a HTML rendered diff table; see the table at the <a
-         *  href="http://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param oldid the id of another revision; (exclusive) or
          *  @param text some wikitext to compare against
          *  @return a difference between oldid or text
