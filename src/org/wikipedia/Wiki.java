@@ -2126,7 +2126,40 @@ public class Wiki implements Serializable
             return null;
         return parseRevision(line.substring(a, b), title);
     }
-
+    
+    /**
+     *  Gets the newest page name or the name of a page where the asked page 
+     *  redirects.
+     *  @param title a page
+     *  @return redirected target page or null if source page is not a redirect
+     *  @throws IOException if a network error occurs
+     *  @since 0.29
+     *  @author Nirvanchik/MER-C
+     */ 
+    public String resolveRedirect(String title) throws IOException
+    {
+        // TODO: multi query
+        StringBuilder url = new StringBuilder(query);
+        url.append("titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        if (!resolveredirect)
+            url.append("&redirects");
+        String line = fetch(url.toString(), "resolveRedirect");
+        // String[] ret = new String[titles.length];
+        // expected form: <redirects><r from="Main page" to="Main Page"/>
+        // <r from="Home Page" to="Home page"/>...</redirects>
+        // TODO: look for the <r> tag instead
+        int a = line.indexOf("<redirects>");
+        int b = line.indexOf("</redirects>");
+        if(a>0 && b>0) 
+        {
+            String redirect = line.substring(a,b);
+            if(redirect.contains("to=\"")) 
+                return parseAttribute(redirect, "to", 0);
+        }
+        return null;
+    }
+    
     /**
      *  Gets the entire revision history of a page. Be careful when using
      *  this method as some pages (such as [[Wikipedia:Administrators'
