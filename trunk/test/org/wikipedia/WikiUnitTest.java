@@ -74,6 +74,14 @@ public class WikiUnitTest
     public void getTemplates() throws Exception
     {
         assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkfhsdklj"));
-        assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("WP:AN"));
+        assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("User:MER-C/monobook.js"));
+    }
+    
+    @Test
+    public void resolveRedirect() throws Exception
+    {
+        assertEquals("resolveRedirects: redirect", "Main Page", enWiki.resolveRedirect("Main page"));
+        assertEquals("resolveRedirects: no redirect", null, enWiki.resolveRedirect("Main Page"));
+        assertEquals("resolveRedirects: no page", null, enWiki.resolveRedirect("lsdkfjsldkf"));
     }
 }
