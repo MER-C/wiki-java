@@ -429,7 +429,6 @@ public class Wiki implements Serializable
     // preferences
     private int max = 500;
     private int slowmax = 50;
-    protected static final Logger logger = Logger.getLogger("wiki"); // only one required
     private int throttle = 10000; // throttle
     private int maxlag = 5;
     private int assertion = 0; // assertion mode
@@ -457,21 +456,12 @@ public class Wiki implements Serializable
     // CONSTRUCTORS AND CONFIGURATION
 
     /**
-     *  Logs which version we're using.
-     *  @since 0.12
-     */
-    static
-    {
-        logger.logp(Level.CONFIG, "Wiki", "<init>", "Using Wiki.java " + version);
-    }
-
-    /**
      *  Creates a new connection to the English Wikipedia.
      *  @since 0.02
      */
     public Wiki()
     {
-        this("");
+        this("en.wikipedia.org");
     }
 
     /**
@@ -490,6 +480,7 @@ public class Wiki implements Serializable
         this.domain = domain;
 
         // init variables
+        log(Level.CONFIG, "<init>", "Using Wiki.java " + version);
         initVars();
     }
 
@@ -517,7 +508,7 @@ public class Wiki implements Serializable
      *  *Your wiki not supporting HTTPS
      *  *Server-side cache management (maxage and smaxage API parameters)
      *  
-     *  </br></br>Contributed by Tedder 
+     *  <br><br>Contributed by Tedder 
      *  @since 0.24
      */
     protected void initVars()
@@ -571,7 +562,7 @@ public class Wiki implements Serializable
     public void setThrottle(int throttle)
     {
         this.throttle = throttle;
-        log(Level.CONFIG, "Throttle set to " + throttle + " milliseconds", "setThrottle");
+        log(Level.CONFIG, "setThrottle", "Throttle set to " + throttle + " milliseconds");
     }
 
     /**
@@ -779,7 +770,7 @@ public class Wiki implements Serializable
     public void setMaxLag(int lag)
     {
         maxlag = lag;
-        log(Level.CONFIG, "Setting maximum allowable database lag to " + lag, "setMaxLag");
+        log(Level.CONFIG, "setMaxLag", "Setting maximum allowable database lag to " + lag);
         initVars();
     }
 
@@ -806,7 +797,7 @@ public class Wiki implements Serializable
     public void setAssertionMode(int mode)
     {
         assertion = mode;
-        log(Level.CONFIG, "Set assertion mode to " + mode, "setAssertionMode");
+        log(Level.CONFIG, "setAssertionMode", "Set assertion mode to " + mode);
     }
 
     /**
@@ -837,7 +828,7 @@ public class Wiki implements Serializable
     public void setStatusCheckInterval(int interval)
     {
         statusinterval = interval;
-        log(Level.CONFIG, "Status check interval set to " + interval, "setStatusCheckInterval");
+        log(Level.CONFIG, "setStatusCheckInterval", "Status check interval set to " + interval);
     }
 
     // META STUFF
@@ -881,11 +872,11 @@ public class Wiki implements Serializable
                 max = 5000;
                 slowmax = 500;
             }
-            log(Level.INFO, "Successfully logged in as " + username + ", highLimit = " + apihighlimit, "login");
+            log(Level.INFO, "login", "Successfully logged in as " + username + ", highLimit = " + apihighlimit);
         }
         else
         {
-            log(Level.WARNING, "Failed to log in as " + username, "login");
+            log(Level.WARNING, "login", "Failed to log in as " + username);
             try
             {
                 Thread.sleep(20000); // to prevent brute force
@@ -921,7 +912,7 @@ public class Wiki implements Serializable
         user = null;
         max = 500;
         slowmax = 50;
-        log(Level.INFO, "Logged out", "logout");
+        log(Level.INFO, "logout", "Logged out");
     }
 
     /**
@@ -968,7 +959,7 @@ public class Wiki implements Serializable
     {
         String line = fetch(query + "meta=siteinfo&siprop=dbrepllag", "getCurrentDatabaseLag");
         String lag = parseAttribute(line, "lag", 0);
-        log(Level.INFO, "Current database replication lag is " + lag + " seconds", "getCurrentDatabaseLag");
+        log(Level.INFO, "getCurrentDatabaseLag", "Current database replication lag is " + lag + " seconds");
         return Integer.parseInt(lag);
     }
 
@@ -1299,7 +1290,7 @@ public class Wiki implements Serializable
                 url.append("%7C");
         }
 
-        log(Level.INFO, "Successfully retrieved page info for " + Arrays.toString(pages), "getPageInfo");
+        log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + Arrays.toString(pages));
         return info;
     }
     
@@ -1430,7 +1421,7 @@ public class Wiki implements Serializable
             namespaces.put(normalize(decode(line.substring(b, c))), new Integer(ns));
         }
 
-        log(Level.INFO, "Successfully retrieved namespace list (" + (namespaces.size()) + " namespaces)", "namespace");
+        log(Level.INFO, "namespace", "Successfully retrieved namespace list (" + namespaces.size() + " namespaces)");
      }
     
     /**
@@ -1472,7 +1463,7 @@ public class Wiki implements Serializable
         // go for it
         String url = base + URLEncoder.encode(normalize(title), "UTF-8") + "&action=raw";
         String temp = fetch(url, "getPageText");
-        log(Level.INFO, "Successfully retrieved text of " + title, "getPageText");
+        log(Level.INFO, "getPageText", "Successfully retrieved text of " + title);
         return decode(temp);
     }
 
@@ -1664,7 +1655,7 @@ public class Wiki implements Serializable
         if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "edit()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
+            log(Level.WARNING, "edit", "Cannot edit - permission denied. " + ex);
             throw ex;
         }
         String wpEditToken = (String)info.get("token");
@@ -1703,7 +1694,7 @@ public class Wiki implements Serializable
         // done
         if (response.contains("error code=\"editconflict\""))
         {
-            log(Level.WARNING, "Edit conflict on " + title, "edit");
+            log(Level.WARNING, "edit", "Edit conflict on " + title);
             return; // hmmm, perhaps we should throw an exception. I'm open to ideas.
         }
         try
@@ -1716,17 +1707,17 @@ public class Wiki implements Serializable
             if (retry)
             {
                 retry = false;
-                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "edit");
+                log(Level.WARNING, "edit", "Exception: " + e.getMessage() + " Retrying...");
                 edit(title, text, summary, minor, bot, section, basetime);
             }
             else
             {
-                logger.logp(Level.SEVERE, "Wiki", "edit()", "[" + domain + "] EXCEPTION:  ", e);
+                log(Level.SEVERE, "edit", "EXCEPTION: " + e);
                 throw e;
             }
         }
         if (retry)
-            log(Level.INFO, "Successfully edited " + title, "edit");
+            log(Level.INFO, "edit", "Successfully edited " + title);
         retry = true;
 
         // throttle
@@ -1813,7 +1804,7 @@ public class Wiki implements Serializable
         HashMap info = getPageInfo(title);
         if (!(Boolean)info.get("exists"))
         {
-            logger.log(Level.INFO, "Page \"{0}\" does not exist.", title);
+            log(Level.INFO, "delete", "Page \"" + title + "\" does not exist.");
             return;
         }
         String deleteToken = (String)info.get("token");
@@ -1840,17 +1831,17 @@ public class Wiki implements Serializable
             if (retry)
             {
                 retry = false;
-                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "delete");
+                log(Level.WARNING, "delete", "Exception: " + e.getMessage() + " Retrying...");
                 delete(title, reason);
             }
             else
             {
-                logger.logp(Level.SEVERE, "Wiki", "delete()", "[" + domain + "] EXCEPTION:  ", e);
+                log(Level.SEVERE, "delete", "EXCEPTION: " + e);
                 throw e;
             }
         }
         if (retry)
-            log(Level.INFO, "Successfully deleted " + title, "delete");
+            log(Level.INFO, "delete", "Successfully deleted " + title);
         retry = true;
 
         // throttle
@@ -1897,7 +1888,7 @@ public class Wiki implements Serializable
             post(apiUrl + "action=purge", url.toString(), "purge");
         else
             fetch(apiUrl + "action=purge" + url.toString(), "purge");
-        log(Level.INFO, log.toString(), "purge"); // done, log
+        log(Level.INFO, "purge", log.toString()); // done, log
     }
 
     /**
@@ -1922,7 +1913,7 @@ public class Wiki implements Serializable
             images.add(decode(parseAttribute(line, "title", a)));
         
         int temp = images.size();
-        log(Level.INFO, "Successfully retrieved images used on " + title + " (" + temp + " images)", "getImagesOnPage");
+        log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + title + " (" + temp + " images)");
         return images.toArray(new String[temp]);
     }
 
@@ -1947,7 +1938,7 @@ public class Wiki implements Serializable
             categories.add(decode(parseAttribute(line, "title", a)));
         
         int temp = categories.size();
-        log(Level.INFO, "Successfully retrieved categories of " + title + " (" + temp + " categories)", "getCategories");
+        log(Level.INFO, "getCategories", "Successfully retrieved categories of " + title + " (" + temp + " categories)");
         return categories.toArray(new String[temp]);
     }
 
@@ -1976,7 +1967,7 @@ public class Wiki implements Serializable
             templates.add(decode(parseAttribute(line, "title", a)));
         
         int size = templates.size();
-        log(Level.INFO, "Successfully retrieved templates used on " + title + " (" + size + " templates)", "getTemplates");
+        log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + title + " (" + size + " templates)");
         return templates.toArray(new String[size]);
     }
 
@@ -2005,7 +1996,7 @@ public class Wiki implements Serializable
             String page = decode(line.substring(b, c));
             interwikis.put(language, page);
         }
-        log(Level.INFO, "Successfully retrieved interwiki links on " + title, "getInterWikiLinks");
+        log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links on " + title);
         return interwikis;
     }
 
@@ -2047,7 +2038,7 @@ public class Wiki implements Serializable
         while (plcontinue != null);
         
         int size = links.size();
-    	log(Level.INFO, "Successfully retrieved links used on " + title + " (" + size + " links)", "getLinksOnPage");
+    	log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
     	return links.toArray(new String[size]);
     }
 
@@ -2081,7 +2072,7 @@ public class Wiki implements Serializable
             String number = parseAttribute(line, "number", a);
             map.put(number, title);
         }
-        log(Level.INFO, "Successfully retrieved section map for " + page, "getSectionMap");
+        log(Level.INFO, "getSectionMap", "Successfully retrieved section map for " + page);
         return map;
     }
 
@@ -2239,7 +2230,7 @@ public class Wiki implements Serializable
             else
                 temp[i].sizediff = temp[i].size;
         }
-        log(Level.INFO, "Successfully retrieved page history of " + title + " (" + size + " revisions)", "getPageHistory");
+        log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
         return temp;
     }
 
@@ -2295,7 +2286,7 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("move"))
         {
             CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot move pages.");
-            logger.logp(Level.SEVERE, "Wiki", "move()", "[" + domain + "] Cannot move - permission denied.", ex);
+            log(Level.SEVERE, "move", "Cannot move - permission denied: " + ex);
             throw ex;
         }
         statusCheck();
@@ -2314,7 +2305,7 @@ public class Wiki implements Serializable
         if (!checkRights(info, "move"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "move()", "[" + getDomain() + "] Cannot move - permission denied.", ex);
+            log(Level.WARNING, "move", "Cannot move - permission denied. " + ex);
             throw ex;
         }
         String wpMoveToken = (String)info.get("token");
@@ -2350,17 +2341,17 @@ public class Wiki implements Serializable
             if (retry)
             {
                 retry = false;
-                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "move");
+                log(Level.WARNING, "move", "Exception: " + e.getMessage() + " Retrying...");
                 move(title, newTitle, reason, noredirect, movetalk, movesubpages);
             }
             else
             {
-                logger.logp(Level.SEVERE, "Wiki", "move()", "[" + domain + "] EXCEPTION:  ", e);
+                log(Level.SEVERE, "move", "EXCEPTION: " + e);
                 throw e;
             }
         }
         if (retry)
-            log(Level.INFO, "Successfully moved " + title + " to " + newTitle, "move");
+            log(Level.INFO, "move", "Successfully moved " + title + " to " + newTitle);
         retry = true;
 
         // throttle
@@ -2500,7 +2491,7 @@ public class Wiki implements Serializable
         // check if cookies have expired
         if (!cookies.containsValue(user.getUsername()))
         {
-            logger.log(Level.SEVERE, "Cookies have expired.");
+            log(Level.SEVERE, "rollback", "Cookies have expired.");
             logout();
             throw new CredentialExpiredException("Cookies have expired.");
         }
@@ -2509,7 +2500,7 @@ public class Wiki implements Serializable
         Revision top = getTopRevision(revision.getPage());
         if (!top.equals(revision))
         {
-            log(Level.INFO, "Rollback failed: revision is not the most recent", "rollback");
+            log(Level.INFO, "rollback", "Rollback failed: revision is not the most recent");
             return;
         }
 
@@ -2539,9 +2530,9 @@ public class Wiki implements Serializable
         {
             // ignorable errors
             if (response.contains("alreadyrolled"))
-                log(Level.INFO, "Edit has already been rolled back.", "rollback");
+                log(Level.INFO, "rollback", "Edit has already been rolled back.");
             else if (response.contains("onlyauthor"))
-                log(Level.INFO, "Cannot rollback as the page only has one author.", "rollback");
+                log(Level.INFO, "rollback", "Cannot rollback as the page only has one author.");
             // probably not ignorable (otherwise success)
             else if (!response.contains("rollback title="))
                 checkErrors(response, "rollback");
@@ -2552,17 +2543,17 @@ public class Wiki implements Serializable
             if (retry)
             {
                 retry = false;
-                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "rollback");
+                log(Level.WARNING, "rollback", "Exception: " + e.getMessage() + " Retrying...");
                 rollback(revision, bot, reason);
             }
             else
             {
-                logger.logp(Level.SEVERE, "Wiki", "rollback()", "[" + domain + "] EXCEPTION:  ", e);
+                log(Level.SEVERE, "rollback", "EXCEPTION: " + e);
                 throw e;
             }
         }
         if (retry)
-            log(Level.INFO, "Successfully reverted edits by " + user + " on " + revision.getPage(), "rollback");
+            log(Level.INFO, "rollback", "Successfully reverted edits by " + user + " on " + revision.getPage());
         retry = true;
     }
 
@@ -2618,7 +2609,7 @@ public class Wiki implements Serializable
         if (!checkRights(info, "edit"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "undo()", "[" + getDomain() + "] Cannot edit - permission denied.", ex);
+            log(Level.WARNING, "undo", "Cannot edit - permission denied." + ex);
             throw ex;
         }
         String wpEditToken = (String)info.get("token");
@@ -2658,12 +2649,12 @@ public class Wiki implements Serializable
             if (retry)
             {
                 retry = false;
-                log(Level.WARNING, "Exception: " + e.getMessage() + " Retrying...", "undo");
+                log(Level.WARNING, "undo", "Exception: " + e.getMessage() + " Retrying...");
                 undo(rev, to, reason, minor, bot);
             }
             else
             {
-                logger.logp(Level.SEVERE, "Wiki", "undo()", "[" + domain + "] EXCEPTION:  ", e);
+                log(Level.SEVERE, "undo", "EXCEPTION: " + e);
                 throw e;
             }
         }
@@ -2672,7 +2663,7 @@ public class Wiki implements Serializable
             String log = "Successfully undid revision(s) " + rev.getRevid();
             if (to != null)
                 log += (" - " + to.getRevid());
-            log(Level.INFO, log, "undo");
+            log(Level.INFO, "undo", log);
         }
         retry = true;
 
@@ -2819,7 +2810,7 @@ public class Wiki implements Serializable
         int c;
         while ((c = in.read()) != -1)
             out.write(c);
-        log(Level.INFO, "Successfully retrieved image \"" + title + "\"", "getImage");
+        log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
         return out.toByteArray();
     }
 
@@ -2892,7 +2883,7 @@ public class Wiki implements Serializable
             duplicates.add("File:" + decode(parseAttribute(line, "name", a)));
 
         int size = duplicates.size();
-        log(Level.INFO, "Successfully retrieved duplicates of File:" + file + " (" + size + " files)", "getDuplicates");
+        log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of File:" + file + " (" + size + " files)");
         return duplicates.toArray(new String[size]);
     }
 
@@ -2979,7 +2970,7 @@ public class Wiki implements Serializable
 
                 // scrape archive name for logging purposes
                 String archive = parseAttribute(line, "archivename", 0);
-                log(Level.INFO, "Successfully retrieved old image \"" + archive + "\"", "getImage");
+                log(Level.INFO, "getImage", "Successfully retrieved old image \"" + archive + "\"");
                 return out.toByteArray();
             }
         }
@@ -3047,7 +3038,7 @@ public class Wiki implements Serializable
         while (aicontinue != null);
         
         int size = uploads.size();
-        log(Level.INFO, "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)", "getUploads");
+        log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)");
         return uploads.toArray(new LogEntry[size]);
     }
 
@@ -3084,7 +3075,7 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("upload"))
         {
             CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot upload files.");
-            logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] Cannot upload - permission denied.", ex);
+            log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
         statusCheck();
@@ -3095,7 +3086,7 @@ public class Wiki implements Serializable
         if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
-            logger.logp(Level.WARNING, "Wiki", "upload()", "[" + getDomain() + "] Cannot upload - permission denied.", ex);
+            log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
         String wpEditToken = (String)info.get("token");
@@ -3163,7 +3154,7 @@ public class Wiki implements Serializable
                 if (response.contains("error code=\"fileexists-shared-forbidden\""))
                 {
                     CredentialException ex = new CredentialException("Cannot overwrite file hosted on central repository.");
-                    logger.logp(Level.WARNING, "Wiki", "upload()", "[" + getDomain() + "] Cannot upload - permission denied.", ex);
+                    log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
                     throw ex;
                 }
                 checkErrors(response, "upload");
@@ -3172,7 +3163,7 @@ public class Wiki implements Serializable
             {
                 fi.close();
                 // don't bother retrying - uploading is a pain
-                logger.logp(Level.SEVERE, "Wiki", "upload()", "[" + domain + "] EXCEPTION:  ", e);
+                log(Level.SEVERE, "upload", "EXCEPTION: " + e);
                 throw e;
             }
         }
@@ -3204,7 +3195,7 @@ public class Wiki implements Serializable
         {
             // nobody cares
         }
-        log(Level.INFO, "Successfully uploaded to File:" + filename + ".", "upload");
+        log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
     }
 
     // USER METHODS
@@ -3306,7 +3297,7 @@ public class Wiki implements Serializable
         }
         while (next != null);
         int size = members.size();
-        log(Level.INFO, "Successfully retrieved user list (" + size + " users)", "allUsers");
+        log(Level.INFO, "allUsers", "Successfully retrieved user list (" + size + " users)");
         return members.toArray(new String[size]);
     }
 
@@ -3461,7 +3452,7 @@ public class Wiki implements Serializable
 
         // clean up
         int size = revisions.size();
-        log(Level.INFO, "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + size + " edits)", "contribs");
+        log(Level.INFO, "contribs", "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + size + " edits)");
         return revisions.toArray(new Revision[size]);
     }
 
@@ -3494,13 +3485,13 @@ public class Wiki implements Serializable
         if (!(Boolean)user.getUserInfo().get("emailable"))
         {
             // should throw an exception here
-            logger.log(Level.WARNING, "User {0} is not emailable", user.getUsername());
+            log(Level.WARNING, "emailUser", "User " + user.getUsername() + " is not emailable");
             return;
         }
         String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
         if (token.equals("\\+"))
         {
-            logger.log(Level.SEVERE, "Cookies have expired.");
+            log(Level.SEVERE, "emailUser", "Cookies have expired.");
             logout();
             throw new CredentialExpiredException("Cookies have expired.");
         }
@@ -3536,7 +3527,7 @@ public class Wiki implements Serializable
             // nobody cares
         }
 
-        log(Level.INFO, "Successfully emailed " + user.getUsername() + ".", "emailUser");
+        log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
     }
 
     // WATCHLIST METHODS
@@ -3609,7 +3600,7 @@ public class Wiki implements Serializable
             data.append(URLEncoder.encode(watchToken, "UTF-8"));
             post(apiUrl + "action=watch", data.toString(), state);
         }
-        log(Level.INFO, "Successfully " + state + "ed " + Arrays.toString(titles), state);
+        log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
     }
 
     /**
@@ -3670,7 +3661,7 @@ public class Wiki implements Serializable
         while (wrcontinue != null);
         // log
         int size = watchlist.size();
-        log(Level.INFO, "Successfully retrieved raw watchlist (" + size + " items)", "getRawWatchlist");
+        log(Level.INFO, "getRawWatchlist", "Successfully retrieved raw watchlist (" + size + " items)");
         return watchlist.toArray(new String[size]);
     }
 
@@ -3746,7 +3737,7 @@ public class Wiki implements Serializable
         }
         while(wlstart != null);
         int size = wl.size();
-        log(Level.INFO, "Successfully retrieved watchlist (" + size + " items)", "watchlist");
+        log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + size + " items)");
         return wl.toArray(new Revision[size]);
     }
 
@@ -3812,7 +3803,7 @@ public class Wiki implements Serializable
                 results.add(result);
             }
         }
-        log(Level.INFO, "Successfully searched for string \"" + search + "\" (" + results.size() + " items found)", "search");
+        log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + results.size() + " items found)");
         return results.toArray(new String[0][0]);
     }
 
@@ -3855,7 +3846,7 @@ public class Wiki implements Serializable
         }
         while (next != null);
         int size = pages.size();
-        log(Level.INFO, "Successfully retrieved usages of File:" + image + " (" + size + " items)", "imageUsage");
+        log(Level.INFO, "imageUsage", "Successfully retrieved usages of File:" + image + " (" + size + " items)");
         return pages.toArray(new String[size]);
     }
 
@@ -3918,7 +3909,7 @@ public class Wiki implements Serializable
         while (next != null);
 
         int size = pages.size();
-        log(Level.INFO, "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + size + " items)", "whatLinksHere");
+        log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
     }
 
@@ -3959,7 +3950,7 @@ public class Wiki implements Serializable
         }
         while (!next.equals("done"));
         int size = pages.size();
-        log(Level.INFO, "Successfully retrieved transclusions of " + title + " (" + size + " items)", "whatTranscludesHere");
+        log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
     }
     
@@ -4041,7 +4032,7 @@ public class Wiki implements Serializable
         while (next != null);
         
         int size = members.size();
-        log(Level.INFO, "Successfully retrieved contents of Category:" + name + " (" + size + " items)", "getCategoryMembers");
+        log(Level.INFO, "getCategoryMembers", "Successfully retrieved contents of Category:" + name + " (" + size + " items)");
         return members.toArray(new String[size]);
     }
 
@@ -4125,7 +4116,7 @@ public class Wiki implements Serializable
         }
 
         // return value
-        log(Level.INFO, "Successfully returned instances of external link " + pattern + " (" + ret[0].size() + " links)", "linksearch");
+        log(Level.INFO, "linksearch", "Successfully returned instances of external link " + pattern + " (" + ret[0].size() + " links)");
         return ret;
     }
 
@@ -4254,7 +4245,7 @@ public class Wiki implements Serializable
         logRecord.append(" (");
         logRecord.append(size);
         logRecord.append(" entries)");
-        log(Level.INFO, logRecord.toString(), "getIPBlockList");
+        log(Level.INFO, "getIPBlockList", logRecord.toString());
         return entries.toArray(new LogEntry[size]);
      }
 
@@ -4455,7 +4446,7 @@ public class Wiki implements Serializable
         console.append(", ");
         console.append(size);
         console.append(" entries)");
-        log(Level.INFO, console.toString(), "getLogEntries");
+        log(Level.INFO, "getLogEntries", console.toString());
         return entries.toArray(new LogEntry[size]);
     }
 
@@ -4759,7 +4750,7 @@ public class Wiki implements Serializable
 
         // tidy up
         int size = pages.size();
-        log(Level.INFO, "Successfully retrieved page list (" + size + " pages)", "listPages");
+        log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
         return pages.toArray(new String[size]);
     }
     
@@ -4805,7 +4796,7 @@ public class Wiki implements Serializable
         }
         while (offset != null);
         int temp = pages.size();
-        log(Level.INFO, "Successfully retrieved [[Special:" + page + "]] (" + temp + " pages)", "queryPage");
+        log(Level.INFO, "queryPage", "Successfully retrieved [[Special:" + page + "]] (" + temp + " pages)");
         return pages.toArray(new String[temp]);
     }
 
@@ -4990,7 +4981,7 @@ public class Wiki implements Serializable
         }
         while (revisions.size() < amount);
         int temp = revisions.size();
-        log(Level.INFO, "Successfully retrieved recent changes (" + temp + " revisions)", "recentChanges");
+        log(Level.INFO, "recentChanges", "Successfully retrieved recent changes (" + temp + " revisions)");
         return revisions.toArray(new Revision[temp]);
     }
 
@@ -5099,7 +5090,7 @@ public class Wiki implements Serializable
             }
         }
         while(iwblcontinue != null);
-        log(Level.INFO, "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)", "getInterWikiBacklinks");
+        log(Level.INFO, "getInterWikiBacklinks", "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)");
         return links.toArray(new String[0][0]);
     }
 
@@ -5597,7 +5588,7 @@ public class Wiki implements Serializable
             // go for it
             String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=raw";
             String temp = fetch(url, "Revision.getText");
-            log(Level.INFO, "Successfully retrieved text of revision " + revid, "Revision.getText");
+            log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
             return decode(temp);
         }
 
@@ -5619,7 +5610,7 @@ public class Wiki implements Serializable
             // go for it
             String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=render";
             String temp = fetch(url, "Revision.getRenderedText");
-            log(Level.INFO, "Successfully retrieved rendered text of revision " + revid, "Revision.getRenderedText");
+            log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
             return decode(temp);
         }
 
@@ -6030,7 +6021,7 @@ public class Wiki implements Serializable
                 synchronized(this)
                 {
                     int time = connection.getHeaderFieldInt("Retry-After", 10);
-                    log(Level.WARNING, "Current database lag " + lag + " s exceeds " + maxlag + " s, waiting " + time + " s.", caller);
+                    log(Level.WARNING, caller, "Current database lag " + lag + " s exceeds " + maxlag + " s, waiting " + time + " s.");
                     Thread.sleep(time * 1000);
                 }
             }
@@ -6191,25 +6182,25 @@ public class Wiki implements Serializable
         // rate limit (automatic retry), though might be a long one (e.g. email)
         if (line.contains("error code=\"ratelimited\""))
         {
-            log(Level.WARNING, "Server-side throttle hit.", caller);
+            log(Level.WARNING, caller, "Server-side throttle hit.");
             throw new HttpRetryException("Action throttled.", 503);
         }
         // blocked! (note here the \" in blocked is deliberately missing for emailUser()
         if (line.contains("error code=\"blocked") || line.contains("error code=\"autoblocked\""))
         {
-            log(Level.SEVERE, "Cannot " + caller + " - user is blocked!.", caller);
+            log(Level.SEVERE, caller, "Cannot " + caller + " - user is blocked!.");
             throw new AccountLockedException("Current user is blocked!");
         }
         // cascade protected
         if (line.contains("error code=\"cascadeprotected\""))
         {
-            log(Level.WARNING, "Cannot " + caller + " - page is subject to cascading protection.", caller);
+            log(Level.WARNING, caller, "Cannot " + caller + " - page is subject to cascading protection.");
             throw new CredentialException("Page is cascade protected");
         }
         // database lock (automatic retry)
         if (line.contains("error code=\"readonly\""))
         {
-            log(Level.WARNING, "Database locked!", caller);
+            log(Level.WARNING, caller, "Database locked!");
             throw new HttpRetryException("Database locked!", 503);
         }
         // unknown error
@@ -6327,7 +6318,7 @@ public class Wiki implements Serializable
         String token = (String)pageinfo.get("token");
         if (token.equals("\\+") && user != null)
         {
-            logger.log(Level.SEVERE, "Session has expired!");
+            log(Level.SEVERE, "", "Session has expired!");
             logout();
             throw new CredentialExpiredException("Cookies have expired.");
         }
@@ -6428,26 +6419,10 @@ public class Wiki implements Serializable
      *  @param level the level to log at
      *  @since 0.06
      */
-    protected void log(Level level, String text, String method)
+    protected void log(Level level, String method, String text)
     {
-        StringBuilder sb = new StringBuilder(100);
-        sb.append('[');
-        sb.append(domain);
-        sb.append("] ");
-        sb.append(text);
-        logger.logp(level, "Wiki", method, sb.toString());
-    }
-
-    /**
-     *  Change the logging level of this object's Logger object.
-     *  @param level the new logging level
-     *  @since 0.24
-     *  @deprecated <tt>logger</tt> is now protected, can call setLevel there
-     */
-    @Deprecated
-    public void setLogLevel(Level level)
-    {
-    	logger.setLevel(level);
+        Logger logger = Logger.getLogger("wiki");
+        logger.logp(level, "Wiki", method, "[{0}] {1}", new Object[] { domain, text });
     }
 
     /**
@@ -6458,6 +6433,7 @@ public class Wiki implements Serializable
      */
     protected void logurl(String url, String method)
     {
+        Logger logger = Logger.getLogger("wiki");
         logger.logp(Level.INFO, "Wiki", method, "Fetching URL {0}", url);
     }
 
