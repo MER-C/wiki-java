@@ -77,7 +77,8 @@ public class WMFWiki extends Wiki
             wikis.add(new WMFWiki(line.substring(a, b)));
         }
         int size = wikis.size();
-        logger.log(Level.INFO, "Successfully retrieved site matrix ({0} wikis).", size);
+        Logger temp = Logger.getLogger("wiki");
+        temp.log(Level.INFO, "WMFWiki.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
         return wikis.toArray(new WMFWiki[size]);
     }
 }
