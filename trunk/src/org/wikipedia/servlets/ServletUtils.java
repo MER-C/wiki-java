@@ -63,17 +63,20 @@ public class ServletUtils
     }
     
     /**
-     *  Generates a HTML head with the given title.
+     *  Generates a HTML head with the given title and optional content.
      *  @param title the page title
+     *  @param optional the optional content
      */
-    public static String generateHead(String title)
+    public static String generateHead(String title, String optional)
     {
         // don't forget to update timeout.html and index.html
         StringBuilder sb = new StringBuilder(500);
         sb.append("<!doctype html>\n<html>\n<head>\n<title>");
         sb.append(title);
-        sb.append("</title>\n<link rel=stylesheet href=\"styles.css\">");
-        sb.append("\n</head>\n\n<body>\n");
+        sb.append("</title>\n<link rel=stylesheet href=\"styles.css\">\n");
+        if (optional != null)
+            sb.append(optional);
+        sb.append("</head>\n\n<body>\n");
         return sb.toString();
     }
     
@@ -107,14 +110,20 @@ public class ServletUtils
      *  @param param the form parameter for the combo box
      *  @param options a map, where key = option value, value = what is displayed
      *  to the user in the order that they are specified
-     *  @param selected the initially selected option value (may be null, in which
+     *  @param selected the initially selected option value
+     *  @param disabled whether this element is disabled
      */
-    public static String generateComboBox(String param, LinkedHashMap<String, String> options, String selected)
+    public static String generateComboBox(String param, LinkedHashMap<String, String> options, String selected, boolean disabled)
     {
         StringBuilder temp = new StringBuilder(500);
         temp.append("<select name=\"");
         temp.append(param);
-        temp.append("\">\n");
+        temp.append("\" id=\"");
+        temp.append(param);
+        temp.append("\"");
+        if (disabled)
+            temp.append(" disabled");
+        temp.append(">\n");
         for (Map.Entry<String, String> entry : options.entrySet())
         {
             temp.append("<option value=\"");

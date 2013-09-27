@@ -91,8 +91,8 @@ public class XWikiLinksearch extends HttpServlet
         if (domain == null)
             System.exit(0);
         StringBuilder builder = new StringBuilder(10000);
-        linksearch(domain, builder, top40wikis, true);
-        linksearch(domain, builder, importantwikis, true);
+        linksearch(domain, builder, top40wikis, true, true);
+        linksearch(domain, builder, importantwikis, true, true);
         out.write(builder.toString());
         out.close();
     }
@@ -114,49 +114,87 @@ public class XWikiLinksearch extends HttpServlet
         response.setContentType("text/html; charset=UTF-8");
         PrintWriter out = response.getWriter();
         StringBuilder buffer = new StringBuilder(10000);
-
+        
+        StringBuilder script = new StringBuilder("<script lang=javascript><!--\n");
+        script.append("function disable(a) { \n");
+        script.append("  document.getElementById('set').disabled  = (a == 1);\n");
+        script.append("  document.getElementById('wiki').disabled = (a == 0);\n");
+        script.append("}//-->\n</script>\n");
+        
         // header
-        buffer.append(ServletUtils.generateHead("Cross-wiki linksearch"));
+        buffer.append(ServletUtils.generateHead("Cross-wiki linksearch", script.toString()));
         buffer.append("<p>This tool searches various Wikimedia projects for a ");
         buffer.append("specific link. Enter a domain name (example.com, not *.example.com or ");
-        buffer.append("http://example.com) below. This process takes up to 20 seconds.\n");
+        buffer.append("http://example.com) below. A timeout is more likely when searching for ");
+        buffer.append("more wikis or protocols.\n");
 
         String domain = request.getParameter("link");
         String set = request.getParameter("set");
-        buffer.append("<form action=\"./linksearch.jsp\" method=GET>\n");
+        String wikiinput = request.getParameter("wiki");
+        buffer.append("<form name=\"spamform\" action=\"./linksearch.jsp\" method=GET>\n");
         // wiki set combo box
         buffer.append("<table>");
-        buffer.append("<tr><td>Wikis to search:\n<td>");
+        buffer.append("<tr><td><input type=radio name=radio onclick=\"disable(0)\"");
+        if (wikiinput == null)
+            buffer.append(" checked");
+        buffer.append("><td>Wikis to search:\n<td>");
         LinkedHashMap<String, String> options = new LinkedHashMap<String, String>(10);
         options.put("top20", "Top 20 Wikipedias");
         options.put("top40", "Top 40 Wikipedias");
         options.put("major", "Major Wikimedia projects");
-        buffer.append(ServletUtils.generateComboBox("set", options, set));
+        buffer.append(ServletUtils.generateComboBox("set", options, set, wikiinput != null));
+        // wiki
+        buffer.append("<tr><td><input type=radio name=radio onclick=\"disable(1)\"");
+        if (wikiinput != null)
+            buffer.append(" checked");
+        buffer.append("><td>Single wiki:<td><input type=text id=wiki name=wiki");
+        if (wikiinput != null)
+        {
+            buffer.append(" value=\"");
+            buffer.append(ServletUtils.sanitize(wikiinput));
+            buffer.append("\"");
+        }
+        else
+            buffer.append(" disabled");
         // domain name text box
-        buffer.append("<tr><td>Domain to search: <td><input type=text name=link");
+        buffer.append(">\n<tr><td colspan=2>Domain to search: <td><input type=text name=link");
         if (domain != null)
         {
             buffer.append(" value=\"");
             buffer.append(ServletUtils.sanitize(domain));
             buffer.append("\"");
         }
+        buffer.append(">\n<tr><td colspan=2>Additional protocols: ");
         // https checkbox
         boolean https = (request.getParameter("https") != null);
-        buffer.append(">\n</table>\n<input type=checkbox name=\"https\" value=\"1\"");
+        buffer.append("<td><input type=checkbox name=https value=1");
         if (https)
             buffer.append(" checked");
-        buffer.append(">Include HTTPS (timeout more likely)<br>\n");
-        buffer.append("\n<input type=submit value=\"Search\">\n</form>\n");
+        buffer.append(">HTTPS\n");
+        // mailto checkbox
+        boolean mailto = (request.getParameter("mailto") != null);
+        buffer.append("<input type=checkbox name=mailto value=1");
+        if (mailto)
+            buffer.append(" checked");
+        buffer.append(">mailto\n");
+        // submit
+        buffer.append("</table>\n<br>\n<input type=submit value=Search>\n</form>\n");
         if (domain != null)
         {
             try
             {
-                if (set == null || set.equals("top20"))
-                    linksearch(domain, buffer, top20wikis, https);
+                // this works because disabled inputs aren't submitted
+                if (wikiinput != null)
+                {
+                    Wiki[] tempwiki = new Wiki[] { new Wiki(wikiinput) };
+                    linksearch(domain, buffer, tempwiki, https, mailto);
+                }
+                else if (set.equals("top20"))
+                    linksearch(domain, buffer, top20wikis, https, mailto);
                 else if (set.equals("top40"))
-                    linksearch(domain, buffer, top40wikis, https);
+                    linksearch(domain, buffer, top40wikis, https, mailto);
                 else if (set.equals("major"))
-                    linksearch(domain, buffer, importantwikis, https);
+                    linksearch(domain, buffer, importantwikis, https, mailto);
                 else
                     buffer.append("ERROR: Invalid wiki set.");
             }
@@ -177,7 +215,7 @@ public class XWikiLinksearch extends HttpServlet
         out.close();
     }
 
-    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis, boolean https) throws IOException
+    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis, boolean https, boolean mailto) throws IOException
     {
         buffer.append("<hr>\n<h2>Searching for links to ");
         buffer.append(ServletUtils.sanitize(domain));
@@ -189,6 +227,12 @@ public class XWikiLinksearch extends HttpServlet
             if (https)
             {
                 ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
+                temp[0].addAll(temp2[0]);
+                temp[1].addAll(temp2[1]);
+            }
+            if (mailto)
+            {
+                ArrayList[] temp2 = wiki.linksearch("*." + domain, "mailto");
                 temp[0].addAll(temp2[0]);
                 temp[1].addAll(temp2[1]);
             }
