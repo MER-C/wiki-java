@@ -67,7 +67,7 @@ public class PrefixContribs extends HttpServlet
         StringBuilder buffer = new StringBuilder(50000);
         
         // header
-        buffer.append(ServletUtils.generateHead("Prefix contributions"));
+        buffer.append(ServletUtils.generateHead("Prefix contributions", null));
         buffer.append("<p>This tool retrieves contributions of an IP ");
         buffer.append("range or username prefix for the last 7 days. To search for an IP\n");
         buffer.append("range, use a search key of (say) 111.222. for 111.222.0.0/16. /24s ");
