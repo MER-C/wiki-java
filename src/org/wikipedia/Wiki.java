@@ -428,7 +428,7 @@ public class Wiki implements Serializable
 
     // preferences
     private int max = 500;
-    private int slowmax = 50;
+    private int slowmax = 10;
     private int throttle = 10000; // throttle
     private int maxlag = 5;
     private int assertion = 0; // assertion mode
@@ -1204,90 +1204,82 @@ public class Wiki implements Serializable
     public HashMap[] getPageInfo(String[] pages) throws IOException
     {
         HashMap[] info = new HashMap[pages.length];
-        String urlstart = query + "prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=";
-        StringBuilder url = new StringBuilder(urlstart);
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
+        String[] titles = constructTitleString(pages);
         int k = 0;
-        for (int i = 0; i < pages.length; i++)
+        for (int i = 0; i < titles.length; i++)
         {
-            info[i] = new HashMap(15);
-            url.append(URLEncoder.encode(normalize(pages[i]), "UTF-8"));
-            // send off in batches of slowmax
-            if (i % slowmax == slowmax - 1 || i == pages.length - 1)
+            String line = fetch(url.toString() + titles[i], "getPageInfo");
+            
+            // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
+            // <protection />
+            // </page>
+            for (int j = line.indexOf("<page "); j > 0; j = line.indexOf("<page ", ++j))
             {
-                String line = fetch(url.toString(), "getPageInfo");
-                // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
-                // <protection />
-                // </page>
-                for (int j = line.indexOf("<page "); j > 0; j = line.indexOf("<page ", ++j))
+                int x = line.indexOf("</page>", j);
+                String item = line.substring(j, x);
+
+                // does the page exist?
+                boolean exists = !item.contains("missing=\"\"");
+                info[k].put("exists", exists);
+                if (exists)
                 {
-                    int x = line.indexOf("</page>", j);
-                    String item = line.substring(j, x);
-                    
-                    // does the page exist?
-                    boolean exists = !item.contains("missing=\"\"");
-                    info[k].put("exists", exists);
-                    if (exists)
-                    {
-                        info[k].put("lastpurged", timestampToCalendar(convertTimestamp(parseAttribute(item, "touched", 0))));
-                        info[k].put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
-                        info[k].put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
-                    }
-                    else
-                    {
-                        info[k].put("lastedited", null);
-                        info[k].put("lastrevid", -1L);
-                        info[k].put("size", -1);
-                    }
-                    
-                    // parse protection level
-                    // expected form: <pr type="edit" level="sysop" expiry="infinity" cascade="" />
-                    HashMap<String, Object> protectionstate = new HashMap<String, Object>();
-                    for (int z = item.indexOf("<pr "); z > 0; z = item.indexOf("<pr ", ++z))
-                    {
-                        String type = parseAttribute(item, "type", z);
-                        String level = parseAttribute(item, "level", z);
-                        protectionstate.put(type, level);
-                        //if (level != NO_PROTECTION)
-                            String expiry = parseAttribute(item, "expiry", z);
-                            if (expiry.equals("infinity"))
-                                protectionstate.put(type + "expiry", null);
-                            else
-                                protectionstate.put(type + "expiry", timestampToCalendar(expiry));
-                        // protected via cascade
-                        if (item.contains("source=\""))
-                            protectionstate.put("cascadesource", parseAttribute(item, "source", z));
-                    }
-                    protectionstate.put("cascade", item.contains("cascade=\"\""));
-                    // MediaWiki namespace
-                    if (namespace(pages[k]) == MEDIAWIKI_NAMESPACE)
-                    {
-                        protectionstate.put("edit", FULL_PROTECTION);
-                        protectionstate.put("move", FULL_PROTECTION);
-                        if (!exists)
-                            protectionstate.put("create", FULL_PROTECTION);
-                    }
-                    info[k].put("protection", protectionstate);
-                    
-                    info[k].put("displaytitle", parseAttribute(item, "displaytitle", 0));
-                    info[k].put("token", parseAttribute(item, "edittoken", 0));
-
-                    // watchlist token
-                    if (user != null)
-                        info[k].put("watchtoken", parseAttribute(item, "watchtoken", 0));
-
-                    // number of watchers
-                    if (item.contains("watchers=\""))
-                        info[k].put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
-                    
-                    // timestamp
-                    info[k].put("timestamp", makeCalendar());
-                    k++;
+                    info[k].put("lastpurged", timestampToCalendar(convertTimestamp(parseAttribute(item, "touched", 0))));
+                    info[k].put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
+                    info[k].put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
                 }
-                // reset url
-                url = new StringBuilder(urlstart);
+                else
+                {
+                    info[k].put("lastedited", null);
+                    info[k].put("lastrevid", -1L);
+                    info[k].put("size", -1);
+                }
+
+                // parse protection level
+                // expected form: <pr type="edit" level="sysop" expiry="infinity" cascade="" />
+                HashMap<String, Object> protectionstate = new HashMap<String, Object>();
+                for (int z = item.indexOf("<pr "); z > 0; z = item.indexOf("<pr ", ++z))
+                {
+                    String type = parseAttribute(item, "type", z);
+                    String level = parseAttribute(item, "level", z);
+                    protectionstate.put(type, level);
+                    //if (level != NO_PROTECTION)
+                        String expiry = parseAttribute(item, "expiry", z);
+                        if (expiry.equals("infinity"))
+                            protectionstate.put(type + "expiry", null);
+                        else
+                            protectionstate.put(type + "expiry", timestampToCalendar(expiry));
+                    // protected via cascade
+                    if (item.contains("source=\""))
+                        protectionstate.put("cascadesource", parseAttribute(item, "source", z));
+                }
+                protectionstate.put("cascade", item.contains("cascade=\"\""));
+                // MediaWiki namespace
+                if (namespace(pages[k]) == MEDIAWIKI_NAMESPACE)
+                {
+                    protectionstate.put("edit", FULL_PROTECTION);
+                    protectionstate.put("move", FULL_PROTECTION);
+                    if (!exists)
+                        protectionstate.put("create", FULL_PROTECTION);
+                }
+                info[k].put("protection", protectionstate);
+
+                info[k].put("displaytitle", parseAttribute(item, "displaytitle", 0));
+                info[k].put("token", parseAttribute(item, "edittoken", 0));
+
+                // watchlist token
+                if (user != null)
+                    info[k].put("watchtoken", parseAttribute(item, "watchtoken", 0));
+
+                // number of watchers
+                if (item.contains("watchers=\""))
+                    info[k].put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
+
+                // timestamp
+                info[k].put("timestamp", makeCalendar());
+                k++;
             }
-            else
-                url.append("%7C");
         }
 
         log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + Arrays.toString(pages));
@@ -1866,29 +1858,14 @@ public class Wiki implements Serializable
      */
     public void purge(boolean links, String... titles) throws IOException
     {
-        // TODO: allow batches of more than 50
-        StringBuilder url = new StringBuilder(100);
-        StringBuilder log = new StringBuilder("Successfully purged { \""); // log statement
+        StringBuilder url = new StringBuilder(apiUrl);
+        url.append("action=purge");
         if (links)
             url.append("&forcelinkupdate");
-        url.append("&titles=");
-        for (int i = 0; i < titles.length; i++)
-        {
-            url.append(URLEncoder.encode(titles[i], "UTF-8"));
-            log.append(titles[i]);
-            if (i != titles.length - 1)
-            {
-                url.append("%7C");
-                log.append("\", ");
-            }
-            else
-                log.append("\" }");
-        }
-        if (user == null)
-            post(apiUrl + "action=purge", url.toString(), "purge");
-        else
-            fetch(apiUrl + "action=purge" + url.toString(), "purge");
-        log(Level.INFO, "purge", log.toString()); // done, log
+        String[] temp = constructTitleString(titles);
+        for (int i = 0; i < temp.length; i++)
+            post(url.toString(), "&titles=" + temp[i], "purge");
+        log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
 
     /**
@@ -6266,6 +6243,37 @@ public class Wiki implements Serializable
             sb.append("%7C");
         }
         sb.append(namespaces[temp - 1]);
+    }
+    
+    /**
+     *  Cuts up a list of titles into batches for prop=X&titles=Y type queries.
+     *  @param titles a list of titles
+     *  @return the titles ready for insertion into a URL
+     *  @since 0.29
+     */
+    protected String[] constructTitleString(String... titles)
+    {
+        // remove duplicates
+        // for (int i = 0; i < titles.length; i++)
+        //     titles[i] = normalize(titles[i]);
+        // Set<String> set = new HashSet(Arrays.asList(titles));
+        // titles = set.toArray(new String[set.size()]);
+        
+        // actually construct the string
+        String[] ret = new String[titles.length / slowmax + 1];
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < titles.length; i++)
+        {
+            buffer.append(normalize(titles[i]));
+            if (i == titles.length - 1 || i == slowmax - 1)
+            {
+                ret[i / slowmax] = buffer.toString();
+                buffer = new StringBuilder();
+            }
+            else
+                buffer.append("%7C");
+        }
+        return ret;
     }
     
     /**
