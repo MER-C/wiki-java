@@ -3422,24 +3422,26 @@ public class Wiki implements Serializable
             temp.append("&ucend=");
             temp.append(calendarToTimestamp(end));
         }
-        if (start != null)
-        {
-            temp.append("&ucstart=");
-            temp.append(calendarToTimestamp(start));
-        }
         ArrayList<Revision> revisions = new ArrayList<Revision>(7500);
-        String uccontinue = "";
+        String uccontinue = "", ucstart = "";
+        if (start != null)
+            ucstart = "&ucstart=" + calendarToTimestamp(start);
 
         // fetch data
         do
         {
-            String line = fetch(temp.toString() + uccontinue, "contribs");
+            String line = fetch(temp.toString() + uccontinue + ucstart, "contribs");
 
             // set offset parameter
             if (line.contains("uccontinue"))
                 uccontinue = "&uccontinue=" + URLEncoder.encode(parseAttribute(line, "uccontinue", 0), "UTF-8");
+            else if (line.contains("ucstart"))
+                ucstart = "&ucstart=" + parseAttribute(line, "ucstart", 0);
             else
+            {
                 uccontinue = null; // depleted list
+                ucstart = null;
+            }
             
             // xml form: <item user="Wizardman" ... size="59460" />
             for (int a = line.indexOf("<item "); a > 0; a = line.indexOf("<item ", ++a))
