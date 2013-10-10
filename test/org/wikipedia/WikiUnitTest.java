@@ -80,8 +80,7 @@ public class WikiUnitTest
     @Test
     public void resolveRedirect() throws Exception
     {
-        assertEquals("resolveRedirects: redirect", "Main Page", enWiki.resolveRedirect("Main page"));
-        assertEquals("resolveRedirects: no redirect", null, enWiki.resolveRedirect("Main Page"));
-        assertEquals("resolveRedirects: no page", null, enWiki.resolveRedirect("lsdkfjsldkf"));
+        assertArrayEquals("resolveRedirects", new String[] { "Main Page", null, null, "Goatse.cx" }, 
+            enWiki.resolveRedirect("Main page", "Main Page", "sdkghsdklg", "Hello.jpg"));
     }
 }
