@@ -1208,9 +1208,9 @@ public class Wiki implements Serializable
         url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
         String[] titles = constructTitleString(pages);
         int k = 0;
-        for (int i = 0; i < titles.length; i++)
+        for (String temp : titles)
         {
-            String line = fetch(url.toString() + titles[i], "getPageInfo");
+            String line = fetch(url.toString() + temp, "getPageInfo");
             
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
@@ -1863,8 +1863,8 @@ public class Wiki implements Serializable
         if (links)
             url.append("&forcelinkupdate");
         String[] temp = constructTitleString(titles);
-        for (int i = 0; i < temp.length; i++)
-            post(url.toString(), "&titles=" + temp[i], "purge");
+        for (String x : temp)
+            post(url.toString(), "&titles=" + x, "purge");
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
 
@@ -2098,34 +2098,49 @@ public class Wiki implements Serializable
     /**
      *  Gets the newest page name or the name of a page where the asked page 
      *  redirects.
-     *  @param title a page
-     *  @return redirected target page or null if source page is not a redirect
+     *  @param titles a list of titles
+     *  @return for each title, the page redirected to or null if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
      *  @author Nirvanchik/MER-C
      */ 
-    public String resolveRedirect(String title) throws IOException
+    public String[] resolveRedirect(String... titles) throws IOException
     {
-        // TODO: multi query
         StringBuilder url = new StringBuilder(query);
-        url.append("titles=");
-        url.append(URLEncoder.encode(title, "UTF-8"));
         if (!resolveredirect)
-            url.append("&redirects");
-        String line = fetch(url.toString(), "resolveRedirect");
-        // String[] ret = new String[titles.length];
-        // expected form: <redirects><r from="Main page" to="Main Page"/>
-        // <r from="Home Page" to="Home page"/>...</redirects>
-        // TODO: look for the <r> tag instead
-        int a = line.indexOf("<redirects>");
-        int b = line.indexOf("</redirects>");
-        if(a>0 && b>0) 
+            url.append("redirects&");
+        url.append("titles=");
+        String[] ret = new String[titles.length];
+        String[] temp = constructTitleString(titles);
+        String[][] temp2 = new String[titles.length][2];
+        for (String blah : temp)
         {
-            String redirect = line.substring(a,b);
-            if(redirect.contains("to=\"")) 
-                return parseAttribute(redirect, "to", 0);
+            String line = fetch(url.toString() + blah, "resolveRedirect");
+            
+            // expected form: <redirects><r from="Main page" to="Main Page"/>
+            // <r from="Home Page" to="Home page"/>...</redirects>
+            // TODO: look for the <r> tag instead
+            int k = 0;
+            for (int j = line.indexOf("<r "); j > 0; j = line.indexOf("<r ", ++j))
+            {
+                temp2[k][0] = parseAttribute(line, "from", j);
+                temp2[k][1] = parseAttribute(line, "to", j);
+                k++;
+            }
         }
-        return null;
+        // what goes in isn't necessarily what comes out
+        for (int i = 0; i < titles.length; i++)
+        {
+            for (int j = 0; j < temp2.length; j++)
+            {
+                if (titles[i].equals(temp2[j][0]))
+                {
+                    ret[i] = temp2[j][1];
+                    break;
+                }
+            }
+        }
+        return ret;
     }
     
     /**
