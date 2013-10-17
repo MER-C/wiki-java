@@ -1219,6 +1219,7 @@ public class Wiki implements Serializable
             {
                 int x = line.indexOf("</page>", j);
                 String item = line.substring(j, x);
+                info[k] = new HashMap<String, Object>(15);
 
                 // does the page exist?
                 boolean exists = !item.contains("missing=\"\"");
