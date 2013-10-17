@@ -428,7 +428,7 @@ public class Wiki implements Serializable
 
     // preferences
     private int max = 500;
-    private int slowmax = 10;
+    private int slowmax = 50;
     private int throttle = 10000; // throttle
     private int maxlag = 5;
     private int assertion = 0; // assertion mode
@@ -6305,7 +6305,6 @@ public class Wiki implements Serializable
         if (s.isEmpty())
             return s;
         char[] temp = s.toCharArray();
-        temp[0] = Character.toUpperCase(temp[0]);
         for (int i = 0; i < temp.length; i++)
         {
             switch (temp[i])
