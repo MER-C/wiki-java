@@ -1288,68 +1288,41 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Returns the namespace a set of pages is in. See {@link #namespace(String[]) }.
-     *  @param title a page
-     *  @return (see above)
-     *  @throws IOException if a network error occurs
-     *  @since 0.28
-     */
-    public int namespace(String title) throws IOException
-    {
-        return namespace(new String[] { title })[0];
-    }
-
-    /**
-     *  Returns the namespace a set of pages is in. No need to override this to 
+     *  Returns the namespace a page is in. No need to override this to 
      *  add custom namespaces, though you may want to define static fields e.g.
      *  <tt>public static final int PORTAL_NAMESPACE = 100;</tt> for the Portal
      *  namespace on the English Wikipedia.
      *
-     *  @param titles at least one page
-     *  @return an integer array containing the namespaces of pages in 
-     *  <tt>titles</tt> in the same order
+     *  @param titles any valid page name
+     *  @return an integer array containing the namespace of <tt>title</tt>
      *  @throws IOException if a network error occurs while populating the
      *  namespace cache
      *  @see #namespaceIdentifier(int)
      *  @since 0.03
      */
-    public int[] namespace(String[] titles) throws IOException
+    public int namespace(String title) throws IOException
     {
         // cache this, as it will be called often
         if (namespaces == null)
             populateNamespaceCache();
         
-        int[] ns = new int[titles.length];
-        for (int i = 0; i < titles.length; i++)
-        {
-            // sanitise
-            String title = normalize(titles[i]);
-            if (!title.contains(":"))
-            {
-                ns[i] = MAIN_NAMESPACE;
-                continue;
-            }
-            String namespace = title.substring(0, title.indexOf(':'));
+        // sanitise
+        title = normalize(title);
+        if (!title.contains(":"))
+            return MAIN_NAMESPACE;
+        String namespace = title.substring(0, title.indexOf(':'));
 
-            // all wiki namespace test
-            if (namespace.equals("Project_talk"))
-            {
-                ns[i] = PROJECT_TALK_NAMESPACE;
-                continue;
-            }
-            if (namespace.equals("Project"))
-            {
-                ns[i] = PROJECT_NAMESPACE;
-                continue;
-            }
+        // all wiki namespace test
+        if (namespace.equals("Project_talk"))
+            return PROJECT_TALK_NAMESPACE;
+        if (namespace.equals("Project"))
+            return PROJECT_NAMESPACE;
 
-            // look up the namespace of the page in the namespace cache
-            if (!namespaces.containsKey(namespace))
-                ns[i] = MAIN_NAMESPACE; // For titles like UN:NRV
-            else
-                ns[i] = namespaces.get(namespace).intValue();
-        }
-        return ns;
+        // look up the namespace of the page in the namespace cache
+        if (!namespaces.containsKey(namespace))
+            return MAIN_NAMESPACE; // For titles like UN:NRV
+        else
+            return namespaces.get(namespace).intValue();
     }
 
     /**

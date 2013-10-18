@@ -39,8 +39,6 @@ public class WikiUnitTest
         assertEquals("NS: i18n fail", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Kategorie:Begriffsklärung"));
         // assertEquals("NS: mixed i18n", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Category:Begriffsklärung"));
         assertEquals("NS: rtl fail", Wiki.CATEGORY_NAMESPACE, arWiki.namespace("تصنيف:صفحات_للحذف_السريع"));
-        assertArrayEquals("NS: vectorized", new int[] { Wiki.MAIN_NAMESPACE, 100 }, 
-            enWiki.namespace(new String[] { "Main Page", "Portal:Hello" }));
     }
     
     @Test
