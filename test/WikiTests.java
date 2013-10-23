@@ -87,8 +87,22 @@ public class WikiTests
             System.out.print(entry.getKey());
             System.out.print(" => ");
             System.out.println(entry.getValue());
+        }*/
+        // enwiki now has a custom protection level
+        // see also issue 39
+        HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk" });
+        for (int i = 0; i < blah.length; i++)
+        {
+            if (blah[i] == null)
+                continue;
+            for (Map.Entry<String, Object> entry : blah[i].entrySet())
+            {
+                System.out.print(entry.getKey());
+                System.out.print(" => ");
+                System.out.println(entry.getValue());
+            }
         }
-
+/*
         // getInterWikiBacklinks()
         String[][] blah2 = enWiki.getInterWikiBacklinks("wikitravel");
         for (String[] entry : blah2)
@@ -154,7 +168,7 @@ public class WikiTests
         System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
 
         // contribs
-        for (Wiki.Revision revision : enWiki.contribs("110808020_nilesh"))
+        for (Wiki.Revision revision : enWiki.contribs("Qalnor"))
             System.out.println(revision);
 
         // contribs
@@ -181,10 +195,10 @@ public class WikiTests
         // query page
         for (String page : enWiki.queryPage("Uncategorizedpages"))
             System.out.println(page);
-        
+
         // purge
-        enWiki.purge(false, "Main Page");
-   
+        enWiki.purge(false, new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" });
+
         // getPageInfo
         String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
         enWiki.getPageInfo(pages); // use a debugger, please
@@ -212,8 +226,6 @@ public class WikiTests
         out.write(enWiki.getOldImage(entries[0]));
         out.close();
 
-        */
-        
         // allpages
         HashMap<String, Object> protect = new HashMap<>();
         protect.put("cascade", true);
@@ -225,5 +237,8 @@ public class WikiTests
         protect.put("edit", Wiki.FULL_PROTECTION);
         for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1))
             System.out.println(page);
+        */
+        
+        // enWiki.unprotect("Main Page", "Blah");
     }
 }
