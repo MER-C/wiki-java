@@ -1196,8 +1196,10 @@ public class Wiki implements Serializable
      *      "watchers"     => 34               // number of watchers (Integer), may be restricted
      *  }
      *  </pre>
-     *  @param pages the pages to get info for
-     *  @return (see above)
+     *  @param pages the pages to get info for. This array WILL BE SORTED WITH 
+     *  DUPLICATES REMOVED and padded out with null values as necessary.
+     *  @return (see above). The HashMaps will come out in the same order as the
+     *  processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
@@ -1392,12 +1394,13 @@ public class Wiki implements Serializable
     
     /**
      *  Determines whether a series of pages exist. 
-     *  @param titles the titles to check
-     *  @return whether the pages exist
+     *  @param titles the titles to check. This array WILL BE SORTED WITH
+     *  DUPLICATES REMOVED and padded with null as necessary.
+     *  @return whether the pages exist, in the same order as the processed array
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    public boolean[] exists(String... titles) throws IOException
+    public boolean[] exists(String[] titles) throws IOException
     {
         boolean[] ret = new boolean[titles.length];
         HashMap[] info = getPageInfo(titles);
@@ -2072,13 +2075,14 @@ public class Wiki implements Serializable
     /**
      *  Gets the newest page name or the name of a page where the asked page 
      *  redirects.
-     *  @param titles a list of titles
+     *  @param titles a list of titles. This array WILL BE SORTED WITH DUPLICATES
+     *  REMOVED and padded with null values as necessary.
      *  @return for each title, the page redirected to or null if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
      *  @author Nirvanchik/MER-C
      */ 
-    public String[] resolveRedirect(String... titles) throws IOException
+    public String[] resolveRedirect(String[] titles) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         if (!resolveredirect)
@@ -6236,31 +6240,35 @@ public class Wiki implements Serializable
     
     /**
      *  Cuts up a list of titles into batches for prop=X&titles=Y type queries.
-     *  @param titles a list of titles
+     *  @param titles a list of titles. This array WILL BE SORTED WITH DUPLICATES
+     *  REMOVED and padded out with null values, if necessary.
      *  @return the titles ready for insertion into a URL
      *  @since 0.29
      */
-    protected String[] constructTitleString(String... titles)
+    protected String[] constructTitleString(String[] titles)
     {
-        // remove duplicates
-        // for (int i = 0; i < titles.length; i++)
-        //     titles[i] = normalize(titles[i]);
-        // Set<String> set = new HashSet(Arrays.asList(titles));
-        // titles = set.toArray(new String[set.size()]);
+        // remove duplicates and sort
+        Set<String> set = new TreeSet(Arrays.asList(titles));
+        String[] temp = set.toArray(new String[set.size()]);
+        for (int i = 0; i < titles.length; i++)
+            titles[i] = i < temp.length ? temp[i] : null;
         
         // actually construct the string
         String[] ret = new String[titles.length / slowmax + 1];
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < titles.length; i++)
         {
-            buffer.append(normalize(titles[i]));
-            if (i == titles.length - 1 || i == slowmax - 1)
+            if (titles[i] != null)
             {
-                ret[i / slowmax] = buffer.toString();
-                buffer = new StringBuilder();
+                buffer.append(normalize(titles[i]));
+                if (i == titles.length - 1 || titles[i + 1] == null || i == slowmax - 1)
+                {
+                    ret[i / slowmax] = buffer.toString();
+                    buffer = new StringBuilder();
+                }
+                else
+                    buffer.append("%7C");
             }
-            else
-                buffer.append("%7C");
         }
         return ret;
     }
