@@ -1,5 +1,7 @@
 package org.wikipedia;
 
+import java.util.HashMap;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -78,7 +80,11 @@ public class WikiUnitTest
     @Test
     public void resolveRedirect() throws Exception
     {
-        assertArrayEquals("resolveRedirects", new String[] { "Main Page", null, null, "Goatse.cx" }, 
-            enWiki.resolveRedirect("Main page", "Main Page", "sdkghsdklg", "Hello.jpg"));
+        HashMap<String, String> temp = enWiki.resolveRedirect(new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main_Page" });
+        assertEquals(temp.get("Main page"), "Main Page");
+        assertEquals(temp.get("Hello.jpg"), "Goatse.cx");
+        assertFalse(temp.containsKey("sdkghsdklg"));
+        assertFalse(temp.containsKey("Main Page"));
+        assertFalse(temp.containsKey("Main_Page"));
     }
 }
