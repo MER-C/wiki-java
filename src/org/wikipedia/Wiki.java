@@ -6262,7 +6262,7 @@ public class Wiki implements Serializable
     
     /**
      *  Convenience method for normalizing MediaWiki titles. (Converts all
-     *  spaces to underscores and makes the first letter caps).
+     *  underscores to spaces).
      *  @param s the string to normalize
      *  @return the normalized string
      *  @throws IllegalArgumentException if the title is invalid
@@ -6288,8 +6288,8 @@ public class Wiki implements Serializable
                 case '|':
                 case '#':
                     throw new IllegalArgumentException(s + " is an illegal title");
-                case ' ':
-                    temp[i] = '_';
+                case '_':
+                    temp[i] = ' ';
                     break;
             }
         }
