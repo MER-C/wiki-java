@@ -39,19 +39,19 @@ public class LoggedInTests
         wiki.setThrottle(5);
 
         // raw watchlist
-        //for (String page : wiki.getRawWatchlist())
-        //    System.out.println(page);
+        for (String page : wiki.getRawWatchlist())
+            System.out.println(page);
 
         // email
         // wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
 
         // edit
-        // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
-        // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test", false, false);
+        wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
+        // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
         
         // watch
-        wiki.watch("Main Page", "Blah");
-        wiki.unwatch("Main Page", "Blah");
+        // wiki.watch("Main Page", "Blah");
+        // wiki.unwatch("Main Page", "Blah");
 /*        
         // watchlist
         for (Wiki.Revision item : wiki.watchlist(false))

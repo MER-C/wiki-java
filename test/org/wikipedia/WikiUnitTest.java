@@ -1,7 +1,6 @@
 package org.wikipedia;
 
-import java.util.HashMap;
-
+import java.util.Arrays;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -78,13 +77,38 @@ public class WikiUnitTest
     }
     
     @Test
+    public void exists() throws Exception
+    {
+        String[] titles = new String[] { "Main Page", "Tdkfgjsldf", "User:MER-C", "Wikipedia:Skfjdl", "Main Page" };
+        boolean[] expected = new boolean[] { true, false, true, false, true };
+        assertTrue("exists", Arrays.equals(expected, enWiki.exists(titles)));
+    }
+    
+    @Test
     public void resolveRedirect() throws Exception
     {
-        HashMap<String, String> temp = enWiki.resolveRedirect(new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main_Page" });
-        assertEquals(temp.get("Main page"), "Main Page");
-        assertEquals(temp.get("Hello.jpg"), "Goatse.cx");
-        assertFalse(temp.containsKey("sdkghsdklg"));
-        assertFalse(temp.containsKey("Main Page"));
-        assertFalse(temp.containsKey("Main_Page"));
+        String[] titles = new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main page" };
+        String[] expected = new String[] { "Main Page", null, null, "Goatse.cx", "Main Page" };
+        assertArrayEquals("resolveRedirects", expected, enWiki.resolveRedirect(titles)); 
+    }
+    
+    @Test
+    public void getLinksOnPage() throws Exception
+    {
+        assertArrayEquals("getLinksOnPage: non-existent page", new String[0], enWiki.getLinksOnPage("Skflsjdkfs"));
+        assertArrayEquals("getLinksOnPage: page with no links", new String[0], enWiki.getLinksOnPage("User:MER-C/monobook.js"));
+    }
+    
+    @Test
+    public void getImagesOnPage() throws Exception
+    {
+        assertArrayEquals("getImagesOnPage: non-existent page", new String[0], enWiki.getImagesOnPage("Skflsjdkfs"));
+        assertArrayEquals("getImagesOnPage: page with no links", new String[0], enWiki.getImagesOnPage("User:MER-C/monobook.js"));
+    }
+    
+    @Test
+    public void getImageHistory() throws Exception
+    {
+        assertArrayEquals("getImageHistory: non-existent page", new Wiki.LogEntry[0], enWiki.getImageHistory("File:Sdfjghsld.jpg"));
     }
 }

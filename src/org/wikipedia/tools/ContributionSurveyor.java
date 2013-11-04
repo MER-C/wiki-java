@@ -108,10 +108,8 @@ public class ContributionSurveyor
             String line;
             while ((line = in.readLine()) != null)
             {
-                if (homewiki.namespace(line) == Wiki.USER_NAMESPACE)
-                    users.add(line.substring(5)); // lop off the User: prefix
-                else
-                    users.add(line);
+                line = line.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
+                users.add(line);
             }
         }
         else
@@ -119,10 +117,8 @@ public class ContributionSurveyor
             String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
             for (String temp : list)
             {
-                if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
-                    users.add(temp.substring(5));
-                else
-                    users.add(temp);
+                temp = temp.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
+                users.add(temp);
             }
         }
         if (out == null)
