@@ -1172,8 +1172,7 @@ public class Wiki implements Serializable
      */
     public HashMap getPageInfo(String page) throws IOException
     {
-        HashMap<String, HashMap<String, Object>> info = getPageInfo(new String[] { page } );
-        return (HashMap)info.values().toArray()[0];
+        return getPageInfo(new String[] { page } )[0];
     }
     
     /**
@@ -1182,7 +1181,8 @@ public class Wiki implements Serializable
      *  {
      *      "displaytitle" => "iPod"         , // the title of the page that is actually displayed (String)
      *      "protection"   => NO_PROTECTION  , // the {@link #protect(java.lang.String, java.util.HashMap) 
-     *                                         // protection state} of the page (HashMap)
+     *                                         // protection state} of the page (HashMap). Does not cover
+     *                                         // implied protection levels (e.g. MediaWiki namespace)
      *      "token"        => "\+"           , // an edit token for the page, must be logged
      *                                         // in to be non-trivial (String)
      *      "exists"       => true           , // whether the page exists (Boolean)
@@ -1197,19 +1197,19 @@ public class Wiki implements Serializable
      *      "watchers"     => 34               // number of watchers (Integer), may be restricted
      *  }
      *  </pre>
-     *  @param pages the pages to get info for. 
-     *  @return (see above). The HashMaps will come out in a HashMap with the
-     *  title as the key.
+     *  @param pages the pages to get info for.
+     *  @return (see above). The HashMaps will come out in the same order as the
+     *  processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public HashMap<String, HashMap<String, Object>> getPageInfo(String[] pages) throws IOException
+    public HashMap[] getPageInfo(String[] pages) throws IOException
     {
-        HashMap<String, HashMap<String, Object>> info = new HashMap<String, HashMap<String, Object>>(4/3*pages.length);
+        HashMap[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
         url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
-        String[] urlfrags = constructTitleString(pages);
-        for (String temp : urlfrags)
+        String[] titles = constructTitleString(pages);
+        for (String temp : titles)
         {
             String line = fetch(url.toString() + temp, "getPageInfo");
             
@@ -1220,22 +1220,22 @@ public class Wiki implements Serializable
             {
                 int x = line.indexOf("</page>", j);
                 String item = line.substring(j, x);
-                HashMap<String, Object> insert = new HashMap<String, Object>(15);
+                HashMap<String, Object> tempmap = new HashMap<String, Object>(15);
 
                 // does the page exist?
                 boolean exists = !item.contains("missing=\"\"");
-                insert.put("exists", exists);
+                tempmap.put("exists", exists);
                 if (exists)
                 {
-                    insert.put("lastpurged", timestampToCalendar(convertTimestamp(parseAttribute(item, "touched", 0))));
-                    insert.put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
-                    insert.put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
+                    tempmap.put("lastpurged", timestampToCalendar(convertTimestamp(parseAttribute(item, "touched", 0))));
+                    tempmap.put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
+                    tempmap.put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
                 }
                 else
                 {
-                    insert.put("lastedited", null);
-                    insert.put("lastrevid", -1L);
-                    insert.put("size", -1);
+                    tempmap.put("lastedited", null);
+                    tempmap.put("lastrevid", -1L);
+                    tempmap.put("size", -1);
                 }
 
                 // parse protection level
@@ -1256,31 +1256,35 @@ public class Wiki implements Serializable
                     if (item.contains("source=\""))
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
                 }
+                // MediaWiki namespace
+                String parsedtitle = parseAttribute(item, "title", 0);
+                if (namespace(parsedtitle) == MEDIAWIKI_NAMESPACE) 		
+                { 		
+                    protectionstate.put("edit", FULL_PROTECTION); 		
+                    protectionstate.put("move", FULL_PROTECTION); 		
+                    if (!exists) 		
+                        protectionstate.put("create", FULL_PROTECTION); 		
+                } 		
+
                 protectionstate.put("cascade", item.contains("cascade=\"\""));
-                insert.put("protection", protectionstate);
+                tempmap.put("protection", protectionstate);
+
+                tempmap.put("displaytitle", parseAttribute(item, "displaytitle", 0));
+                tempmap.put("token", parseAttribute(item, "edittoken", 0));
+                tempmap.put("timestamp", makeCalendar());
 
                 // watchlist token
                 if (user != null)
-                    insert.put("watchtoken", parseAttribute(item, "watchtoken", 0));
+                    tempmap.put("watchtoken", parseAttribute(item, "watchtoken", 0));
 
                 // number of watchers
                 if (item.contains("watchers=\""))
-                    insert.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
-
-                insert.put("displaytitle", parseAttribute(item, "displaytitle", 0));
-                insert.put("token", parseAttribute(item, "edittoken", 0));
-                insert.put("timestamp", makeCalendar());
+                    tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
                 
-                // rearrange stuff
-                String parsedtitle = normalize(parseAttribute(item, "title", 0));
-                for (String temppage : pages)
-                {
-                    if (normalize(temppage).equals(parsedtitle))
-                    {
-                        info.put(temppage, insert);
-                        break;
-                    }
-                }
+                // reorder
+                for (int i = 0; i < pages.length; i++)
+                    if (normalize(pages[i]).equals(parsedtitle))
+                        info[i] = tempmap;
             }
         }
 
@@ -1393,18 +1397,18 @@ public class Wiki implements Serializable
     
     /**
      *  Determines whether a series of pages exist. 
-     *  @param titles the titles to check. 
-     *  @return whether the pages exist. This comes out in a HashMap with the
-     *  titles as the keys.
+     *  @param titles the titles to check. This array WILL BE REARRANGED WITH
+     *  DUPLICATES REMOVED and padded with null as necessary.
+     *  @return whether the pages exist, in the same order as the processed array
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    public HashMap<String, Boolean> exists(String[] titles) throws IOException
+    public boolean[] exists(String[] titles) throws IOException
     {
-        HashMap ret = new HashMap(4/3*titles.length);
-        HashMap<String, HashMap<String, Object>> info = getPageInfo(titles);
-        for (Map.Entry<String, HashMap<String, Object>> entry : info.entrySet())
-            ret.put(entry.getKey(), (Boolean)entry.getValue().get("exists"));
+        boolean[] ret = new boolean[titles.length];
+        HashMap[] info = getPageInfo(titles);
+        for (int i = 0; i < titles.length; i++)
+            ret[i] = (Boolean)info[i].get("exists");
         return ret;
     }
 
@@ -2074,21 +2078,20 @@ public class Wiki implements Serializable
     /**
      *  Gets the newest page name or the name of a page where the asked page 
      *  redirects.
-     *  @param titles a list of titles. 
-     *  @return for each title, the page redirected to in a HashMap. If a title
-     *  is not present, it is not a redirect.
+     *  @param titles a list of titles.
+     *  @return for each title, the page redirected to or null if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
      *  @author Nirvanchik/MER-C
      */ 
-    public HashMap<String, String> resolveRedirect(String[] titles) throws IOException
+    public String[] resolveRedirect(String[] titles) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         if (!resolveredirect)
             url.append("redirects&");
         url.append("titles=");
+        String[] ret = new String[titles.length];
         String[] temp = constructTitleString(titles);
-        HashMap<String, String> ret = new HashMap<String, String>(4/3*titles.length);
         for (String blah : temp)
         {
             String line = fetch(url.toString() + blah, "resolveRedirect");
@@ -2098,16 +2101,10 @@ public class Wiki implements Serializable
             // TODO: look for the <r> tag instead
             for (int j = line.indexOf("<r "); j > 0; j = line.indexOf("<r ", ++j))
             {
-                String from = normalize(parseAttribute(line, "from", j));
-                String to = parseAttribute(line, "to", j);
-                for (int k = 0; k < titles.length; k++)
-                {
-                    if (normalize(titles[k]).equals(from))
-                    {
-                        ret.put(titles[k], to);
-                        break;
-                    }
-                }
+                String parsedtitle = parseAttribute(line, "from", j);
+                for (int i = 0; i < titles.length; i++)
+                    if (normalize(titles[i]).equals(parsedtitle))
+                        ret[i] = parseAttribute(line, "to", j);
             }
         }
         return ret;
@@ -3552,9 +3549,7 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        // Get a watch token. Apparantly it's the same for all pages.
-        HashMap<String, HashMap<String, Object>> info = getPageInfo(titles);
-        String watchToken = (String)info.get(titles[0]).get("watchtoken");
+        HashMap[] info = getPageInfo(titles);
         for (int i = 0; i < titles.length; i++)
         {
             StringBuilder data = new StringBuilder("title=");
@@ -3562,6 +3557,7 @@ public class Wiki implements Serializable
             if (unwatch)
                 data.append("&unwatch");
             data.append("&token=");
+            String watchToken = (String)info[i].get("watchtoken");
             data.append(URLEncoder.encode(watchToken, "UTF-8"));
             post(apiUrl + "action=watch", data.toString(), state);
         }
@@ -6233,29 +6229,33 @@ public class Wiki implements Serializable
     
     /**
      *  Cuts up a list of titles into batches for prop=X&titles=Y type queries.
-     *  @param titles a list of titles.
+     *  @param titles a list of titles. 
      *  @return the titles ready for insertion into a URL
+     *  @throws UnsupportedEncodingException should never happen
      *  @since 0.29
      */
-    protected String[] constructTitleString(String[] titles)
+    protected String[] constructTitleString(String[] titles) throws UnsupportedEncodingException
     {
-        // remove duplicates and sort
-        Set<String> set = new TreeSet(Arrays.asList(titles));
-        String[] temp = set.toArray(new String[set.size()]);
-        
+        // remove duplicates, sort and pad
+        // Set<String> set = new TreeSet(Arrays.asList(titles));
+        // String[] temp = set.toArray(new String[set.size()]);
+        // String[] aaa = new String[titles.length];
+        // System.arraycopy(temp, 0, titles, 0, temp.length);
+        // System.arraycopy(aaa, 0, titles, temp.length, titles.length - temp.length);
+
         // actually construct the string
-        String[] ret = new String[temp.length / slowmax + 1];
+        String[] ret = new String[titles.length / slowmax + 1];
         StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < temp.length; i++)
+        for (int i = 0; i < titles.length; i++)
         {
-            buffer.append(normalize(temp[i]));
-            if (i == temp.length - 1 || i == slowmax - 1)
+            buffer.append(normalize(titles[i]));
+            if (i == titles.length - 1 || i == slowmax - 1)
             {
-                ret[i / slowmax] = buffer.toString();
+                ret[i / slowmax] = URLEncoder.encode(buffer.toString(), "UTF-8");
                 buffer = new StringBuilder();
             }
             else
-                buffer.append("%7C");
+                buffer.append("|");
         }
         return ret;
     }
@@ -6278,7 +6278,6 @@ public class Wiki implements Serializable
             switch (temp[i])
             {
                 // illegal characters
-                // see https://www.mediawiki.org/wiki/Manual:$wgLegalTitleChars
                 case '{':
                 case '}':
                 case '<':
@@ -6286,7 +6285,6 @@ public class Wiki implements Serializable
                 case '[':
                 case ']':
                 case '|':
-                case '#':
                     throw new IllegalArgumentException(s + " is an illegal title");
                 case '_':
                     temp[i] = ' ';

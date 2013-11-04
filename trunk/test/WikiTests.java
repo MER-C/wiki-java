@@ -90,15 +90,14 @@ public class WikiTests
         }*/
         // enwiki now has a custom protection level
         // see also issue 39
-        HashMap<String, HashMap<String, Object>> blah = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk" });
-        for (Map.Entry<String, HashMap<String, Object>> entry1 : blah.entrySet())
+        HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk" });
+        for (int i = 0; i < blah.length; i++)
         {
-            System.out.println(entry1.getKey());
-            for (Map.Entry<String, Object> entry2 : entry1.getValue().entrySet())
+            for (Map.Entry<String, Object> entry : blah[i].entrySet())
             {
-                System.out.print(entry2.getKey());
+                System.out.print(entry.getKey());
                 System.out.print(" => ");
-                System.out.println(entry2.getValue());
+                System.out.println(entry.getValue());
             }
         }
 /*
