@@ -60,13 +60,13 @@ public class WikiUnitTest
     @Test
     public void getFirstRevision() throws Exception
     {
-        assertNull("Non-existent page", enWiki.getFirstRevision("dgfhdfjklg"));
+        assertNull("Non-existent page", enWiki.getFirstRevision("dgfhdf&jklg"));
     }
     
     @Test
     public void getLastRevision() throws Exception
     {
-        assertNull("Non-existent page", enWiki.getTopRevision("dgfhdfjklg"));
+        assertNull("Non-existent page", enWiki.getTopRevision("dgfhd&fjklg"));
     }
     
     @Test
@@ -79,36 +79,68 @@ public class WikiUnitTest
     @Test
     public void exists() throws Exception
     {
-        String[] titles = new String[] { "Main Page", "Tdkfgjsldf", "User:MER-C", "Wikipedia:Skfjdl", "Main Page" };
-        boolean[] expected = new boolean[] { true, false, true, false, true };
+        String[] titles = new String[] { "Main Page", "Tdkfgjsldf", "User:MER-C", "Wikipedia:Skfjdl", "Main Page", "Fish & chips" };
+        boolean[] expected = new boolean[] { true, false, true, false, true, true };
         assertTrue("exists", Arrays.equals(expected, enWiki.exists(titles)));
     }
     
     @Test
     public void resolveRedirect() throws Exception
     {
-        String[] titles = new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main page" };
-        String[] expected = new String[] { "Main Page", null, null, "Goatse.cx", "Main Page" };
+        String[] titles = new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main page", "Fish & chips" };
+        String[] expected = new String[] { "Main Page", null, null, "Goatse.cx", "Main Page", "Fish and chips" };
         assertArrayEquals("resolveRedirects", expected, enWiki.resolveRedirect(titles)); 
     }
     
     @Test
     public void getLinksOnPage() throws Exception
     {
-        assertArrayEquals("getLinksOnPage: non-existent page", new String[0], enWiki.getLinksOnPage("Skflsjdkfs"));
+        assertArrayEquals("getLinksOnPage: non-existent page", new String[0], enWiki.getLinksOnPage("Skfls&jdkfs"));
         assertArrayEquals("getLinksOnPage: page with no links", new String[0], enWiki.getLinksOnPage("User:MER-C/monobook.js"));
     }
     
     @Test
     public void getImagesOnPage() throws Exception
     {
-        assertArrayEquals("getImagesOnPage: non-existent page", new String[0], enWiki.getImagesOnPage("Skflsjdkfs"));
-        assertArrayEquals("getImagesOnPage: page with no links", new String[0], enWiki.getImagesOnPage("User:MER-C/monobook.js"));
+        assertArrayEquals("getImagesOnPage: non-existent page", new String[0], enWiki.getImagesOnPage("Skflsj&dkfs"));
+        assertArrayEquals("getImagesOnPage: page with no images", new String[0], enWiki.getImagesOnPage("User:MER-C/monobook.js"));
+    }
+    
+    @Test
+    public void getCategories() throws Exception
+    {
+        assertArrayEquals("getCategories: non-existent page", new String[0], enWiki.getImagesOnPage("Skfls&jdkfs"));
+        assertArrayEquals("getCategories: page with no images", new String[0], enWiki.getImagesOnPage("User:MER-C/monobook.js"));
     }
     
     @Test
     public void getImageHistory() throws Exception
     {
-        assertArrayEquals("getImageHistory: non-existent page", new Wiki.LogEntry[0], enWiki.getImageHistory("File:Sdfjghsld.jpg"));
+        assertArrayEquals("getImageHistory: non-existent file", new Wiki.LogEntry[0], enWiki.getImageHistory("File:Sdfjgh&sld.jpg"));
+    }
+    
+    @Test
+    public void getImage() throws Exception
+    {
+        assertNull("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah"));
+    }
+    
+    @Test
+    public void getPageHistory() throws Exception
+    {
+        assertArrayEquals("getPageHistory: non-existent page", new Wiki.Revision[0], enWiki.getPageHistory("EOTkd&ssdf"));
+        assertArrayEquals("getPageHistory: special page", new Wiki.Revision[0], enWiki.getPageHistory("Special:Specialpages"));
+    }
+    
+    @Test
+    public void getFileMetadata() throws Exception
+    {
+        assertNull("getFileMetadata: non-existent file", enWiki.getFileMetadata("File:Lweo&pafd.blah"));
+    }
+    
+    @Test
+    public void getDuplicates() throws Exception
+    {
+        assertArrayEquals("getImageHistory: non-existent file", new String[0], enWiki.getImageHistory("File:Sdfj&ghsld.jpg"));
     }
 }
