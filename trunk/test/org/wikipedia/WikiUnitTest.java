@@ -143,4 +143,10 @@ public class WikiUnitTest
     {
         assertArrayEquals("getImageHistory: non-existent file", new String[0], enWiki.getImageHistory("File:Sdfj&ghsld.jpg"));
     }
+    
+    @Test
+    public void getInterWikiLinks() throws Exception
+    {
+        assertEquals("getInterWikiLinks: non-existent page", null, enWiki.getInterWikiLinks("Gkdfkkl&djfdf"));
+    }
 }
