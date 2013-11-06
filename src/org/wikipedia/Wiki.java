@@ -1436,7 +1436,7 @@ public class Wiki implements Serializable
         String url = base + URLEncoder.encode(normalize(title), "UTF-8") + "&action=raw";
         String temp = fetch(url, "getPageText");
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + title);
-        return decode(temp);
+        return temp;
     }
 
     /**
