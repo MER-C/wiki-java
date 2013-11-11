@@ -87,7 +87,7 @@ public class WikiTests
             System.out.print(entry.getKey());
             System.out.print(" => ");
             System.out.println(entry.getValue());
-        }*/
+        }
         // enwiki now has a custom protection level
         // see also issue 39
         HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk" });
@@ -100,7 +100,7 @@ public class WikiTests
                 System.out.println(entry.getValue());
             }
         }
-/*
+
         // getInterWikiBacklinks()
         String[][] blah2 = enWiki.getInterWikiBacklinks("wikitravel");
         for (String[] entry : blah2)
@@ -159,9 +159,6 @@ public class WikiTests
         System.out.println(enWiki.getSectionText("Wikipedia:Copyright_problems", 2));
 
         System.out.println(enWiki.parse("{{Main Page}}"));
-
-        // getImage
-        byte[] b = enWiki.getImage("GD - Yesterday.jpg");
 
         System.out.println(enWiki.getTopRevision("Wikipedia:Sandbox"));
 
@@ -238,5 +235,10 @@ public class WikiTests
         */
         
         // enWiki.unprotect("Main Page", "Blah");
+        
+        // getRevisions
+        Wiki.Revision[] temp = enWiki.getRevisions(new long[] { 500000000L, 579126972L, 500000000L, 500000003L, 40000000L } );
+        for (Wiki.Revision blah : temp)
+            System.out.println(blah);
     }
 }
