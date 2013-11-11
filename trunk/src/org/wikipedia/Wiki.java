@@ -2383,22 +2383,71 @@ public class Wiki implements Serializable
     /**
      *  Gets a revision based on a given oldid. Automatically fills out all
      *  attributes of that revision except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
-     *
-     *  @param oldid a particular oldid
-     *  @return the revision corresponding to that oldid. If a particular
-     *  revision has been deleted, returns null.
+     * 
+     *  @param oldid an oldid
+     *  @return the revision corresponding to that oldid, or null if it has been
+     *  deleted
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
     public Revision getRevision(long oldid) throws IOException
     {
+        return getRevisions( new long[] { oldid })[0];
+    }
+    
+    /**
+     *  Gets revisions based on given oldids. Automatically fills out all
+     *  attributes of those revisions except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
+     *
+     *  @param oldids a list of oldids
+     *  @return the revisions corresponding to those oldids, in the order of the
+     *  input array. If a particular revision has been deleted, the corresponding 
+     *  index is null.
+     *  @throws IOException if a network error occurs
+     *  @since 0.29
+     */
+    public Revision[] getRevisions(long[] oldids) throws IOException
+    {
         // build url and connect
-        String url = query + "prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize&revids=" + oldid;
-        String line = fetch(url, "getRevision");
-        // check for deleted revisions
-        if (line.contains("<badrevids>"))
-            return null;
-        return parseRevision(line, "");
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize&revids=");
+        // chunkify oldids
+        String[] chunks = new String[oldids.length / slowmax + 1];
+        StringBuilder buffer = new StringBuilder();
+        for (int i = 0; i < oldids.length; i++)
+        {
+            buffer.append(oldids[i]);
+            if (i == oldids.length - 1 || i == slowmax - 1)
+            {
+                chunks[i / slowmax] = buffer.toString();
+                buffer = new StringBuilder();
+            }
+            else
+                buffer.append("%7C");
+        }
+        Revision[] revisions = new Revision[oldids.length];
+        // retch and parse
+        for (String chunk : chunks)
+        {
+            String line = fetch(url.toString() + chunk, "getRevision");
+
+            for (int i = line.indexOf("<page "); i > 0; i = line.indexOf("<page ", ++i))
+            {
+                int z = line.indexOf("</page>", i);
+                String title = parseAttribute(line, "title", i);
+                for (int j = line.indexOf("<rev ", i); j > 0 && j < z; j = line.indexOf("<rev ", ++j))
+                {
+                    int y = line.indexOf("/>", j);
+                    String blah = line.substring(j, y);
+                    Revision rev = parseRevision(blah, title);
+                    long oldid = rev.getRevid();
+                    for (int k = 0; k < oldids.length; k++)
+                        if (oldids[k] == oldid)
+                            revisions[k] = rev;
+                }
+            }
+        }
+        return revisions;
     }
 
     /**
@@ -2682,14 +2731,12 @@ public class Wiki implements Serializable
         boolean rvnew = xml.contains("new=\"\"");
 
         // size
-        int size;
+        int size = 0;
         if (xml.contains("newlen=")) // recentchanges
             size = Integer.parseInt(parseAttribute(xml, "newlen", 0));
         else if (xml.contains("size=\""))
             size = Integer.parseInt(parseAttribute(xml, "size", 0));
-        else // MW bug 32414/32415? Also, may help for revdeled revisions.
-            size = 0;
-
+        
         Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, rvnew, size);
         // set rcid
         if (xml.contains("rcid=\""))
@@ -5865,7 +5912,7 @@ public class Wiki implements Serializable
          */
         public Revision getNext() throws IOException
         {
-            return next == 0 ? null : getRevision(previous);
+            return next == 0 ? null : getRevision(next); 
         }
 
         /**
