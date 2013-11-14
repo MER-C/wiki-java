@@ -119,12 +119,14 @@ public class WikiUnitTest
     public void getImageHistory() throws Exception
     {
         assertArrayEquals("getImageHistory: non-existent file", new Wiki.LogEntry[0], enWiki.getImageHistory("File:Sdfjgh&sld.jpg"));
+        assertArrayEquals("getImageHistory: commons image", new Wiki.LogEntry[0], enWiki.getImageHistory("File:WikipediaSignpostIcon.svg"));
     }
     
     @Test
     public void getImage() throws Exception
     {
         assertNull("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah"));
+        assertNull("getImage: commons image", enWiki.getImage("File:WikipediaSignpostIcon.svg"));
     }
     
     @Test
@@ -138,12 +140,13 @@ public class WikiUnitTest
     public void getFileMetadata() throws Exception
     {
         assertNull("getFileMetadata: non-existent file", enWiki.getFileMetadata("File:Lweo&pafd.blah"));
+        assertNull("getFileMetadata: commons image", enWiki.getFileMetadata("File:WikipediaSignpostIcon.svg"));
     }
     
     @Test
     public void getDuplicates() throws Exception
     {
-        assertArrayEquals("getImageHistory: non-existent file", new String[0], enWiki.getImageHistory("File:Sdfj&ghsld.jpg"));
+        assertArrayEquals("getDuplicates: non-existent file", new String[0], enWiki.getImageHistory("File:Sdfj&ghsld.jpg"));
     }
     
     @Test

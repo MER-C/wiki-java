@@ -1257,7 +1257,7 @@ public class Wiki implements Serializable
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
                 }
                 // MediaWiki namespace
-                String parsedtitle = parseAttribute(item, "title", 0);
+                String parsedtitle = decode(parseAttribute(item, "title", 0));
                 if (namespace(parsedtitle) == MEDIAWIKI_NAMESPACE) 		
                 { 		
                     protectionstate.put("edit", FULL_PROTECTION); 		
@@ -2846,7 +2846,7 @@ public class Wiki implements Serializable
      *  @param title the title of the image (may contain "File")
      *  @param width the width of the thumbnail (use -1 for actual width)
      *  @param height the height of the thumbnail (use -1 for actual height)
-     *  @return the image data
+     *  @return the image data or null if the image doesn't exist locally
      *  @throws IOException if a network error occurs
      *  @since 0.13
      */
@@ -2864,6 +2864,8 @@ public class Wiki implements Serializable
         url.append("&iiurlheight=");
         url.append(height);
         String line = fetch(url.toString(), "getImage");
+        if (line.contains("missing=\"\""))
+            return null;
         String url2 = parseAttribute(line, "url", 0);
 
         // then we use ImageIO to read from it
@@ -2893,7 +2895,7 @@ public class Wiki implements Serializable
      *  * plus EXIF metadata (Strings)
      *
      *  @param file the image to get metadata for (may contain "File")
-     *  @return the metadata for the image
+     *  @return the metadata for the image or null if it doesn't exist
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
@@ -2906,6 +2908,8 @@ public class Wiki implements Serializable
         String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=File:" 
                 + URLEncoder.encode(normalize(file), "UTF-8");
         String line = fetch(url, "getFileMetadata");
+        if (line.contains("missing=\"\""))
+            return null;
         HashMap<String, Object> metadata = new HashMap<String, Object>(30);
 
         // size, width, height, mime type
@@ -2943,6 +2947,8 @@ public class Wiki implements Serializable
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=duplicatefiles&dflimit=max&titles=File:" + URLEncoder.encode(file, "UTF-8");
         String line = fetch(url, "getDuplicates");
+        if (line.contains("missing=\"\""))
+            return new String[0];
 
         // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
         ArrayList<String> duplicates = new ArrayList<String>(10);
@@ -2971,6 +2977,8 @@ public class Wiki implements Serializable
         String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" 
                 + URLEncoder.encode(normalize(title), "UTF-8");
         String line = fetch(url, "getImageHistory");
+        if (line.contains("missing=\"\""))
+            return new LogEntry[0];
         ArrayList<LogEntry> history = new ArrayList<LogEntry>(40);
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
