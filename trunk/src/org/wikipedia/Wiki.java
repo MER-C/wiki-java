@@ -1934,7 +1934,8 @@ public class Wiki implements Serializable
      *  linked to.
      *
      *  @param title a page
-     *  @return a map of interwiki links that page has
+     *  @return a map of interwiki links that page has (empty if there are no
+     *  links)
      *  @throws IOException if a network error occurs
      *  @since 0.18
      */
@@ -1958,7 +1959,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the list of links used on a particular page.  Patch somewhat by wim.jongman
+     *  Gets the list of wikilinks used on a particular page. Patch somewhat by
+     *  wim.jongman
      *
      *  @param title a page
      *  @return the list of links used in the page
@@ -1996,6 +1998,52 @@ public class Wiki implements Serializable
         
         int size = links.size();
     	log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
+    	return links.toArray(new String[size]);
+    }
+    
+    /**
+     *  Gets the list of external links used on a particular page.
+     *
+     *  @param title a page
+     *  @return the list of external links used in the page
+     *  @throws IOException if a network error occurs
+     *  @since 0.29
+     */
+    public String[] getExternalLinksOnPage(String title) throws IOException
+    {
+    	StringBuilder url = new StringBuilder(query);
+        url.append("prop=extlinks&ellimit=max&titles=");
+        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
+        String eloffset = "";
+        ArrayList<String> links = new ArrayList<String>(750);
+        do
+        {
+            if (!eloffset.isEmpty())
+            {
+                url.append("&eloffset=");
+                url.append(eloffset);
+            }
+
+            String line = fetch(url.toString(), "getExternalLinksOnPage");
+
+            // strip continuation
+            if (line.contains("eloffset"))
+                eloffset = URLEncoder.encode(parseAttribute(line, "eloffset", 0), "UTF-8");
+            else
+                eloffset = null;
+
+            // xml form: <pl ns="6" title="page name" />
+            for (int a = line.indexOf("<el "); a > 0; a = line.indexOf("<el ", ++a))
+            {
+                int x = line.indexOf('>', a) + 1;
+                int y = line.indexOf("</el>", x);
+                links.add(decode(line.substring(x, y)));
+            }
+        }
+        while (eloffset != null);
+        
+        int size = links.size();
+    	log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
     	return links.toArray(new String[size]);
     }
 
@@ -2076,15 +2124,28 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Gets the newest page name or the name of a page where the asked page 
+     *  Gets the newest page name or the name of a page where the asked page
      *  redirects.
+     *  @param title a title
+     *  @return the page redirected to or null if not a redirect
+     *  @throws IOException if a network error occurs
+     *  @since 0.29
+     */ 
+    public String resolveRedirect(String title) throws IOException
+    {
+        return resolveRedirects(new String[] { title })[0];
+    }
+    
+    /**
+     *  Gets the newest page name or the name of a page where the asked pages
+     *  redirect.
      *  @param titles a list of titles.
      *  @return for each title, the page redirected to or null if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
      *  @author Nirvanchik/MER-C
      */ 
-    public String[] resolveRedirect(String[] titles) throws IOException
+    public String[] resolveRedirects(String[] titles) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         if (!resolveredirect)
@@ -2094,14 +2155,14 @@ public class Wiki implements Serializable
         String[] temp = constructTitleString(titles);
         for (String blah : temp)
         {
-            String line = fetch(url.toString() + blah, "resolveRedirect");
+            String line = fetch(url.toString() + blah, "resolveRedirects");
             
             // expected form: <redirects><r from="Main page" to="Main Page"/>
             // <r from="Home Page" to="Home page"/>...</redirects>
             // TODO: look for the <r> tag instead
             for (int j = line.indexOf("<r "); j > 0; j = line.indexOf("<r ", ++j))
             {
-                String parsedtitle = parseAttribute(line, "from", j);
+                String parsedtitle = decode(parseAttribute(line, "from", j));
                 for (int i = 0; i < titles.length; i++)
                     if (normalize(titles[i]).equals(parsedtitle))
                         ret[i] = parseAttribute(line, "to", j);
@@ -3263,18 +3324,17 @@ public class Wiki implements Serializable
     public String[] allUsers(String start, int number, String prefix) throws IOException
     {
         // sanitise
-        max = 50;
         StringBuilder url = new StringBuilder(query);
         url.append("list=allusers&aulimit=");
         String next = "";
         if (prefix.isEmpty())
         {
-            url.append(number > max ? max : number);
+            url.append(number > slowmax ? slowmax : number);
             next = URLEncoder.encode(start, "UTF-8");
         }
         else
         {
-            url.append(max);
+            url.append(slowmax);
             url.append("&auprefix=");
             url.append(URLEncoder.encode(normalize(prefix), "UTF-8"));
         }
@@ -5590,7 +5650,7 @@ public class Wiki implements Serializable
         public String getText() throws IOException
         {
             // logs have no content
-            if (revid == 0L)
+            if (revid < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
             // go for it
@@ -5599,7 +5659,7 @@ public class Wiki implements Serializable
             log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
             return decode(temp);
         }
-
+        
         /**
          *  Gets the rendered text of this revision. WARNING: fails if the
          *  revision is deleted.
@@ -5612,7 +5672,7 @@ public class Wiki implements Serializable
         public String getRenderedText() throws IOException
         {
             // logs have no content
-            if (revid == 0L)
+            if (revid < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
             // go for it

@@ -232,13 +232,17 @@ public class WikiTests
         protect.put("edit", Wiki.FULL_PROTECTION);
         for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1))
             System.out.println(page);
-        */
-        
-        // enWiki.unprotect("Main Page", "Blah");
+
+        enWiki.unprotect("Main Page", "Blah");
         
         // getRevisions
         Wiki.Revision[] temp = enWiki.getRevisions(new long[] { 500000000L, 579126972L, 500000000L, 500000003L, 40000000L } );
         for (Wiki.Revision blah : temp)
             System.out.println(blah);
+        */
+        
+        // getExternalLinksOnPage
+        for (String url : enWiki.getExternalLinksOnPage("Albert Einstein"))
+            System.out.println(url);
     }
 }

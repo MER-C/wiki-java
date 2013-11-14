@@ -1,6 +1,6 @@
 package org.wikipedia;
 
-import java.util.Arrays;
+import java.util.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -85,18 +85,20 @@ public class WikiUnitTest
     }
     
     @Test
-    public void resolveRedirect() throws Exception
+    public void resolveRedirects() throws Exception
     {
         String[] titles = new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main page", "Fish & chips" };
         String[] expected = new String[] { "Main Page", null, null, "Goatse.cx", "Main Page", "Fish and chips" };
-        assertArrayEquals("resolveRedirects", expected, enWiki.resolveRedirect(titles)); 
+        assertArrayEquals("resolveRedirects", expected, enWiki.resolveRedirects(titles)); 
+        assertEquals("resolveRedirects: RTL", "الصفحة الرئيسية", arWiki.resolveRedirect("الصفحه الرئيسيه"));
     }
     
     @Test
     public void getLinksOnPage() throws Exception
     {
         assertArrayEquals("getLinksOnPage: non-existent page", new String[0], enWiki.getLinksOnPage("Skfls&jdkfs"));
-        assertArrayEquals("getLinksOnPage: page with no links", new String[0], enWiki.getLinksOnPage("User:MER-C/monobook.js"));
+        // User:MER-C/monobook.js has one link... despite it being preformatted (?!)
+        assertArrayEquals("getLinksOnPage: page with no links", new String[0], enWiki.getLinksOnPage("User:MER-C/monobook.css"));
     }
     
     @Test
@@ -147,6 +149,14 @@ public class WikiUnitTest
     @Test
     public void getInterWikiLinks() throws Exception
     {
-        assertEquals("getInterWikiLinks: non-existent page", null, enWiki.getInterWikiLinks("Gkdfkkl&djfdf"));
+        HashMap<String, String> temp = enWiki.getInterWikiLinks("Gkdfkkl&djfdf");
+        assertTrue("getInterWikiLinks: non-existent page", temp.isEmpty());
+    }
+    
+    @Test
+    public void getExternalLinksOnPage() throws Exception
+    {
+        assertArrayEquals("getExternalLinksOnPage: non-existent page", new String[0], enWiki.getExternalLinksOnPage("Gdkgfskl&dkf"));
+        assertArrayEquals("getExternalLinksOnPage: page with no links", new String[0], enWiki.getExternalLinksOnPage("User:MER-C/monobook.js"));
     }
 }
