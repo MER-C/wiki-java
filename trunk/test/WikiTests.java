@@ -87,10 +87,10 @@ public class WikiTests
             System.out.print(entry.getKey());
             System.out.print(" => ");
             System.out.println(entry.getValue());
-        }
+        }*/
         // enwiki now has a custom protection level
         // see also issue 39
-        HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk" });
+        HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk", "Crème brûlée" });
         for (int i = 0; i < blah.length; i++)
         {
             for (Map.Entry<String, Object> entry : blah[i].entrySet())
@@ -100,7 +100,7 @@ public class WikiTests
                 System.out.println(entry.getValue());
             }
         }
-
+/*
         // getInterWikiBacklinks()
         String[][] blah2 = enWiki.getInterWikiBacklinks("wikitravel");
         for (String[] entry : blah2)
@@ -239,10 +239,11 @@ public class WikiTests
         Wiki.Revision[] temp = enWiki.getRevisions(new long[] { 500000000L, 579126972L, 500000000L, 500000003L, 40000000L } );
         for (Wiki.Revision blah : temp)
             System.out.println(blah);
-        */
+
         
         // getExternalLinksOnPage
         for (String url : enWiki.getExternalLinksOnPage("Albert Einstein"))
             System.out.println(url);
+        */
     }
 }
