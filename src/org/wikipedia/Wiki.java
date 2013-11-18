@@ -22,6 +22,7 @@ package org.wikipedia;
 
 import java.io.*;
 import java.net.*;
+import java.text.Normalizer;
 import java.util.*;
 import java.util.logging.*;
 import java.util.zip.GZIPInputStream;
@@ -4537,7 +4538,7 @@ public class Wiki implements Serializable
      *  @return the parsed log entry
      *  @since 0.18
      */
-    protected LogEntry parseLogEntry(String xml)
+    protected LogEntry parseLogEntry(String xml) 
     {
         // note that we can override these in the calling method
         String type = "", action = "";
@@ -6406,7 +6407,8 @@ public class Wiki implements Serializable
                     break;
             }
         }
-        return new String(temp);
+        // https://www.mediawiki.org/wiki/Unicode_normalization_considerations
+        return Normalizer.normalize(new String(temp), Normalizer.Form.NFC);
     }
 
     // user rights methods
