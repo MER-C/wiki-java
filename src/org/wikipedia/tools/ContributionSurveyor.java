@@ -46,6 +46,7 @@ public class ContributionSurveyor
         String infile = null;
 
         // parse arguments
+        ArrayList<String> users = new ArrayList<String>(1500);
         for (int i = 0; i < args.length; i++)
         {
             String arg = args[i];
@@ -62,6 +63,7 @@ public class ContributionSurveyor
                             + "Default: en.wikipedia.org.\n"
                         + "\t--outfile file\n\t\tSave results to file, shows a filechooser if not specified.\n"
                         + "\t--wikipage 'Main Page'\n\t\tFetch a list of users at the wiki page Main Page.\n"
+                        + "\t--user user\n\t\tSurvey the given user.\n"
                         + "\t--userspace\n\t\tSurvey userspace as well.\n");
 
                     System.exit(0);
@@ -70,6 +72,9 @@ public class ContributionSurveyor
                     break;
                 case "--infile":
                     infile = args[++i];
+                    break;
+                case "--user":
+                    users.add(args[++i]);
                     break;
                 case "--userspace":
                     userspace = true;
@@ -87,38 +92,40 @@ public class ContributionSurveyor
         }
         // file I/O
         // file must contain list of users, one per line
-        ArrayList<String> users = new ArrayList<String>(1500);
-        if (wikipage == null)
+        if (users.isEmpty())
         {
-            BufferedReader in = null;
-            if (infile == null)
+            if (wikipage == null)
             {
-                JFileChooser fc = new JFileChooser();
-                fc.setDialogTitle("Select user list");
-                if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
-                    in = new BufferedReader(new FileReader(fc.getSelectedFile()));
-                else
+                BufferedReader in = null;
+                if (infile == null)
                 {
-                    System.out.println("Error: No input file selected.");
-                    System.exit(0);
+                    JFileChooser fc = new JFileChooser();
+                    fc.setDialogTitle("Select user list");
+                    if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+                        in = new BufferedReader(new FileReader(fc.getSelectedFile()));
+                    else
+                    {
+                        System.out.println("Error: No input file selected.");
+                        System.exit(0);
+                    }
+                }
+                else
+                    in = new BufferedReader(new FileReader(infile));
+                String line;
+                while ((line = in.readLine()) != null)
+                {
+                    line = line.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
+                    users.add(line);
                 }
             }
             else
-                in = new BufferedReader(new FileReader(infile));
-            String line;
-            while ((line = in.readLine()) != null)
             {
-                line = line.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
-                users.add(line);
-            }
-        }
-        else
-        {
-            String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
-            for (String temp : list)
-            {
-                temp = temp.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
-                users.add(temp);
+                String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
+                for (String temp : list)
+                {
+                    temp = temp.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
+                    users.add(temp);
+                }
             }
         }
         if (out == null)
@@ -153,18 +160,18 @@ public class ContributionSurveyor
         for (String user : users)
         {
             // determine if user exists; if so, stats
-            Wiki.User wpuser = homewiki.getUser(user);
-            int editcount = wpuser.countEdits();
-            if (wpuser == null)
-            {
-                System.out.println(user + " is not a registered user.");
-                continue;
-            }
             Wiki.Revision[] contribs = homewiki.contribs(user);
             out.write("===" + user + "===\n");
             out.write("*{{user5|" + user + "}}\n");
-            out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
+            Wiki.User wpuser = homewiki.getUser(user);
+            if (wpuser != null)
+            {
+                int editcount = wpuser.countEdits();
+                out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
                 ", Deleted edits: " + (editcount - contribs.length) + "\n\n");
+            }
+            else
+                System.out.println(user + " is not a registered user.");
 
             // survey mainspace edits
             out.write("====Mainspace edits (" + user + ")====");
@@ -226,7 +233,7 @@ public class ContributionSurveyor
             }
 
             // survey images
-            if (images)
+            if (images && wpuser != null)
             {
                 Wiki.User comuser = commons.getUser(user);
                 Wiki.LogEntry[] uploads = homewiki.getUploads(wpuser);
@@ -234,8 +241,8 @@ public class ContributionSurveyor
                 {
                     out.write("====Local uploads (" + user + ")====\n");
                     HashSet<String> list = new HashSet<String>(10000);
-                    for (int i = 0; i < uploads.length; i++)
-                        list.add((String)uploads[i].getTarget());
+                    for (Wiki.LogEntry upload : uploads)
+                        list.add(upload.getTarget());
                     out.write(ParserUtils.formatList(list.toArray(new String[list.size()])));
                     out.write("\n");
                 }
@@ -246,8 +253,8 @@ public class ContributionSurveyor
                 {
                     out.write("====Commons uploads (" + user + ")====\n");
                     HashSet<String> list = new HashSet<String>(10000);
-                    for (int i = 0; i < uploads.length; i++)
-                        list.add((String)uploads[i].getTarget());
+                    for (Wiki.LogEntry upload : uploads)
+                        list.add(upload.getTarget());
                     out.write(ParserUtils.formatList(list.toArray(new String[list.size()])));
                     out.write("\n");
                 }

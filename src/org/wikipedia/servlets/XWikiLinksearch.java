@@ -74,10 +74,10 @@ public class XWikiLinksearch extends HttpServlet
         importantwikis[16] = new Wiki("commons.wikimedia.org");
         importantwikis[17] = new Wiki("mediawiki.org");
         importantwikis[18] = new Wiki("wikidata.org");
-        for (int i = 0; i < importantwikis.length; i++)
+        for (Wiki tempwiki : importantwikis)
         {
-            importantwikis[i].setUsingCompressedRequests(false);
-            importantwikis[i].setMaxLag(-1);
+            tempwiki.setUsingCompressedRequests(false);
+            tempwiki.setMaxLag(-1);
         }
     }
     /**
@@ -177,6 +177,14 @@ public class XWikiLinksearch extends HttpServlet
         if (mailto)
             buffer.append(" checked");
         buffer.append(">mailto\n");
+        // main namespace only?
+        buffer.append("<tr><td><input type=checkbox name=ns value=0");
+        String temp = request.getParameter("ns");
+        boolean mainns = temp != null && temp.equals("0");
+        if (mainns)
+            buffer.append(" checked");
+        buffer.append("><td colspan=3>Main namespace only?");
+        
         // submit
         buffer.append("</table>\n<br>\n<input type=submit value=Search>\n</form>\n");
         if (domain != null)
@@ -184,17 +192,18 @@ public class XWikiLinksearch extends HttpServlet
             try
             {
                 // this works because disabled inputs aren't submitted
+                int[] ns = mainns ? new int[] { Wiki.MAIN_NAMESPACE } : new int[0];
                 if (wikiinput != null)
                 {
                     Wiki[] tempwiki = new Wiki[] { new Wiki(wikiinput) };
-                    linksearch(domain, buffer, tempwiki, https, mailto);
+                    linksearch(domain, buffer, tempwiki, https, mailto, ns);
                 }
                 else if (set.equals("top20"))
-                    linksearch(domain, buffer, top20wikis, https, mailto);
+                    linksearch(domain, buffer, top20wikis, https, mailto, ns);
                 else if (set.equals("top40"))
-                    linksearch(domain, buffer, top40wikis, https, mailto);
+                    linksearch(domain, buffer, top40wikis, https, mailto, ns);
                 else if (set.equals("major"))
-                    linksearch(domain, buffer, importantwikis, https, mailto);
+                    linksearch(domain, buffer, importantwikis, https, mailto, ns);
                 else
                     buffer.append("ERROR: Invalid wiki set.");
             }
@@ -215,24 +224,25 @@ public class XWikiLinksearch extends HttpServlet
         out.close();
     }
 
-    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis, boolean https, boolean mailto) throws IOException
+    public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis, boolean https, boolean mailto,
+        int... ns) throws IOException
     {
         buffer.append("<hr>\n<h2>Searching for links to ");
         buffer.append(ServletUtils.sanitize(domain));
         buffer.append("</h2>\n");
         for (Wiki wiki : wikis)
         {
-            ArrayList[] temp = wiki.linksearch("*." + domain, "http");
+            ArrayList[] temp = wiki.linksearch("*." + domain, "http", ns);
             // silly api designs aplenty here!
             if (https)
             {
-                ArrayList[] temp2 = wiki.linksearch("*." + domain, "https");
+                ArrayList[] temp2 = wiki.linksearch("*." + domain, "https", ns);
                 temp[0].addAll(temp2[0]);
                 temp[1].addAll(temp2[1]);
             }
             if (mailto)
             {
-                ArrayList[] temp2 = wiki.linksearch("*." + domain, "mailto");
+                ArrayList[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
                 temp[0].addAll(temp2[0]);
                 temp[1].addAll(temp2[1]);
             }

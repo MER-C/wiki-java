@@ -1299,7 +1299,7 @@ public class Wiki implements Serializable
      *  <tt>public static final int PORTAL_NAMESPACE = 100;</tt> for the Portal
      *  namespace on the English Wikipedia.
      *
-     *  @param titles any valid page name
+     *  @param title any valid page name
      *  @return an integer array containing the namespace of <tt>title</tt>
      *  @throws IOException if a network error occurs while populating the
      *  namespace cache
@@ -1444,6 +1444,7 @@ public class Wiki implements Serializable
      *  Gets the text of a specific section. Useful for section editing.
      *  @param title the title of the relevant page
      *  @param number the section number of the section to retrieve text for
+     *  @return the text of the given section
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the page has less than <tt>number</tt>
      *  sections
@@ -1451,6 +1452,7 @@ public class Wiki implements Serializable
      */
     public String getSectionText(String title, int number) throws IOException
     {
+        // TODO: what happens if the section does not exist?
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=content&titles=");
         url.append(URLEncoder.encode(title, "UTF-8"));
@@ -1738,6 +1740,8 @@ public class Wiki implements Serializable
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
      *  @param minor whether the edit is minor
+     *  @param bot whether to mark the edit as a bot edit (ignored if one does
+     *  not have the necessary permissions)
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws CredentialExpiredException if cookies have expired
@@ -3100,7 +3104,7 @@ public class Wiki implements Serializable
             else
                 aicontinue = null;
             
-            for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", i))
+            for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
                 int b = line.indexOf("/>", i);
                 LogEntry le = parseLogEntry(line.substring(i, b));
@@ -3108,7 +3112,6 @@ public class Wiki implements Serializable
                 le.action = "upload"; // unless it's an overwrite?
                 le.user = user;
                 uploads.add(le);
-                i = b;
             }
         }
         while (aicontinue != null);
@@ -5347,6 +5350,7 @@ public class Wiki implements Serializable
          *  Fetches the contributions for this user in a particular namespace(s).
          *  @param ns a list of namespaces to filter by, empty = all namespaces.
          *  @return a revision array of contributions
+         *  @throws IOException if a network error occurs
          *  @since 0.17
          */
         public Revision[] contribs(int... ns) throws IOException
@@ -6075,6 +6079,7 @@ public class Wiki implements Serializable
      *
      *  @param url the url to fetch
      *  @param caller the caller of this method
+     *  @return the content of the fetched URL
      *  @throws IOException if a network error occurs
      *  @since 0.18
      */
@@ -6172,6 +6177,7 @@ public class Wiki implements Serializable
      *  Text and parameter names must NOT be URL encoded.
      *  @param caller the caller of this method
      *  @return the server response
+     *  @throws IOException if a network error occurs
      *  @see #post(java.lang.String, java.lang.String, java.lang.String)
      *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
      *  @since 0.27
