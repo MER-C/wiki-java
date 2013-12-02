@@ -1452,14 +1452,14 @@ public class Wiki implements Serializable
      */
     public String getSectionText(String title, int number) throws IOException
     {
-        // TODO: what happens if the section does not exist?
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=content&titles=");
         url.append(URLEncoder.encode(title, "UTF-8"));
         url.append("&rvsection=");
         url.append(number);
         String text = fetch(url.toString(), "getSectionText");
-        if (text.contains("<error code=\"rvnosuchsection\""))
+        // FIXME: this is never reached, fetch throws an UnknownError instead
+        if (text.contains("code=\"rvnosuchsection\""))
             throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         // if the section does not contain any text, <rev xml:space=\"preserve\"> 
         // will not have a separate closing tag
@@ -2188,52 +2188,56 @@ public class Wiki implements Serializable
      */
     public Revision[] getPageHistory(String title) throws IOException
     {
-        return getPageHistory(title, null, null);
+        return getPageHistory(title, null, null, false);
     }
 
     /**
      *  Gets the revision history of a page between two dates.
      *  @param title a page
-     *  @param start the date to start enumeration (the latest of the two dates)
-     *  @param end the date to stop enumeration (the earliest of the two dates)
+     *  @param start the EARLIEST of the two dates
+     *  @param end the LATEST of the two dates
+     *  @param reverse whether to put the oldest first (default = false, newest
+     *  first is how history pages work)
      *  @return the revisions of that page in that time span
      *  @throws IOException if a network error occurs
      *  @since 0.19
      */
-    public Revision[] getPageHistory(String title, Calendar start, Calendar end) throws IOException
+    public Revision[] getPageHistory(String title, Calendar start, Calendar end, boolean reverse) throws IOException
     {
         // set up the url
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvlimit=max&titles=");
+        url.append("prop=revisions&rvlimit=200&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        if (reverse)
+            url.append("&rvdir=older");
+        if (start != null)
+        {
+            url.append(reverse ? "&rvstart=" : "&rvend=");
+            url.append(calendarToTimestamp(start));
+        }
         if (end != null)
         {
-            url.append("&rvend=");
+            url.append(reverse ? "&rvend=" : "&rvstart=");
             url.append(calendarToTimestamp(end));
         }
-        url.append("&rvstart");
-
-        // Hack time: since we cannot use rvstart (a timestamp) and rvstartid
-        // (an oldid) together, let's make them the same thing.
-        String rvstart = "=" + calendarToTimestamp(start == null ? makeCalendar() : start);
+        String rvcontinue = null;
         ArrayList<Revision> revisions = new ArrayList<Revision>(1500);
 
         // main loop
         do
         {
-            String temp = url.toString();
-            if (rvstart.charAt(0) != '=')
-                temp += ("id=" + rvstart);
+            String line;
+            if (rvcontinue == null)
+                line = fetch(url.toString(), "getPageHistory");
             else
-                temp += rvstart;
-            String line = fetch(temp, "getPageHistory");
+                line = fetch(url.toString() + "&rvcontinue=" + rvcontinue, "getPageHistory");
 
             // set continuation parameter
-            if (line.contains("rvstartid=\""))
-                rvstart = parseAttribute(line, "revstartid", 0);
+            if (line.contains("rvcontinue=\""))
+                rvcontinue = parseAttribute(line, "rvcontinue", 0);
             else
-                rvstart = null;
+                rvcontinue = null;
 
             // parse stuff
             for (int a = line.indexOf("<rev "); a > 0; a = line.indexOf("<rev ", ++a))
@@ -2242,7 +2246,7 @@ public class Wiki implements Serializable
                 revisions.add(parseRevision(line.substring(a, b), title));
             }
         }
-        while (rvstart != null);
+        while (rvcontinue != null);
         // populate previous/next
         int size = revisions.size();
         Revision[] temp = revisions.toArray(new Revision[size]);
