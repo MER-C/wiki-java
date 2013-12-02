@@ -72,7 +72,7 @@ public class WikiUnitTest
     @Test
     public void getTemplates() throws Exception
     {
-        assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkfhsdklj"));
+        assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkf&hsdklj"));
         assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("User:MER-C/monobook.js"));
     }
     
@@ -161,5 +161,38 @@ public class WikiUnitTest
     {
         assertArrayEquals("getExternalLinksOnPage: non-existent page", new String[0], enWiki.getExternalLinksOnPage("Gdkgfskl&dkf"));
         assertArrayEquals("getExternalLinksOnPage: page with no links", new String[0], enWiki.getExternalLinksOnPage("User:MER-C/monobook.js"));
+    }
+    
+    @Test
+    public void getSectionText()
+    {
+        try
+        {
+            enWiki.getSectionText("User:MER-C/monobook.css", 4920);
+            fail("getSectionText: non-existent section, should have thrown an exception.");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            // the expected result
+        }
+        catch (Throwable ex)
+        {
+            ex.printStackTrace();
+            fail("getSectionText: should throw IllegalArgumentException");
+        }
+    }
+    
+    @Test
+    public void random() throws Exception
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            String random = enWiki.random();
+            assertEquals("random: main namespace", Wiki.MAIN_NAMESPACE, enWiki.namespace(random));
+            random = enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE);
+            int temp = enWiki.namespace(random);
+            if (temp != Wiki.PROJECT_NAMESPACE && temp != Wiki.USER_NAMESPACE)
+                fail("random: multiple namespaces");
+        }
     }
 }

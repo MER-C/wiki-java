@@ -43,15 +43,6 @@ public class WikiTests
         
 
 /*           
-        // random
-        System.out.println(enWiki.random());
-        System.out.println(enWiki.random());
-        System.out.println(enWiki.random());
-        System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
-        System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
-        System.out.println(enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.USER_NAMESPACE));
-        
-    
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
             System.out.println(page);
@@ -63,14 +54,11 @@ public class WikiTests
             System.out.println(page);
         for (String page : deWiki.getCategoryMembers("Kategorie:Wikipedia:Wartungsseite (MerlBot)", true, Wiki.PROJECT_NAMESPACE))
             System.out.println(page);
-
+*/
         // getPageHistory()
-        for(Wiki.Revision rev : enWiki.getPageHistory("User_talk:MER-C"))
-            System.out.println(rev);
-
         for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq"))
             System.out.println(rev);
-
+/*
         // getPageInfo(): protected, cascade protected page
         HashMap<String, Object> blah = enWiki.getPageInfo("Main Page");
         for(Map.Entry<String, Object> entry : blah.entrySet())
@@ -87,7 +75,7 @@ public class WikiTests
             System.out.print(entry.getKey());
             System.out.print(" => ");
             System.out.println(entry.getValue());
-        }*/
+        }
         // enwiki now has a custom protection level
         // see also issue 39
         HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk", "Crème brûlée" });
@@ -100,7 +88,7 @@ public class WikiTests
                 System.out.println(entry.getValue());
             }
         }
-/*
+
         // getInterWikiBacklinks()
         String[][] blah2 = enWiki.getInterWikiBacklinks("wikitravel");
         for (String[] entry : blah2)
@@ -137,7 +125,7 @@ public class WikiTests
         }
         System.out.println();
 
-        //getLogEntries()
+        // getLogEntries()
         for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
         for (Wiki.LogEntry entry : enWiki.getLogEntries(501, Wiki.DELETION_LOG, "restore"))
