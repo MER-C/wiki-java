@@ -2206,11 +2206,11 @@ public class Wiki implements Serializable
     {
         // set up the url
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvlimit=200&titles=");
+        url.append("prop=revisions&rvlimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
         if (reverse)
-            url.append("&rvdir=older");
+            url.append("&rvdir=newer");
         if (start != null)
         {
             url.append(reverse ? "&rvstart=" : "&rvend=");
