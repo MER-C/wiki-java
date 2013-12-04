@@ -56,7 +56,7 @@ public class WikiTests
             System.out.println(page);
 */
         // getPageHistory()
-        for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq"))
+        for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq", null, null, true))
             System.out.println(rev);
 /*
         // getPageInfo(): protected, cascade protected page
