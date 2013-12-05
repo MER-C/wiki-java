@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blacklistentries>
+  <blacklist>
+    <subnet>46.236.7.0/24</subnet>
+    <description>Datasift/Tweetmeme shit</description>
+  </blacklist>
+  <blacklist>
+    <subnet>46.236.24.32/27</subnet>
+    <description>Datasift/Tweetmeme shit</description>    
+  </blacklist>
+  <blacklist>
+    <subnet>46.236.23.0/24</subnet>
+    <description>Datasift/Tweetmeme shit</description>    
+  </blacklist>
+</blacklistentries>
