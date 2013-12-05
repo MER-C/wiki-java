@@ -40,9 +40,7 @@ public class WikiTests
         enWiki.setMaxLag(-1);
         Wiki deWiki = new Wiki("de.wikipedia.org");
         deWiki.setMaxLag(-1);
-        
-
-/*           
+           
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
             System.out.println(page);
@@ -54,11 +52,11 @@ public class WikiTests
             System.out.println(page);
         for (String page : deWiki.getCategoryMembers("Kategorie:Wikipedia:Wartungsseite (MerlBot)", true, Wiki.PROJECT_NAMESPACE))
             System.out.println(page);
-*/
+
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq", null, null, true))
             System.out.println(rev);
-/*
+
         // getPageInfo(): protected, cascade protected page
         HashMap<String, Object> blah = enWiki.getPageInfo("Main Page");
         for(Map.Entry<String, Object> entry : blah.entrySet())
@@ -78,10 +76,10 @@ public class WikiTests
         }
         // enwiki now has a custom protection level
         // see also issue 39
-        HashMap<String, Object> blah[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk", "Crème brûlée" });
-        for (int i = 0; i < blah.length; i++)
+        HashMap<String, Object> blah5[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk", "Crème brûlée" });
+        for (int i = 0; i < blah5.length; i++)
         {
-            for (Map.Entry<String, Object> entry : blah[i].entrySet())
+            for (Map.Entry<String, Object> entry : blah5[i].entrySet())
             {
                 System.out.print(entry.getKey());
                 System.out.print(" => ");
@@ -126,16 +124,16 @@ public class WikiTests
         System.out.println();
 
         // getLogEntries()
-        for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
+        for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, "", null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
         for (Wiki.LogEntry entry : enWiki.getLogEntries(501, Wiki.DELETION_LOG, "restore"))
             System.out.println(entry);
 
         // getUploads
-        Wiki.User user = enWiki.getUser("Wizardman");
-        for (Wiki.LogEntry entry : enWiki.getUploads(user))
+        Wiki.User user4 = enWiki.getUser("Wizardman");
+        for (Wiki.LogEntry entry : enWiki.getUploads(user4))
             System.out.println(entry);
-        
+
         // ipblocklist
         for (Wiki.LogEntry entry : enWiki.getIPBlockList("Alice"))
             System.out.println(entry);
@@ -159,10 +157,6 @@ public class WikiTests
         for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
             System.out.println(revision);
 
-        // recentchanges
-        for (Wiki.Revision revision : enWiki.recentChanges(51))
-            System.out.println(revision);
-
         // getImageHistory
         for (Wiki.LogEntry entry : enWiki.getImageHistory("Davis Motor Car Company logo.jpg"))
             System.out.println(entry);
@@ -174,7 +168,7 @@ public class WikiTests
                
         System.out.println(ParserUtils.revisionsToWikitext(enWiki, enWiki.recentChanges(51)));
         System.out.println(ParserUtils.revisionsToHTML(enWiki, enWiki.recentChanges(51)));
-        
+
         // query page
         for (String page : enWiki.queryPage("Uncategorizedpages"))
             System.out.println(page);
@@ -183,31 +177,32 @@ public class WikiTests
         enWiki.purge(false, new String[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" });
 
         // getPageInfo
-        String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
-        enWiki.getPageInfo(pages); // use a debugger, please
+        // String[] pages = enWiki.getCategoryMembers("Wikipedia featured article review candidates");
+        // enWiki.getPageInfo(pages); // use a debugger, please
      
         // list users
-        for (String user : enWiki.allUsers("AB", 51))
-            System.out.println(user);
-        for (String user : enWiki.allUsersWithPrefix("AB "))
-            System.out.println(user);
+        for (String user2 : enWiki.allUsers("AB", 51))
+            System.out.println(user2);
+        for (String user2 : enWiki.allUsersWithPrefix("AB "))
+            System.out.println(user2);
         
         // interwikis
         for (Map.Entry entry : enWiki.getInterWikiLinks("Main Page").entrySet())
             System.out.println("[[:" + entry.getKey() + ":" + entry.getValue() + "]]");
             
         // linksearch
-        ArrayList[] blah = enWiki.linksearch("bom.gov.au");
-        for (int i = 0; i < blah[0].size(); i++)
-            System.out.println(blah[0].get(i) + " --- " + blah[1].get(i));
+        ArrayList[] blah4 = enWiki.linksearch("bom.gov.au");
+        for (int i = 0; i < blah4[0].size(); i++)
+            System.out.println(blah4[0].get(i) + " --- " + blah4[1].get(i));
+
 
         // getOldImage/image history
         Wiki.LogEntry[] entries = enWiki.getImageHistory("File:Bohemian Rhapsody.png");
         for (Wiki.LogEntry entry : entries)
             System.out.println(entry);
-        FileOutputStream out = new FileOutputStream("hello.png");
-        out.write(enWiki.getOldImage(entries[0]));
-        out.close();
+        FileOutputStream out2 = new FileOutputStream("hello.png");
+        out2.write(enWiki.getOldImage(entries[0]));
+        out2.close();
 
         // allpages
         HashMap<String, Object> protect = new HashMap<>();
@@ -221,17 +216,14 @@ public class WikiTests
         for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1))
             System.out.println(page);
 
-        enWiki.unprotect("Main Page", "Blah");
-        
         // getRevisions
         Wiki.Revision[] temp = enWiki.getRevisions(new long[] { 500000000L, 579126972L, 500000000L, 500000003L, 40000000L } );
-        for (Wiki.Revision blah : temp)
-            System.out.println(blah);
+        for (Wiki.Revision blah3 : temp)
+            System.out.println(blah3);
 
-        
         // getExternalLinksOnPage
         for (String url : enWiki.getExternalLinksOnPage("Albert Einstein"))
             System.out.println(url);
-        */
+
     }
 }

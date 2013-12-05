@@ -1,5 +1,5 @@
 /**
- *  @(#)Wiki.java 0.28 09/09/2013
+ *  @(#)Wiki.java 0.29 05/12/2013
  *  Copyright (C) 2007 - 2013 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
@@ -3054,7 +3054,9 @@ public class Wiki implements Serializable
 
                 // scrape archive name for logging purposes
                 String archive = parseAttribute(line, "archivename", 0);
-                log(Level.INFO, "getImage", "Successfully retrieved old image \"" + archive + "\"");
+                if (archive == null)
+                    archive = title;
+                log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
                 return out.toByteArray();
             }
         }
@@ -4287,7 +4289,7 @@ public class Wiki implements Serializable
                 bkstart = null;
 
             // parse xml
-            for (int a = line.indexOf("<block"); a > 0; a = line.indexOf("<block ", ++a))
+            for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
             {
                 // find entry
                 int b = line.indexOf("/>", a);
@@ -6319,15 +6321,21 @@ public class Wiki implements Serializable
      *  @param xml the xml to search
      *  @param attribute the attribute to search
      *  @param index where to start looking
-     *  @return the value of the given XML attribute
+     *  @return the value of the given XML attribute, or null if the attribute
+     *  is not present
      *  @since 0.28
      */
     private String parseAttribute(String xml, String attribute, int index)
     {
         // let's hope the JVM always inlines this
-        int a = xml.indexOf(attribute + "=\"", index) + attribute.length() + 2;
-        int b = xml.indexOf('\"', a);
-        return xml.substring(a, b);
+        if (xml.contains(attribute + "=\""))
+        {
+            int a = xml.indexOf(attribute + "=\"", index) + attribute.length() + 2;
+            int b = xml.indexOf('\"', a);
+            return xml.substring(a, b);
+        }
+        else
+            return null;
     }
     
     /**
@@ -6345,7 +6353,7 @@ public class Wiki implements Serializable
         sb.append("&");
         sb.append(id);
         sb.append("namespace=");
-        for (int i = 0; i < temp - 2; i++)
+        for (int i = 0; i < temp - 1; i++)
         {
             sb.append(namespaces[i]);
             sb.append("%7C");
