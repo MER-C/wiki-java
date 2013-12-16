@@ -114,40 +114,19 @@ public class Wiki implements Serializable
     public static final int PROJECT_TALK_NAMESPACE = 5;
 
     /**
-     *  Denotes the namespace for image/file description pages. Has the prefix
-     *  prefix "File:". Do not create these directly, use upload() instead.
-     *  (This namespace used to have the prefix "Image:", hence the name.)
+     *  Denotes the namespace for file description pages. Has the prefix
+     *  "File:". Do not create these directly, use upload() instead.
      *  @see #MEDIA_NAMESPACE
      *  @since 0.25
      */
     public static final int FILE_NAMESPACE = 6;
 
     /**
-     *  Denotes talk pages for image description pages. Has the prefix
+     *  Denotes talk pages for file description pages. Has the prefix
      *  "File talk:".
      *  @since 0.25
      */
     public static final int FILE_TALK_NAMESPACE = 7;
-
-    /**
-     *  Denotes the namespace for image/file description pages. Has the prefix
-     *  prefix "File:". Do not create these directly, use upload() instead.
-     *  (This namespace used to have the prefix "Image:", hence the name.)
-     *  @see #MEDIA_NAMESPACE
-     *  @since 0.03
-     *  @deprecated use FILE_NAMESPACE
-     */
-    @Deprecated
-    public static final int IMAGE_NAMESPACE = FILE_NAMESPACE;
-
-    /**
-     *  Denotes talk pages for image description pages. Has the prefix
-     *  "File talk:".
-     *  @since 0.03
-     *  @deprecated use FILE_TALK_NAMESPACE
-     */
-    @Deprecated
-    public static final int IMAGE_TALK_NAMESPACE = FILE_TALK_NAMESPACE;
 
     /**
      *  Denotes the namespace for (wiki) system messages, given the prefix
@@ -1228,7 +1207,7 @@ public class Wiki implements Serializable
                 tempmap.put("exists", exists);
                 if (exists)
                 {
-                    tempmap.put("lastpurged", timestampToCalendar(convertTimestamp(parseAttribute(item, "touched", 0))));
+                    tempmap.put("lastpurged", timestampToCalendar(parseAttribute(item, "touched", 0), true));
                     tempmap.put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
                     tempmap.put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
                 }
@@ -1252,7 +1231,7 @@ public class Wiki implements Serializable
                         if (expiry.equals("infinity"))
                             protectionstate.put(type + "expiry", null);
                         else
-                            protectionstate.put(type + "expiry", timestampToCalendar(expiry));
+                            protectionstate.put(type + "expiry", timestampToCalendar(expiry, true));
                     // protected via cascade
                     if (item.contains("source=\""))
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
@@ -1398,8 +1377,7 @@ public class Wiki implements Serializable
     
     /**
      *  Determines whether a series of pages exist. 
-     *  @param titles the titles to check. This array WILL BE REARRANGED WITH
-     *  DUPLICATES REMOVED and padded with null as necessary.
+     *  @param titles the titles to check. 
      *  @return whether the pages exist, in the same order as the processed array
      *  @throws IOException if a network error occurs
      *  @since 0.10
@@ -2413,26 +2391,115 @@ public class Wiki implements Serializable
      *  </pre>
      *   
      *  @param page the page 
-     *  @param protectionstate (see above). <tt>null</tt> unprotects.
+     *  @param protectionstate (see above)
+     *  @param reason the reason for (un)protection
      *  @throws IOException if a network error occurs
-     *  @throws CredentialException if we cannot protect
+     *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws CredentialNotFoundException if we cannot protect
+     *  @since 0.30
      */
-    public synchronized void protect(String page, HashMap<String, Object> protectionstate) throws IOException, CredentialException
+    public synchronized void protect(String page, HashMap<String, Object> protectionstate, String reason) throws IOException, LoginException
     {
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
+        
+        // This is totally untested. Beware!
         throw new UnsupportedOperationException("Not implemented yet!");
+/*
+        long start = System.currentTimeMillis();
+        HashMap info = getPageInfo(page);
+        String protectToken = (String)info.get("token");
+        
+        StringBuilder out = new StringBuilder("title=");
+        out.append(URLEncoder.encode(page, "UTF-8"));
+        out.append("&reason=");
+        out.append(URLEncoder.encode(reason, "UTF-8"));
+        out.append("&token=");
+        out.append(URLEncoder.encode(protectToken, "UTF-8"));
+        // cascade protection
+        if (protectionstate.containsKey("cascade"))
+            out.append("&cascade=1");
+        // protection levels
+        out.append("&protections=");
+        StringBuilder temp = new StringBuilder();
+        for (Map.Entry<String, Object> entry : protectionstate.entrySet())
+        {
+            String key = entry.getKey();
+            if (!key.contains("expiry") && !key.equals("cascade"))
+            {
+                out.append(key);
+                out.append("=");
+                out.append(entry.getValue());
+                Calendar expiry = (Calendar)protectionstate.get(key + "expiry");
+                temp.append(expiry == null ? "never" : calendarToTimestamp(expiry));
+                out.append("%7C");
+                temp.append("%7C");
+            }
+        }
+        out.delete(out.length() - 3, out.length());
+        temp.delete(temp.length() - 3, temp.length());
+        out.append("&expiry=");
+        out.append(temp);
+        System.out.println(out);
+
+        String response = post(apiUrl + "action=protect", out.toString(), "protect");
+        try
+        {
+            checkErrors(response, "post");
+        }
+        catch (IOException e)
+        {
+            // retry once
+            if (retry)
+            {
+                retry = false;
+                log(Level.WARNING, "protect", "Exception: " + e.getMessage() + " Retrying...");
+                protect(page, protectionstate, reason);
+            }
+            else
+            {
+                log(Level.SEVERE, "protect", "EXCEPTION: " + e);
+                throw e;
+            }
+        }
+        if (retry)
+            log(Level.INFO, "edit", "Successfully protected " + page);
+        retry = true;
+
+        // throttle
+        try
+        {
+            long time = throttle - System.currentTimeMillis() + start;
+            if (time > 0)
+                Thread.sleep(time);
+        }
+        catch (InterruptedException e)
+        {
+            // nobody cares
+        }
+        */
     }
     
     /**
      *  Completely unprotects a page.
      *  @param page the page to unprotect
+     *  @param reason the reason for unprotection
      *  @throws IOException if a network error occurs
-     *  @throws CredentialException if we cannot protect
+     *  @throws AccountLockedException if user is blocked
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws CredentialNotFoundException if we cannot protect
+     *  @since 0.30
      */
-    public void unprotect(String page) throws IOException, CredentialException
+    public void unprotect(String page, String reason) throws IOException, LoginException
     {
-        protect(page, null);
+        HashMap<String, Object> state = new HashMap<String, Object>();
+        state.put("edit", NO_PROTECTION);
+        state.put("move", NO_PROTECTION);
+        if (namespace(page) == FILE_NAMESPACE)
+            state.put("upload", NO_PROTECTION);
+        state.put("create", NO_PROTECTION);
+        protect(page, state, reason);
     }
 
     /**
@@ -2775,7 +2842,7 @@ public class Wiki implements Serializable
     protected Revision parseRevision(String xml, String title)
     {
         long oldid = Long.parseLong(parseAttribute(xml, " revid", 0));
-        Calendar timestamp = timestampToCalendar(convertTimestamp(parseAttribute(xml, "timestamp", 0)));
+        Calendar timestamp = timestampToCalendar(parseAttribute(xml, "timestamp", 0), true);
 
         // title
         if (title.isEmpty())
@@ -5244,7 +5311,7 @@ public class Wiki implements Serializable
             ret.put("emailable", info.contains("emailable=\""));
             ret.put("editcount", Integer.parseInt(parseAttribute(info, "editcount", 0)));
             ret.put("gender", Gender.valueOf(parseAttribute(info, "gender", 0)));
-            ret.put("created", timestampToCalendar(convertTimestamp(parseAttribute(info, "registration", 0))));
+            ret.put("created", timestampToCalendar(parseAttribute(info, "registration", 0), true));
             
             // groups
             ArrayList<String> temp = new ArrayList<String>(50);
@@ -5463,7 +5530,7 @@ public class Wiki implements Serializable
             this.reason = reason;
             this.user = user;
             this.target = target;
-            this.timestamp = timestampToCalendar(timestamp);
+            this.timestamp = timestampToCalendar(timestamp, false);
             this.details = details;
         }
 
@@ -6595,17 +6662,20 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Turns a timestamp of the format yyyymmddhhmmss into a Calendar object.
-     *  Might be useful for subclasses.
+     *  Turns a timestamp into a Calendar object. Might be useful for subclasses.
      *
      *  @param timestamp the timestamp to convert
+     *  @param api whether the timestamp is of the format yyyy-mm-ddThh:mm:ssZ
+     *  as opposed to yyyymmddhhmmss (which is the default)
      *  @return the converted Calendar
      *  @see #calendarToTimestamp
      *  @since 0.08
      */
-    protected final Calendar timestampToCalendar(String timestamp)
+    protected final Calendar timestampToCalendar(String timestamp, boolean api)
     {
         Calendar calendar = makeCalendar();
+        if (api)
+            timestamp = convertTimestamp(timestamp);
         int year = Integer.parseInt(timestamp.substring(0, 4));
         int month = Integer.parseInt(timestamp.substring(4, 6)) - 1; // January == 0!
         int day = Integer.parseInt(timestamp.substring(6, 8));
@@ -6617,9 +6687,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Converts a timestamp of the form used by the API
-     *  (yyyy-mm-ddThh:mm:ssZ) to the form
-     *  yyyymmddhhmmss, which can be fed into <tt>timestampToCalendar()</tt>.
+     *  Converts a timestamp of the form used by the API (yyyy-mm-ddThh:mm:ssZ) 
+     *  to the form yyyymmddhhmmss.
      *
      *  @param timestamp the timestamp to convert
      *  @return the converted timestamp
