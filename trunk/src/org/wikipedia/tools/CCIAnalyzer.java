@@ -19,9 +19,11 @@
  */
 package org.wikipedia.tools;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.net.*;
+import java.util.logging.*;
+import java.util.zip.*;
 import org.wikipedia.Wiki;
 
 /**
@@ -35,37 +37,53 @@ public class CCIAnalyzer
      */
     public static void main(String[] args) throws IOException
     {
+        //if (args.length < 1)
+        //{
+        //    System.out.println("First argument must be the CCI page to analyse.");
+        //    System.exit(1);
+        //}
         Wiki enWiki = new Wiki("en.wikipedia.org");
-        StringBuilder cci = new StringBuilder(enWiki.getPageText("X"));
+        StringBuilder cci = new StringBuilder(enWiki.getPageText("User:MER-C/Sandbox"));
         
         // parse the list of diffs
         ArrayList<String> minoredits = new ArrayList<String>(500);
         for (int i = cci.indexOf("{{dif|"); i > 0; i = cci.indexOf("{{dif|", ++i))
         {
             int x = cci.indexOf("}}", i);
-            String edit = cci.substring(i, x);
+            String edit = cci.substring(i, x + 2);
             x = edit.indexOf("|");
-            int y = edit.indexOf("|", x);
-            String oldid = edit.substring(x, y);
+            int y = edit.indexOf("|", x + 1);
+            String oldid = edit.substring(x + 1, y);
 
             // Fetch diff. No plain text diffs for performance reasons, see
             // https://bugzilla.wikimedia.org/show_bug.cgi?id=13209
             // We don't use the Wiki.java method here, this avoids an extra query.
-            String diff = enWiki.fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid, "blah");
-            diff = enWiki.decode(diff);
+            String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
+            diff = diff.replace("&lt;", "<");
+            diff = diff.replace("&gt;", ">");
             // However, it is easy to strip the HTML.
-            boolean major = true;
-            for (int j = diff.indexOf("diff-addedlines"); j > 0; j = diff.indexOf("diff-addedlines", j))
+            boolean major = false;
+            for (int j = diff.indexOf("diff-addedline"); j > 0; j = diff.indexOf("diff-addedline", ++j))
             {
+                x = diff.indexOf("<div>", j) + 5;
+                y = diff.indexOf("<", x);
+                String addedline = diff.substring(x, y);
                 if (diff.contains("diffchange diffchange-inline"))
                 {
-                    // add the highlighted parts
-                    
+                    for (int k = addedline.indexOf("diffchange diffchange-inline", j); k > 0; k = addedline.indexOf("diffchange diffchange-inline", ++k))
+                    {
+                        x = diff.indexOf(">", j) + 1;
+                        y = diff.indexOf("<", x);
+                        String delta = addedline.substring(x, y);
+                        major |= analyzeDelta(delta);
+                        if (major)
+                            break;
+                    }
                 }
                 else
-                {
-                    // add the whole line
-                }
+                    major |= analyzeDelta(addedline);
+                if (major)
+                    break;
             }
             if (!major)
                 minoredits.add(edit);
@@ -75,8 +93,11 @@ public class CCIAnalyzer
         for (String minoredit : minoredits)
         {
             int x = cci.indexOf(minoredit);
-            cci.replace(x, x + minoredit.length(), "");
+            cci.delete(x, x + minoredit.length());
+            System.out.println(minoredit);
         }
+        System.out.println("----------------------");
+        System.out.println(cci);
     }
     
     /**
@@ -97,5 +118,34 @@ public class CCIAnalyzer
                 return true;
         }
         return false;
+    }
+    
+    private static String fetch(String url) throws IOException
+    {
+        // connect
+        URLConnection connection = new URL(url).openConnection();
+        connection.setConnectTimeout(60000);
+        connection.setReadTimeout(60000);
+        connection.setRequestProperty("Accept-encoding", "gzip");
+        connection.connect();
+
+        // get the text
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+            new GZIPInputStream(connection.getInputStream())));
+        String line;
+        StringBuilder text = new StringBuilder(100000);
+        while ((line = in.readLine()) != null)
+        {
+            text.append(line);
+            text.append("\n");
+        }
+        in.close();
+        String temp = text.toString();
+        if (temp.contains("<error code="))
+            // Something *really* bad happened. Most of these are self-explanatory
+            // and are indicative of bugs (not necessarily in this framework) or 
+            // can be avoided entirely.
+            throw new UnknownError("MW API error. Server response was: " + temp);
+        return temp;
     }
 }
