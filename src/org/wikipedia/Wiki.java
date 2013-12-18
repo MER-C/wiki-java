@@ -5844,6 +5844,7 @@ public class Wiki implements Serializable
             }
             String line = post(query, temp.toString(), "Revision.diff");
             // strip extraneous information
+            // FIXME: do something sensible when this is the first revision in a page
             int a = line.indexOf("<diff");
             a = line.indexOf(">", a) + 1;
             int b = line.indexOf("</diff>", a);
