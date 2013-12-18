@@ -45,6 +45,13 @@ public class CCIAnalyzer
         Wiki enWiki = new Wiki("en.wikipedia.org");
         StringBuilder cci = new StringBuilder(enWiki.getPageText("User:MER-C/Sandbox"));
         
+        // some XML strings we are looking for
+        // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
+        String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;";
+        String diffaddedend = "&lt;/td&gt;";
+        String deltabegin = "&lt;span class=&quot;diffchange diffchange-inline&quot;&gt;";
+        String deltaend = "&lt;/span&gt;";
+        
         // parse the list of diffs
         ArrayList<String> minoredits = new ArrayList<String>(500);
         for (int i = cci.indexOf("{{dif|"); i > 0; i = cci.indexOf("{{dif|", ++i))
@@ -59,31 +66,31 @@ public class CCIAnalyzer
             // https://bugzilla.wikimedia.org/show_bug.cgi?id=13209
             // We don't use the Wiki.java method here, this avoids an extra query.
             String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
-            diff = diff.replace("&lt;", "<");
-            diff = diff.replace("&gt;", ">");
             // However, it is easy to strip the HTML.
             boolean major = false;
-            for (int j = diff.indexOf("diff-addedline"); j > 0; j = diff.indexOf("diff-addedline", ++j))
+            for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))
             {
-                x = diff.indexOf("<div>", j) + 5;
-                y = diff.indexOf("<", x);
-                String addedline = diff.substring(x, y);
-                if (diff.contains("diffchange diffchange-inline"))
+                int y2 = diff.indexOf(diffaddedend, j);
+                String addedline = diff.substring(j + diffaddedbegin.length(), y2);
+                addedline = addedline.replaceFirst("^&lt;div&gt;", "");
+                addedline = addedline.replace("&lt;/div&gt;", "");
+                if (addedline.contains(deltabegin))
                 {
-                    for (int k = addedline.indexOf("diffchange diffchange-inline", j); k > 0; k = addedline.indexOf("diffchange diffchange-inline", ++k))
+                    for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
                     {
-                        x = diff.indexOf(">", j) + 1;
-                        y = diff.indexOf("<", x);
-                        String delta = addedline.substring(x, y);
+                        int y3 = addedline.indexOf(deltaend, k); // </span>
+                        String delta = addedline.substring(k + deltabegin.length(), y3);
                         major |= analyzeDelta(delta);
                         if (major)
                             break;
+                        k = y3;
                     }
                 }
                 else
                     major |= analyzeDelta(addedline);
                 if (major)
                     break;
+                j = y2;
             }
             if (!major)
                 minoredits.add(edit);
@@ -102,19 +109,19 @@ public class CCIAnalyzer
     
     /**
      *  Determines whether a given delta is a major edit. A "major edit" is
-     *  defined as something that adds more than 6 words.
+     *  defined as something that adds more than 9 words.
      *  @param delta the delta to check
      *  @return whether this is a major edit
      */
     public static boolean analyzeDelta(String delta)
     {
         // This treats wikilinks as separate tokens.
-        // From what I see, all articles still have 6 words between wikilinks.
+        // From what I see, all articles still have 9 words between wikilinks.
         StringTokenizer tk = new StringTokenizer(delta, "<>[]{}|=");
         while (tk.hasMoreTokens())
         {
             String token =  tk.nextToken();
-            if (token.split("\\s").length > 6)
+            if (token.split("\\s").length > 9)
                 return true;
         }
         return false;
