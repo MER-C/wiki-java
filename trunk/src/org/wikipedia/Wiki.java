@@ -396,6 +396,7 @@ public class Wiki implements Serializable
     private String domain;
     protected String query, base, apiUrl;
     protected String scriptPath = "/w";
+    private boolean wgCapitalLinks = true;
 
     // user management
     private HashMap<String, String> cookies = new HashMap<String, String>(12);
@@ -420,7 +421,7 @@ public class Wiki implements Serializable
 
     // retry flag
     private boolean retry = true;
-
+   
     // serial version
     private static final long serialVersionUID = -8745212681497644126L;
 
@@ -441,7 +442,7 @@ public class Wiki implements Serializable
      */
     public Wiki()
     {
-        this("en.wikipedia.org");
+        this("en.wikipedia.org", "/w");
     }
 
     /**
@@ -455,13 +456,7 @@ public class Wiki implements Serializable
      */
     public Wiki(String domain)
     {
-        if (domain == null || domain.isEmpty())
-            domain = "en.wikipedia.org";
-        this.domain = domain;
-
-        // init variables
-        log(Level.CONFIG, "<init>", "Using Wiki.java " + version);
-        initVars();
+        this(domain, "/w");
     }
 
     /**
@@ -474,10 +469,17 @@ public class Wiki implements Serializable
      */
     public Wiki(String domain, String scriptPath)
     {
+        if (domain == null || domain.isEmpty())
+            domain = "en.wikipedia.org";
         this.domain = domain;
         this.scriptPath = scriptPath;
 
         // init variables
+        // This is fine as long as you do not have parameters other than domain
+        // and scriptpath in constructors and do not do anything else than super(x)!
+        // http://stackoverflow.com/questions/3404301/whats-wrong-with-overridable-method-calls-in-constructors
+        // TODO: make this more sane.
+        log(Level.CONFIG, "<init>", "Using Wiki.java " + version);
         initVars();
     }
 
@@ -556,9 +558,25 @@ public class Wiki implements Serializable
      */
     public String getScriptPath() throws IOException
     {
-        scriptPath = parseAndCleanup("{{SCRIPTPATH}}");
+        String line = fetch(query + "action=query&meta=siteinfo", "getScriptPath");
+        scriptPath = parseAttribute(line, "scriptpath", 0);
         initVars();
         return scriptPath;
+    }
+    
+    /**
+     *  Detects whether a wiki forces upper case for the first character in a
+     *  title and sets the bot framework up to use it. Example: en.wikipedia = 
+     *  true, en.wiktionary = false. Default = true. See [[mw:Manual:$wgCapitalLinks]].
+     *  @return see above
+     *  @throws IOException if a network error occurs
+     *  @since 0.30
+     */
+    public boolean isUsingCapitalLinks() throws IOException
+    {
+        String line = fetch(query + "action=query&meta=siteinfo", "isUsingCapitalLinks");
+        wgCapitalLinks = parseAttribute(line, "case", 0).equals("first-letter");
+        return wgCapitalLinks;
     }
 
     /**
@@ -1292,7 +1310,6 @@ public class Wiki implements Serializable
             populateNamespaceCache();
         
         // sanitise
-        title = normalize(title);
         if (!title.contains(":"))
             return MAIN_NAMESPACE;
         String namespace = title.substring(0, title.indexOf(':'));
@@ -6433,10 +6450,10 @@ public class Wiki implements Serializable
      *  Cuts up a list of titles into batches for prop=X&titles=Y type queries.
      *  @param titles a list of titles. 
      *  @return the titles ready for insertion into a URL
-     *  @throws UnsupportedEncodingException should never happen
+     *  @throws IOException if a network error occurs
      *  @since 0.29
      */
-    protected String[] constructTitleString(String[] titles) throws UnsupportedEncodingException
+    protected String[] constructTitleString(String[] titles) throws IOException
     {
         // remove duplicates, sort and pad
         // Set<String> set = new TreeSet(Arrays.asList(titles));
@@ -6468,13 +6485,27 @@ public class Wiki implements Serializable
      *  @param s the string to normalize
      *  @return the normalized string
      *  @throws IllegalArgumentException if the title is invalid
+     *  @throws IOException if a network error occurs (rare)
      *  @since 0.27
      */
-    public String normalize(String s)
+    public String normalize(String s) throws IOException
     {
         if (s.isEmpty())
             return s;
         char[] temp = s.toCharArray();
+        if (wgCapitalLinks)
+        {
+            // convert first character in the actual title to upper case
+            int ns = namespace(s);
+            if (ns == MAIN_NAMESPACE)
+                temp[0] = Character.toUpperCase(temp[0]);
+            else
+            {
+                // don't forget the extra colon
+                int index = namespaceIdentifier(ns).length() + 1;
+                temp[index] = Character.toUpperCase(temp[index]);
+            }
+        }
         for (int i = 0; i < temp.length; i++)
         {
             switch (temp[i])
