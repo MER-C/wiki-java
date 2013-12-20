@@ -195,4 +195,21 @@ public class WikiUnitTest
                 fail("random: multiple namespaces");
         }
     }
+    
+    @Test
+    public void isUsingCapitalLinks() throws Exception
+    {
+        assertTrue("caplinks: enwiki", enWiki.isUsingCapitalLinks());
+        Wiki enwikt = new Wiki("en.wiktionary.org");
+        assertFalse("caplinks: enwiktionary", enwikt.isUsingCapitalLinks());
+    }
+    
+    @Test
+    public void normalize() throws Exception
+    {
+        assertEquals("normalize", "Blah", enWiki.normalize("Blah"));
+        assertEquals("normalize", "Blah", enWiki.normalize("blah"));
+        assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
+        assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:blah.jpg"));
+    }
 }
