@@ -212,4 +212,10 @@ public class WikiUnitTest
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:blah.jpg"));
     }
+    
+    @Test
+    public void diff() throws Exception
+    {
+        assertNull("diff: no previous revision", enWiki.getRevision(586849481L).diff(Wiki.PREVIOUS_REVISION));
+    }
 }

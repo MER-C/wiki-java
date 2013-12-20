@@ -5833,14 +5833,15 @@ public class Wiki implements Serializable
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param oldid the id of another revision; (exclusive) or
          *  @param text some wikitext to compare against
-         *  @return a difference between oldid or text
+         *  @return a difference between oldid or text or null if there is no
+         *  diff (example: 586849481).
          *  @throws IOException if a network error occurs
          *  @since 0.21
          */
         protected String diff(long oldid, String text) throws IOException
         {
             // send via POST
-            StringBuilder temp = new StringBuilder("prop=revisions&revids=");
+            StringBuilder temp = new StringBuilder("revids=");
             temp.append(revid);
             // no switch for longs? WTF?
             if (oldid == NEXT_REVISION)
@@ -5859,13 +5860,18 @@ public class Wiki implements Serializable
                 temp.append("&rvdiffto=");
                 temp.append(oldid);
             }
-            String line = post(query, temp.toString(), "Revision.diff");
+            String line = post(query + "prop=revisions", temp.toString(), "Revision.diff");
             // strip extraneous information
-            // FIXME: do something sensible when this is the first revision in a page
-            int a = line.indexOf("<diff");
-            a = line.indexOf(">", a) + 1;
-            int b = line.indexOf("</diff>", a);
-            return decode(line.substring(a, b));
+            if (line.contains("</diff>"))
+            {
+                int a = line.indexOf("<diff");
+                a = line.indexOf(">", a) + 1;
+                int b = line.indexOf("</diff>", a);
+                return decode(line.substring(a, b));
+            }
+            else
+                // <diff> tag has no content if there is no diff
+                return null;
         }
 
         /**

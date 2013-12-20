@@ -67,7 +67,9 @@ public class CCIAnalyzer
             // We don't use the Wiki.java method here, this avoids an extra query.
             String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
             // However, it is easy to strip the HTML.
-            boolean major = false;
+            boolean major = true;
+            // If the diff is empty (see https://en.wikipedia.org/w/index.php?diff=343490272)
+            // it will not contain diffaddedbegin -> default major to true.
             for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))
             {
                 int y2 = diff.indexOf(diffaddedend, j);
@@ -80,14 +82,14 @@ public class CCIAnalyzer
                     {
                         int y3 = addedline.indexOf(deltaend, k); // </span>
                         String delta = addedline.substring(k + deltabegin.length(), y3);
-                        major |= analyzeDelta(delta);
+                        major = analyzeDelta(delta);
                         if (major)
                             break;
                         k = y3;
                     }
                 }
                 else
-                    major |= analyzeDelta(addedline);
+                    major = analyzeDelta(addedline);
                 if (major)
                     break;
                 j = y2;
