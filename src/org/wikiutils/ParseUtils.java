@@ -168,19 +168,16 @@ public class ParseUtils
 	 * @return The param we parsed out or null if we didn't find a param matching the specified criteria
 	 * 
 	 */
-
 	public static String getTemplateParam(String template, String param)
-	{
-		ArrayList<String> f = new ArrayList<String>();
-		for (String s : template.split("\\|"))
-			f.add(s.trim());
+        {
+                ArrayList<String> f = getTemplateParameters(template);
+                if(f == null) return null;
+                for (String p : f)
+                        if (p.startsWith(param))
+                                return p.substring(p.indexOf("=")+1).trim();
 
-		for (String p : f)
-			if (p.startsWith(param))
-				return templateParamStrip(p);
-
-		return null; // if nothing matched
-	}
+                return null; // if nothing matched
+        }
 
 	/**
 	 * Returns the param of a template. e.g. If we get "|foo = baz", we return baz.
@@ -235,4 +232,72 @@ public class ParseUtils
 		else
 			return null;
 	}
+        
+        /**
+         *  Counts the occurrences of a regular expression in the given string.
+         *  @param text the string to examine
+         *  @param regex the regular expression to look for
+         *  @return (see above)
+         *  Contributed by Hunsu
+         */
+        public static int countOccurrences(String text, String regex)
+        {
+                Pattern p = Pattern.compile(Pattern.quote(regex));
+                Matcher m = p.matcher(text);
+                int count = 0;
+                while (m.find())
+                        count++;
+                return count;
+        }
+
+        /**
+         *  Returns the list of parameters used in the given template.
+         *  @param template the string to parse
+         *  @return (see above)
+         *  Contributed by Hunsu
+         */
+        public static ArrayList<String> getTemplateParameters(String template)
+        {
+                ArrayList<String> f = new ArrayList<String>();
+                int i = template.indexOf('|');
+                if (i == -1)
+                        return null; // the template doesn't have parameters;
+                template = template.substring(i + 1, template.length() - 2);
+                for (String s : template.split("\\|"))
+                        f.add(s.trim());
+
+                for (i = 0; i < f.size(); i++)
+                {
+                        String s = f.get(i);
+                        if ((countOccurrences(s, "{{") != countOccurrences(s, "}}") || countOccurrences(
+                                        s, "[[") != countOccurrences(s, "]]")) && i != f.size()-1)
+                        {
+                                s += "|" + f.get(i+1);
+                                f.remove(i);
+                                f.remove(i);
+                                f.add(i, s);
+                                i--;
+                        }
+                }
+                return f;
+        }
+
+        /**
+         *  Removes the given template parameter from the input string.
+         *  Example: removeTemplateParam("{{template|A|B|C}}", "B") == {{template|A|C}}.
+         *  @param template the input string
+         *  @param param the parameter to remove
+         *  @return the input string with the given parameter removed
+         *  Contributed by Hunsu
+         */
+        public static String removeTemplateParam(String template, String param)
+        {
+                String newTemplate = "";
+                ArrayList<String> f = getTemplateParameters(template);
+                if (f == null) return template;
+                for (String p : f)
+                        if (p.startsWith(param))
+                                f.remove(p);
+                return newTemplate;
+        }
 }
