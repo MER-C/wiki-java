@@ -40,7 +40,7 @@ public class WikiTests
         enWiki.setMaxLag(-1);
         Wiki deWiki = new Wiki("de.wikipedia.org");
         deWiki.setMaxLag(-1);
-           
+/*           
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
             System.out.println(page);
@@ -224,6 +224,15 @@ public class WikiTests
         // getExternalLinksOnPage
         for (String url : enWiki.getExternalLinksOnPage("Albert Einstein"))
             System.out.println(url);
-
+*/
+        // getCategories()
+        for (String cat : enWiki.getCategories("Albert Einstein"))
+            System.out.println(cat);
+        for (String cat : enWiki.getCategories("Albert Einstein", true, true))
+            System.out.println(cat);
+        //enWiki.unprotect("Main Page", "Silly reason");
+        //HashMap<String, Object> info = enWiki.getPageInfo("Bigg Boss 7");
+        //HashMap<String, Object> state = (HashMap<String, Object>)info.get("protection");
+        //enWiki.protect("Blah", state, "Another silly reason");
     }
 }

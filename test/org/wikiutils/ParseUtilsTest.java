@@ -18,7 +18,7 @@ public class ParseUtilsTest
     @Test
     public void getTemplateParam()
     {
-        assertEquals("getTemplateParam: nested template", "{{name2|param=somthing}}", ParseUtils.getTemplateParam("{{name|parm1={{name2|param=somthing}}}}", "parm1"));
+        assertEquals("getTemplateParam: nested template", "{{name2|param=blah}}", ParseUtils.getTemplateParam("{{name|parm1={{name2|param=blah\n}}}}", "parm1"));
         assertEquals("getTemplateParam: wikilink", "[[Main Page|blah]]", ParseUtils.getTemplateParam("{{name|parm1=[[Main Page|blah]]}}", "parm1"));
         assertEquals("getTemplateParam: {{{1}}}", "{{{1|Hello}}}", ParseUtils.getTemplateParam("{{name|parm1={{{1|Hello}}}}}", "parm1"));
     }

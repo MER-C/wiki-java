@@ -1886,14 +1886,48 @@ public class Wiki implements Serializable
      */
     public String[] getCategories(String title) throws IOException
     {
-        String url = query + "prop=categories&cllimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getCategories");
+        return getCategories(title, false, false);
+    }
 
-        // xml form: <cl ns="14" title="Category:1879 births" />
+    /**
+     *  Gets the list of categories a particular page is in. Ignores hidden
+     *  categories if ignoreHidden is true. Also includes the sortkey of a
+     *  category if sortkey is true. The sortkey would then be appended to
+     *  the element of the returned string array (separated by "|").
+     *  Capped at <tt>max</tt> number of categories, there's no reason why
+     *  there should be more than that.
+     * 
+     *  @param title a page
+     *  @param sortkey return a sortkey as well (default = false)
+     *  @param ignoreHidden skip hidden categories (default = false)
+     *  @return the list of categories that the page is in
+     *  @throws IOException if a network error occurs
+     *  @since 0.30
+     */
+    public String[] getCategories(String title, boolean sortkey, boolean ignoreHidden) throws IOException
+    {
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=categories&cllimit=max");
+        if (sortkey || ignoreHidden)
+            url.append("&clprop=sortkey%7Chidden");
+        url.append("&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        String line = fetch(url.toString(), "getCategories");
+
+        // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
+        // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
         ArrayList<String> categories = new ArrayList<String>(750);
-        for (int a = line.indexOf("<cl "); a > 0; a = line.indexOf("<cl ", ++a))
-            categories.add(decode(parseAttribute(line, "title", a)));
-        
+        int a, b; // beginIndex and endIndex
+        for ( a = line.indexOf("<cl "); a > 0; a = b )
+        {
+            b = line.indexOf("<cl ", a+1);
+            if (ignoreHidden && line.substring(a, (b > 0 ? b : line.length())).contains("hidden"))
+                continue;
+            String category = decode(parseAttribute(line, "title", a));
+            if (sortkey)
+                category += ("|" + parseAttribute(line, "sortkeyprefix", a));
+            categories.add(category);
+        }
         int temp = categories.size();
         log(Level.INFO, "getCategories", "Successfully retrieved categories of " + title + " (" + temp + " categories)");
         return categories.toArray(new String[temp]);
