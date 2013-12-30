@@ -27,7 +27,9 @@ import java.util.zip.*;
 import org.wikipedia.Wiki;
 
 /**
- *
+ *  Identifies trivial diffs in a contributor copyright investigation.
+ *  @author MER-C
+ *  @version 0.01
  */
 public class CCIAnalyzer
 {
@@ -66,10 +68,12 @@ public class CCIAnalyzer
             // https://bugzilla.wikimedia.org/show_bug.cgi?id=13209
             // We don't use the Wiki.java method here, this avoids an extra query.
             String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
-            // However, it is easy to strip the HTML.
-            boolean major = true;
+            // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
+            diff = diff.replace(deltaend + " " + deltabegin, " ");
             // If the diff is empty (see https://en.wikipedia.org/w/index.php?diff=343490272)
             // it will not contain diffaddedbegin -> default major to true.
+            boolean major = true;
+            // It is easy to strip the HTML.
             for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))
             {
                 int y2 = diff.indexOf(diffaddedend, j);
@@ -80,7 +84,7 @@ public class CCIAnalyzer
                 {
                     for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
                     {
-                        int y3 = addedline.indexOf(deltaend, k); // </span>
+                        int y3 = addedline.indexOf(deltaend, k);
                         String delta = addedline.substring(k + deltabegin.length(), y3);
                         major = analyzeDelta(delta);
                         if (major)
@@ -117,9 +121,28 @@ public class CCIAnalyzer
      */
     public static boolean analyzeDelta(String delta)
     {
-        // This treats wikilinks as separate tokens.
-        // From what I see, all articles still have 9 words between wikilinks.
-        StringTokenizer tk = new StringTokenizer(delta, "<>[]{}|=");
+        // remove wikilinks
+        StringBuilder temp = new StringBuilder(delta);
+        for (int i = temp.indexOf("[["); i > 0; i = temp.indexOf("[["))
+        {
+            // this takes a number of shortcuts
+            // this is why manual inspection is still necessary
+            int j = temp.indexOf("]]", i);
+            int k = temp.indexOf("|", i);
+            temp.delete(j, j + 2);
+            if (k < j && k > 0)
+                temp.delete(i, k + 1);
+            else
+                temp.delete(i, i + 2);
+        }
+        
+        // decode() the delta
+        String delta2 = temp.toString();
+        delta2 = delta2.replace("&lt;", "<");
+        delta2 = delta2.replace("&gt;", ">");
+
+        // From what I see, all articles still have 9 words between other markup.
+        StringTokenizer tk = new StringTokenizer(delta2, "<>{}|=");
         while (tk.hasMoreTokens())
         {
             String token =  tk.nextToken();
