@@ -1,6 +1,6 @@
 /**
  *  @(#)Wiki.java 0.30 05/12/2013
- *  Copyright (C) 2007 - 2013 MER-C and contributors
+ *  Copyright (C) 2007 - 2014 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -48,7 +48,7 @@ import javax.security.auth.login.*;
 public class Wiki implements Serializable
 {
     // Master TODO list:
-    // *Admin stuff (low priority)
+    // *Admin stuff
     // *More multiqueries
     // *Generators (hard)
     // *Make handling of protection less bad
@@ -484,7 +484,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Override/edit this if you need to change the API and human interface
+     *  Edit this if you need to change the API and human interface
      *  url configuration of the wiki. Some example uses:
      *
      *  *Your wiki not supporting HTTPS
@@ -2291,6 +2291,129 @@ public class Wiki implements Serializable
         log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
         return temp;
     }
+    
+    /**
+     *  Gets the deleted history of a page.
+     *  @param title a page
+     *  @param start the EARLIEST of the two dates
+     *  @param end the LATEST of the two dates
+     *  @param reverse whether to put the oldest first (default = false, newest
+     *  first is how history pages work)
+     *  @return the deleted revisions of that page in that time span
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @since 0.30
+     */
+    public Revision[] getDeletedHistory(String title, Calendar start, Calendar end, boolean reverse)
+        throws IOException, CredentialNotFoundException
+    {
+        return deletedRevs("", title, start, end, reverse, -100);
+    }
+    
+    /**
+     *  Gets the deleted contributions of a user. Equivalent to 
+     *  [[Special:Deletedcontributions]].
+     *  @param u a user
+     *  @return the deleted contributions of that user
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @since 0.30
+     */
+    public Revision[] deletedContribs(String u) throws IOException, CredentialNotFoundException
+    {
+        return deletedRevs(u, "", null, null, false, -100);
+    }
+    
+    /**
+     *  Gets the deleted contributions of a user in the given namespace. Equivalent to 
+     *  [[Special:Deletedcontributions]].
+     *  @param u a user
+     *  @param start the EARLIEST of the two dates
+     *  @param end the LATEST of the two dates
+     *  @param reverse whether to put the oldest first (default = false, newest
+     *  first is how history pages work)
+     *  @param namespace ONE namespace
+     *  @return the deleted contributions of that user
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @since 0.30
+     */
+    public Revision[] deletedContribs(String u, Calendar end, Calendar start, boolean reverse, int namespace)
+        throws IOException, CredentialNotFoundException
+    {
+        return deletedRevs(u, "", end, start, false, namespace);
+    }
+    
+    public Revision[] deletedRevs(String u, String title, Calendar start, Calendar end, boolean reverse, int namespace)
+        throws IOException, CredentialNotFoundException
+    {
+        // admin queries are annoying
+        if (!user.isAllowedTo("deletedhistory"))
+            throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
+        
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=deletedrevs&drprop=revid%7Cparentid%7Clen&7Cminor%7Ccomment%7C&drlimit=max");
+        if (reverse)
+            url.append("&drdir=newer");
+        if (start != null)
+        {
+            url.append(reverse ? "&drstart=" : "&drend=");
+            url.append(calendarToTimestamp(start));
+        }
+        if (end != null)
+        {
+            url.append(reverse ? "&drend=" : "&drstart=");
+            url.append(calendarToTimestamp(end));
+        }
+        // get the deleted history of a page
+        if (title != null)
+        {
+            url.append("&titles=");
+            url.append(URLEncoder.encode(title, "UTF-8"));
+        }
+        // get the deleted contributions of a user
+        else
+        {
+            url.append("&druser=");
+            url.append(URLEncoder.encode(u, "UTF-8"));
+            if (namespace >= 0)
+            {
+                // the API documentation is wrong here, this query behaves exactly
+                // like [[Special:DeletedContributions]]
+                url.append("&drnamespace=");
+                url.append(namespace);
+            }
+        }
+        
+        throw new UnsupportedOperationException("This is incomplete!");
+    }
+    
+    /**
+     *  Gets the text of a deleted page (it's like getPageText, but for deleted 
+     *  pages).
+     *  @param page a page
+     *  @return the deleted text
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @since 0.30
+     */
+    public String getDeletedText(String page) throws IOException, CredentialNotFoundException
+    {
+        if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
+            throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
+        
+        // TODO: this can be multiquery(?)
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=deletedrevs&drlimit=1&drprop=content&titles=");
+        url.append(URLEncoder.encode(page, "UTF-8"));
+        
+        // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
+        String line = fetch(url.toString(), "getDeletedText");
+        int a = line.indexOf("<rev ");
+        a = line.indexOf(">", a) + 1;
+        int b = line.indexOf("</rev>", a);
+        return line.substring(a, b);
+    }
 
     /**
      *  Moves a page. Moves the associated talk page and leaves redirects, if
@@ -2455,9 +2578,8 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
         
-        // This is totally untested. Beware!
-        throw new UnsupportedOperationException("Not implemented yet!");
-/*
+        throw new UnsupportedOperationException("This hasn't been tested yet. You have been warned.");
+/*        
         long start = System.currentTimeMillis();
         HashMap info = getPageInfo(page);
         String protectToken = (String)info.get("token");
@@ -2529,7 +2651,7 @@ public class Wiki implements Serializable
         {
             // nobody cares
         }
-        */
+    */
     }
     
     /**

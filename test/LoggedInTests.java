@@ -1,6 +1,6 @@
 /**
  *  @(#)LoggedInTests.java
- *  Copyright (C) 2011 - 2013 MER-C
+ *  Copyright (C) 2011 - 2014 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -28,31 +28,29 @@ import org.wikipedia.Wiki;
  */
 public class LoggedInTests
 {
-    private static Wiki wiki = new Wiki("test.wikipedia.org");
+    private static Wiki wiki = new Wiki("en.wikipedia.org");
 
     public static void main(String[] args) throws Exception
     {
-        // login and override defaults
-        System.setProperty("wiki.level", "100");
-        LogManager.getLogManager().readConfiguration();
+        // login
         LoginUtils.guiLogin(wiki);
         wiki.setThrottle(5);
-
+/*
         // raw watchlist
         for (String page : wiki.getRawWatchlist())
             System.out.println(page);
 
         // email
-        // wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
+        wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
 
         // edit
         wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
-        // wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
+        wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
         
         // watch
-        // wiki.watch("Main Page", "Blah");
-        // wiki.unwatch("Main Page", "Blah");
-/*        
+        wiki.watch("Main Page", "Blah");
+        wiki.unwatch("Main Page", "Blah");
+  
         // watchlist
         for (Wiki.Revision item : wiki.watchlist(false))
             System.out.println(item);
@@ -60,5 +58,11 @@ public class LoggedInTests
         // upload
         wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test4.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]]. ∑∑ƒ∂ß", "hello ∑∑ƒ∂ß");
 */
+        ////////////////
+        // ADMIN STUFF
+        ////////////////
+        
+        // getDeletedText
+        System.out.println(wiki.getDeletedText("!!!!"));
     }
 }

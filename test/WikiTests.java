@@ -1,6 +1,6 @@
 /**
  *  @(#)WikiTests.java
- *  Copyright (C) 2011 - 2013 MER-C
+ *  Copyright (C) 2011 - 2014 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -230,9 +230,5 @@ public class WikiTests
             System.out.println(cat);
         for (String cat : enWiki.getCategories("Albert Einstein", true, true))
             System.out.println(cat);
-        //enWiki.unprotect("Main Page", "Silly reason");
-        //HashMap<String, Object> info = enWiki.getPageInfo("Bigg Boss 7");
-        //HashMap<String, Object> state = (HashMap<String, Object>)info.get("protection");
-        //enWiki.protect("Blah", state, "Another silly reason");
     }
 }
