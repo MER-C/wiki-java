@@ -51,7 +51,6 @@ public class Wiki implements Serializable
     // *Admin stuff
     // *More multiqueries
     // *Generators (hard)
-    // *Make handling of protection less bad
     
     // NAMESPACES
 
@@ -1689,18 +1688,7 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "edit", "Successfully edited " + title);
         retry = true;
-
-        // throttle
-        try
-        {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
+        throttle(start);
     }
 
     /**
@@ -1815,18 +1803,72 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "delete", "Successfully deleted " + title);
         retry = true;
+        throttle(start);
+    }
+    
+    /**
+     *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
+     *  revisions and files.
+     *  @param title a page to undelete
+     *  @param reason the reason for undeletion
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot undelete
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if user is blocked
+     *  @since 0.30
+     */
+    public synchronized void undelete(String title, String reason) throws IOException, LoginException
+    {
+        // TODO: selective undeletion
+        long start = System.currentTimeMillis();
+        statusCheck();
 
-        // throttle
+        if (user == null || !user.isAllowedTo("undelete"))
+            throw new CredentialNotFoundException("Cannot undelete: Permission denied");
+        
+        // deleted revisions token
+        String titleenc = URLEncoder.encode(normalize(title), "UTF-8");
+        String delrev = query + "action=query&list=deletedrevs&drlimit=1&drprop=token&titles=" + titleenc;
+        if (!delrev.contains("token=\"")) // nothing to undelete
+        {
+            log(Level.WARNING, "undelete", "Page \"" + title + "\" has no deleted revisions!");
+            return;
+        }
+        String drtoken = parseAttribute(delrev, "token", 0);
+        
+        StringBuilder out = new StringBuilder("title=");
+        out.append(titleenc);
+        out.append("&reason=");
+        out.append(URLEncoder.encode(reason, "UTF-8"));
+        out.append("&token=");
+        out.append(URLEncoder.encode(drtoken, "UTF-8"));
+        String response = post(apiUrl + "action=undelete", out.toString(), "undelete");
+        
+        // done
         try
         {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
+            if (!response.contains("<undelete title="))
+                checkErrors(response, "undelete");
         }
-        catch (InterruptedException e)
+        catch (IOException e)
         {
-            // nobody cares
+            // retry once
+            if (retry)
+            {
+                retry = false;
+                log(Level.WARNING, "undelete", "Exception: " + e.getMessage() + " Retrying...");
+                delete(title, reason);
+            }
+            else
+            {
+                log(Level.SEVERE, "undelete", "EXCEPTION: " + e);
+                throw e;
+            }
         }
+        if (retry)
+            log(Level.INFO, "undelete", "Successfully undeleted " + title);
+        retry = true;
+        throttle(start);
     }
 
     /**
@@ -2344,7 +2386,21 @@ public class Wiki implements Serializable
         return deletedRevs(u, "", end, start, false, namespace);
     }
     
-    public Revision[] deletedRevs(String u, String title, Calendar start, Calendar end, boolean reverse, int namespace)
+    /**
+     *  Internal list=deletedrevs handler.
+     *  @param u a user
+     *  @param title a page title
+     *  @param start the EARLIEST of two cutoff dates (use null to not specify one)
+     *  @param end the LATEST of two cutoff dates (use null to not specify one)
+     *  @param reverse whether to put the oldest first (default = false, newest
+     *  first is how history pages work)
+     *  @param namespace ONE namespace (use X to not specify one)
+     *  @return a list of deleted revisions
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @since 0.30
+     */
+    protected Revision[] deletedRevs(String u, String title, Calendar start, Calendar end, boolean reverse, int namespace)
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
@@ -2384,6 +2440,8 @@ public class Wiki implements Serializable
                 url.append(namespace);
             }
         }
+        // String response = fetch(url.toString(), "deletedRevs");
+        
         
         throw new UnsupportedOperationException("This is incomplete!");
     }
@@ -2534,18 +2592,7 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "move", "Successfully moved " + title + " to " + newTitle);
         retry = true;
-
-        // throttle
-        try
-        {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
+        throttle(start);
     }
    
     /**
@@ -2578,8 +2625,7 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
         
-        throw new UnsupportedOperationException("This hasn't been tested yet. You have been warned.");
-/*        
+        // This hasn't been tested yet. You have been warned.
         long start = System.currentTimeMillis();
         HashMap info = getPageInfo(page);
         String protectToken = (String)info.get("token");
@@ -2639,19 +2685,7 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "edit", "Successfully protected " + page);
         retry = true;
-
-        // throttle
-        try
-        {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
-    */
+        throttle(start);
     }
     
     /**
@@ -2786,7 +2820,7 @@ public class Wiki implements Serializable
      *  provided that they are the most recent revisions on that page. If this
      *  is not the case, then this method does nothing. See
      *  [[mw:Manual:Parameters to index.php#Actions]] (look under rollback)
-     *  for more information.
+     *  for more information. 
      *
      *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
      *  be true for the rollback to succeed
@@ -2984,18 +3018,7 @@ public class Wiki implements Serializable
             log(Level.INFO, "undo", log);
         }
         retry = true;
-
-        // throttle
-        try
-        {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
+        throttle(start);
     }
 
     /**
@@ -3508,18 +3531,7 @@ public class Wiki implements Serializable
             String response = multipartPost(apiUrl + "action=upload", params, "upload");
             checkErrors(response, "upload");
         }
-                  
-        // throttle
-        try
-        {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
+        throttle(start);
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
     }
 
@@ -3840,19 +3852,7 @@ public class Wiki implements Serializable
         checkErrors(response, "email");
         if (response.contains("error code=\"cantsend\""))
             throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
-
-        // throttle
-        try
-        {
-            long time = throttle - System.currentTimeMillis() + start;
-            if (time > 0)
-                Thread.sleep(time);
-        }
-        catch (InterruptedException e)
-        {
-            // nobody cares
-        }
-
+        throttle(start);
         log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
     }
 
@@ -6689,6 +6689,26 @@ public class Wiki implements Serializable
         // https://www.mediawiki.org/wiki/Unicode_normalization_considerations
         return Normalizer.normalize(new String(temp), Normalizer.Form.NFC);
     }
+    
+    /**
+     *  Ensures no less than <tt>throttle</tt> milliseconds pass between edits
+     *  and other write actions.
+     *  @param start the time at which the write method was entered
+     *  @since 0.30
+     */
+    private void throttle(long start)
+    {
+        try
+        {
+            long time = throttle - System.currentTimeMillis() + start;
+            if (time > 0)
+                Thread.sleep(time);
+        }
+        catch (InterruptedException e)
+        {
+            // nobody cares
+        }
+    }
 
     // user rights methods
 
@@ -6867,6 +6887,7 @@ public class Wiki implements Serializable
      */
     protected final Calendar timestampToCalendar(String timestamp, boolean api)
     {
+        // TODO: move to Java 1.8
         Calendar calendar = makeCalendar();
         if (api)
             timestamp = convertTimestamp(timestamp);
@@ -6891,6 +6912,7 @@ public class Wiki implements Serializable
      */
     protected String convertTimestamp(String timestamp)
     {
+        // TODO: remove this once Java 1.8 comes around
         StringBuilder ts = new StringBuilder(timestamp.substring(0, 4));
         ts.append(timestamp.substring(5, 7));
         ts.append(timestamp.substring(8, 10));

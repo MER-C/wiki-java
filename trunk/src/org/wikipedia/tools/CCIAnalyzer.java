@@ -128,6 +128,8 @@ public class CCIAnalyzer
             // this takes a number of shortcuts
             // this is why manual inspection is still necessary
             int j = temp.indexOf("]]", i);
+            if (j < 0) // unbalanced brackets
+                return true;
             int k = temp.indexOf("|", i);
             temp.delete(j, j + 2);
             if (k < j && k > 0)
