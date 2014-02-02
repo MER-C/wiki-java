@@ -1,6 +1,6 @@
 /**
  *  @(#)XWikiLinksearch.java 0.02 01/10/2012
- *  Copyright (C) 2011 - 2013 MER-C
+ *  Copyright (C) 2011 - 2014 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -198,7 +198,7 @@ public class XWikiLinksearch extends HttpServlet
                     Wiki[] tempwiki = new Wiki[] { new Wiki(wikiinput) };
                     linksearch(domain, buffer, tempwiki, https, mailto, ns);
                 }
-                else if (set.equals("top20"))
+                else if (set == null || set.equals("top20"))
                     linksearch(domain, buffer, top20wikis, https, mailto, ns);
                 else if (set.equals("top40"))
                     linksearch(domain, buffer, top40wikis, https, mailto, ns);
