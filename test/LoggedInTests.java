@@ -28,14 +28,14 @@ import org.wikipedia.Wiki;
  */
 public class LoggedInTests
 {
-    private static Wiki wiki = new Wiki("en.wikipedia.org");
-
     public static void main(String[] args) throws Exception
     {
+/*        
         // login
+        Wiki wiki = new Wiki("test.wikipedia.org");
         LoginUtils.guiLogin(wiki);
         wiki.setThrottle(5);
-/*
+
         // raw watchlist
         for (String page : wiki.getRawWatchlist())
             System.out.println(page);
@@ -57,12 +57,27 @@ public class LoggedInTests
         
         // upload
         wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test4.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]]. ∑∑ƒ∂ß", "hello ∑∑ƒ∂ß");
+        
+        // logout
+        wiki.logout();
 */
         ////////////////
         // ADMIN STUFF
         ////////////////
         
+        Wiki enWiki = new Wiki("en.wikipedia.org");
+        LoginUtils.guiLogin(enWiki);
+        enWiki.setThrottle(5);
+        
         // getDeletedText
-        System.out.println(wiki.getDeletedText("!!!!"));
+        // System.out.println(enWiki.getDeletedText("!!!!"));
+        
+        // deleted revisions
+        // for (Wiki.Revision rev : enWiki.getDeletedHistory("User:Selfimposedvigilance"))
+        //    System.out.println(rev);
+        
+        // deleted contributions
+        for (Wiki.Revision rev : enWiki.deletedContribs("Namkeenvilla"))
+            System.out.println(rev);
     }
 }
