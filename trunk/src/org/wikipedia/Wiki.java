@@ -1808,18 +1808,18 @@ public class Wiki implements Serializable
     
     /**
      *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
-     *  revisions and files.
+     *  revisions and files by default.
      *  @param title a page to undelete
      *  @param reason the reason for undeletion
+     *  @param timestamps a list of revision timestamps for selective undeletion
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot undelete
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
      *  @since 0.30
      */
-    public synchronized void undelete(String title, String reason) throws IOException, LoginException
+    public synchronized void undelete(String title, String reason, String... timestamps) throws IOException, LoginException
     {
-        // TODO: selective undeletion
         long start = System.currentTimeMillis();
         statusCheck();
 
@@ -1842,6 +1842,16 @@ public class Wiki implements Serializable
         out.append(URLEncoder.encode(reason, "UTF-8"));
         out.append("&token=");
         out.append(URLEncoder.encode(drtoken, "UTF-8"));
+        if (timestamps.length != 0)
+        {
+            out.append("&timestamps=");
+            for (int i = 0; i < timestamps.length - 1; i++)
+            {
+                out.append(timestamps[i]);
+                out.append("%7C");
+            }
+            out.append(timestamps[timestamps.length - 1]);
+        }
         String response = post(apiUrl + "action=undelete", out.toString(), "undelete");
         
         // done
