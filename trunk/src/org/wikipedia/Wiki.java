@@ -1811,14 +1811,14 @@ public class Wiki implements Serializable
      *  revisions and files by default.
      *  @param title a page to undelete
      *  @param reason the reason for undeletion
-     *  @param timestamps a list of revision timestamps for selective undeletion
+     *  @param revisions a list of revisions for selective undeletion
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot undelete
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
      *  @since 0.30
      */
-    public synchronized void undelete(String title, String reason, String... timestamps) throws IOException, LoginException
+    public synchronized void undelete(String title, String reason, Revision... revisions) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
         statusCheck();
@@ -1842,15 +1842,15 @@ public class Wiki implements Serializable
         out.append(URLEncoder.encode(reason, "UTF-8"));
         out.append("&token=");
         out.append(URLEncoder.encode(drtoken, "UTF-8"));
-        if (timestamps.length != 0)
+        if (revisions.length != 0)
         {
             out.append("&timestamps=");
-            for (int i = 0; i < timestamps.length - 1; i++)
+            for (int i = 0; i < revisions.length - 1; i++)
             {
-                out.append(timestamps[i]);
+                out.append(calendarToTimestamp(revisions[i].getTimestamp()));
                 out.append("%7C");
             }
-            out.append(timestamps[timestamps.length - 1]);
+            out.append(calendarToTimestamp(revisions[revisions.length - 1].getTimestamp()));
         }
         String response = post(apiUrl + "action=undelete", out.toString(), "undelete");
         
@@ -2347,6 +2347,19 @@ public class Wiki implements Serializable
     /**
      *  Gets the deleted history of a page.
      *  @param title a page
+     *  @return the deleted revisions of that page in that time span
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @since 0.30
+     */
+    public Revision[] getDeletedHistory(String title) throws IOException, CredentialNotFoundException
+    {
+        return deletedRevs("", title, null, null, false, ALL_NAMESPACES);
+    }
+    
+    /**
+     *  Gets the deleted history of a page.
+     *  @param title a page
      *  @param start the EARLIEST of the two dates
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
@@ -2359,7 +2372,7 @@ public class Wiki implements Serializable
     public Revision[] getDeletedHistory(String title, Calendar start, Calendar end, boolean reverse)
         throws IOException, CredentialNotFoundException
     {
-        return deletedRevs("", title, start, end, reverse, -100);
+        return deletedRevs("", title, start, end, reverse, ALL_NAMESPACES);
     }
     
     /**
@@ -2373,7 +2386,7 @@ public class Wiki implements Serializable
      */
     public Revision[] deletedContribs(String u) throws IOException, CredentialNotFoundException
     {
-        return deletedRevs(u, "", null, null, false, -100);
+        return deletedRevs(u, "", null, null, false, ALL_NAMESPACES);
     }
     
     /**
@@ -2384,7 +2397,7 @@ public class Wiki implements Serializable
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
      *  first is how history pages work)
-     *  @param namespace ONE namespace
+     *  @param namespace ONE namespace or ALL_NAMESPACES
      *  @return the deleted contributions of that user
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
@@ -2398,18 +2411,18 @@ public class Wiki implements Serializable
     
     /**
      *  Internal list=deletedrevs handler.
-     *  @param u a user
+     *  @param u a user (use "" to not specify one)
      *  @param title a page title
      *  @param start the EARLIEST of two cutoff dates (use null to not specify one)
      *  @param end the LATEST of two cutoff dates (use null to not specify one)
      *  @param reverse whether to put the oldest first (default = false, newest
      *  first is how history pages work)
-     *  @param namespace ONE namespace (use X to not specify one)
+     *  @param namespace ONE namespace or ALL_NAMESPACES
      *  @return a list of deleted revisions
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
      *  @since 0.30
-     */
+     */ 
     protected Revision[] deletedRevs(String u, String title, Calendar start, Calendar end, boolean reverse, int namespace)
         throws IOException, CredentialNotFoundException
     {
@@ -2418,7 +2431,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
         
         StringBuilder url = new StringBuilder(query);
-        url.append("list=deletedrevs&drprop=revid%7Cparentid%7Clen&7Cminor%7Ccomment%7C&drlimit=max");
+        url.append("list=deletedrevs&drprop=revid%7Cparentid%7Clen%7Cminor%7Ccomment%7Cuser&drlimit=max");
         if (reverse)
             url.append("&drdir=newer");
         if (start != null)
@@ -2431,18 +2444,12 @@ public class Wiki implements Serializable
             url.append(reverse ? "&drend=" : "&drstart=");
             url.append(calendarToTimestamp(end));
         }
-        // get the deleted history of a page
-        if (title != null)
-        {
-            url.append("&titles=");
-            url.append(URLEncoder.encode(title, "UTF-8"));
-        }
         // get the deleted contributions of a user
-        else
+        if (title.isEmpty())
         {
             url.append("&druser=");
             url.append(URLEncoder.encode(u, "UTF-8"));
-            if (namespace >= 0)
+            if (namespace != ALL_NAMESPACES)
             {
                 // the API documentation is wrong here, this query behaves exactly
                 // like [[Special:DeletedContributions]]
@@ -2450,10 +2457,53 @@ public class Wiki implements Serializable
                 url.append(namespace);
             }
         }
-        // String response = fetch(url.toString(), "deletedRevs");
+        // get the deleted history of a page
+        else
+        {
+            url.append("&titles=");
+            url.append(URLEncoder.encode(title, "UTF-8"));
+        }
+        String drcontinue = null, drstart = null;
+        ArrayList<Revision> delrevs = new ArrayList<Revision>(500);
+        do
+        {
+            String response;
+            if (drcontinue != null)
+                response = fetch(url.toString() + "&drcontinue=" + URLEncoder.encode(drcontinue, "UTF-8"), "deletedRevs"); // huh?
+            else if (drstart != null)
+                response = fetch(url.toString() + "&drstart=" + drstart, "deletedRevs"); // deleted contributions
+            else
+                response = fetch(url.toString(), "deletedRevs");
+            if (response.contains("drcontinue=\""))
+                drcontinue = parseAttribute(response, "drcontinue", 0);
+            else if (response.contains("drstart=\""))
+                drstart = parseAttribute(response, "drstart", 0);
+            else
+            {
+                drcontinue = null;
+                drstart = null;
+            }
+            
+            // parse
+            int x = response.indexOf("<deletedrevs>");
+            if (x < 0) // no deleted history/contributions
+                break;
+            for (x = response.indexOf("<page ", x); x > 0; x = response.indexOf("<page ", ++x))
+            {
+                String deltitle = parseAttribute(response, "title", x);
+                int y = response.indexOf("</page>", x);
+                for (int z = response.indexOf("<rev ", x); z < y && z >= 0; z = response.indexOf("<rev ", ++z))
+                {
+                    int aa = response.indexOf(" />", z);
+                    delrevs.add(parseRevision(response.substring(z, aa), deltitle));
+                }
+            }
+        }
+        while (drcontinue != null || drstart != null);
         
-        
-        throw new UnsupportedOperationException("This is incomplete!");
+        int size = delrevs.size();
+        log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
+        return delrevs.toArray(new Revision[size]);
     }
     
     /**
@@ -3079,6 +3129,8 @@ public class Wiki implements Serializable
             size = Integer.parseInt(parseAttribute(xml, "newlen", 0));
         else if (xml.contains("size=\""))
             size = Integer.parseInt(parseAttribute(xml, "size", 0));
+        else if (xml.contains("len=\"")) // deletedrevs
+            size = Integer.parseInt(parseAttribute(xml, "len", 0));
         
         Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, rvnew, size);
         // set rcid
