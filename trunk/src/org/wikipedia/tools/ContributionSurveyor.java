@@ -197,11 +197,11 @@ public class ContributionSurveyor
                     diffs.put(title, temp);
                 }
                 StringBuilder temp = diffs.get(title);
-                temp.append("{{dif|");
+                temp.append("[[Special:Diff/");
                 temp.append(revision.getRevid());
                 temp.append("|(+");
                 temp.append(size);
-                temp.append(")}}");
+                temp.append(")]]");
                 diffs.put(title, temp);
             }
             // spit out the results of the survey

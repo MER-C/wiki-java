@@ -284,21 +284,35 @@ public class Wiki implements Serializable
      *  @since 0.11
      */
     public static final int ASSERT_NONE = 0;
+    
+    /**
+     *  Assert that we are logged in (i.e. 1). This is checked every action.
+     *  @see #setAssertionMode
+     *  @since 0.30
+     */
+    public static final int ASSERT_USER = 1;
 
     /**
-     *  Assert that we have a bot flag (i.e. 2).
+     *  Assert that we have a bot flag (i.e. 2). This is checked every action.
      *  @see #setAssertionMode
      *  @since 0.11
      */
     public static final int ASSERT_BOT = 2;
 
     /**
-     *  Assert that we have no new messages. Not defined in Assert Edit, but
-     *  some bots have this.
+     *  Assert that we have no new messages. Not defined officially, but
+     *  some bots have this. This is checked intermittently.
      *  @see #setAssertionMode
      *  @since 0.11
      */
     public static final int ASSERT_NO_MESSAGES = 4;
+    
+    /**
+     *  Assert that we have a sysop flag (i.e. 8). This is checked intermittently.
+     *  @see #setAssertionMode
+     *  @since 0.30
+     */
+    public static final int ASSERT_SYSOP = 8;
 
     // RC OPTIONS
 
@@ -411,7 +425,7 @@ public class Wiki implements Serializable
     private int slowmax = 50;
     private int throttle = 10000; // throttle
     private int maxlag = 5;
-    private int assertion = 0; // assertion mode
+    private int assertion = ASSERT_NONE; // assertion mode
     private int statusinterval = 100; // status check
     private String useragent = "Wiki.java " + version;
     private boolean zipped = true;
@@ -494,22 +508,35 @@ public class Wiki implements Serializable
      */
     protected void initVars()
     {
-        String temp = "https://" + domain + scriptPath;
+        StringBuilder basegen = new StringBuilder("https://");
+        basegen.append(domain);
+        basegen.append(scriptPath);
+        StringBuilder apigen = new StringBuilder(basegen);        
+        apigen.append("/api.php?format=xml&");
         // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
         // parameter]]. Let's exploit it.
         if (maxlag >= 0)
         {
-            apiUrl = temp + "/api.php?maxlag=" + maxlag + "&format=xml&";
-            base = temp + "/index.php?maxlag=" + maxlag + "&title=";
+            apigen.append("maxlag=");
+            apigen.append(maxlag);
+            apigen.append("&");
+            basegen.append("/index.php?maxlag=");
+            basegen.append(maxlag);
+            basegen.append("&title=");
         }
         else
-        {
-            apiUrl = temp + "/api.php?format=xml&";
-            base = temp + "/index.php?title=";
-        }
-        query = apiUrl + "action=query&";
+            basegen.append("/index.php?title=");
+        base = basegen.toString();
+        // the native API supports assertions as of MW 1.23
+        if ((assertion & ASSERT_BOT) == ASSERT_BOT)
+            apigen.append("assert=bot&");
+        else if ((assertion & ASSERT_USER) == ASSERT_USER)
+            apigen.append("assert=user&");
+        apiUrl = apigen.toString();
+        apigen.append("action=query&");
         if (resolveredirect)
-            query += "redirects&";
+            apigen.append("redirects&");
+        query = apigen.toString();
     }
 
     /**
@@ -772,8 +799,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the assertion mode. See [[mw:Extension:Assert Edit]] for what
-     *  functionality this mimics. Assertion modes are bitmasks.
+     *  Gets the assertion mode. Assertion modes are bitmasks.
      *  @return the current assertion mode
      *  @see #setAssertionMode
      *  @since 0.11
@@ -784,9 +810,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Sets the assertion mode. See [[mw:Extension:Assert Edit]] for what this
-     *  functionality this mimics. Assertion modes are bitmasks. Default is
-     *  <tt>ASSERT_NONE</tt>.
+     *  Sets the assertion mode. Do this AFTER logging in, otherwise the login
+     *  will fail. Assertion modes are bitmasks. Default is <tt>ASSERT_NONE</tt>.
      *  @param mode an assertion mode
      *  @see #getAssertionMode
      *  @since 0.11
@@ -795,6 +820,7 @@ public class Wiki implements Serializable
     {
         assertion = mode;
         log(Level.CONFIG, "setAssertionMode", "Set assertion mode to " + mode);
+        initVars();
     }
 
     /**
@@ -1452,7 +1478,6 @@ public class Wiki implements Serializable
         url.append("&rvsection=");
         url.append(number);
         String text = fetch(url.toString(), "getSectionText");
-        // FIXME: this is never reached, fetch throws an UnknownError instead
         if (text.contains("code=\"rvnosuchsection\""))
             throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         // if the section does not contain any text, <rev xml:space=\"preserve\"> 
@@ -1617,7 +1642,6 @@ public class Wiki implements Serializable
         // @revised 0.17 section editing
         // @revised 0.25 optional bot flagging
         long start = System.currentTimeMillis();
-        statusCheck();
 
         // protection and token
         HashMap info = getPageInfo(title);
@@ -1668,7 +1692,7 @@ public class Wiki implements Serializable
         }
         try
         {
-            checkErrors(response, "edit");
+            checkErrorsAndUpdateStatus(response, "edit");
         }
         catch (IOException e)
         {
@@ -1755,8 +1779,6 @@ public class Wiki implements Serializable
     public synchronized void delete(String title, String reason) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
-        statusCheck();
-
         if (user == null || !user.isAllowedTo("delete"))
             throw new CredentialNotFoundException("Cannot delete: Permission denied");
 
@@ -1783,7 +1805,7 @@ public class Wiki implements Serializable
         try
         {
             if (!response.contains("<delete title="))
-                checkErrors(response, "delete");
+                checkErrorsAndUpdateStatus(response, "delete");
         }
         catch (IOException e)
         {
@@ -1821,8 +1843,6 @@ public class Wiki implements Serializable
     public synchronized void undelete(String title, String reason, Revision... revisions) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
-        statusCheck();
-
         if (user == null || !user.isAllowedTo("undelete"))
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
         
@@ -1858,7 +1878,7 @@ public class Wiki implements Serializable
         try
         {
             if (!response.contains("<undelete title="))
-                checkErrors(response, "undelete");
+                checkErrorsAndUpdateStatus(response, "undelete");
         }
         catch (IOException e)
         {
@@ -2580,7 +2600,6 @@ public class Wiki implements Serializable
         boolean movesubpages) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
-
         // check for log in
         if (user == null || !user.isAllowedTo("move"))
         {
@@ -2588,7 +2607,6 @@ public class Wiki implements Serializable
             log(Level.SEVERE, "move", "Cannot move - permission denied: " + ex);
             throw ex;
         }
-        statusCheck();
 
         // check namespace
         int ns = namespace(title);
@@ -2632,7 +2650,7 @@ public class Wiki implements Serializable
         {
             // success
             if (!response.contains("move from"))
-                checkErrors(response, "move");
+                checkErrorsAndUpdateStatus(response, "move");
         }
         catch (IOException e)
         {
@@ -2685,7 +2703,6 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
         
-        // This hasn't been tested yet. You have been warned.
         long start = System.currentTimeMillis();
         HashMap info = getPageInfo(page);
         String protectToken = (String)info.get("token");
@@ -2725,7 +2742,8 @@ public class Wiki implements Serializable
         String response = post(apiUrl + "action=protect", out.toString(), "protect");
         try
         {
-            checkErrors(response, "post");
+            if (!response.contains("<protect "))
+                checkErrorsAndUpdateStatus(response, "protect");
         }
         catch (IOException e)
         {
@@ -2899,14 +2917,6 @@ public class Wiki implements Serializable
         // check rights
         if (user == null || !user.isAllowedTo("rollback"))
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
-        statusCheck();
-        // check if cookies have expired
-        if (!cookies.containsValue(user.getUsername()))
-        {
-            log(Level.SEVERE, "rollback", "Cookies have expired.");
-            logout();
-            throw new CredentialExpiredException("Cookies have expired.");
-        }
 
         // check whether we are "on top".
         Revision top = getTopRevision(revision.getPage());
@@ -2947,7 +2957,7 @@ public class Wiki implements Serializable
                 log(Level.INFO, "rollback", "Cannot rollback as the page only has one author.");
             // probably not ignorable (otherwise success)
             else if (!response.contains("rollback title="))
-                checkErrors(response, "rollback");
+                checkErrorsAndUpdateStatus(response, "rollback");
         }
         catch (IOException e)
         {
@@ -3010,7 +3020,6 @@ public class Wiki implements Serializable
     {
         // throttle
         long start = System.currentTimeMillis();
-        statusCheck();
 
         // check here to see whether the titles correspond
         if (to != null && !rev.getPage().equals(to.getPage()))
@@ -3053,7 +3062,7 @@ public class Wiki implements Serializable
         // done
         try
         {
-            checkErrors(response, "undo");
+            checkErrorsAndUpdateStatus(response, "undo");
         }
         catch (IOException e)
         {
@@ -3488,7 +3497,6 @@ public class Wiki implements Serializable
             log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
-        statusCheck();
         filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
 
         // protection and token
@@ -3567,7 +3575,7 @@ public class Wiki implements Serializable
                     log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
                     throw ex;
                 }
-                checkErrors(response, "upload");
+                checkErrorsAndUpdateStatus(response, "upload");
             }
             catch (IOException e)
             {
@@ -3591,7 +3599,7 @@ public class Wiki implements Serializable
             params.put("ignorewarnings", "true");
             params.put("filekey", filekey);
             String response = multipartPost(apiUrl + "action=upload", params, "upload");
-            checkErrors(response, "upload");
+            checkErrorsAndUpdateStatus(response, "upload");
         }
         throttle(start);
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
@@ -3911,7 +3919,7 @@ public class Wiki implements Serializable
         String response = post(apiUrl + "action=emailuser", buffer.toString(), "emailUser");
 
         // check for errors
-        checkErrors(response, "email");
+        checkErrorsAndUpdateStatus(response, "email");
         if (response.contains("error code=\"cantsend\""))
             throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
         throttle(start);
@@ -6396,6 +6404,7 @@ public class Wiki implements Serializable
      *  @param caller the caller of this method
      *  @return the content of the fetched URL
      *  @throws IOException if a network error occurs
+     *  @throws AssertionError if assert=user|bot fails
      *  @since 0.18
      */
     protected String fetch(String url, String caller) throws IOException
@@ -6442,10 +6451,20 @@ public class Wiki implements Serializable
         in.close();
         String temp = text.toString();
         if (temp.contains("<error code="))
+        {
+            // assertions
+            if ((assertion & ASSERT_BOT) == ASSERT_BOT && line.contains("error code=\"assertbotfailed\""))
+                // assert !line.contains("error code=\"assertbotfailed\"") : "Bot privileges missing or revoked, or session expired.";
+                throw new AssertionError("Bot privileges missing or revoked, or session expired.");
+            if ((assertion & ASSERT_USER) == ASSERT_USER && line.contains("error code=\"assertuserfailed\""))
+                // assert !line.contains("error code=\"assertuserfailed\"") : "Session expired.";
+                throw new AssertionError("Session expired.");
             // Something *really* bad happened. Most of these are self-explanatory
             // and are indicative of bugs (not necessarily in this framework) or 
             // can be avoided entirely.
-            throw new UnknownError("MW API error. Server response was: " + temp);
+            if (!temp.matches("code=\"(rvnosuchsection)")) // list "good" errors here
+                throw new UnknownError("MW API error. Server response was: " + temp);
+        }
         return temp;
     }
 
@@ -6560,23 +6579,53 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Checks for errors from standard read/write requests.
+     *  Checks for errors from standard read/write requests and performs
+     *  occasional status checks.
+     * 
      *  @param line the response from the server to analyze
      *  @param caller what we tried to do
+     *  @throws CredentialNotFoundException if permission denied
      *  @throws AccountLockedException if the user is blocked
      *  @throws HttpRetryException if the database is locked or action was
      *  throttled and a retry failed
+     *  @throws AssertionError if assertions fail
      *  @throws UnknownError in the case of a MediaWiki bug
      *  @since 0.18
      */
-    protected void checkErrors(String line, String caller) throws IOException, LoginException
+    protected void checkErrorsAndUpdateStatus(String line, String caller) throws IOException, LoginException
     {
-        // empty response from server
-        if (line.isEmpty())
-            throw new UnknownError("Received empty response from server!");
+        // perform various status checks every 100 or so edits
+        if (statuscounter > statusinterval)
+        {
+            // purge user rights in case of desysop or loss of other priviliges
+            user.getUserInfo();
+            if ((assertion & ASSERT_SYSOP) == ASSERT_SYSOP && !user.isA("sysop"))
+                // assert user.isA("sysop") : "Sysop privileges missing or revoked, or session expired";
+                throw new AssertionError("Sysop privileges missing or revoked, or session expired");
+            // check for new messages
+            if ((assertion & ASSERT_NO_MESSAGES) == ASSERT_NO_MESSAGES && hasNewMessages())
+                // assert !hasNewMessages() : "User has new messages";
+                throw new AssertionError("User has new messages");
+            statuscounter = 0;
+        }
+        else
+            statuscounter++;
+        
         // successful
         if (line.contains("result=\"Success\""))
             return;
+        // empty response from server
+        if (line.isEmpty())
+            throw new UnknownError("Received empty response from server!");
+        // assertions
+        if ((assertion & ASSERT_BOT) == ASSERT_BOT && line.contains("error code=\"assertbotfailed\""))
+            // assert !line.contains("error code=\"assertbotfailed\"") : "Bot privileges missing or revoked, or session expired.";
+            throw new AssertionError("Bot privileges missing or revoked, or session expired.");
+        if ((assertion & ASSERT_USER) == ASSERT_USER && line.contains("error code=\"assertuserfailed\""))
+            // assert !line.contains("error code=\"assertuserfailed\"") : "Session expired.";
+            throw new AssertionError("Session expired.");
+        if (line.contains("error code=\"permissiondenied\""))
+            throw new CredentialNotFoundException("Permission denied."); // session expired or stupidity
         // rate limit (automatic retry), though might be a long one (e.g. email)
         if (line.contains("error code=\"ratelimited\""))
         {
@@ -6588,12 +6637,6 @@ public class Wiki implements Serializable
         {
             log(Level.SEVERE, caller, "Cannot " + caller + " - user is blocked!.");
             throw new AccountLockedException("Current user is blocked!");
-        }
-        // cascade protected
-        if (line.contains("error code=\"cascadeprotected\""))
-        {
-            log(Level.WARNING, caller, "Cannot " + caller + " - page is subject to cascading protection.");
-            throw new CredentialException("Page is cascade protected");
         }
         // database lock (automatic retry)
         if (line.contains("error code=\"readonly\""))
@@ -6758,7 +6801,7 @@ public class Wiki implements Serializable
      *  @param start the time at which the write method was entered
      *  @since 0.30
      */
-    private void throttle(long start)
+    private synchronized void throttle(long start)
     {
         try
         {
@@ -6782,20 +6825,10 @@ public class Wiki implements Serializable
      *  @param action what we are doing
      *  @return whether the user can perform the specified action
      *  @throws IOException if a network error occurs
-     *  @throws CredentialExpiredException if cookies have expired
      *  @since 0.10
      */
-    protected boolean checkRights(HashMap<String, Object> pageinfo, String action) throws IOException, CredentialException
+    protected boolean checkRights(HashMap<String, Object> pageinfo, String action) throws IOException
     {
-        // Check if we are logged out. Easiest way is via the edit token.
-        String token = (String)pageinfo.get("token");
-        if (token.equals("\\+") && user != null)
-        {
-            log(Level.SEVERE, "", "Session has expired!");
-            logout();
-            throw new CredentialExpiredException("Cookies have expired.");
-        }
-        // check protection
         HashMap<String, Object> protectionstate = (HashMap<String, Object>)pageinfo.get("protection");
         if (protectionstate.containsKey(action))
         {
@@ -6803,40 +6836,11 @@ public class Wiki implements Serializable
             if (level.equals(SEMI_PROTECTION))
                 return user.isAllowedTo("autoconfirmed");
             if (level.equals(FULL_PROTECTION))
-                return user.isA("sysop");
+                return user.isAllowedTo("editprotected");
         }
+        if ((Boolean)protectionstate.get("cascade") == Boolean.TRUE) // can be null
+            return user.isAllowedTo("editprotected"); 
         return true;
-    }
-
-    /**
-     *  Performs a status check, including assertions.
-     *  @throws AssertionError if any assertions are false
-     *  @throws IOException if a network error occurs
-     *  @see #setAssertionMode
-     *  @since 0.11
-     */
-    protected void statusCheck() throws IOException
-    {
-        // @revised 0.18 was assertions(), put some more stuff in here
-
-        // perform various status checks every 100 or so edits
-        if (statuscounter > statusinterval)
-        {
-            // purge user rights in case of desysop or loss of other priviliges
-            if (user != null)
-                user.getUserInfo();
-            // check for new messages
-            if ((assertion & ASSERT_NO_MESSAGES) == ASSERT_NO_MESSAGES)
-                assert !(hasNewMessages()) : "User has new messages";
-
-            statuscounter = 0;
-        }
-        else
-            statuscounter++;
-
-        // do some more assertions
-        if ((assertion & ASSERT_BOT) == ASSERT_BOT)
-            assert user.isA("bot") : "Not a bot";
     }
 
     // cookie methods

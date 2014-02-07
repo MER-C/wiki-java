@@ -18,8 +18,9 @@
  */
 
 import java.io.*;
+import java.util.*;
 import java.util.logging.LogManager;
-import org.wikiutils.LoginUtils;;
+import org.wikiutils.LoginUtils;
 import org.wikipedia.Wiki;
 
 /**
@@ -77,7 +78,7 @@ public class LoggedInTests
         //    System.out.println(rev);
         
         // deleted contributions
-        for (Wiki.Revision rev : enWiki.deletedContribs("Namkeenvilla"))
-            System.out.println(rev);
+        // for (Wiki.Revision rev : enWiki.deletedContribs("Namkeenvilla"))
+        //    System.out.println(rev);
     }
 }
