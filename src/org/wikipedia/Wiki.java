@@ -426,7 +426,7 @@ public class Wiki implements Serializable
     private int throttle = 10000; // throttle
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
-    private int statusinterval = 100; // status check
+    private transient int statusinterval = 100; // status check
     private String useragent = "Wiki.java " + version;
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
@@ -436,7 +436,7 @@ public class Wiki implements Serializable
     private boolean retry = true;
    
     // serial version
-    private static final long serialVersionUID = -8745212681497644126L;
+    private static final long serialVersionUID = -8745212681497643456L;
 
     // time to open a connection
     private static final int CONNECTION_CONNECT_TIMEOUT_MSEC = 30000; // 30 seconds
@@ -3200,8 +3200,8 @@ public class Wiki implements Serializable
         // this is a two step process - first we fetch the image url
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=imageinfo&iiprop=url&titles=File:");
-        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
+        url.append("prop=imageinfo&iiprop=url&titles=");
+        url.append(URLEncoder.encode(normalize("File:" + title), "UTF-8"));
         url.append("&iiurlwidth=");
         url.append(width);
         url.append("&iiurlheight=");
@@ -3248,8 +3248,8 @@ public class Wiki implements Serializable
         // TODO: support prop=videoinfo
         // fetch
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=File:" 
-                + URLEncoder.encode(normalize(file), "UTF-8");
+        String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=" 
+                + URLEncoder.encode(normalize("File:" + file), "UTF-8");
         String line = fetch(url, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
@@ -3288,7 +3288,7 @@ public class Wiki implements Serializable
     public String[] getDuplicates(String file) throws IOException
     {
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=duplicatefiles&dflimit=max&titles=File:" + URLEncoder.encode(file, "UTF-8");
+        String url = query + "prop=duplicatefiles&dflimit=max&titles=" + URLEncoder.encode(normalize("File:" + file), "UTF-8");
         String line = fetch(url, "getDuplicates");
         if (line.contains("missing=\"\""))
             return new String[0];
@@ -3317,8 +3317,8 @@ public class Wiki implements Serializable
     public LogEntry[] getImageHistory(String title) throws IOException
     {
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=File:" 
-                + URLEncoder.encode(normalize(title), "UTF-8");
+        String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=" 
+                + URLEncoder.encode(normalize("File:" + title), "UTF-8");
         String line = fetch(url, "getImageHistory");
         if (line.contains("missing=\"\""))
             return new LogEntry[0];
@@ -4216,8 +4216,8 @@ public class Wiki implements Serializable
     {
         StringBuilder url = new StringBuilder(query);
         image = image.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        url.append("list=imageusage&iulimit=max&iutitle=File:");
-        url.append(URLEncoder.encode(normalize(image), "UTF-8"));
+        url.append("list=imageusage&iulimit=max&iutitle=");
+        url.append(URLEncoder.encode(normalize("File:" + image), "UTF-8"));
         constructNamespaceString(url, "iu", ns);
         
         // fiddle
@@ -4378,8 +4378,8 @@ public class Wiki implements Serializable
     {
         name = name.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
-        url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=Category:");
-        url.append(URLEncoder.encode(normalize(name), "UTF-8"));
+        url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
+        url.append(URLEncoder.encode(normalize("Category:" + name), "UTF-8"));
         boolean nocat = true;
         if (subcat && ns.length != 0)
         {
@@ -4475,11 +4475,10 @@ public class Wiki implements Serializable
 
         // set it up
         StringBuilder url = new StringBuilder(query);
-        url.append("list=exturlusage&euprop=title%7curl&euquery=");
+        url.append("list=exturlusage&euprop=title%7curl&eulimit=max&euquery=");
         url.append(pattern);
         url.append("&euprotocol=");
         url.append(protocol);
-        url.append("&eulimit=max");
         constructNamespaceString(url, "eu", ns);
         url.append("&euoffset=");
 
@@ -6998,16 +6997,7 @@ public class Wiki implements Serializable
      */
     private void writeObject(ObjectOutputStream out) throws IOException
     {
-        out.writeObject(user.getUsername());
-        out.writeObject(cookies);
-        out.writeInt(throttle);
-        out.writeInt(maxlag);
-        out.writeInt(assertion);
-        out.writeObject(scriptPath);
-        out.writeObject(domain);
-        out.writeObject(namespaces);
-        out.writeInt(statusinterval);
-        out.writeObject(useragent);
+        out.defaultWriteObject();
     }
 
     /**
@@ -7019,22 +7009,7 @@ public class Wiki implements Serializable
      */
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
     {
-        String z = (String)in.readObject();
-        user = new User(z);
-        cookies = (HashMap<String, String>)in.readObject();
-        throttle = in.readInt();
-        maxlag = in.readInt();
-        assertion = in.readInt();
-        scriptPath = (String)in.readObject();
-        domain = (String)in.readObject();
-        namespaces = (HashMap<String, Integer>)in.readObject();
-        statusinterval = in.readInt();
-        useragent = (String)in.readObject();
-
-        // various other intializations
-        initVars();
-
-        // force a status check on next edit
-        statuscounter = statusinterval;
+        in.defaultReadObject();
+        statuscounter = statusinterval; // force a status check on next edit
     }
 }
