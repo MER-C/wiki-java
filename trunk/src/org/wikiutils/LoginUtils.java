@@ -71,7 +71,7 @@ public class LoginUtils
 	
 	
 	/**
-	 * Login with loginAndSetPrefs(), but using a GUI. Throttle auto-set to 6 edits/min.
+	 * Login with loginAndSetPrefs(), but using a GUI. Throttle auto-set to 12 edits/min.
 	 * 
 	 * @param wiki Wiki object to perform changes on
 	 * 
@@ -86,9 +86,14 @@ public class LoginUtils
 		{
 		  wiki.login(b[0], b[1].toCharArray());
 		}
-		catch(Throwable e)
+                catch (FailedLoginException ex)
+                {
+                    JOptionPane.showMessageDialog(null, "Incorrect username and/or password.");
+                    guiLogin(wiki);
+                }
+		catch(IOException ex)
 		{
-			JOptionPane.showMessageDialog(null, "Username/Password did not match or we encountered a network issue.  Program will now exit.");
+			JOptionPane.showMessageDialog(null, "We encountered a network issue. Program will now exit.");
 			System.exit(1);
 		}
 		wiki.setThrottle(5);
