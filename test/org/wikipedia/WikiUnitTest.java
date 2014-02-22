@@ -211,6 +211,7 @@ public class WikiUnitTest
         assertEquals("normalize", "Blah", enWiki.normalize("blah"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:blah.jpg"));
+        assertEquals("normalize", "Category:Wikipedia:blah", enWiki.normalize("Category:Wikipedia:blah"));
     }
     
     @Test

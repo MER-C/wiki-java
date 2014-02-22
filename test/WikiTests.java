@@ -224,11 +224,12 @@ public class WikiTests
         // getExternalLinksOnPage
         for (String url : enWiki.getExternalLinksOnPage("Albert Einstein"))
             System.out.println(url);
-*/
+
         // getCategories()
         for (String cat : enWiki.getCategories("Albert Einstein"))
             System.out.println(cat);
         for (String cat : enWiki.getCategories("Albert Einstein", true, true))
             System.out.println(cat);
+        */
     }
 }
