@@ -1090,12 +1090,12 @@ public class Wiki implements Serializable
      */
     public String random(int... ns) throws IOException
     {
-        // fetch
+        // no bulk queries here because they are deterministic -- [[mw:API:Random]]
         StringBuilder url = new StringBuilder(query);
         url.append("list=random");
         constructNamespaceString(url, "rn", ns);
         String line = fetch(url.toString(), "random");
-        return parseAttribute(line, "title", 0);
+        return decode(parseAttribute(line, "title", 0));
     }
 
     // STATIC MEMBERS
@@ -2527,6 +2527,25 @@ public class Wiki implements Serializable
     }
     
     /**
+     *  Returns all deleted pages that begin with the given prefix.
+     *  @param prefix a prefix
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if we cannot view deleted pages'
+     *  @since 0.30
+     */
+    public String[] deletedPrefixIndex(String prefix) throws IOException, CredentialNotFoundException
+    {
+        if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
+            throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
+
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=deletedrevs&drprefix=");
+        url.append(URLEncoder.encode(prefix, "UTF-8"));
+        throw new UnsupportedOperationException("Not implemented yet.");
+    }
+    
+    /**
      *  Gets the text of a deleted page (it's like getPageText, but for deleted 
      *  pages).
      *  @param page a page
@@ -2908,7 +2927,7 @@ public class Wiki implements Serializable
      *  default ([[MediaWiki:Revertpage]]).
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws CredentialNotFoundException if the user is not an admin
+     *  @throws CredentialNotFoundException if the user cannot rollback
      *  @throws AccountLockedException if the user is blocked
      *  @since 0.19
      */
@@ -2977,6 +2996,49 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "rollback", "Successfully reverted edits by " + user + " on " + revision.getPage());
         retry = true;
+    }
+    
+    /**
+     *  Deletes and undeletes revisions.
+     * 
+     *  @param hidecontent hide the content of the revision
+     *  @param hidereason hide the edit summary or the reason for an action
+     *  @param hideuser hide who made the revision/action
+     *  @param reason the reason why the (un)deletion was performed
+     *  @param suppress [[Wikipedia:Oversight]] the information in question
+     *  (ignored if we cannot <tt>suppressrevision</tt>).
+     *  @param revisions the list of revisions to (un)delete
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException 
+     *  @throws AccountLockedException if the user is blocked
+     */
+    public synchronized void revisionDelete(boolean hidecontent, boolean hideuser, boolean hidereason, String reason, boolean suppress,
+        Revision[] revisions) throws IOException, LoginException
+    {
+        long start = System.currentTimeMillis();
+        
+        if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
+            throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
+        /*
+        String deltoken = (String)getPageInfo(revisions[0].getPage()).get("token");
+        
+        StringBuilder out = new StringBuilder("reason=");
+        out.append(URLEncoder.encode(reason, "UTF-8"));
+        out.append("&revisions=");
+        for (int i = 0; i < revisions.length - 1; i++)
+        {
+            out.append(revisions[i].getRevid());
+            out.append("%7C");
+        }
+        out.append(revisions[revisions.length - 1].getRevid());
+        out.append("&token=");
+        out.append(URLEncoder.encode(deltoken, "UTF-8"));
+        if (suppress && user.isAllowedTo("suppressrevision"))
+            out.append("&suppress=1");
+
+        throttle(start);
+        */
+        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /**

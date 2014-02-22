@@ -24,6 +24,7 @@ import java.util.*;
 import java.net.*;
 import java.util.logging.*;
 import java.util.zip.*;
+import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
 
 /**
@@ -45,9 +46,22 @@ public class CCIAnalyzer
         //    System.exit(1);
         //}
         Wiki enWiki = new Wiki("en.wikipedia.org");
-        StringBuilder cci = new StringBuilder(enWiki.getPageText("User:MER-C/Sandbox"));
+        // StringBuilder cci = new StringBuilder(enWiki.getPageText("User:MER-C/Sandbox"));
+        StringBuilder cci = new StringBuilder();
+        JFileChooser fc = new JFileChooser();
+        BufferedReader in = null;
+        if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+            in = new BufferedReader(new FileReader(fc.getSelectedFile()));
+        else
+            System.exit(0);
+        String line;
+        while ((line = in.readLine()) != null)
+        {
+            cci.append(line);
+            cci.append("\n");
+        }
         
-        // some XML strings we are looking for
+        // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
         String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;";
         String diffaddedend = "&lt;/td&gt;";
