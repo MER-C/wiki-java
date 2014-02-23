@@ -231,5 +231,11 @@ public class WikiTests
         for (String cat : enWiki.getCategories("Albert Einstein", true, true))
             System.out.println(cat);
         */
+        
+        // revdeled information
+        Calendar start = new GregorianCalendar(2014, 1, 22);
+        Calendar end = new GregorianCalendar(2014, 1, 24);
+        for (Wiki.Revision rev : enWiki.getPageHistory("Imran Khan (singer)", start, end, false))
+            System.out.println(rev);
     }
 }

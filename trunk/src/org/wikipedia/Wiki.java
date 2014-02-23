@@ -3034,7 +3034,15 @@ public class Wiki implements Serializable
         out.append("&token=");
         out.append(URLEncoder.encode(deltoken, "UTF-8"));
         if (suppress && user.isAllowedTo("suppressrevision"))
-            out.append("&suppress=1");
+            out.append("&suppress=yes");
+        else
+            out.append("&suppress=no");
+        
+        for (Revision rev : revisions)
+        {
+            rev.userDeleted = hideuser;
+            rev.summaryDeleted = hidereason;
+        }
 
         throttle(start);
         */
@@ -3177,12 +3185,8 @@ public class Wiki implements Serializable
 
         // summary
         String summary = null;
-        if (!xml.contains("commenthidden=\"")) // not oversighted
-        {
-            int a = xml.indexOf("comment=\"") + 9;
-            int b = xml.indexOf('\"', a);
-            summary = (a == 8) ? "" : decode(xml.substring(a, b));
-        }
+        if (xml.contains("comment=\""))
+            summary = decode(parseAttribute(xml, "comment", 0));
 
         // user
         String user2 = null;
@@ -3223,6 +3227,10 @@ public class Wiki implements Serializable
             revision.sizediff = revision.size - Integer.parseInt(parseAttribute(xml, "oldlen", 0));
         else if (xml.contains("sizediff=\""))
             revision.sizediff = Integer.parseInt(parseAttribute(xml, "sizediff", 0));
+        
+        // revisiondelete
+        revision.summaryDeleted = xml.contains("commenthidden=\"");
+        revision.userDeleted = xml.contains("userhidden=\"");
         return revision;
     }
 
@@ -5998,6 +6006,7 @@ public class Wiki implements Serializable
         private String rollbacktoken = null;
         private int size = 0;
         private int sizediff = 0;
+        private boolean summaryDeleted = false, userDeleted = false;
 
         /**
          *  Constructs a new Revision object.
@@ -6224,14 +6233,24 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns the edit summary for this revision. WARNING: returns null
-         *  if the summary was RevisionDeleted.
+         *  Returns the edit summary for this revision, or null if we cannot 
+         *  access it.
          *  @return the edit summary
          *  @since 0.17
          */
         public String getSummary()
         {
             return summary;
+        }
+        
+        /**
+         *  Returns true if the edit summary is RevisionDeleted.
+         *  @return (see above)
+         *  @since 0.30
+         */
+        public boolean isSummaryDeleted()
+        {
+            return summaryDeleted;
         }
 
         /**
@@ -6244,6 +6263,16 @@ public class Wiki implements Serializable
         public String getUser()
         {
             return user;
+        }
+        
+        /**
+         *  Returns true if the user is RevisionDeleted.
+         *  @return (see above)
+         *  @since 0.30
+         */
+        public boolean isUserDeleted()
+        {
+            return userDeleted;
         }
 
         /**
@@ -6311,11 +6340,15 @@ public class Wiki implements Serializable
             sb.append(title);
             sb.append("\",user=");
             sb.append(user == null ? "[hidden]" : user);
+            sb.append(",userdeleted=");
+            sb.append(userDeleted);
             sb.append(",timestamp=");
             sb.append(calendarToTimestamp(timestamp));
             sb.append(",summary=\"");
             sb.append(summary == null ? "[hidden]" : summary);
-            sb.append("\",minor=");
+            sb.append("\",summarydeleted=");
+            sb.append(summaryDeleted);
+            sb.append(",minor=");
             sb.append(minor);
             sb.append(",bot=");
             sb.append(bot);

@@ -80,5 +80,11 @@ public class LoggedInTests
         // deleted contributions
         // for (Wiki.Revision rev : enWiki.deletedContribs("Namkeenvilla"))
         //    System.out.println(rev);
+        
+        // revdeled information
+        Calendar start = new GregorianCalendar(2014, 1, 22);
+        Calendar end = new GregorianCalendar(2014, 1, 24);
+        for (Wiki.Revision rev : enWiki.getPageHistory("Imran Khan (singer)", start, end, false))
+            System.out.println(rev);
     }
 }
