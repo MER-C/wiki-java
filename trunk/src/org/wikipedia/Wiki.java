@@ -2078,24 +2078,17 @@ public class Wiki implements Serializable
     	StringBuilder url = new StringBuilder(query);
         url.append("prop=links&pllimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
-        String plcontinue = "";
+        String plcontinue = null;
         ArrayList<String> links = new ArrayList<String>(750);
         do
         {
-            if (!plcontinue.isEmpty())
-            {
-                url.append("&plcontinue=");
-                url.append(plcontinue);
-            }
-
-            String line = fetch(url.toString(), "getLinksOnPage");
-
-            // strip continuation
-            if (line.contains("plcontinue"))
-                plcontinue = URLEncoder.encode(parseAttribute(line, "plcontinue", 0), "UTF-8");
+            String line;
+            if (plcontinue == null)
+                line = fetch(url.toString(), "getLinksOnPage");
             else
-                plcontinue = null;
-
+                line = fetch(url.toString() + "&plcontinue=" + plcontinue, "getLinksOnPage");
+            plcontinue = URLEncoder.encode(parseAttribute(line, "plcontinue", 0), "UTF-8");
+            
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<pl "); a > 0; a = line.indexOf("<pl ", ++a))
                 links.add(decode(parseAttribute(line, "title", a)));
@@ -2120,23 +2113,16 @@ public class Wiki implements Serializable
     	StringBuilder url = new StringBuilder(query);
         url.append("prop=extlinks&ellimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
-        String eloffset = "";
+        String eloffset = null;
         ArrayList<String> links = new ArrayList<String>(750);
         do
         {
-            if (!eloffset.isEmpty())
-            {
-                url.append("&eloffset=");
-                url.append(eloffset);
-            }
-
-            String line = fetch(url.toString(), "getExternalLinksOnPage");
-
-            // strip continuation
-            if (line.contains("eloffset"))
-                eloffset = URLEncoder.encode(parseAttribute(line, "eloffset", 0), "UTF-8");
+            String line;
+            if (eloffset == null)
+                line = fetch(url.toString(), "getExternalLinksOnPage");
             else
-                eloffset = null;
+                line = fetch(url.toString() + "&eloffset=" + URLEncoder.encode(eloffset, "UTF-8"), "getExternalLinksOnPage");
+            eloffset = parseAttribute(line, "eloffset", 0);
 
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<el "); a > 0; a = line.indexOf("<el ", ++a))
@@ -2333,13 +2319,8 @@ public class Wiki implements Serializable
                 line = fetch(url.toString(), "getPageHistory");
             else
                 line = fetch(url.toString() + "&rvcontinue=" + rvcontinue, "getPageHistory");
-
-            // set continuation parameter
-            if (line.contains("rvcontinue=\""))
-                rvcontinue = parseAttribute(line, "rvcontinue", 0);
-            else
-                rvcontinue = null;
-
+            rvcontinue = parseAttribute(line, "rvcontinue", 0);
+            
             // parse stuff
             for (int a = line.indexOf("<rev "); a > 0; a = line.indexOf("<rev ", ++a))
             {
@@ -2494,15 +2475,8 @@ public class Wiki implements Serializable
                 response = fetch(url.toString() + "&drstart=" + drstart, "deletedRevs"); // deleted contributions
             else
                 response = fetch(url.toString(), "deletedRevs");
-            if (response.contains("drcontinue=\""))
-                drcontinue = parseAttribute(response, "drcontinue", 0);
-            else if (response.contains("drstart=\""))
-                drstart = parseAttribute(response, "drstart", 0);
-            else
-            {
-                drcontinue = null;
-                drstart = null;
-            }
+            drcontinue = parseAttribute(response, "drcontinue", 0);
+            drstart = parseAttribute(response, "drstart", 0);
             
             // parse
             int x = response.indexOf("<deletedrevs>");
@@ -3503,16 +3477,15 @@ public class Wiki implements Serializable
             url.append(calendarToTimestamp(end));
         }
         ArrayList<LogEntry> uploads = new ArrayList<LogEntry>();
-        String aicontinue = "";
+        String aicontinue = null;
         do
         {
-            if (!aicontinue.isEmpty())
-                aicontinue = "&aicontinue" + aicontinue;
-            String line = fetch(url.toString() + aicontinue, "getUploads");
-            if (line.contains("aicontinue=\""))
-                aicontinue = parseAttribute(line, "aicontinue", 0);
+            String line;
+            if (aicontinue == null)
+                line = fetch(url.toString(), "getUploads");
             else
-                aicontinue = null;
+                line = fetch(url.toString() + "&aicontinue=" + aicontinue, "getUploads");
+            aicontinue = parseAttribute(line, "aicontinue", 0);
             
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
@@ -3757,10 +3730,7 @@ public class Wiki implements Serializable
             String line = fetch(temp, "allUsers");
 
             // parse
-            if (line.contains("aufrom=\""))
-                next = parseAttribute(line, "aufrom", 0);
-            else
-                next = null;
+            next = parseAttribute(line, "aufrom", 0);
             for (int w = line.indexOf("<u "); w > 0; w = line.indexOf("<u ", ++w))
             {
                 members.add(decode(parseAttribute(line, "name", w)));
@@ -4104,17 +4074,17 @@ public class Wiki implements Serializable
 
         // set up some things
         String url = query + "list=watchlistraw&wrlimit=max";
-        String wrcontinue = "";
+        String wrcontinue = null;
         watchlist = new ArrayList<String>(750);
         // fetch the watchlist
         do
         {
-            String line = fetch(url + wrcontinue, "getRawWatchlist");
-            // set continuation parameter
-            if (line.contains("wrcontinue"))
-                wrcontinue = "&wrcontinue=" + URLEncoder.encode(parseAttribute(line, "wrcontinue", 0), "UTF-8");
+            String line;
+            if (wrcontinue == null)
+                line = fetch(url, "getRawWatchlist");
             else
-                wrcontinue = null;
+                line = fetch(url + "&wrcontinue=" + URLEncoder.encode(wrcontinue, "UTF-8"), "getRawWatchlist");
+            wrcontinue = parseAttribute(line, "wrcontinue", 0);
             // xml form: <wr ns="14" title="Categorie:Even more things"/>
             for (int a = line.indexOf("<wr "); a > 0; a = line.indexOf("<wr ", ++a))
             {
@@ -4190,10 +4160,8 @@ public class Wiki implements Serializable
         do
         {
             String line = fetch(url.toString() + "&wlstart=" + wlstart, "watchlist");
-            if (line.contains("wlstart"))
-                wlstart = parseAttribute(line, "wlstart", 0);
-            else
-                wlstart = null;
+            wlstart = parseAttribute(line, "wlstart", 0);
+            
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
             {
@@ -4299,12 +4267,7 @@ public class Wiki implements Serializable
             if (!pages.isEmpty())
                 next = "&iucontinue="  + next;
             String line = fetch(url + next, "imageUsage");
-
-            // set continuation parameter
-            if (line.contains("iucontinue"))
-                next = parseAttribute(line, "iucontinue", 0);
-            else
-                next = null;
+            next = parseAttribute(line, "iucontinue", 0);
 
             // xml form: <iu pageid="196465" ns="7" title="File talk:Wiki.png" />
             for (int x = line.indexOf("<iu "); x > 0; x = line.indexOf("<iu ", ++x))
@@ -4355,24 +4318,22 @@ public class Wiki implements Serializable
 
         // main loop
         ArrayList<String> pages = new ArrayList<String>(6667); // generally enough
-        String temp = url.toString();
-        String next = "";
+        String blcontinue = null;
         do
         {
             // fetch data
-            String line = fetch(temp + next, "whatLinksHere");
-
-            // set next starting point
-            if (line.contains("blcontinue"))
-                next = "&blcontinue=" + parseAttribute(line, "blcontinue", 0);
+            String line;
+            if (blcontinue == null)
+                line = fetch(url.toString(), "whatLinksHere");
             else
-                next = null;
-
+                line = fetch(url.toString() + "&blcontinue=" + blcontinue, "whatLinksHere");
+            blcontinue = parseAttribute(line, "blcontinue", 0);
+            
             // xml form: <bl pageid="217224" ns="0" title="Mainpage" redirect="" />
             for (int x = line.indexOf("<bl "); x > 0; x = line.indexOf("<bl ", ++x))
                 pages.add(decode(parseAttribute(line, "title", x)));
         }
-        while (next != null);
+        while (blcontinue != null);
 
         int size = pages.size();
         log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + size + " items)");
@@ -4398,23 +4359,22 @@ public class Wiki implements Serializable
 
         // main loop
         ArrayList<String> pages = new ArrayList<String>(6667); // generally enough
-        String next = "";
+        String eicontinue = null;
         do
         {
             // fetch data
-            String line = fetch(url + next, "whatTranscludesHere");
-
-            // set next starting point
-            if (line.contains("eicontinue"))
-                next = "&eicontinue=" + parseAttribute(line, "eicontinue", 0);
+            String line;
+            if (eicontinue == null)
+                line = fetch(url.toString(), "whatTranscludesHere");
             else
-                next = "done";
-
+                line = fetch(url.toString() + "&eicontinue=" + eicontinue, "whatTranscludesHere");
+            eicontinue = parseAttribute(line, "eicontinue", 0);
+            
             // xml form: <ei pageid="7997510" ns="0" title="Maike Evers" />
             for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
                 pages.add(decode(parseAttribute(line, "title", x)));
         }
-        while (!next.equals("done"));
+        while (eicontinue != null);
         int size = pages.size();
         log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
@@ -4473,12 +4433,7 @@ public class Wiki implements Serializable
             if (!next.isEmpty())
                 next = "&cmcontinue=" + URLEncoder.encode(next, "UTF-8");
             String line = fetch(url.toString() + next, "getCategoryMembers");
-
-            // parse cmcontinue if it is there
-            if (line.contains("cmcontinue"))
-                next = parseAttribute(line, "cmcontinue", 0);
-            else
-                next = null;
+            next = parseAttribute(line, "cmcontinue", 0);
 
             // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
             for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
@@ -4660,13 +4615,8 @@ public class Wiki implements Serializable
         do
         {
             String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
-
-            // set start parameter to new value if required
-            if (line.contains("bkstart"))
-                bkstart = parseAttribute(line, "bkstart", 0);
-            else
-                bkstart = null;
-
+            bkstart = parseAttribute(line, "bkstart", 0);
+            
             // parse xml
             for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
             {
@@ -4878,13 +4828,8 @@ public class Wiki implements Serializable
         do
         {
             String line = fetch(url.toString() + "&lestart=" + lestart, "getLogEntries");
-
-            // set start parameter to new value
-            if (line.contains("lestart=\""))
-                lestart = parseAttribute(line, "lestart", 0);
-            else
-                lestart = null;
-
+            lestart = parseAttribute(line, "lestart", 0);
+            
             // parse xml. We need to repeat the test because the XML may contain more than the required amount.
             while (line.contains("<item") && entries.size() < amount)
             {
@@ -5195,7 +5140,7 @@ public class Wiki implements Serializable
             // connect and read
             String s = url.toString();
             if (!next.isEmpty())
-                s += ("&apcontinue=" + next);
+                s += ("&apcontinue=" + URLEncoder.encode(next, "UTF-8"));
             String line = fetch(s, "listPages");
 
             // don't set a continuation if no max, min, prefix or protection level
@@ -5203,9 +5148,7 @@ public class Wiki implements Serializable
                 next = null;
             // find next value
             else if (line.contains("apcontinue="))
-                next = URLEncoder.encode(parseAttribute(line, "apcontinue", 0), "UTF-8");
-            else
-                next = null;
+                next = parseAttribute(line, "apcontinue", 0);
 
             // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
@@ -5250,10 +5193,7 @@ public class Wiki implements Serializable
         do
         {
             String line = fetch(url + offset, "queryPage");
-            if (line.contains("qpoffset"))
-                offset = parseAttribute(line, "qpoffset", 0);
-            else
-                offset = null;
+            offset = parseAttribute(line, "qpoffset", 0);
             
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
             for (int x = line.indexOf("<page "); x > 0; x = line.indexOf("<page ", ++x))
@@ -5537,12 +5477,7 @@ public class Wiki implements Serializable
                 line = fetch(url.toString(), "getInterWikiBacklinks");
             else
                 line = fetch(url.toString() + "&iwblcontinue=" + iwblcontinue, "getInterWikiBacklinks");
-
-            // set continuation parameter
-            if(line.contains("iwblcontinue"))
-                iwblcontinue = parseAttribute(line, "iwblcontinue", 0);
-            else
-                iwblcontinue = null;
+            iwblcontinue = parseAttribute(line, "iwblcontinue", 0);
 
             // xml form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wroclaw" iwprefix="pl" iwtitle="Main_Page" />
             for (int x = line.indexOf("<iw "); x > 0;  x = line.indexOf("<iw ", ++x))
