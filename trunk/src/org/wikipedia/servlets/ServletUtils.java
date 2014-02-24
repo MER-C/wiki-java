@@ -1,6 +1,6 @@
 /**
  *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2013 MER-C
+ *  Copyright (C) 2011 - 2014 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -90,12 +90,12 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2013. This tool is free software: ");
+        sb.append(": Copyright (C) MER-C 2007-2014. This tool is free software: ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of ");
         sb.append("the GNU General Public License as published by the Free ");
         sb.append("Software Foundation, either version 3 of the License, or (at ");
         sb.append("your\noption) any later version.\n<p>Source code is available ");
-        sb.append("<a href=\"http://code.google.com/p/wiki-java\">here</a>. Report ");
+        sb.append("<a href=\"//code.google.com/p/wiki-java\">here</a>. Report ");
         sb.append("bugs at <a href=\"//en.wikipedia.org/wiki/User_talk:MER-C\">my ");
         sb.append("talk page</a>\n(fast) or the tracker associated with the source ");
         sb.append("(slow).\n\n<p><b>Tools:</b> <a href=\"./linksearch.jsp\">Cross-wiki linksearch</a> ");

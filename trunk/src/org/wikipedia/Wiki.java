@@ -3464,8 +3464,8 @@ public class Wiki implements Serializable
     public LogEntry[] getUploads(User user, Calendar start, Calendar end) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=allimages&ailimit=max&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser="); // ?
-        url.append(user.getUsername());
+        url.append("list=allimages&ailimit=max&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser=");
+        url.append(URLEncoder.encode(user.getUsername(), "UTF-8"));
         if (start != null)
         {
             url.append("&aistart=");
