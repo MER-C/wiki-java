@@ -3212,11 +3212,10 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches an image file and returns the image data in a <tt>byte[]</tt>.
-     *  To recover the old behavior (BufferedImage), use
-     *  <tt>ImageIO.read(new ByteArrayInputStream(getImage("Example.jpg")));</tt>
+     *  Works for external repositories. 
      *
      *  @param title the title of the image (may contain "File")
-     *  @return the image data
+     *  @return the image data or null if the image doesn't exist
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
@@ -3227,20 +3226,17 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches a thumbnail of an image file and returns the image data
-     *  in a <tt>byte[]</tt>. To recover the old behavior (BufferedImage), use
-     *  <tt>ImageIO.read(new ByteArrayInputStream(getImage("Example.jpg")));</tt>
+     *  in a <tt>byte[]</tt>. Works for external repositories.
      *
      *  @param title the title of the image (may contain "File")
      *  @param width the width of the thumbnail (use -1 for actual width)
      *  @param height the height of the thumbnail (use -1 for actual height)
-     *  @return the image data or null if the image doesn't exist locally
+     *  @return the image data or null if the image doesn't exist
      *  @throws IOException if a network error occurs
      *  @since 0.13
      */
     public byte[] getImage(String title, int width, int height) throws IOException
     {
-        // @revised 0.24 BufferedImage => byte[]
-
         // this is a two step process - first we fetch the image url
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
@@ -3251,7 +3247,7 @@ public class Wiki implements Serializable
         url.append("&iiurlheight=");
         url.append(height);
         String line = fetch(url.toString(), "getImage");
-        if (line.contains("missing=\"\""))
+        if (!line.contains("<imageinfo>"))
             return null;
         String url2 = parseAttribute(line, "url", 0);
 
@@ -6482,11 +6478,11 @@ public class Wiki implements Serializable
         if (temp.contains("<error code="))
         {
             // assertions
-            if ((assertion & ASSERT_BOT) == ASSERT_BOT && line.contains("error code=\"assertbotfailed\""))
-                // assert !line.contains("error code=\"assertbotfailed\"") : "Bot privileges missing or revoked, or session expired.";
+            if ((assertion & ASSERT_BOT) == ASSERT_BOT && temp.contains("error code=\"assertbotfailed\""))
+                // assert !temp.contains("error code=\"assertbotfailed\"") : "Bot privileges missing or revoked, or session expired.";
                 throw new AssertionError("Bot privileges missing or revoked, or session expired.");
-            if ((assertion & ASSERT_USER) == ASSERT_USER && line.contains("error code=\"assertuserfailed\""))
-                // assert !line.contains("error code=\"assertuserfailed\"") : "Session expired.";
+            if ((assertion & ASSERT_USER) == ASSERT_USER && temp.contains("error code=\"assertuserfailed\""))
+                // assert !temp.contains("error code=\"assertuserfailed\"") : "Session expired.";
                 throw new AssertionError("Session expired.");
             // Something *really* bad happened. Most of these are self-explanatory
             // and are indicative of bugs (not necessarily in this framework) or 

@@ -126,7 +126,6 @@ public class WikiUnitTest
     public void getImage() throws Exception
     {
         assertNull("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah"));
-        assertNull("getImage: commons image", enWiki.getImage("File:WikipediaSignpostIcon.svg"));
     }
     
     @Test
@@ -212,6 +211,35 @@ public class WikiUnitTest
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:blah.jpg"));
         assertEquals("normalize", "Category:Wikipedia:blah", enWiki.normalize("Category:Wikipedia:blah"));
+    }
+    
+    @Test
+    public void getRevision() throws Exception
+    {
+        // https://en.wikipedia.org/w/index.php?title=Wikipedia_talk%3AWikiProject_Spam&diff=597454682&oldid=597399794
+        Wiki.Revision rev = enWiki.getRevision(597454682L);
+        assertEquals("getRevision: page", "Wikipedia talk:WikiProject Spam", rev.getPage());
+        assertEquals("getRevision: timestamp", "20140228004031", enWiki.calendarToTimestamp(rev.getTimestamp()));
+        assertEquals("getRevision: user", "Lowercase sigmabot III", rev.getUser());
+        assertEquals("getRevision: summary", "Archiving 3 discussion(s) to [[Wikipedia talk:WikiProject Spam/2014 Archive Feb 1]]) (bot",
+            rev.getSummary());
+        assertEquals("getRevision: size", 4286, rev.getSize());
+        assertEquals("getRevision: revid", 597454682L, rev.getRevid());
+        assertEquals("getRevision: previous", 597399794L, rev.getPrevious().getRevid());
+        // assertEquals("getRevision: next", 597553957L, rev.getNext().getRevid());
+        assertTrue("getRevision: minor", rev.isMinor());
+        assertFalse("getRevision: new", rev.isNew());
+        assertFalse("getRevison: bot", rev.isBot());
+        assertFalse("getRevision: user not revdeled", rev.isUserDeleted());
+        assertFalse("getRevision: summary not revdeled", rev.isSummaryDeleted());
+        
+        // revdel
+        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
+        rev = enWiki.getRevision(596714684L);
+        assertNull("getRevision: user revdeled", rev.getUser());
+        assertTrue("getRevision: user revdeled", rev.isUserDeleted());
+        assertNull("getRevision: summary revdeled", rev.getSummary());
+        assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
     }
     
     @Test
