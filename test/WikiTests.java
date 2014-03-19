@@ -107,8 +107,8 @@ public class WikiTests
             System.out.println(image);
 
         // getImage()
-        byte[] image = enWiki.getImage("Wiki.png");
-        FileOutputStream out = new FileOutputStream("Wiki.png");
+        byte[] image = enWiki.getImage("File:HellenicArmySeal.svg");
+        FileOutputStream out = new FileOutputStream("File:HellenicArmySeal.svg");
         out.write(image);
         out.close();
 
@@ -231,11 +231,8 @@ public class WikiTests
         for (String cat : enWiki.getCategories("Albert Einstein", true, true))
             System.out.println(cat);
         */
-        
-        // revdeled information
-        Calendar start = new GregorianCalendar(2014, 1, 22);
-        Calendar end = new GregorianCalendar(2014, 1, 24);
-        for (Wiki.Revision rev : enWiki.getPageHistory("Imran Khan (singer)", start, end, false))
-            System.out.println(rev);
+        for (String s : enWiki.getCategoryMembers("Wikipedia sockpuppets of Scholarscentral", true))
+            System.out.println(s);
+
     }
 }

@@ -2975,31 +2975,33 @@ public class Wiki implements Serializable
     /**
      *  Deletes and undeletes revisions.
      * 
-     *  @param hidecontent hide the content of the revision
+     *  @param hidecontent hide the content of the revision (true/false 
+     *  = hide/unhide, null = status quo)
      *  @param hidereason hide the edit summary or the reason for an action
      *  @param hideuser hide who made the revision/action
      *  @param reason the reason why the (un)deletion was performed
      *  @param suppress [[Wikipedia:Oversight]] the information in question
-     *  (ignored if we cannot <tt>suppressrevision</tt>).
+     *  (ignored if we cannot <tt>suppressrevision</tt>, null = status quo).
      *  @param revisions the list of revisions to (un)delete
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException 
      *  @throws AccountLockedException if the user is blocked
      */
-    public synchronized void revisionDelete(boolean hidecontent, boolean hideuser, boolean hidereason, String reason, boolean suppress,
+    public synchronized void revisionDelete(Boolean hidecontent, Boolean hideuser, Boolean hidereason, String reason, Boolean suppress,
         Revision[] revisions) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
         
         if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
-        /*
+
         String deltoken = (String)getPageInfo(revisions[0].getPage()).get("token");
         
         StringBuilder out = new StringBuilder("reason=");
         out.append(URLEncoder.encode(reason, "UTF-8"));
-        out.append("&revisions=");
-        for (int i = 0; i < revisions.length - 1; i++)
+        out.append("&type=revision"); // FIXME: allow log entry deletion
+        out.append("&ids=");
+        for (int i = 0; i < revisions.length - 1; i++) // FIXME: allow more than slowmax revisions
         {
             out.append(revisions[i].getRevid());
             out.append("%7C");
@@ -3007,20 +3009,68 @@ public class Wiki implements Serializable
         out.append(revisions[revisions.length - 1].getRevid());
         out.append("&token=");
         out.append(URLEncoder.encode(deltoken, "UTF-8"));
-        if (suppress && user.isAllowedTo("suppressrevision"))
-            out.append("&suppress=yes");
-        else
-            out.append("&suppress=no");
+        if (user.isAllowedTo("suppressrevision"))
+        {
+            if (suppress == Boolean.TRUE)
+                out.append("&suppress=yes");
+            else if (suppress == Boolean.FALSE)
+                out.append("&suppress=no");
+        }
+        // this is really stupid... I'm open to suggestions
+        out.append("&hide=");
+        StringBuilder temp = new StringBuilder("&show=");
+        if (hidecontent == Boolean.TRUE)
+            out.append("content%7C");
+        else if (hidecontent == Boolean.FALSE)
+            temp.append("content%7C");
+        if (hideuser == Boolean.TRUE)
+            out.append("user%7C");
+        else if (hideuser == Boolean.FALSE)
+            temp.append("user%7C");
+        if (hidereason == Boolean.TRUE)
+            out.append("comment");
+        else if (hidereason == Boolean.FALSE)
+            temp.append("comment");
+        if (out.lastIndexOf("%7C") == out.length() - 2)
+            out.delete(out.length() - 2, out.length());
+        if (temp.lastIndexOf("%7C") == temp.length() - 2)
+            temp.delete(temp.length() - 2, temp.length());
+        out.append(temp);
         
+        // send/read response
+        String response = post(apiUrl + "action=revisiondelete", out.toString(), "revisionDelete");
+        try
+        {
+            // success
+            if (!response.contains("<revisiondelete "))
+                checkErrorsAndUpdateStatus(response, "move");
+        }
+        catch (IOException e)
+        {
+            // retry once
+            if (retry)
+            {
+                retry = false;
+                log(Level.WARNING, "revisionDelete", "Exception: " + e.getMessage() + " Retrying...");
+                revisionDelete(hidecontent, hideuser, hidereason, reason, suppress, revisions);
+            }
+            else
+            {
+                log(Level.SEVERE, "revisionDelete", "EXCEPTION: " + e);
+                throw e;
+            }
+        }
+        if (retry)
+            log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + revisions.length + " revisions.");
+        retry = true;       
         for (Revision rev : revisions)
         {
-            rev.userDeleted = hideuser;
-            rev.summaryDeleted = hidereason;
+            if (hideuser != null)
+                rev.userDeleted = hideuser;
+            if (hidereason != null)
+                rev.summaryDeleted = hidereason;
         }
-
         throttle(start);
-        */
-        throw new UnsupportedOperationException("Not implemented yet.");
     }
 
     /**
@@ -4406,8 +4456,8 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
         url.append(URLEncoder.encode(normalize("Category:" + name), "UTF-8"));
-        boolean nocat = true;
-        if (subcat && ns.length != 0)
+        boolean nocat = ns.length != 0;
+        if (subcat && nocat)
         {
             for (int i = 0; nocat && i < ns.length; i++)
                 nocat = (ns[i] != CATEGORY_NAMESPACE);
