@@ -44,6 +44,7 @@ public class ContributionSurveyor
         File out = null;
         String wikipage = null;
         String infile = null;
+        String category = null;
 
         // parse arguments
         ArrayList<String> users = new ArrayList<String>(1500);
@@ -63,6 +64,7 @@ public class ContributionSurveyor
                             + "Default: en.wikipedia.org.\n"
                         + "\t--outfile file\n\t\tSave results to file, shows a filechooser if not specified.\n"
                         + "\t--wikipage 'Main Page'\n\t\tFetch a list of users at the wiki page Main Page.\n"
+                        + "\t--category 'A category'\n\t\tFetch a list of users from the given category (recursive)."
                         + "\t--user user\n\t\tSurvey the given user.\n"
                         + "\t--userspace\n\t\tSurvey userspace as well.\n");
 
@@ -88,46 +90,61 @@ public class ContributionSurveyor
                 case "--wikipage":
                     wikipage = args[++i];
                     break;
+                case "--category":
+                    category = args[++i];
+                    break;
             }
         }
-        // file I/O
-        // file must contain list of users, one per line
-        if (users.isEmpty())
+        
+        // fetch user list
+        if (!users.isEmpty())
         {
-            if (wikipage == null)
+        }
+        else if (category != null)
+            users.addAll(Arrays.asList(homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE)));
+        else if (wikipage != null)
+        {
+            String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
+            for (String temp : list)
             {
-                BufferedReader in = null;
-                if (infile == null)
-                {
-                    JFileChooser fc = new JFileChooser();
-                    fc.setDialogTitle("Select user list");
-                    if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
-                        in = new BufferedReader(new FileReader(fc.getSelectedFile()));
-                    else
-                    {
-                        System.out.println("Error: No input file selected.");
-                        System.exit(0);
-                    }
-                }
-                else
-                    in = new BufferedReader(new FileReader(infile));
-                String line;
-                while ((line = in.readLine()) != null)
-                {
-                    line = line.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
-                    users.add(line);
-                }
-            }
-            else
-            {
-                String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
-                for (String temp : list)
+                if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
                 {
                     temp = temp.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
                     users.add(temp);
                 }
             }
         }
+        else // file IO
+        {
+            BufferedReader in = null;
+            if (infile == null)
+            {
+                JFileChooser fc = new JFileChooser();
+                fc.setDialogTitle("Select user list");
+                if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
+                    in = new BufferedReader(new FileReader(fc.getSelectedFile()));
+                else
+                {
+                    System.out.println("Error: No input file selected.");
+                    System.exit(0);
+                }
+            }
+            else
+                in = new BufferedReader(new FileReader(infile));
+            String line;
+            while ((line = in.readLine()) != null)
+            {
+                if (homewiki.namespace(line) == Wiki.USER_NAMESPACE)
+                {
+                    // line = line.replace("[*#]\\s?\\[\\[:?", "");
+                    // line = line.replace("\\]\\]", "");
+                    line = line.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
+                    users.add(line);
+                }
+            }
+        }
+
+        // output file
         if (out == null)
         {
             JFileChooser fc = new JFileChooser();
@@ -174,7 +191,8 @@ public class ContributionSurveyor
                 System.out.println(user + " is not a registered user.");
 
             // survey mainspace edits
-            out.write("====Mainspace edits (" + user + ")====");
+            if (images || userspace)
+                out.write("====Mainspace edits (" + user + ")====");
             HashMap<String, StringBuilder> diffs = new HashMap<String, StringBuilder>(60);
             for (Wiki.Revision revision : contribs)
             {
