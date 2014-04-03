@@ -604,7 +604,7 @@ public class Wiki implements Serializable
         wgCapitalLinks = parseAttribute(line, "case", 0).equals("first-letter");
         return wgCapitalLinks;
     }
-
+    
     /**
      *  Sets the user agent HTTP header to be used for requests. Default is
      *  "Wiki.java " + version.
@@ -991,26 +991,22 @@ public class Wiki implements Serializable
      *  files, edits, users and admins. Equivalent to [[Special:Statistics]].
      *
      *  @return a map containing the stats. Use "articles", "pages", "files"
-     *  "edits", "users" or "admins" to retrieve the respective value
+     *  "edits", "users", "activeusers", "admins" or "jobs" to retrieve the 
+     *  respective value
      *  @throws IOException if a network error occurs
      *  @since 0.14
      */
     public HashMap<String, Integer> getSiteStatistics() throws IOException
     {
-        // ZOMG hack to avoid excessive substring code
-        String text = parseAndCleanup("{{NUMBEROFARTICLES:R}} {{NUMBEROFPAGES:R}} {{NUMBEROFFILES:R}} {{NUMBEROFEDITS:R}} " +
-                "{{NUMBEROFUSERS:R}} {{NUMBEROFADMINS:R}}");
-        String[] values = text.split("\\s");
-        HashMap<String, Integer> ret = new HashMap<String, Integer>(12);
-        String[] keys =
-        {
-           "articles", "pages", "files", "edits", "users", "admins"
-        };
-        for (int i = 0; i < values.length; i++)
-        {
-            Integer value = new Integer(values[i]);
-            ret.put(keys[i], value);
-        }
+        String text = fetch(query + "meta=siteinfo&siprop=statistics", "getSiteStatistics");
+        HashMap<String, Integer> ret = new HashMap<String, Integer>(20);
+        ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
+        ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
+        ret.put("files", Integer.parseInt(parseAttribute(text, "images", 0)));
+        ret.put("users", Integer.parseInt(parseAttribute(text, "users", 0)));
+        ret.put("activeusers", Integer.parseInt(parseAttribute(text, "activeusers", 0)));
+        ret.put("admins", Integer.parseInt(parseAttribute(text, "admins", 0)));
+        ret.put("jobs", Integer.parseInt(parseAttribute(text, "jobs", 0))); // job queue length
         return ret;
     }
 
