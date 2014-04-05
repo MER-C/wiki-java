@@ -410,6 +410,7 @@ public class Wiki implements Serializable
     protected String query, base, apiUrl;
     protected String scriptPath = "/w";
     private boolean wgCapitalLinks = true;
+    private String timezone = "UTC";
 
     // user management
     private HashMap<String, String> cookies = new HashMap<String, String>(12);
@@ -579,15 +580,14 @@ public class Wiki implements Serializable
      *  <tt>/w</tt>. See also [[mw:Manual:$wgScriptpath]].
      *
      *  @throws IOException if a network error occurs
+     *  @deprecated use getSiteInfo
      *  @return the script path, if you have any use for it
      *  @since 0.14
      */
+    @Deprecated
     public String getScriptPath() throws IOException
     {
-        String line = fetch(query + "action=query&meta=siteinfo", "getScriptPath");
-        scriptPath = parseAttribute(line, "scriptpath", 0);
-        initVars();
-        return scriptPath;
+        return (String)getSiteInfo().get("scriptpath");
     }
     
     /**
@@ -595,14 +595,46 @@ public class Wiki implements Serializable
      *  title and sets the bot framework up to use it. Example: en.wikipedia = 
      *  true, en.wiktionary = false. Default = true. See [[mw:Manual:$wgCapitalLinks]].
      *  @return see above
+     *  @deprecated use getSiteInfo
      *  @throws IOException if a network error occurs
      *  @since 0.30
      */
+    @Deprecated
     public boolean isUsingCapitalLinks() throws IOException
     {
-        String line = fetch(query + "action=query&meta=siteinfo", "isUsingCapitalLinks");
+        return (Boolean)getSiteInfo().get("usingCapitalLinks");
+    }
+    
+    /**
+     *  Gets various properties of the wiki and sets the bot framework up to use
+     *  them. Returns:
+     *  <ul>
+     *  <li><b>usingcapitallinks</b>: (Boolean) whether a wiki forces upper case 
+     *    for the title. Example: en.wikipedia = true, en.wiktionary = false. 
+     *    Default = true. See [[mw:Manual:$wgCapitalLinks]].
+     *  <li><b>scriptpath</b>: (String) the $wgScriptpath wiki variable. Default
+     *    = <tt>/w</tt>. See [[mw:Manual:$wgScriptpath]].
+     *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
+     *  <li><b>timezone</b>: (String) the timezone the wiki is in, default = UTC
+     *  </ul>
+     *  
+     *  @return (see above)
+     *  @since 0.30
+     *  @throws IOException if a network error occurs
+     */
+    public HashMap<String, Object> getSiteInfo() throws IOException
+    {
+        HashMap<String, Object> ret = new HashMap<String, Object>();
+        String line = fetch(query + "action=query&meta=siteinfo", "getSiteInfo");
         wgCapitalLinks = parseAttribute(line, "case", 0).equals("first-letter");
-        return wgCapitalLinks;
+        ret.put("usingcapitallinks", wgCapitalLinks);
+        scriptPath = parseAttribute(line, "scriptpath", 0);
+        ret.put("scriptpath", scriptPath);
+        timezone = parseAttribute(line, "timezone", 0);
+        ret.put("timezone", timezone);
+        ret.put("version", parseAttribute(line, "generator", 0));
+        initVars();
+        return ret;
     }
     
     /**
@@ -1015,11 +1047,13 @@ public class Wiki implements Serializable
      *  See also https://gerrit.wikimedia.org/ .
      *  @return the version of MediaWiki used
      *  @throws IOException if a network error occurs
+     *  @deprecated use getSiteInfo
      *  @since 0.14
      */
+    @Deprecated
     public String version() throws IOException
     {
-        return parseAndCleanup("{{CURRENTVERSION}}"); // ahh, the magicness of magic words
+        return (String)getSiteInfo().get("version");
     }
 
     /**
@@ -1196,26 +1230,26 @@ public class Wiki implements Serializable
     
     /**
      *  Gets miscellaneous page info. Returns:
-     *  <pre>
-     *  {
-     *      "displaytitle" => "iPod"         , // the title of the page that is actually displayed (String)
-     *      "protection"   => NO_PROTECTION  , // the {@link #protect(java.lang.String, java.util.HashMap) 
-     *                                         // protection state} of the page (HashMap). Does not cover
-     *                                         // implied protection levels (e.g. MediaWiki namespace)
-     *      "token"        => "\+"           , // an edit token for the page, must be logged
-     *                                         // in to be non-trivial (String)
-     *      "exists"       => true           , // whether the page exists (Boolean)
-     *      "lastpurged"   => 20110101000000 , // when the page was last purged (Calendar), null if the
-     *                                         // page does not exist
-     *      "lastrevid"    => 123456789L     , // the revid of the top revision (Long), -1L if the page
-     *                                         // does not exist
-     *      "size"         => 5000           , // the size of the page (Integer), -1 if the page does
-     *                                         // not exist
-     *      "timestamp"    => makeCalendar() , // when this method was called (Calendar)
-     *      "watchtoken"   => "\+"           , // watchlist token (String)
-     *      "watchers"     => 34               // number of watchers (Integer), may be restricted
-     *  }
-     *  </pre>
+     *  <ul>
+     *  <li><b>displaytitle</b>: (String) the title of the page that is actually 
+     *    displayed. Example: "iPod"
+     *  <li><b>protection</b>: (HashMap) the {@link #protect(java.lang.String, 
+     *    java.util.HashMap) protection state} of the page (HashMap). Does not 
+     *    cover implied protection levels (e.g. MediaWiki namespace).
+     *  <li><b>token</b>: (String) an edit token for the page, must be logged in
+     *    to be non-trivial
+     *  <li><b>exists</b>: (Boolean) whether the page exists
+     *  <li><b>lastpurged</b>: (Calendar) when the page was last purged or null
+     *    if the page does not exist
+     *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the 
+     *    page does not exist
+     *  <li><b>size</b>: (Integer) the size of the page or -1 if the page does
+     *    not exist
+     *  <li><b>timestamp</b>: (Calendar) when this method was called
+     *  <li><b>watchtoken</b>: (String) watchlist token or null if logged out
+     *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
+     *  </ul>
+     *
      *  @param pages the pages to get info for.
      *  @return (see above). The HashMaps will come out in the same order as the
      *  processed array.
@@ -5574,18 +5608,19 @@ public class Wiki implements Serializable
         /**
          *  Gets various properties of this user. Groups and rights are cached
          *  for the current logged in user. Returns:
-         *  <pre>
-         *  {
-         *      "editcount" => 150000,                                // {@link #countEdits() the user's edit count} (int)
-         *      "groups"    => { "users", "autoconfirmed", "sysop" }, // the groups the user is in (String[])
-         *      "rights"    => { "edit", "read", "block", "email"},   // the stuff the user can do (String[])
-         *      "emailable" => true,                                  // whether the user can be emailed through
-         *                                                            // [[Special:Emailuser]] or emailUser() (boolean)
-         *      "blocked"   => false,                                 // whether the user is blocked (boolean)
-         *      "gender"    => Gender.MALE                            // the user's gender (Gender)
-         *      "created"   => 20060101000000                         // when the user account was created (Calendar)
-         *  }
-         *  </pre>
+         *  <ul>
+         *  <li><b>editcount</b>: (int) {@link #countEdits() the user's edit 
+         *    count
+         *  <li><b>groups</b>: (String[]) the groups the user is in (see
+         *    [[Special:Listgrouprights]])
+         *  <li><b>rights</b>: (String[]) the stuff the user can do
+         *  <li><b>emailable</b>: (Boolean) whether the user can be emailed 
+         *    through [[Special:Emailuser]] or emailUser()
+         *  <li><b>blocked</b>: (Boolean) whether the user is blocked
+         *  <li><b>gender</b>: (Wiki.Gender) the user's gender
+         *  <li><b>created</b>: (Calendar) when the user account was created
+         *  </ul>
+         * 
          *  @return (see above)
          *  @throws IOException if a network error occurs
          *  @since 0.24
@@ -6988,14 +7023,13 @@ public class Wiki implements Serializable
     // calendar/timestamp methods
 
     /**
-     *  Creates a Calendar object with the current time. Wikimedia wikis use
-     *  UTC, override this if your wiki is in another timezone.
+     *  Creates a Calendar object with the current time. Wikimedia wikis use UTC.
      *  @return see above
      *  @since 0.26
      */
     public Calendar makeCalendar()
     {
-        return new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+        return new GregorianCalendar(TimeZone.getTimeZone(timezone));
     }
 
     /**

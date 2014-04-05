@@ -196,11 +196,13 @@ public class WikiUnitTest
     }
     
     @Test
-    public void isUsingCapitalLinks() throws Exception
+    public void getSiteInfo() throws Exception
     {
-        assertTrue("caplinks: enwiki", enWiki.isUsingCapitalLinks());
-        Wiki enwikt = new Wiki("en.wiktionary.org");
-        assertFalse("caplinks: enwiktionary", enwikt.isUsingCapitalLinks());
+        HashMap<String, Object> info = enWiki.getSiteInfo();
+        assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
+        assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
+        info = new Wiki("en.wiktionary.org").getSiteInfo();
+        assertFalse("siteinfo: caplinks false", (Boolean)info.get("usingcapitallinks"));
     }
     
     @Test
