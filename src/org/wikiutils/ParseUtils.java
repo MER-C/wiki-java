@@ -276,6 +276,7 @@ public class ParseUtils
                 for (i = 0; i < f.size(); i++)
                 {
                         String s = f.get(i);
+                        s = removeCommentsAndNoWikiText(s);
                         if ((countOccurrences(s, "{{") != countOccurrences(s, "}}") || countOccurrences(
                                         s, "[[") != countOccurrences(s, "]]")) && i != f.size()-1)
                         {

@@ -6193,7 +6193,7 @@ public class Wiki implements Serializable
         {
             if (!(o instanceof Revision))
                 return false;
-            return toString().equals(o.toString());
+            return revid == ((Revision)o).revid;
         }
 
         /**
