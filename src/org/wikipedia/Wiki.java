@@ -428,7 +428,7 @@ public class Wiki implements Serializable
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
     private transient int statusinterval = 100; // status check
-    private String useragent = "Wiki.java " + version;
+    private String useragent = "Wiki.java " + version + "(https://code.google.com/p/wiki-java/)";
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
     private boolean resolveredirect = false;
@@ -2116,8 +2116,8 @@ public class Wiki implements Serializable
             if (plcontinue == null)
                 line = fetch(url.toString(), "getLinksOnPage");
             else
-                line = fetch(url.toString() + "&plcontinue=" + plcontinue, "getLinksOnPage");
-            plcontinue = URLEncoder.encode(parseAttribute(line, "plcontinue", 0), "UTF-8");
+                line = fetch(url.toString() + "&plcontinue=" + URLEncoder.encode(plcontinue, "UTF-8"), "getLinksOnPage");
+            plcontinue = parseAttribute(line, "plcontinue", 0);
             
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<pl "); a > 0; a = line.indexOf("<pl ", ++a))
@@ -2956,9 +2956,9 @@ public class Wiki implements Serializable
         // to make sense of any resulting errors.
         StringBuilder buffer = new StringBuilder(10000);
         buffer.append("title=");
-        buffer.append(revision.getPage());
+        buffer.append(URLEncoder.encode(normalize(revision.getPage()), "UTF-8"));
         buffer.append("&user=");
-        buffer.append(revision.getUser());
+        buffer.append(URLEncoder.encode(normalize(revision.getUser()), "UTF-8"));
         buffer.append("&token=");
         buffer.append(token);
         if (bot && user.isAllowedTo("markbotedits"))
