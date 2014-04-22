@@ -276,9 +276,9 @@ public class ParseUtils
                 for (i = 0; i < f.size(); i++)
                 {
                         String s = f.get(i);
-                        s = removeCommentsAndNoWikiText(s);
-                        if ((countOccurrences(s, "{{") != countOccurrences(s, "}}") || countOccurrences(
-                                        s, "[[") != countOccurrences(s, "]]")) && i != f.size()-1)
+                        String test = removeCommentsAndNoWikiText(s); //we use another variable to not change the template content
+                        if ((countOccurrences(test, "{{") != countOccurrences(test, "}}") || countOccurrences(
+                             test, "[[") != countOccurrences(test, "]]")) && i != f.size() - 1)
                         {
                                 s += "|" + f.get(i+1);
                                 f.remove(i);
