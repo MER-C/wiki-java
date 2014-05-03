@@ -6989,7 +6989,10 @@ public class Wiki implements Serializable
                 cookie = cookie.substring(0, cookie.indexOf(';'));
                 String name = cookie.substring(0, cookie.indexOf('='));
                 String value = cookie.substring(cookie.indexOf('=') + 1, cookie.length());
-                cookies.put(name, value);
+                // these cookies were pruned, but are still sent for some reason?
+                // TODO: when these cookies are no longer sent, remove this test
+                if (!value.equals("deleted"))
+                    cookies.put(name, value);
             }
     }
 
