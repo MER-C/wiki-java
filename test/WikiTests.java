@@ -56,15 +56,16 @@ public class WikiTests
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq", null, null, true))
             System.out.println(rev);
-
+*/
         // getPageInfo(): protected, cascade protected page
-        HashMap<String, Object> blah = enWiki.getPageInfo("Main Page");
+        HashMap<String, Object> blah = enWiki.getPageInfo(" Main  Page ");
         for(Map.Entry<String, Object> entry : blah.entrySet())
         {
             System.out.print(entry.getKey());
             System.out.print(" => ");
             System.out.println(entry.getValue());
         }
+        /*
         System.out.println();
         // getPageInfo(): protected, deleted page
         blah = enWiki.getPageInfo("Create a new page");

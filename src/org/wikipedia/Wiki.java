@@ -602,7 +602,7 @@ public class Wiki implements Serializable
     @Deprecated
     public boolean isUsingCapitalLinks() throws IOException
     {
-        return (Boolean)getSiteInfo().get("usingCapitalLinks");
+        return (Boolean)getSiteInfo().get("usingcapitallinks");
     }
     
     /**
@@ -6898,7 +6898,8 @@ public class Wiki implements Serializable
             }
         }
         // https://www.mediawiki.org/wiki/Unicode_normalization_considerations
-        return Normalizer.normalize(new String(temp), Normalizer.Form.NFC);
+        String temp2 = new String(temp).trim().replaceAll("\\s+", " ");
+        return Normalizer.normalize(temp2, Normalizer.Form.NFC);
     }
     
     /**
