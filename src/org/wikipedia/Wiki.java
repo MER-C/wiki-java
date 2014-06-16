@@ -33,7 +33,7 @@ import javax.security.auth.login.*;
  *  Requires JDK 1.6 (6.0) or greater. Uses the <a
  *  href="https://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for 
  *  most operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.20), otherwise some functions may not work.
+ *  of MediaWiki (1.23), otherwise some functions may not work.
  *  <p>
  *  Extended documentation is available <a href="https://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. 
  *  All wikilinks are relative to the English Wikipedia and all timestamps are in
@@ -1496,7 +1496,7 @@ public class Wiki implements Serializable
      *  @param number the section number of the section to retrieve text for
      *  @return the text of the given section
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if the page has less than <tt>number</tt>
+     *  @throws UnknownError if the page has less than <tt>number</tt>
      *  sections
      *  @since 0.24
      */
@@ -1508,8 +1508,9 @@ public class Wiki implements Serializable
         url.append("&rvsection=");
         url.append(number);
         String text = fetch(url.toString(), "getSectionText");
-        if (text.contains("code=\"rvnosuchsection\""))
-            throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
+        // This is currently broken because fetch() intercepts the API error.
+        // if (text.contains("code=\"rvnosuchsection\""))
+        //    throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         // if the section does not contain any text, <rev xml:space=\"preserve\"> 
         // will not have a separate closing tag
         if (!text.contains("</rev>"))
@@ -2535,8 +2536,8 @@ public class Wiki implements Serializable
      *  @param prefix a prefix
      *  @return (see above)
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot view deleted pages'
-     *  @since 0.30
+     *  @throws CredentialNotFoundException if we cannot view deleted pages
+     *  @since 0.31
      */
     public String[] deletedPrefixIndex(String prefix) throws IOException, CredentialNotFoundException
     {
