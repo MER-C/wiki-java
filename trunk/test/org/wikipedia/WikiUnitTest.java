@@ -172,7 +172,8 @@ public class WikiUnitTest
         }
         catch (IllegalArgumentException ex)
         {
-            // the expected result
+            // the expected result. This is currently broken because fetch
+            // intercepts the API error.
         }
         catch (Throwable ex)
         {
