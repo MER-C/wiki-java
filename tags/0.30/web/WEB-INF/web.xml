@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+    <description>Blah</description>
+    <display-name>Some Wikipedia related tools</display-name>
+    <servlet>
+        <servlet-name>Linksearch</servlet-name>
+        <servlet-class>org.wikipedia.servlets.XWikiLinksearch</servlet-class>
+    </servlet>
+    <servlet>
+        <description>Image contribution surveyor</description>
+        <servlet-name>ImageCCI</servlet-name>
+        <servlet-class>org.wikipedia.servlets.ImageCCI</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>SpamArchiveSearch</servlet-name>
+        <servlet-class>org.wikipedia.servlets.SpamArchiveSearch</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>PrefixContribs</servlet-name>
+        <servlet-class>org.wikipedia.servlets.PrefixContribs</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Linksearch</servlet-name>
+        <url-pattern>/linksearch.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ImageCCI</servlet-name>
+        <url-pattern>/imagecci.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SpamArchiveSearch</servlet-name>
+        <url-pattern>/spamarchivesearch.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>PrefixContribs</servlet-name>
+        <url-pattern>/prefixcontribs.jsp</url-pattern>
+    </servlet-mapping>
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+</web-app>
