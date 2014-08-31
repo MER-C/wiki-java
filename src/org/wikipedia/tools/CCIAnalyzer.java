@@ -22,7 +22,6 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.util.*;
 import java.net.*;
-import java.util.logging.*;
 import java.util.zip.*;
 import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
@@ -34,39 +33,41 @@ import org.wikipedia.Wiki;
  */
 public class CCIAnalyzer
 {
-
     /**
-     * @param args the command line arguments
+     *  Runs this program.
+     *  @param args the command line arguments
+     *  args[0] = wiki page to read (optional)
+     *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {
-        //if (args.length < 1)
-        //{
-        //    System.out.println("First argument must be the CCI page to analyse.");
-        //    System.exit(1);
-        //}
         Wiki enWiki = new Wiki("en.wikipedia.org");
-        // StringBuilder cci = new StringBuilder(enWiki.getPageText("User:MER-C/Sandbox"));
-        StringBuilder cci = new StringBuilder();
-        JFileChooser fc = new JFileChooser();
-        BufferedReader in = null;
-        if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
-            in = new BufferedReader(new FileReader(fc.getSelectedFile()));
-        else
-            System.exit(0);
-        String line;
-        while ((line = in.readLine()) != null)
+        StringBuilder cci;
+        if (args.length < 1)
         {
-            cci.append(line);
-            cci.append("\n");
+            // read in from file
+            JFileChooser fc = new JFileChooser();
+            if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+                System.exit(0);      
+            BufferedReader in = new BufferedReader(new FileReader(fc.getSelectedFile()));
+            String line;
+            cci = new StringBuilder();
+            while ((line = in.readLine()) != null)
+            {
+                cci.append(line);
+                cci.append("\n");
+            }
         }
+        else
+            // or read in from supplied wiki page
+            cci = new StringBuilder(enWiki.getPageText(args[0]));
         
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
-        String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;";
-        String diffaddedend = "&lt;/td&gt;";
-        String deltabegin = "&lt;span class=&quot;diffchange diffchange-inline&quot;&gt;";
-        String deltaend = "&lt;/span&gt;";
+        String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;"; // <td class="diff-addedline">
+        String diffaddedend = "&lt;/td&gt;"; // </td>
+        String deltabegin = "&lt;ins "; // <ins 
+        String deltaend = "&lt;/ins&gt;"; // </ins>
         
         // parse the list of diffs
         ArrayList<String> minoredits = new ArrayList<String>(500);
@@ -139,17 +140,15 @@ public class CCIAnalyzer
         StringBuilder temp = new StringBuilder(delta);
         for (int i = temp.indexOf("[["); i > 0; i = temp.indexOf("[["))
         {
-            // this takes a number of shortcuts
-            // this is why manual inspection is still necessary
             int j = temp.indexOf("]]", i);
             if (j < 0) // unbalanced brackets
                 return true;
             int k = temp.indexOf("|", i);
-            temp.delete(j, j + 2);
+            temp.delete(j, j + 2); // ]] => empty string
             if (k < j && k > 0)
-                temp.delete(i, k + 1);
+                temp.delete(i, k + 1); // [[Blah de blah| => empty string
             else
-                temp.delete(i, i + 2);
+                temp.delete(i, i + 2); // [[ => empty string
         }
         
         // decode() the delta
