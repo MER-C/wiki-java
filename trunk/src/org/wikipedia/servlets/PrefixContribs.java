@@ -58,6 +58,7 @@ public class PrefixContribs extends HttpServlet
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
+    @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
         if (ServletUtils.checkBlacklist(request, response))
@@ -113,6 +114,8 @@ public class PrefixContribs extends HttpServlet
     
     /**
      *  Main for testing/offline stuff. Pipe the output to a HTML file.
+     *  @param args the command line arguments (none expected)
+     *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {

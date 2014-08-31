@@ -1379,7 +1379,7 @@ public class Wiki implements Serializable
         if (!namespaces.containsKey(namespace))
             return MAIN_NAMESPACE; // For titles like UN:NRV
         else
-            return namespaces.get(namespace).intValue();
+            return namespaces.get(namespace);
     }
 
     /**
@@ -2532,21 +2532,28 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Returns all deleted pages that begin with the given prefix.
-     *  @param prefix a prefix
+     *  Returns all deleted pages that begin with the given prefix. WARNING:
+     *  this does not behave like [[Special:Prefixindex]]. See [[Special:Undelete]]
+     *  with no arguments.
+     *  
+     *  @param prefix a prefix without a namespace specifier, empty string
+     *  lists all deleted pages in the namespace.
+     *  @param namespace a namespace
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot view deleted pages
      *  @since 0.31
      */
-    public String[] deletedPrefixIndex(String prefix) throws IOException, CredentialNotFoundException
+    public String[] deletedPrefixIndex(int namespace, String prefix) throws IOException, CredentialNotFoundException
     {
         if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("list=deletedrevs&drprefix=");
+        url.append("list=deletedrevs&drlimit=max&drunique=1&drprefix=");
         url.append(URLEncoder.encode(prefix, "UTF-8"));
+        url.append("&drnamespace=");
+        url.append(namespace);
         throw new UnsupportedOperationException("Not implemented yet.");
     }
     
