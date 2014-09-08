@@ -4483,6 +4483,7 @@ public class Wiki implements Serializable
      *
      *  @param name the name of the category
      *  @param subcat do you want to return members of sub-categories also? (default: false)
+     *  Recursion is limited to a depth of one.
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
@@ -4527,7 +4528,7 @@ public class Wiki implements Serializable
                 // fetch subcategories
                 boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
                 if (subcat && iscat)
-                    members.addAll(Arrays.asList(getCategoryMembers(member, true, ns)));
+                    members.addAll(Arrays.asList(getCategoryMembers(member, false, ns)));
                 
                 // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
                 if (!subcat || !nocat || !iscat)
@@ -4843,7 +4844,7 @@ public class Wiki implements Serializable
      *  one.
      *  @param target the target of the action. Use "" not to specify one.
      *  @param namespace filters by namespace. Returns empty if namespace
-     *  doesn't exist.
+     *  doesn't exist. Use ALL_NAMESPACES to not specify one.
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if start &lt; end or amount &lt; 1
      *  @return the specified log entries
@@ -4859,7 +4860,7 @@ public class Wiki implements Serializable
         // check for amount
         if (amount < 1)
             throw new IllegalArgumentException("Tried to retrieve less than one log entry!");
-        url.append(amount > max || namespace != ALL_NAMESPACES ? max : amount);
+        url.append(amount > max ? max : amount);
         
         // log type
         if (!log.equals(ALL_LOGS))
@@ -4877,16 +4878,18 @@ public class Wiki implements Serializable
                 url.append(action);
             }      
         }
-
-        // check for user parameter
+        
+        if (namespace != ALL_NAMESPACES)
+        {
+            url.append("&lenamespace=");
+            url.append(namespace);
+        }
         if (user != null)
         {
             url.append("&leuser=");
              // should already be normalized since we have a User object
             url.append(URLEncoder.encode(user.getUsername(), "UTF-8"));
         }
-
-        // check for target
         if (!target.isEmpty())
         {
             url.append("&letitle=");
@@ -4899,7 +4902,7 @@ public class Wiki implements Serializable
         {
             if (end != null && start.before(end)) //aargh
                 throw new IllegalArgumentException("Specified start date is before specified end date!");
-            lestart = calendarToTimestamp(start).toString();
+            lestart = calendarToTimestamp(start);
         }
         if (end != null)
         {
@@ -4923,12 +4926,8 @@ public class Wiki implements Serializable
                 int b = line.indexOf("><item", a);
                 if (b < 0) // last entry
                     b = line.length();
-                LogEntry entry = parseLogEntry(line.substring(a, b));
+                entries.add(parseLogEntry(line.substring(a, b)));
                 line = line.substring(b);
-
-                // namespace processing
-                if (namespace == ALL_NAMESPACES || namespace(entry.getTarget()) == namespace)
-                    entries.add(entry);
             }
         }
         while (entries.size() < amount && lestart != null);
