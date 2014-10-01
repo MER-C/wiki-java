@@ -2538,23 +2538,42 @@ public class Wiki implements Serializable
      *  
      *  @param prefix a prefix without a namespace specifier, empty string
      *  lists all deleted pages in the namespace.
-     *  @param namespace a namespace
+     *  @param namespace one (and only one) namespace
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot view deleted pages
      *  @since 0.31
      */
-    public String[] deletedPrefixIndex(int namespace, String prefix) throws IOException, CredentialNotFoundException
+    public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException, CredentialNotFoundException
     {
         if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("list=deletedrevs&drlimit=max&drunique=1&drprefix=");
+        // drdir also reverses sort order for some reason
+        url.append("list=deletedrevs&drlimit=max&drunique=1&drdir=newer&drprefix=");
         url.append(URLEncoder.encode(prefix, "UTF-8"));
         url.append("&drnamespace=");
         url.append(namespace);
-        throw new UnsupportedOperationException("Not implemented yet.");
+        
+        String drcontinue = null;
+        ArrayList<String> pages = new ArrayList<String>();
+        do
+        {
+            String text;
+            if (drcontinue == null)
+                text = fetch(url.toString(), "deletedPrefixIndex");
+            else
+                text = fetch(url.toString() + "&drcontinue=" + URLEncoder.encode(drcontinue, "UTF-8"), "deletedPrefixIndex");
+            drcontinue = parseAttribute(text, drcontinue, 0);
+
+            for (int x = text.indexOf("<page ", 0); x > 0; x = text.indexOf("<page ", ++x))
+                pages.add(parseAttribute(text, "title", x));
+        }
+        while (drcontinue != null);
+        int size = pages.size();
+        log(Level.INFO, "deletedPrefixIndex", "Successfully retrieved deleted page list (" + size + " items).");
+        return pages.toArray(new String[size]);
     }
     
     /**
@@ -2619,8 +2638,7 @@ public class Wiki implements Serializable
      *  be an admin to do this, otherwise this will be ignored.
      *  @param movetalk move the talk page as well (if applicable)
      *  @throws UnsupportedOperationException if the original page is in the
-     *  Category or Image namespace. MediaWiki does not support moving of
-     *  these pages.
+     *  Category namespace. MediaWiki does not support moving of these pages.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @throws CredentialExpiredException if cookies have expired
@@ -2640,11 +2658,9 @@ public class Wiki implements Serializable
         }
 
         // check namespace
-        int ns = namespace(title);
-        if (ns == FILE_NAMESPACE || ns == CATEGORY_NAMESPACE)
-            throw new UnsupportedOperationException("Tried to move a category/image.");
-        // TODO: image renaming? TEST ME (MediaWiki, that is).
-
+        if (namespace(title) == CATEGORY_NAMESPACE)
+            throw new UnsupportedOperationException("Tried to move a category.");
+        
         // protection and token
         HashMap info = getPageInfo(title);
         // determine whether the page exists
@@ -3047,11 +3063,11 @@ public class Wiki implements Serializable
         out.append(revisions[revisions.length - 1].getRevid());
         out.append("&token=");
         out.append(URLEncoder.encode(deltoken, "UTF-8"));
-        if (user.isAllowedTo("suppressrevision"))
+        if (user.isAllowedTo("suppressrevision") && suppress != null)
         {
-            if (suppress == Boolean.TRUE)
+            if (suppress)
                 out.append("&suppress=yes");
-            else if (suppress == Boolean.FALSE)
+            else
                 out.append("&suppress=no");
         }
         // this is really stupid... I'm open to suggestions
@@ -3955,7 +3971,10 @@ public class Wiki implements Serializable
         ArrayList<Revision> revisions = new ArrayList<Revision>(7500);
         String uccontinue = "", ucstart = "";
         if (start != null)
-            ucstart = "&ucstart=" + calendarToTimestamp(start);
+        {
+            temp.append("&ucstart=");
+            temp.append(calendarToTimestamp(start));
+        }
 
         // fetch data
         do
@@ -3965,13 +3984,8 @@ public class Wiki implements Serializable
             // set offset parameter
             if (line.contains("uccontinue"))
                 uccontinue = "&uccontinue=" + URLEncoder.encode(parseAttribute(line, "uccontinue", 0), "UTF-8");
-            else if (line.contains("ucstart"))
-                ucstart = "&ucstart=" + parseAttribute(line, "ucstart", 0);
             else
-            {
                 uccontinue = null; // depleted list
-                ucstart = null;
-            }
             
             // xml form: <item user="Wizardman" ... size="59460" />
             for (int a = line.indexOf("<item "); a > 0; a = line.indexOf("<item ", ++a))
