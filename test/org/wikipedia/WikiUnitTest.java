@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
  */
 public class WikiUnitTest
 {
-    private static Wiki enWiki, deWiki, arWiki;
+    private static Wiki enWiki, deWiki, arWiki, testWiki;
     
     public WikiUnitTest()
     {
@@ -29,6 +29,10 @@ public class WikiUnitTest
         deWiki.setMaxLag(-1);
         arWiki = new Wiki("ar.wikipedia.org");
         arWiki.setMaxLag(-1);
+        // testing grounds for admin stuff
+        testWiki = new Wiki("test.wikipedia.org");
+        org.wikiutils.LoginUtils.guiLogin(testWiki);
+        testWiki.setMaxLag(-1);
     }
     
     @Test
@@ -249,5 +253,28 @@ public class WikiUnitTest
     public void diff() throws Exception
     {
         assertNull("diff: no previous revision", enWiki.getRevision(586849481L).diff(Wiki.PREVIOUS_REVISION));
+    }
+    
+    /**
+     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+     *  @throws Exception if something goes wrong
+     */
+    @Test
+    public void getPageText() throws Exception
+    {
+        String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
+        assertEquals("getPageText", text, "This revision is not deleted!");
+    }
+    
+    /**
+     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+     *  @throws Exception if something goes wrong
+     */
+    @Test
+    public void getDeletedText() throws Exception
+    {
+        // requires admin rights
+        String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
+        assertEquals("getDeletedText", text, "This revision is also deleted!");
     }
 }

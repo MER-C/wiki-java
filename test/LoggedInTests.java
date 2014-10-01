@@ -31,23 +31,27 @@ public class LoggedInTests
 {
     public static void main(String[] args) throws Exception
     {
-/*        
+
         // login
         Wiki wiki = new Wiki("test.wikipedia.org");
         LoginUtils.guiLogin(wiki);
         wiki.setThrottle(5);
-
+  /*   
         // raw watchlist
         for (String page : wiki.getRawWatchlist())
             System.out.println(page);
-
+     
+        // file move
+        wiki.move("File:Test12345.png", "File:Test123456.png", "test12345", true, false, false);
+        wiki.move("File:Test123456.png", "File:Test12345.png", "test123456", true, false, false);
+        
         // email
-        wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
+        //wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
 
         // edit
         wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
         wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
-        
+             
         // watch
         wiki.watch("Main Page", "Blah");
         wiki.unwatch("Main Page", "Blah");
@@ -59,23 +63,26 @@ public class LoggedInTests
         // upload
         wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test4.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]]. ∑∑ƒ∂ß", "hello ∑∑ƒ∂ß");
         
+        ///////////////////////
+        // ADMIN STUFF
+        ///////////////////////
+
+        // deleted revisions
+        for (Wiki.Revision rev : wiki.getDeletedHistory("User:MER-C/UnitTests/Delete"))
+            System.out.println(rev);
+ */              
+        // deleted prefix index
+        for (String page : wiki.deletedPrefixIndex("B", Wiki.MAIN_NAMESPACE))
+            System.out.println(page);
+        
         // logout
         wiki.logout();
-*/
-        ////////////////
-        // ADMIN STUFF
-        ////////////////
+
+        // TODO: move the following to testwiki
         
-        Wiki enWiki = new Wiki("en.wikipedia.org");
-        LoginUtils.guiLogin(enWiki);
-        enWiki.setThrottle(5);
-        
-        // getDeletedText
-        // System.out.println(enWiki.getDeletedText("!!!!"));
-        
-        // deleted revisions
-        // for (Wiki.Revision rev : enWiki.getDeletedHistory("User:Selfimposedvigilance"))
-        //    System.out.println(rev);
+//        Wiki enWiki = new Wiki("en.wikipedia.org");
+//        LoginUtils.guiLogin(enWiki);
+//        enWiki.setThrottle(5);
         
         // deleted contributions
         // for (Wiki.Revision rev : enWiki.deletedContribs("Namkeenvilla"))
@@ -88,9 +95,9 @@ public class LoggedInTests
         //     System.out.println(rev);
         
         // revdelete
-        Wiki.Revision rev = enWiki.getRevision(600296466L);
+        // Wiki.Revision rev = enWiki.getRevision(600296466L);
         // enWiki.revisionDelete(Boolean.TRUE, null, Boolean.TRUE, "Testing", Boolean.TRUE, new Wiki.Revision[] { rev });
         // enWiki.revisionDelete(Boolean.FALSE, null, null, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
-        enWiki.revisionDelete(null, null, Boolean.FALSE, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
+        // enWiki.revisionDelete(null, null, Boolean.FALSE, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
     }
 }

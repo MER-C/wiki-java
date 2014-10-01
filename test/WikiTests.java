@@ -19,7 +19,6 @@
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.*;
 import org.wikipedia.*;
 
 /**
@@ -31,15 +30,12 @@ public class WikiTests
 {
     public static void main(String[] args) throws Exception
     {
-        // setup stuff
-        //Logger wiki = Logger.getLogger("wiki");
-        //wiki.setLevel(Level.ALL);
-        //for (Handler h : wiki.getHandlers())
-        //    h.setLevel(Level.ALL);
         Wiki enWiki = new Wiki("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         Wiki deWiki = new Wiki("de.wikipedia.org");
         deWiki.setMaxLag(-1);
+        Wiki testWiki = new Wiki("test.wikipedia.org");
+        testWiki.setMaxLag(-1);
 /*           
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
@@ -56,7 +52,7 @@ public class WikiTests
         // getPageHistory()
         for(Wiki.Revision rev : enWiki.getPageHistory("A. K. Fazlul Huq", null, null, true))
             System.out.println(rev);
-*/
+
         // getPageInfo(): protected, cascade protected page
         HashMap<String, Object> blah = enWiki.getPageInfo(" Main  Page ");
         for(Map.Entry<String, Object> entry : blah.entrySet())
@@ -65,7 +61,7 @@ public class WikiTests
             System.out.print(" => ");
             System.out.println(entry.getValue());
         }
-        /*
+
         System.out.println();
         // getPageInfo(): protected, deleted page
         blah = enWiki.getPageInfo("Create a new page");
@@ -165,8 +161,6 @@ public class WikiTests
         // Revision.diff
         System.out.println(enWiki.getRevision(473467375L).diff(Wiki.PREVIOUS_REVISION));
 
-        System.out.println(enWiki.getPageText("Main Page"));
-               
         System.out.println(ParserUtils.revisionsToWikitext(enWiki, enWiki.recentChanges(51)));
         System.out.println(ParserUtils.revisionsToHTML(enWiki, enWiki.recentChanges(51)));
 
@@ -232,7 +226,7 @@ public class WikiTests
         for (String cat : enWiki.getCategories("Albert Einstein", true, true))
             System.out.println(cat);
         */
-        for (String s : enWiki.getCategoryMembers("Wikipedia sockpuppets of Scholarscentral", true))
+        for (String s : testWiki.getCategoryMembers("A", true))
             System.out.println(s);
 
     }
