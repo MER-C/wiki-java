@@ -30,7 +30,7 @@ import javax.security.auth.login.*;
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
- *  Requires JDK 1.6 (6.0) or greater. Uses the <a
+ *  Requires JDK 1.7 or greater. Uses the <a
  *  href="https://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for 
  *  most operations. It is recommended that the server runs the latest version
  *  of MediaWiki (1.23), otherwise some functions may not work.
@@ -413,7 +413,7 @@ public class Wiki implements Serializable
     private String timezone = "UTC";
 
     // user management
-    private HashMap<String, String> cookies = new HashMap<String, String>(12);
+    private HashMap<String, String> cookies = new HashMap<>(12);
     private User user;
     private int statuscounter = 0;
 
@@ -624,7 +624,7 @@ public class Wiki implements Serializable
      */
     public HashMap<String, Object> getSiteInfo() throws IOException
     {
-        HashMap<String, Object> ret = new HashMap<String, Object>();
+        HashMap<String, Object> ret = new HashMap<>();
         String line = fetch(query + "action=query&meta=siteinfo", "getSiteInfo");
         wgCapitalLinks = parseAttribute(line, "case", 0).equals("first-letter");
         ret.put("usingcapitallinks", wgCapitalLinks);
@@ -1031,7 +1031,7 @@ public class Wiki implements Serializable
     public HashMap<String, Integer> getSiteStatistics() throws IOException
     {
         String text = fetch(query + "meta=siteinfo&siprop=statistics", "getSiteStatistics");
-        HashMap<String, Integer> ret = new HashMap<String, Integer>(20);
+        HashMap<String, Integer> ret = new HashMap<>(20);
         ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
         ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
         ret.put("files", Integer.parseInt(parseAttribute(text, "images", 0)));
@@ -1155,7 +1155,7 @@ public class Wiki implements Serializable
         // @revised 0.11 to take advantage of Collection.retainAll()
         // @revised 0.14 genericised to all page titles, not just category members
 
-        ArrayList<String> aa = new ArrayList<String>(5000); // silly workaroiund
+        ArrayList<String> aa = new ArrayList<>(5000); // silly workaroiund
         aa.addAll(Arrays.asList(a));
         aa.retainAll(Arrays.asList(b));
         return aa.toArray(new String[aa.size()]);
@@ -1183,7 +1183,7 @@ public class Wiki implements Serializable
      */
     public static String[] relativeComplement(String[] a, String[] b)
     {
-        ArrayList<String> aa = new ArrayList<String>(5000); // silly workaroiund
+        ArrayList<String> aa = new ArrayList<>(5000); // silly workaroiund
         aa.addAll(Arrays.asList(a));
         aa.removeAll(Arrays.asList(b));
         return aa.toArray(new String[aa.size()]);
@@ -1273,7 +1273,7 @@ public class Wiki implements Serializable
             {
                 int x = line.indexOf("</page>", j);
                 String item = line.substring(j, x);
-                HashMap<String, Object> tempmap = new HashMap<String, Object>(15);
+                HashMap<String, Object> tempmap = new HashMap<>(15);
 
                 // does the page exist?
                 boolean exists = !item.contains("missing=\"\"");
@@ -1293,7 +1293,7 @@ public class Wiki implements Serializable
 
                 // parse protection level
                 // expected form: <pr type="edit" level="sysop" expiry="infinity" cascade="" />
-                HashMap<String, Object> protectionstate = new HashMap<String, Object>();
+                HashMap<String, Object> protectionstate = new HashMap<>();
                 for (int z = item.indexOf("<pr "); z > 0; z = item.indexOf("<pr ", ++z))
                 {
                     String type = parseAttribute(item, "type", z);
@@ -1433,7 +1433,7 @@ public class Wiki implements Serializable
     protected void populateNamespaceCache() throws IOException
     {
         String line = fetch(query + "meta=siteinfo&siprop=namespaces", "namespace");
-        namespaces = new HashMap<String, Integer>(30);
+        namespaces = new HashMap<>(30);
         
         // xml form: <ns id="-2" ... >Media</ns> or <ns id="0" ... />
         for (int a = line.indexOf("<ns "); a > 0; a = line.indexOf("<ns ", ++a))
@@ -1755,6 +1755,8 @@ public class Wiki implements Serializable
      *  @param text the text of the new section
      *  @param minor whether the edit should be marked as minor (see
      *  [[Help:Minor edit]])
+     *  @param bot whether to mark the edit as a bot edit (ignored if one does
+     *  not have the necessary permissions)
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1918,7 +1920,7 @@ public class Wiki implements Serializable
             {
                 retry = false;
                 log(Level.WARNING, "undelete", "Exception: " + e.getMessage() + " Retrying...");
-                delete(title, reason);
+                undelete(title, reason, revisions);
             }
             else
             {
@@ -1968,7 +1970,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getImagesOnPage");
 
         // xml form: <im ns="6" title="File:Example.jpg" />
-        ArrayList<String> images = new ArrayList<String>(750);
+        ArrayList<String> images = new ArrayList<>(750);
         for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
             images.add(decode(parseAttribute(line, "title", a)));
         
@@ -2019,7 +2021,7 @@ public class Wiki implements Serializable
 
         // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
         // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
-        ArrayList<String> categories = new ArrayList<String>(750);
+        ArrayList<String> categories = new ArrayList<>(750);
         int a, b; // beginIndex and endIndex
         for ( a = line.indexOf("<cl "); a > 0; a = b )
         {
@@ -2056,7 +2058,7 @@ public class Wiki implements Serializable
         String line = fetch(url.toString(), "getTemplates");
 
         // xml form: <tl ns="10" title="Template:POTD" />
-        ArrayList<String> templates = new ArrayList<String>(750);
+        ArrayList<String> templates = new ArrayList<>(750);
         for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
             templates.add(decode(parseAttribute(line, "title", a)));
         
@@ -2082,7 +2084,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getInterwikiLinks");
 
         // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
-        HashMap<String, String> interwikis = new HashMap<String, String>(750);
+        HashMap<String, String> interwikis = new HashMap<>(750);
         for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
         {
             String language = parseAttribute(line, "lang", a);
@@ -2110,7 +2112,7 @@ public class Wiki implements Serializable
         url.append("prop=links&pllimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String plcontinue = null;
-        ArrayList<String> links = new ArrayList<String>(750);
+        ArrayList<String> links = new ArrayList<>(750);
         do
         {
             String line;
@@ -2145,7 +2147,7 @@ public class Wiki implements Serializable
         url.append("prop=extlinks&ellimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String eloffset = null;
-        ArrayList<String> links = new ArrayList<String>(750);
+        ArrayList<String> links = new ArrayList<>(750);
         do
         {
             String line;
@@ -2193,7 +2195,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getSectionMap");
 
         // xml form: <s toclevel="1" level="2" line="How to nominate" number="1" />
-        LinkedHashMap<String, String> map = new LinkedHashMap<String, String>(30);
+        LinkedHashMap<String, String> map = new LinkedHashMap<>(30);
         for (int a = line.indexOf("<s "); a > 0; a = line.indexOf("<s ", ++a))
         {
             String title = decode(parseAttribute(line, "line", a));
@@ -2340,7 +2342,7 @@ public class Wiki implements Serializable
             url.append(calendarToTimestamp(end));
         }
         String rvcontinue = null;
-        ArrayList<Revision> revisions = new ArrayList<Revision>(1500);
+        ArrayList<Revision> revisions = new ArrayList<>(1500);
 
         // main loop
         do
@@ -2496,7 +2498,7 @@ public class Wiki implements Serializable
             url.append(URLEncoder.encode(title, "UTF-8"));
         }
         String drcontinue = null, drstart = null;
-        ArrayList<Revision> delrevs = new ArrayList<Revision>(500);
+        ArrayList<Revision> delrevs = new ArrayList<>(500);
         do
         {
             String response;
@@ -2557,7 +2559,7 @@ public class Wiki implements Serializable
         url.append(namespace);
         
         String drcontinue = null;
-        ArrayList<String> pages = new ArrayList<String>();
+        ArrayList<String> pages = new ArrayList<>();
         do
         {
             String text;
@@ -2825,7 +2827,7 @@ public class Wiki implements Serializable
      */
     public void unprotect(String page, String reason) throws IOException, LoginException
     {
-        HashMap<String, Object> state = new HashMap<String, Object>();
+        HashMap<String, Object> state = new HashMap<>();
         state.put("edit", NO_PROTECTION);
         state.put("move", NO_PROTECTION);
         if (namespace(page) == FILE_NAMESPACE)
@@ -3397,7 +3399,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
-        HashMap<String, Object> metadata = new HashMap<String, Object>(30);
+        HashMap<String, Object> metadata = new HashMap<>(30);
 
         // size, width, height, mime type
         metadata.put("size", new Integer(parseAttribute(line, "size", 0)));
@@ -3438,7 +3440,7 @@ public class Wiki implements Serializable
             return new String[0];
 
         // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
-        ArrayList<String> duplicates = new ArrayList<String>(10);
+        ArrayList<String> duplicates = new ArrayList<>(10);
         for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
             duplicates.add("File:" + decode(parseAttribute(line, "name", a)));
 
@@ -3466,7 +3468,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getImageHistory");
         if (line.contains("missing=\"\""))
             return new LogEntry[0];
-        ArrayList<LogEntry> history = new ArrayList<LogEntry>(40);
+        ArrayList<LogEntry> history = new ArrayList<>(40);
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
         for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
@@ -3576,7 +3578,7 @@ public class Wiki implements Serializable
             url.append("&aiend=");
             url.append(calendarToTimestamp(end));
         }
-        ArrayList<LogEntry> uploads = new ArrayList<LogEntry>();
+        ArrayList<LogEntry> uploads = new ArrayList<>();
         String aicontinue = null;
         do
         {
@@ -3654,86 +3656,85 @@ public class Wiki implements Serializable
 
         // chunked upload setup
         long filesize = file.length();
-        long chunks = (filesize >> LOG2_CHUNK_SIZE) + 1; 
-        FileInputStream fi = new FileInputStream(file);
+        long chunks = (filesize >> LOG2_CHUNK_SIZE) + 1;
         String filekey = "";
-        
-        // upload the image
-        for (int i = 0; i < chunks; i++)
+        try (FileInputStream fi = new FileInputStream(file))
         {
-            HashMap<String, Object> params = new HashMap<String, Object>(50);
-            params.put("filename", filename);
-            params.put("token", wpEditToken);
-            params.put("ignorewarnings", "true");
-            if (chunks == 1)
+            // upload the image
+            for (int i = 0; i < chunks; i++)
             {
-                // Chunks disabled due to a small filesize.
-                // This is just a normal upload.
-                params.put("text", contents);
-                if (!reason.isEmpty())
-                    params.put("comment", reason);
-                byte[] by = new byte[fi.available()];
-                fi.read(by);
-                // Why this is necessary?
-                params.put("file\"; filename=\"" + file.getName(), by);
-            }
-            else
-            {
-                long offset = i << LOG2_CHUNK_SIZE;
-                params.put("stash", "1");
-                params.put("offset", "" + offset);
-                params.put("filesize", "" + filesize);
-                if (i != 0)
-                    params.put("filekey", filekey);
-                
-                // write the actual file
-                long buffersize = Math.min(1 << LOG2_CHUNK_SIZE, filesize - offset);
-                byte[] by = new byte[(int)buffersize]; // 32 bit problem. Why must array indices be ints?
-                fi.read(by); 
-                params.put("chunk\"; filename=\"" + file.getName(), by);
-                
-                // Each chunk presumably requires a new edit token
-                wpEditToken = (String)getPageInfo("File:" + filename).get("token");
-            }
-                
-            // done
-            String response = multipartPost(apiUrl + "action=upload", params, "upload");
-            try
-            {
-                // look for filekey
-                if (chunks > 1)
+                HashMap<String, Object> params = new HashMap<>(50);
+                params.put("filename", filename);
+                params.put("token", wpEditToken);
+                params.put("ignorewarnings", "true");
+                if (chunks == 1)
                 {
-                    if (response.contains("filekey=\""))
+                    // Chunks disabled due to a small filesize.
+                    // This is just a normal upload.
+                    params.put("text", contents);
+                    if (!reason.isEmpty())
+                        params.put("comment", reason);
+                    byte[] by = new byte[fi.available()];
+                    fi.read(by);
+                    // Why this is necessary?
+                    params.put("file\"; filename=\"" + file.getName(), by);
+                }
+                else
+                {
+                    long offset = i << LOG2_CHUNK_SIZE;
+                    params.put("stash", "1");
+                    params.put("offset", "" + offset);
+                    params.put("filesize", "" + filesize);
+                    if (i != 0)
+                        params.put("filekey", filekey);
+
+                    // write the actual file
+                    long buffersize = Math.min(1 << LOG2_CHUNK_SIZE, filesize - offset);
+                    byte[] by = new byte[(int)buffersize]; // 32 bit problem. Why must array indices be ints?
+                    fi.read(by); 
+                    params.put("chunk\"; filename=\"" + file.getName(), by);
+
+                    // Each chunk presumably requires a new edit token
+                    wpEditToken = (String)getPageInfo("File:" + filename).get("token");
+                }
+
+                // done
+                String response = multipartPost(apiUrl + "action=upload", params, "upload");
+                try
+                {
+                    // look for filekey
+                    if (chunks > 1)
                     {
-                        filekey = parseAttribute(response, "filekey", 0);
-                        continue;
+                        if (response.contains("filekey=\""))
+                        {
+                            filekey = parseAttribute(response, "filekey", 0);
+                            continue;
+                        }
+                        else
+                            throw new IOException("No filekey present! Server response was " + response);
                     }
-                    else
-                        throw new IOException("No filekey present! Server response was " + response);
+                    // TODO: check for more specific errors here
+                    if (response.contains("error code=\"fileexists-shared-forbidden\""))
+                    {
+                        CredentialException ex = new CredentialException("Cannot overwrite file hosted on central repository.");
+                        log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
+                        throw ex;
+                    }
+                    checkErrorsAndUpdateStatus(response, "upload");
                 }
-                // TODO: check for more specific errors here
-                if (response.contains("error code=\"fileexists-shared-forbidden\""))
+                catch (IOException e)
                 {
-                    CredentialException ex = new CredentialException("Cannot overwrite file hosted on central repository.");
-                    log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
-                    throw ex;
+                    // don't bother retrying - uploading is a pain
+                    log(Level.SEVERE, "upload", "EXCEPTION: " + e);
+                    throw e;
                 }
-                checkErrorsAndUpdateStatus(response, "upload");
-            }
-            catch (IOException e)
-            {
-                fi.close();
-                // don't bother retrying - uploading is a pain
-                log(Level.SEVERE, "upload", "EXCEPTION: " + e);
-                throw e;
             }
         }
-        fi.close();
         
         // unstash upload if chunked
         if (chunks > 1)
         {
-            HashMap<String, Object> params = new HashMap<String, Object>(50);
+            HashMap<String, Object> params = new HashMap<>(50);
             params.put("filename", filename);
             params.put("token", wpEditToken);
             params.put("text", contents);
@@ -3821,7 +3822,7 @@ public class Wiki implements Serializable
             url.append("&auprefix=");
             url.append(URLEncoder.encode(normalize(prefix), "UTF-8"));
         }
-        ArrayList<String> members = new ArrayList<String>(6667); // enough for most requests
+        ArrayList<String> members = new ArrayList<>(6667); // enough for most requests
         do
         {
             String temp = url.toString();
@@ -3968,7 +3969,7 @@ public class Wiki implements Serializable
             temp.append("&ucend=");
             temp.append(calendarToTimestamp(end));
         }
-        ArrayList<Revision> revisions = new ArrayList<Revision>(7500);
+        ArrayList<Revision> revisions = new ArrayList<>(7500);
         String uccontinue = "", ucstart = "";
         if (start != null)
         {
@@ -4173,7 +4174,7 @@ public class Wiki implements Serializable
         // set up some things
         String url = query + "list=watchlistraw&wrlimit=max";
         String wrcontinue = null;
-        watchlist = new ArrayList<String>(750);
+        watchlist = new ArrayList<>(750);
         // fetch the watchlist
         do
         {
@@ -4253,7 +4254,7 @@ public class Wiki implements Serializable
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
         
-        ArrayList<Revision> wl = new ArrayList<Revision>(667);
+        ArrayList<Revision> wl = new ArrayList<>(667);
         String wlstart = "";
         do
         {
@@ -4308,7 +4309,7 @@ public class Wiki implements Serializable
 
         // some random variables we need later
         boolean done = false;
-        ArrayList<String[]> results = new ArrayList<String[]>(5000);
+        ArrayList<String[]> results = new ArrayList<>(5000);
 
         // fetch and iterate through the search results
         while (!done)
@@ -4357,7 +4358,7 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "iu", ns);
         
         // fiddle
-        ArrayList<String> pages = new ArrayList<String>(1333);
+        ArrayList<String> pages = new ArrayList<>(1333);
         String next = "";
         do
         {
@@ -4415,7 +4416,7 @@ public class Wiki implements Serializable
             url.append("&blfilterredir=redirects");
 
         // main loop
-        ArrayList<String> pages = new ArrayList<String>(6667); // generally enough
+        ArrayList<String> pages = new ArrayList<>(6667); // generally enough
         String blcontinue = null;
         do
         {
@@ -4456,7 +4457,7 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "ei", ns);
 
         // main loop
-        ArrayList<String> pages = new ArrayList<String>(6667); // generally enough
+        ArrayList<String> pages = new ArrayList<>(6667); // generally enough
         String eicontinue = null;
         do
         {
@@ -4525,7 +4526,7 @@ public class Wiki implements Serializable
         }
         else
             constructNamespaceString(url, "cm", ns);
-        ArrayList<String> members = new ArrayList<String>();
+        ArrayList<String> members = new ArrayList<>();
         String next = "";
         do
         {
@@ -4710,7 +4711,7 @@ public class Wiki implements Serializable
         urlBase.append("&bkstart=");
 
         // connection
-        ArrayList<LogEntry> entries = new ArrayList<LogEntry>(1333);
+        ArrayList<LogEntry> entries = new ArrayList<>(1333);
         do
         {
             String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
@@ -4925,7 +4926,7 @@ public class Wiki implements Serializable
         }
 
         // only now we can actually start to retrieve the logs
-        ArrayList<LogEntry> entries = new ArrayList<LogEntry>(6667); // should be enough
+        ArrayList<LogEntry> entries = new ArrayList<>(6667); // should be enough
         do
         {
             String line = fetch(url.toString() + "&lestart=" + lestart, "getLogEntries");
@@ -5050,7 +5051,7 @@ public class Wiki implements Serializable
             int a = xml.indexOf("new=\"") + 5;
             int b = xml.indexOf('\"', a);
             StringTokenizer tk = new StringTokenizer(xml.substring(a, b), ", ");
-            ArrayList<String> temp = new ArrayList<String>(10);
+            ArrayList<String> temp = new ArrayList<>();
             while (tk.hasMoreTokens())
                 temp.add(tk.nextToken());
             details = temp.toArray(new String[temp.size()]);
@@ -5230,7 +5231,7 @@ public class Wiki implements Serializable
         }
 
         // parse
-        ArrayList<String> pages = new ArrayList<String>(6667);
+        ArrayList<String> pages = new ArrayList<>(6667);
         String next = "";
         do
         {
@@ -5285,7 +5286,7 @@ public class Wiki implements Serializable
         
         String url = query + "action=query&list=querypage&qplimit=max&qppage=" + page + "&qpcontinue=";
         String offset = "";
-        ArrayList<String> pages = new ArrayList<String>(1333);
+        ArrayList<String> pages = new ArrayList<>(1333);
         
         do
         {
@@ -5465,7 +5466,7 @@ public class Wiki implements Serializable
         // fetch, parse
         url.append("&rcstart=");
         String rcstart = calendarToTimestamp(makeCalendar());
-        ArrayList<Revision> revisions = new ArrayList<Revision>(750);
+        ArrayList<Revision> revisions = new ArrayList<>(750);
         do
         {
             String temp = url.toString();
@@ -5566,7 +5567,7 @@ public class Wiki implements Serializable
         url.append("&iwblprop=iwtitle%7Ciwprefix");
 
         String iwblcontinue = "";
-        ArrayList<String[]> links = new ArrayList<String[]>(500);
+        ArrayList<String[]> links = new ArrayList<>(500);
         do
         {
             String line;
@@ -5650,7 +5651,7 @@ public class Wiki implements Serializable
         {
             String info = fetch(query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers="
                 + URLEncoder.encode(username, "UTF-8"), "getUserInfo");
-            HashMap<String, Object> ret = new HashMap<String, Object>(10);
+            HashMap<String, Object> ret = new HashMap<>(10);
 
             ret.put("blocked", info.contains("blockedby=\""));
             ret.put("emailable", info.contains("emailable=\""));
@@ -5659,7 +5660,7 @@ public class Wiki implements Serializable
             ret.put("created", timestampToCalendar(parseAttribute(info, "registration", 0), true));
             
             // groups
-            ArrayList<String> temp = new ArrayList<String>(50);
+            ArrayList<String> temp = new ArrayList<>();
             for (int x = info.indexOf("<g>"); x > 0; x = info.indexOf("<g>", ++x))
             {
                 int y = info.indexOf("</g>", x);
@@ -5796,6 +5797,7 @@ public class Wiki implements Serializable
 
         /**
          *  Tests whether this user is equal to another one.
+         *  @param x another object
          *  @return whether the users are equal
          *  @since 0.08
          */
@@ -6566,17 +6568,19 @@ public class Wiki implements Serializable
         }
 
         // get the text
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-        String line;
-        StringBuilder text = new StringBuilder(100000);
-        while ((line = in.readLine()) != null)
+        String temp;
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
         {
-            text.append(line);
-            text.append("\n");
+            String line;
+            StringBuilder text = new StringBuilder(100000);
+            while ((line = in.readLine()) != null)
+            {
+                text.append(line);
+                text.append("\n");
+            }
+            temp = text.toString();
         }
-        in.close();
-        String temp = text.toString();
         if (temp.contains("<error code="))
         {
             // assertions
@@ -6614,20 +6618,22 @@ public class Wiki implements Serializable
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         connection.connect();
-        OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-        out.write(text);
-        out.close();
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-        grabCookies(connection);
-        String line;
-        StringBuilder temp = new StringBuilder(100000);
-        while ((line = in.readLine()) != null)
+        try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
         {
-            temp.append(line);
-            temp.append("\n");
+            out.write(text);
         }
-        in.close();
+        StringBuilder temp = new StringBuilder(100000);
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
+        {
+            grabCookies(connection);
+            String line;
+            while ((line = in.readLine()) != null)
+            {
+                temp.append(line);
+                temp.append("\n");
+            }
+        }
         return temp.toString();
     }
     
@@ -6659,49 +6665,52 @@ public class Wiki implements Serializable
         
         // write stuff to a local buffer
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        DataOutputStream out = new DataOutputStream(bout);
-        out.writeBytes(boundary);
-        
-        // write params
-        for (Map.Entry<String, ?> entry : params.entrySet())
+        try (DataOutputStream out = new DataOutputStream(bout))
         {
-            String name = entry.getKey();
-            Object value = entry.getValue();
-            out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
-            if (value instanceof String)
-            {
-                out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-                out.write(((String)value).getBytes("UTF-8"));
-            }
-            else if (value instanceof byte[])
-            {
-                out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
-                out.write((byte[])value);
-            }
-            else
-                throw new UnsupportedOperationException("Unrecognized data type");
-            out.writeBytes("\r\n");
             out.writeBytes(boundary);
+
+            // write params
+            for (Map.Entry<String, ?> entry : params.entrySet())
+            {
+                String name = entry.getKey();
+                Object value = entry.getValue();
+                out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
+                if (value instanceof String)
+                {
+                    out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+                    out.write(((String)value).getBytes("UTF-8"));
+                }
+                else if (value instanceof byte[])
+                {
+                    out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
+                    out.write((byte[])value);
+                }
+                else
+                    throw new UnsupportedOperationException("Unrecognized data type");
+                out.writeBytes("\r\n");
+                out.writeBytes(boundary);
+            }
+            out.writeBytes("--\r\n");
         }
-        out.writeBytes("--\r\n");
-        out.close();
-        // write the buffer to the URLConnection
-        OutputStream uout = connection.getOutputStream();
-        uout.write(bout.toByteArray());
-        uout.close();
+        try (OutputStream uout = connection.getOutputStream())
+        {
+            // write the buffer to the URLConnection
+            uout.write(bout.toByteArray());
+        }
 
         // done, read the response
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8"));
-        grabCookies(connection);
-        String line;
         StringBuilder temp = new StringBuilder(100000);
-        while ((line = in.readLine()) != null)
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+            zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
         {
-            temp.append(line);
-            temp.append("\n");
+            grabCookies(connection);
+            String line;
+            while ((line = in.readLine()) != null)
+            {
+                temp.append(line);
+                temp.append("\n");
+            }
         }
-        in.close();
         return temp.toString();
     }
 
