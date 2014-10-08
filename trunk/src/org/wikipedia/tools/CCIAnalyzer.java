@@ -70,7 +70,7 @@ public class CCIAnalyzer
         String deltaend = "&lt;/ins&gt;"; // </ins>
         
         // parse the list of diffs
-        ArrayList<String> minoredits = new ArrayList<String>(500);
+        ArrayList<String> minoredits = new ArrayList<>(500);
         for (int i = cci.indexOf("{{dif|"); i > 0; i = cci.indexOf("{{dif|", ++i))
         {
             int x = cci.indexOf("}}", i);
@@ -84,6 +84,7 @@ public class CCIAnalyzer
             // We don't use the Wiki.java method here, this avoids an extra query.
             String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
             // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
+            diff = diff.toLowerCase();
             diff = diff.replace(deltaend + " " + deltabegin, " ");
             // If the diff is empty (see https://en.wikipedia.org/w/index.php?diff=343490272)
             // it will not contain diffaddedbegin -> default major to true.
@@ -136,7 +137,21 @@ public class CCIAnalyzer
      */
     public static boolean analyzeDelta(String delta)
     {
-        // remove wikilinks
+        // remove some common strings
+        if (delta.contains("please do not remove or change this afd message until the issue is settled"))
+            return false;
+        if (delta.contains("end of afd message, feel free to edit beyond this point"))
+            return false;
+        if (delta.contains("{{afdm|"))
+            return false;
+        if (delta.contains("{{proposed deletion/dated|"))
+            return false;
+        if (delta.contains("{{prod blp/dated|"))
+            return false;
+        if (delta.contains("{{infobox "))
+            return false;
+        
+        // remove wikilinks and files
         StringBuilder temp = new StringBuilder(delta);
         for (int i = temp.indexOf("[["); i > 0; i = temp.indexOf("[["))
         {
@@ -177,16 +192,17 @@ public class CCIAnalyzer
         connection.connect();
 
         // get the text
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-            new GZIPInputStream(connection.getInputStream())));
-        String line;
         StringBuilder text = new StringBuilder(100000);
-        while ((line = in.readLine()) != null)
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+            new GZIPInputStream(connection.getInputStream()))))
         {
-            text.append(line);
-            text.append("\n");
+            String line;
+            while ((line = in.readLine()) != null)
+            {
+                text.append(line);
+                text.append("\n");
+            }
         }
-        in.close();
         String temp = text.toString();
         if (temp.contains("<error code="))
             // Something *really* bad happened. Most of these are self-explanatory
