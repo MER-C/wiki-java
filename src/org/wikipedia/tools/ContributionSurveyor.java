@@ -47,7 +47,7 @@ public class ContributionSurveyor
         String category = null;
 
         // parse arguments
-        ArrayList<String> users = new ArrayList<String>(1500);
+        ArrayList<String> users = new ArrayList<>(1500);
         for (int i = 0; i < args.length; i++)
         {
             String arg = args[i];
@@ -193,7 +193,7 @@ public class ContributionSurveyor
             // survey mainspace edits
             if (images || userspace)
                 out.write("====Mainspace edits (" + user + ")====");
-            HashMap<String, StringBuilder> diffs = new HashMap<String, StringBuilder>(60);
+            HashMap<String, StringBuilder> diffs = new HashMap<>(60);
             for (Wiki.Revision revision : contribs)
             {
                 String title = revision.getPage();
@@ -258,7 +258,7 @@ public class ContributionSurveyor
                 if (uploads.length > 0)
                 {
                     out.write("====Local uploads (" + user + ")====\n");
-                    HashSet<String> list = new HashSet<String>(10000);
+                    HashSet<String> list = new HashSet<>(10000);
                     for (Wiki.LogEntry upload : uploads)
                         list.add(upload.getTarget());
                     out.write(ParserUtils.formatList(list.toArray(new String[list.size()])));
@@ -270,7 +270,7 @@ public class ContributionSurveyor
                 if (uploads.length > 0)
                 {
                     out.write("====Commons uploads (" + user + ")====\n");
-                    HashSet<String> list = new HashSet<String>(10000);
+                    HashSet<String> list = new HashSet<>(10000);
                     for (Wiki.LogEntry upload : uploads)
                         list.add(upload.getTarget());
                     out.write(ParserUtils.formatList(list.toArray(new String[list.size()])));
