@@ -57,7 +57,7 @@ public class WikiUnitTest
     @Test
     public void userExists() throws Exception
     {
-        assertTrue("I should exist!", enWiki.userExists("MER-C"));
+        assertTrue(":I should exist!", enWiki.userExists("MER-C"));
         assertFalse("Anon should not exist", enWiki.userExists("127.0.0.1"));
     }
     
