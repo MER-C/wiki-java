@@ -1125,7 +1125,7 @@ public class Wiki implements Serializable
         url.append("list=random");
         constructNamespaceString(url, "rn", ns);
         String line = fetch(url.toString(), "random");
-        return decode(parseAttribute(line, "title", 0));
+        return parseAttribute(line, "title", 0);
     }
 
     // STATIC MEMBERS
@@ -1310,7 +1310,7 @@ public class Wiki implements Serializable
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
                 }
                 // MediaWiki namespace
-                String parsedtitle = decode(parseAttribute(item, "title", 0));
+                String parsedtitle = parseAttribute(item, "title", 0);
                 if (namespace(parsedtitle) == MEDIAWIKI_NAMESPACE) 		
                 { 		
                     protectionstate.put("edit", FULL_PROTECTION); 		
@@ -1972,7 +1972,7 @@ public class Wiki implements Serializable
         // xml form: <im ns="6" title="File:Example.jpg" />
         ArrayList<String> images = new ArrayList<>(750);
         for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
-            images.add(decode(parseAttribute(line, "title", a)));
+            images.add(parseAttribute(line, "title", a));
         
         int temp = images.size();
         log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + title + " (" + temp + " images)");
@@ -2028,7 +2028,7 @@ public class Wiki implements Serializable
             b = line.indexOf("<cl ", a+1);
             if (ignoreHidden && line.substring(a, (b > 0 ? b : line.length())).contains("hidden"))
                 continue;
-            String category = decode(parseAttribute(line, "title", a));
+            String category = parseAttribute(line, "title", a);
             if (sortkey)
                 category += ("|" + parseAttribute(line, "sortkeyprefix", a));
             categories.add(category);
@@ -2060,7 +2060,7 @@ public class Wiki implements Serializable
         // xml form: <tl ns="10" title="Template:POTD" />
         ArrayList<String> templates = new ArrayList<>(750);
         for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
-            templates.add(decode(parseAttribute(line, "title", a)));
+            templates.add(parseAttribute(line, "title", a));
         
         int size = templates.size();
         log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + title + " (" + size + " templates)");
@@ -2124,7 +2124,7 @@ public class Wiki implements Serializable
             
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<pl "); a > 0; a = line.indexOf("<pl ", ++a))
-                links.add(decode(parseAttribute(line, "title", a)));
+                links.add(parseAttribute(line, "title", a));
         }
         while (plcontinue != null);
         
@@ -2198,7 +2198,7 @@ public class Wiki implements Serializable
         LinkedHashMap<String, String> map = new LinkedHashMap<>(30);
         for (int a = line.indexOf("<s "); a > 0; a = line.indexOf("<s ", ++a))
         {
-            String title = decode(parseAttribute(line, "line", a));
+            String title = parseAttribute(line, "line", a);
             String number = parseAttribute(line, "number", a);
             map.put(number, title);
         }
@@ -2287,7 +2287,7 @@ public class Wiki implements Serializable
             // TODO: look for the <r> tag instead
             for (int j = line.indexOf("<r "); j > 0; j = line.indexOf("<r ", ++j))
             {
-                String parsedtitle = decode(parseAttribute(line, "from", j));
+                String parsedtitle = parseAttribute(line, "from", j);
                 for (int i = 0; i < titles.length; i++)
                     if (normalize(titles[i]).equals(parsedtitle))
                         ret[i] = parseAttribute(line, "to", j);
@@ -2388,7 +2388,7 @@ public class Wiki implements Serializable
      */
     public Revision[] getDeletedHistory(String title) throws IOException, CredentialNotFoundException
     {
-        return deletedRevs("", title, null, null, false, ALL_NAMESPACES);
+        return getDeletedHistory(title, null, null, false);
     }
     
     /**
@@ -2406,7 +2406,58 @@ public class Wiki implements Serializable
     public Revision[] getDeletedHistory(String title, Calendar start, Calendar end, boolean reverse)
         throws IOException, CredentialNotFoundException
     {
-        return deletedRevs("", title, start, end, reverse, ALL_NAMESPACES);
+        // admin queries are annoying
+        if (!user.isAllowedTo("deletedhistory"))
+            throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
+        
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment&drvlimit=max");
+        if (reverse)
+            url.append("&drvdir=newer");
+        if (start != null)
+        {
+            url.append(reverse ? "&drvstart=" : "&drvend=");
+            url.append(calendarToTimestamp(start));
+        }
+        if (end != null)
+        {
+            url.append(reverse ? "&drvend=" : "&drvstart=");
+            url.append(calendarToTimestamp(end));
+        }
+        url.append("&titles=");
+        url.append(URLEncoder.encode(title, "UTF-8"));
+        
+        String drvcontinue = null;
+        ArrayList<Revision> delrevs = new ArrayList<>(500);
+        do
+        {
+            String response;
+            if (drvcontinue != null)
+                response = fetch(url.toString() + "&drvcontinue=" + URLEncoder.encode(drvcontinue, "UTF-8"), "getDeletedHistory");
+            else
+                response = fetch(url.toString(), "getDeletedHistory");
+            drvcontinue = parseAttribute(response, "drvcontinue", 0);
+            
+            // parse
+            int x = response.indexOf("<deletedrevs>");
+            if (x < 0) // no deleted history
+                break;
+            for (x = response.indexOf("<page ", x); x > 0; x = response.indexOf("<page ", ++x))
+            {
+                String deltitle = parseAttribute(response, "title", x);
+                int y = response.indexOf("</page>", x);
+                for (int z = response.indexOf("<rev ", x); z < y && z >= 0; z = response.indexOf("<rev ", ++z))
+                {
+                    int aa = response.indexOf(" />", z);
+                    delrevs.add(parseRevision(response.substring(z, aa), deltitle));
+                }
+            }
+        }
+        while (drvcontinue != null);
+        
+        int size = delrevs.size();
+        log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
+        return delrevs.toArray(new Revision[size]);
     }
     
     /**
@@ -2420,7 +2471,7 @@ public class Wiki implements Serializable
      */
     public Revision[] deletedContribs(String u) throws IOException, CredentialNotFoundException
     {
-        return deletedRevs(u, "", null, null, false, ALL_NAMESPACES);
+        return deletedContribs(u, null, null, false, ALL_NAMESPACES);
     }
     
     /**
@@ -2431,33 +2482,13 @@ public class Wiki implements Serializable
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
      *  first is how history pages work)
-     *  @param namespace ONE namespace or ALL_NAMESPACES
+     *  @param namespace a list of namespaces
      *  @return the deleted contributions of that user
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
      *  @since 0.30
      */
-    public Revision[] deletedContribs(String u, Calendar end, Calendar start, boolean reverse, int namespace)
-        throws IOException, CredentialNotFoundException
-    {
-        return deletedRevs(u, "", end, start, false, namespace);
-    }
-    
-    /**
-     *  Internal list=deletedrevs handler.
-     *  @param u a user (use "" to not specify one)
-     *  @param title a page title
-     *  @param start the EARLIEST of two cutoff dates (use null to not specify one)
-     *  @param end the LATEST of two cutoff dates (use null to not specify one)
-     *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work)
-     *  @param namespace ONE namespace or ALL_NAMESPACES
-     *  @return a list of deleted revisions
-     *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
-     *  @since 0.30
-     */ 
-    protected Revision[] deletedRevs(String u, String title, Calendar start, Calendar end, boolean reverse, int namespace)
+    public Revision[] deletedContribs(String u, Calendar end, Calendar start, boolean reverse, int... namespace)
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
@@ -2465,55 +2496,37 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
         
         StringBuilder url = new StringBuilder(query);
-        url.append("list=deletedrevs&drprop=revid%7Cparentid%7Clen%7Cminor%7Ccomment%7Cuser&drlimit=max");
+        url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment&adrlimit=max");
         if (reverse)
-            url.append("&drdir=newer");
+            url.append("&adrdir=newer");
         if (start != null)
         {
-            url.append(reverse ? "&drstart=" : "&drend=");
+            url.append(reverse ? "&adrstart=" : "&adrend=");
             url.append(calendarToTimestamp(start));
         }
         if (end != null)
         {
-            url.append(reverse ? "&drend=" : "&drstart=");
+            url.append(reverse ? "&adrend=" : "&adrstart=");
             url.append(calendarToTimestamp(end));
         }
-        // get the deleted contributions of a user
-        if (title.isEmpty())
-        {
-            url.append("&druser=");
-            url.append(URLEncoder.encode(u, "UTF-8"));
-            if (namespace != ALL_NAMESPACES)
-            {
-                // the API documentation is wrong here, this query behaves exactly
-                // like [[Special:DeletedContributions]]
-                url.append("&drnamespace=");
-                url.append(namespace);
-            }
-        }
-        // get the deleted history of a page
-        else
-        {
-            url.append("&titles=");
-            url.append(URLEncoder.encode(title, "UTF-8"));
-        }
-        String drcontinue = null, drstart = null;
+        url.append("&adruser=");
+        url.append(URLEncoder.encode(u, "UTF-8"));
+        constructNamespaceString(url, "adr", namespace);
+        
+        String adrcontinue = null;
         ArrayList<Revision> delrevs = new ArrayList<>(500);
         do
         {
             String response;
-            if (drcontinue != null)
-                response = fetch(url.toString() + "&drcontinue=" + URLEncoder.encode(drcontinue, "UTF-8"), "deletedRevs"); // huh?
-            else if (drstart != null)
-                response = fetch(url.toString() + "&drstart=" + drstart, "deletedRevs"); // deleted contributions
+            if (adrcontinue != null)
+                response = fetch(url.toString() + "&adrcontinue=" + URLEncoder.encode(adrcontinue, "UTF-8"), "deletedContribs");
             else
-                response = fetch(url.toString(), "deletedRevs");
-            drcontinue = parseAttribute(response, "drcontinue", 0);
-            drstart = parseAttribute(response, "drstart", 0);
+                response = fetch(url.toString(), "deletedContribs");
+            adrcontinue = parseAttribute(response, "adrcontinue", 0);
             
             // parse
             int x = response.indexOf("<deletedrevs>");
-            if (x < 0) // no deleted history/contributions
+            if (x < 0) // no deleted history
                 break;
             for (x = response.indexOf("<page ", x); x > 0; x = response.indexOf("<page ", ++x))
             {
@@ -2526,7 +2539,7 @@ public class Wiki implements Serializable
                 }
             }
         }
-        while (drcontinue != null || drstart != null);
+        while (adrcontinue != null);
         
         int size = delrevs.size();
         log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
@@ -2548,6 +2561,7 @@ public class Wiki implements Serializable
      */
     public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException, CredentialNotFoundException
     {
+        // this is currently BROKEN
         if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
@@ -3261,17 +3275,17 @@ public class Wiki implements Serializable
 
         // title
         if (title.isEmpty())
-            title = decode(parseAttribute(xml, "title", 0));
+            title = parseAttribute(xml, "title", 0);
 
         // summary
         String summary = null;
         if (xml.contains("comment=\""))
-            summary = decode(parseAttribute(xml, "comment", 0));
+            summary = parseAttribute(xml, "comment", 0);
 
         // user
         String user2 = null;
         if (xml.contains("user=\""))
-            user2 = decode(parseAttribute(xml, "user", 0));
+            user2 = parseAttribute(xml, "user", 0);
 
         // flags: minor, bot, new
         boolean minor = xml.contains("minor=\"\"");
@@ -3442,7 +3456,7 @@ public class Wiki implements Serializable
         // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
         ArrayList<String> duplicates = new ArrayList<>(10);
         for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
-            duplicates.add("File:" + decode(parseAttribute(line, "name", a)));
+            duplicates.add("File:" + parseAttribute(line, "name", a));
 
         int size = duplicates.size();
         log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of File:" + file + " (" + size + " files)");
@@ -3834,7 +3848,7 @@ public class Wiki implements Serializable
             next = parseAttribute(line, "aufrom", 0);
             for (int w = line.indexOf("<u "); w > 0; w = line.indexOf("<u ", ++w))
             {
-                members.add(decode(parseAttribute(line, "name", w)));
+                members.add(parseAttribute(line, "name", w));
                 if (members.size() == number)
                 {
                     next = null;
@@ -4328,11 +4342,11 @@ public class Wiki implements Serializable
 
                 // section title (if available). Stupid API documentation is misleading.
                 if (line.contains("sectionsnippet=\""))
-                    result[1] = decode(parseAttribute(line, "sectionsnippet", x));
+                    result[1] = parseAttribute(line, "sectionsnippet", x);
                 else
                     result[1] = "";
 
-                result[2] = decode(parseAttribute(line, "snippet", x));
+                result[2] = parseAttribute(line, "snippet", x);
                 results.add(result);
             }
         }
@@ -4370,7 +4384,7 @@ public class Wiki implements Serializable
 
             // xml form: <iu pageid="196465" ns="7" title="File talk:Wiki.png" />
             for (int x = line.indexOf("<iu "); x > 0; x = line.indexOf("<iu ", ++x))
-                pages.add(decode(parseAttribute(line, "title", x)));
+                pages.add(parseAttribute(line, "title", x));
         }
         while (next != null);
         int size = pages.size();
@@ -4430,7 +4444,7 @@ public class Wiki implements Serializable
             
             // xml form: <bl pageid="217224" ns="0" title="Mainpage" redirect="" />
             for (int x = line.indexOf("<bl "); x > 0; x = line.indexOf("<bl ", ++x))
-                pages.add(decode(parseAttribute(line, "title", x)));
+                pages.add(parseAttribute(line, "title", x));
         }
         while (blcontinue != null);
 
@@ -4471,7 +4485,7 @@ public class Wiki implements Serializable
             
             // xml form: <ei pageid="7997510" ns="0" title="Maike Evers" />
             for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
-                pages.add(decode(parseAttribute(line, "title", x)));
+                pages.add(parseAttribute(line, "title", x));
         }
         while (eicontinue != null);
         int size = pages.size();
@@ -4538,7 +4552,7 @@ public class Wiki implements Serializable
             // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
             for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
             {
-                String member = decode(parseAttribute(line, "title", x));
+                String member = parseAttribute(line, "title", x);
                 
                 // fetch subcategories
                 boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
@@ -4627,7 +4641,7 @@ public class Wiki implements Serializable
             for (int x = line.indexOf("<eu"); x > 0; x = line.indexOf("<eu ", ++x))
             {
                 String link = parseAttribute(line, "url", x);
-                ret[0].add(decode(parseAttribute(line, "title", x)));
+                ret[0].add(parseAttribute(line, "title", x));
                 if (link.charAt(0) == '/') // protocol relative url
                     ret[1].add(new URL(protocol + ":" + link));
                 else
@@ -4733,7 +4747,7 @@ public class Wiki implements Serializable
                 else
                     le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
                 // parse blocker for real
-                le.user = new User(decode(parseAttribute(temp, "by", 0)));
+                le.user = new User(parseAttribute(temp, "by", 0));
                 entries.add(le);
             }
         }
@@ -4994,12 +5008,12 @@ public class Wiki implements Serializable
         // generic performer name (won't work for ipblocklist, overridden there)
         User performer = null;
         if (xml.contains("user=\""))
-            performer = new User(decode(parseAttribute(xml, "user", 0)));
+            performer = new User(parseAttribute(xml, "user", 0));
         
         // generic target name
         String target = null;
         if (xml.contains("title=\""))
-            target = decode(parseAttribute(xml, "title", 0));
+            target = parseAttribute(xml, "title", 0);
 
         String timestamp = convertTimestamp(parseAttribute(xml, "timestamp", 0));
 
@@ -5008,7 +5022,7 @@ public class Wiki implements Serializable
         if (xml.contains("commenthidden")) // oversighted
             details = null;
         else if (type.equals(MOVE_LOG))
-            details = decode(parseAttribute(xml, "new_title", 0)); // the new title
+            details = parseAttribute(xml, "new_title", 0); // the new title
         else if (type.equals(BLOCK_LOG) || xml.contains("<block"))
         {
             int a = xml.indexOf("<block") + 7;
@@ -5250,7 +5264,7 @@ public class Wiki implements Serializable
 
             // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
-                pages.add(decode(parseAttribute(line, "title", a)));
+                pages.add(parseAttribute(line, "title", a));
         }
         while (next != null);
 
@@ -5295,7 +5309,7 @@ public class Wiki implements Serializable
             
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
             for (int x = line.indexOf("<page "); x > 0; x = line.indexOf("<page ", ++x))
-                pages.add(decode(parseAttribute(line, "title", x)));
+                pages.add(parseAttribute(line, "title", x));
         }
         while (offset != null);
         int temp = pages.size();
@@ -6041,7 +6055,7 @@ public class Wiki implements Serializable
         private String rollbacktoken = null;
         private int size = 0;
         private int sizediff = 0;
-        private boolean summaryDeleted = false, userDeleted = false;
+        private boolean summaryDeleted = false, userDeleted = false, pageDeleted = false;
 
         /**
          *  Constructs a new Revision object.
@@ -6074,8 +6088,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Fetches the contents of this revision. WARNING: fails if the
-         *  revision is deleted.
+         *  Fetches the contents of this revision. 
          *  @return the contents of the appropriate article at <tt>timestamp</tt>
          *  @throws IOException if a network error occurs
          *  @throws IllegalArgumentException if page == Special:Log/xxx.
@@ -6087,16 +6100,24 @@ public class Wiki implements Serializable
             if (revid < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
-            // go for it
-            String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=raw";
-            String temp = fetch(url, "Revision.getText");
+            String temp;
+            if (pageDeleted)
+            {
+                String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
+                temp = fetch(url, "Revision.getRenderedText");
+                // TODO
+            }
+            else
+            {
+                String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=raw";
+                temp = fetch(url, "Revision.getText");
+            }
             log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
             return decode(temp);
         }
         
         /**
-         *  Gets the rendered text of this revision. WARNING: fails if the
-         *  revision is deleted.
+         *  Gets the rendered text of this revision. 
          *  @return the rendered contents of the appropriate article at
          *  <tt>timestamp</tt>
          *  @throws IOException if a network error occurs
@@ -6109,9 +6130,18 @@ public class Wiki implements Serializable
             if (revid < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
-            // go for it
-            String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=render";
-            String temp = fetch(url, "Revision.getRenderedText");
+            String temp;
+            if (pageDeleted)
+            {
+                String url = query + "prop=deletedrevisions&drvprop=content&drvparse=1&revids=" + revid;
+                temp = fetch(url, "Revision.getRenderedText");
+                // TODO
+            }
+            else
+            {
+                String url = base + "&action=render&oldid=" + revid;
+                temp = fetch(url, "Revision.getRenderedText");
+            }
             log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
             return decode(temp);
         }
@@ -6308,6 +6338,16 @@ public class Wiki implements Serializable
         public boolean isUserDeleted()
         {
             return userDeleted;
+        }
+        
+        /**
+         *  Returns true if this revision is deleted (different from revdeleted).
+         *  @return (see above)
+         *  @since 0.31
+         */
+        public boolean isPageDeleted()
+        {
+            return pageDeleted;
         }
 
         /**
@@ -6820,7 +6860,7 @@ public class Wiki implements Serializable
         {
             int a = xml.indexOf(attribute + "=\"", index) + attribute.length() + 2;
             int b = xml.indexOf('\"', a);
-            return xml.substring(a, b);
+            return decode(xml.substring(a, b));
         }
         else
             return null;
@@ -6893,6 +6933,9 @@ public class Wiki implements Serializable
      */
     public String normalize(String s) throws IOException
     {
+        // remove leading colon
+        if (s.startsWith(":"))
+            s = s.substring(1);
         if (s.isEmpty())
             return s;
         char[] temp = s.toCharArray();

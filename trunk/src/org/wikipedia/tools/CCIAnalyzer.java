@@ -66,7 +66,7 @@ public class CCIAnalyzer
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
         String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;"; // <td class="diff-addedline">
         String diffaddedend = "&lt;/td&gt;"; // </td>
-        String deltabegin = "&lt;ins "; // <ins 
+        String deltabegin = "&lt;ins class=&quot;diffchange diffchange-inline&quot;&gt;"; // <ins class="diffchange diffchange-inline">
         String deltaend = "&lt;/ins&gt;"; // </ins>
         
         // parse the list of diffs
@@ -123,10 +123,18 @@ public class CCIAnalyzer
         {
             int x = cci.indexOf(minoredit);
             cci.delete(x, x + minoredit.length());
-            System.out.println(minoredit);
+            
+            // we don't care about minor edits that add less than 500 chars
+            int y = minoredit.indexOf("|");
+            y = minoredit.indexOf("|", y + 1);
+            int size = Integer.parseInt(minoredit.substring(y + 2, minoredit.length() - 3));
+            if (size > 499)
+                System.out.println(minoredit);
         }
         System.out.println("----------------------");
         System.out.println(cci);
+        
+        // PROTIP: $ sed -i "/.*''''''.*/d" filename.txt
     }
     
     /**
@@ -138,14 +146,17 @@ public class CCIAnalyzer
     public static boolean analyzeDelta(String delta)
     {
         // remove some common strings
+        // {{subst:afd}}
         if (delta.contains("please do not remove or change this afd message until the issue is settled"))
             return false;
         if (delta.contains("end of afd message, feel free to edit beyond this point"))
             return false;
         if (delta.contains("{{afdm|"))
             return false;
+        // {{subst:prod}}
         if (delta.contains("{{proposed deletion/dated|"))
             return false;
+        // {{subst:prod blp}}
         if (delta.contains("{{prod blp/dated|"))
             return false;
         if (delta.contains("{{infobox "))
@@ -157,7 +168,7 @@ public class CCIAnalyzer
         {
             int j = temp.indexOf("]]", i);
             if (j < 0) // unbalanced brackets
-                return true;
+                break;
             int k = temp.indexOf("|", i);
             temp.delete(j, j + 2); // ]] => empty string
             if (k < j && k > 0)
@@ -167,10 +178,9 @@ public class CCIAnalyzer
         }
         
         // decode() the delta
-        String delta2 = temp.toString();
-        delta2 = delta2.replace("&lt;", "<");
+        String delta2 = temp.toString().replace("&lt;", "<");
         delta2 = delta2.replace("&gt;", ">");
-
+        
         // From what I see, all articles still have 9 words between other markup.
         StringTokenizer tk = new StringTokenizer(delta2, "<>{}|=");
         while (tk.hasMoreTokens())
