@@ -1245,6 +1245,8 @@ public class Wiki implements Serializable
      *    page does not exist
      *  <li><b>size</b>: (Integer) the size of the page or -1 if the page does
      *    not exist
+     *  <li><b>pageid</b>: (Long) the id of the page or -1 if the page does not
+     *    exist
      *  <li><b>timestamp</b>: (Calendar) when this method was called
      *  <li><b>watchtoken</b>: (String) watchlist token or null if logged out
      *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
@@ -1283,12 +1285,14 @@ public class Wiki implements Serializable
                     tempmap.put("lastpurged", timestampToCalendar(parseAttribute(item, "touched", 0), true));
                     tempmap.put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
                     tempmap.put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
+                    tempmap.put("pageid", Long.parseLong(parseAttribute(item, "pageid", 0)));
                 }
                 else
                 {
                     tempmap.put("lastedited", null);
                     tempmap.put("lastrevid", -1L);
                     tempmap.put("size", -1);
+                    tempmap.put("pageid", -1);
                 }
 
                 // parse protection level
@@ -1369,12 +1373,6 @@ public class Wiki implements Serializable
             return MAIN_NAMESPACE;
         String namespace = title.substring(0, title.indexOf(':'));
 
-        // all wiki namespace test
-        if (namespace.equals("Project_talk"))
-            return PROJECT_TALK_NAMESPACE;
-        if (namespace.equals("Project"))
-            return PROJECT_NAMESPACE;
-
         // look up the namespace of the page in the namespace cache
         if (!namespaces.containsKey(namespace))
             return MAIN_NAMESPACE; // For titles like UN:NRV
@@ -1432,16 +1430,17 @@ public class Wiki implements Serializable
      */
     protected void populateNamespaceCache() throws IOException
     {
-        String line = fetch(query + "meta=siteinfo&siprop=namespaces", "namespace");
+        String line = fetch(query + "meta=siteinfo&siprop=namespaces%7Cnamespacealiases", "namespace");
         namespaces = new HashMap<>(30);
         
-        // xml form: <ns id="-2" ... >Media</ns> or <ns id="0" ... />
+        // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
         for (int a = line.indexOf("<ns "); a > 0; a = line.indexOf("<ns ", ++a))
         {
-            String ns = parseAttribute(line, "id", a);
+            int ns = Integer.parseInt(parseAttribute(line, "id", a));
             int b = line.indexOf('>', a) + 1;
             int c = line.indexOf('<', b);
-            namespaces.put(normalize(decode(line.substring(b, c))), new Integer(ns));
+            namespaces.put(normalize(decode(line.substring(b, c))), ns);
+            namespaces.put(parseAttribute(line, "canonical", a), ns);
         }
 
         log(Level.INFO, "namespace", "Successfully retrieved namespace list (" + namespaces.size() + " namespaces)");
