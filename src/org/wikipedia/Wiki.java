@@ -1930,6 +1930,8 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "undelete", "Successfully undeleted " + title);
         retry = true;
+        for (Revision rev : revisions)
+            rev.pageDeleted = false;
         throttle(start);
     }
 
@@ -2448,7 +2450,9 @@ public class Wiki implements Serializable
                 for (int z = response.indexOf("<rev ", x); z < y && z >= 0; z = response.indexOf("<rev ", ++z))
                 {
                     int aa = response.indexOf(" />", z);
-                    delrevs.add(parseRevision(response.substring(z, aa), deltitle));
+                    Revision temp = parseRevision(response.substring(z, aa), deltitle);
+                    temp.pageDeleted = true;
+                    delrevs.add(temp);
                 }
             }
         }
@@ -2534,7 +2538,9 @@ public class Wiki implements Serializable
                 for (int z = response.indexOf("<rev ", x); z < y && z >= 0; z = response.indexOf("<rev ", ++z))
                 {
                     int aa = response.indexOf(" />", z);
-                    delrevs.add(parseRevision(response.substring(z, aa), deltitle));
+                    Revision temp = parseRevision(response.substring(z, aa), deltitle);
+                    temp.pageDeleted = true;
+                    delrevs.add(temp);
                 }
             }
         }
@@ -5245,12 +5251,12 @@ public class Wiki implements Serializable
 
         // parse
         ArrayList<String> pages = new ArrayList<>(6667);
-        String next = "";
+        String next = null;
         do
         {
             // connect and read
             String s = url.toString();
-            if (!next.isEmpty())
+            if (next != null)
                 s += ("&apcontinue=" + URLEncoder.encode(next, "UTF-8"));
             String line = fetch(s, "listPages");
 
@@ -6054,7 +6060,8 @@ public class Wiki implements Serializable
         private String rollbacktoken = null;
         private int size = 0;
         private int sizediff = 0;
-        private boolean summaryDeleted = false, userDeleted = false, pageDeleted = false;
+        private boolean summaryDeleted = false, userDeleted = false, contentDeleted = false;
+        private boolean pageDeleted = false;
 
         /**
          *  Constructs a new Revision object.
@@ -6103,7 +6110,7 @@ public class Wiki implements Serializable
             if (pageDeleted)
             {
                 String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
-                temp = fetch(url, "Revision.getRenderedText");
+                temp = fetch(url, "Revision.getText");
                 // TODO
             }
             else
@@ -6143,6 +6150,21 @@ public class Wiki implements Serializable
             }
             log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
             return decode(temp);
+        }
+        
+        /**
+         *  Returns true if the revision content is RevisionDeleted. WARNING:
+         *  the return value is meaningless until <tt>getRenderedText</tt>, 
+         *  <tt>getText</tt> or <tt>diff()</tt> is called because of MW api 
+         *  limitations.
+         * 
+         *  @return (see above)
+         *  @since 0.31
+         */
+        public boolean isContentDeleted()
+        {
+            // not currently functional
+            return contentDeleted;
         }
 
         /**
@@ -6297,8 +6319,8 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns the edit summary for this revision, or null if we cannot 
-         *  access it.
+         *  Returns the edit summary for this revision, or null if the summary
+         *  was RevisionDeleted and you lack the necessary privileges.
          *  @return the edit summary
          *  @since 0.17
          */
@@ -6320,7 +6342,8 @@ public class Wiki implements Serializable
         /**
          *  Returns the user or anon who created this revision. You should
          *  pass this (if not an IP) to <tt>getUser(String)</tt> to obtain a
-         *  User object. WARNING: returns null if the user was RevisionDeleted.
+         *  User object. Returns null if the user was RevisionDeleted and you
+         *  lack the necessary privileges.
          *  @return the user or anon
          *  @since 0.17
          */

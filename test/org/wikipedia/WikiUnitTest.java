@@ -240,14 +240,18 @@ public class WikiUnitTest
         assertFalse("getRevison: bot", rev.isBot());
         assertFalse("getRevision: user not revdeled", rev.isUserDeleted());
         assertFalse("getRevision: summary not revdeled", rev.isSummaryDeleted());
+        assertFalse("getRevision: content not deleted", rev.isContentDeleted());
+        assertFalse("getRevision: page not deleted", rev.isPageDeleted());
         
         // revdel
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         rev = enWiki.getRevision(596714684L);
-        assertNull("getRevision: user revdeled", rev.getUser());
         assertTrue("getRevision: user revdeled", rev.isUserDeleted());
-        assertNull("getRevision: summary revdeled", rev.getSummary());
         assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
+        assertTrue("getRevision: content revdeled", rev.isContentDeleted());
+        // need to not be an admin to run these tests
+        // assertNull("getRevision: summary revdeled", rev.getSummary());
+        // assertNull("getRevision: user revdeled", rev.getUser());
     }
     
     @Test
@@ -278,4 +282,16 @@ public class WikiUnitTest
         String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
         assertEquals("getDeletedText", text, "This revision is also deleted!");
     }
+    
+    /**
+     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+     *  @throws Exception if something goes wrong
+     */
+    @Test
+    public void RevisionGetText() throws Exception
+    {
+        Wiki.Revision deleted = testWiki.getRevision(217078L);
+        assertEquals(deleted.getText(), "This revision is deleted!");
+    }
+        
 }
