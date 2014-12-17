@@ -35,6 +35,7 @@ public class ServletUtils
      *  @param request the HTTP request
      *  @param response the server response
      *  @return hit if this is a bad useragent
+     *  @throws IOException if a network error occurs
      */
     public static boolean checkBlacklist(HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -66,6 +67,7 @@ public class ServletUtils
      *  Generates a HTML head with the given title and optional content.
      *  @param title the page title
      *  @param optional the optional content
+     *  @return form header
      */
     public static String generateHead(String title, String optional)
     {
@@ -83,6 +85,7 @@ public class ServletUtils
     /**
      *  Generates a boilerplate GPLv3 footer given a tool name
      *  @param toolname the name of the tool
+     *  @return GPLv3 form footer
      */
     public static String generateFooter(String toolname)
     {
@@ -90,7 +93,7 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2014. This tool is free software: ");
+        sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software: ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of ");
         sb.append("the GNU General Public License as published by the Free ");
         sb.append("Software Foundation, either version 3 of the License, or (at ");
@@ -112,6 +115,7 @@ public class ServletUtils
      *  to the user in the order that they are specified
      *  @param selected the initially selected option value
      *  @param disabled whether this element is disabled
+     *  @return HTML text that displays a combo box
      */
     public static String generateComboBox(String param, LinkedHashMap<String, String> options, String selected, boolean disabled)
     {

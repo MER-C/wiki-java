@@ -48,6 +48,8 @@ public class ImageCCI extends HttpServlet
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
      *  which is in either the current or home directory.
+     *  @param args command line arguments (ignored)
+     *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {
@@ -68,6 +70,11 @@ public class ImageCCI extends HttpServlet
      *  precisely, at ~1s / wiki, we cannot search more than 30 wikis.
      *  <p>
      *  This servlet runs at { @link https://wikipediatools.appspot.com/imagecci.jsp }.
+     * 
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -121,31 +128,31 @@ public class ImageCCI extends HttpServlet
     {
         // search enwiki upload log
         Wiki.User wpuser = enWiki.getUser(user);
-        HashSet<String> wpUploads = new HashSet<String>(10000);
+        HashSet<String> wpUploads = new HashSet<>(10000);
         if (wpuser == null)
         {
             buffer.append("Error: user does not exist!");
             return;
         }
         Wiki.LogEntry[] entries = enWiki.getUploads(wpuser);
-        for (int i = 0; i < entries.length; i++)
-            wpUploads.add((String)entries[i].getTarget());
+        for (Wiki.LogEntry entry : entries)
+            wpUploads.add((String)entry.getTarget());
 
         // search commons upload log
         Wiki.User comuser = commons.getUser(user);
-        HashSet<String> commonsUploads = new HashSet<String>(10000);
+        HashSet<String> commonsUploads = new HashSet<>(10000);
         if (comuser != null)
         {
             entries = commons.getUploads(comuser);
-            for (int i = 0; i < entries.length; i++)
-                commonsUploads.add((String)entries[i].getTarget());
+            for (Wiki.LogEntry entry : entries)
+                commonsUploads.add((String)entry.getTarget());
         }
 
         // search for transferred images
-        HashSet<String> commonsTransfer = new HashSet<String>(10000);
+        HashSet<String> commonsTransfer = new HashSet<>(10000);
         String[][] temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
-        for (int i = 0; i < temp.length; i++)
-            commonsTransfer.add(temp[i][0]);
+        for (String[] x : temp)
+            commonsTransfer.add(x[0]);
 
         // remove all files that have been reuploaded to Commons
         wpUploads.removeAll(commonsUploads);
