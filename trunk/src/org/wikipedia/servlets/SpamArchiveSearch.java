@@ -50,6 +50,8 @@ public class SpamArchiveSearch extends HttpServlet
     
     /**
      *  Main for testing/offline stuff. 
+     *  @param args command line arguments (ignored)
+     *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {
@@ -69,6 +71,11 @@ public class SpamArchiveSearch extends HttpServlet
      *  precisely, at ~1s / wiki, we cannot search more than 30 wikis.
      *  <p>
      *  This servlet runs at { @link https://wikipediatools.appspot.com/linksearch.jsp }.
+     * 
+     * @param request servlet request
+     * @param response servlet response
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -122,7 +129,7 @@ public class SpamArchiveSearch extends HttpServlet
 
         // search
         // there's some silly api bugs
-        ArrayList<String[]> results = new ArrayList<String[]>(20);
+        ArrayList<String[]> results = new ArrayList<>(20);
         results.addAll(Arrays.asList(meta.search(query + " \"spam blacklist\"", Wiki.TALK_NAMESPACE)));
         results.addAll(Arrays.asList(enWiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
         results.addAll(Arrays.asList(enWiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
@@ -132,9 +139,8 @@ public class SpamArchiveSearch extends HttpServlet
 
         // write to output
         buffer.append("<ul>\n");
-        for (int i = 0; i < results.size(); i++)
+        for (String[] result : results)
         {
-            String[] result = results.get(i);
             buffer.append("<li><a href=\"//");
             buffer.append(result[0].contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia");
             buffer.append(".org/wiki/");

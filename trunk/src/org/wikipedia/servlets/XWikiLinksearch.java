@@ -83,6 +83,8 @@ public class XWikiLinksearch extends HttpServlet
     /**
      *  Main for testing/offline stuff. The results are found in results.html,
      *  which is in either the current or home directory.
+     *  @param args command line arguments (ignored)
+     *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {
@@ -105,6 +107,11 @@ public class XWikiLinksearch extends HttpServlet
      *  precisely, at ~1s / wiki, we cannot search more than 40 wikis.
      *  <p>
      *  This servlet runs at { @link https://wikipediatools.appspot.com/linksearch.jsp }.
+     * 
+     *  @param request servlet request
+     *  @param response servlet response
+     *  @throws ServletException if a servlet-specific error occurs
+     *  @throws IOException if an I/O error occurs
      */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -138,7 +145,7 @@ public class XWikiLinksearch extends HttpServlet
         if (wikiinput == null)
             buffer.append(" checked");
         buffer.append("><td>Wikis to search:\n<td>");
-        LinkedHashMap<String, String> options = new LinkedHashMap<String, String>(10);
+        LinkedHashMap<String, String> options = new LinkedHashMap<>(10);
         options.put("top20", "Top 20 Wikipedias");
         options.put("top40", "Top 40 Wikipedias");
         options.put("major", "Major Wikimedia projects");
