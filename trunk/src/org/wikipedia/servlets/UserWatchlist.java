@@ -26,6 +26,7 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import org.wikipedia.*;
 
+import java.util.logging.Logger;
 /**
  *
  *  @version 0.01
@@ -61,7 +62,7 @@ public class UserWatchlist extends HttpServlet
         
         // header
         buffer.append(ServletUtils.generateHead("User watchlist", null));
-        buffer.append("<p>This tool retrieves recent (<5 days) contributions of a list of users.");
+        buffer.append("<p>This tool retrieves recent (<5 days) contributions of a list of users. ");
         buffer.append("There is a limit of 30 users per request, though the list may be ");
         buffer.append("of indefinite length.<p>");
         buffer.append("Syntax: one user per line, reason after # . Example:");
@@ -70,7 +71,7 @@ public class UserWatchlist extends HttpServlet
         // page input
         buffer.append("<form action=\"./userwatchlist.jsp\" method=GET>\n");
         buffer.append("<table>\n");
-        buffer.append("<tr><td>Input page:<td><input type=text name=page");
+        buffer.append("<tr><td>Input page:<td><input type=text size=30 name=page");
         String page = request.getParameter("page");
         if (page == null)
             buffer.append(">\n");
@@ -84,7 +85,7 @@ public class UserWatchlist extends HttpServlet
         // skip input
         String temp = request.getParameter("skip");
         int skip = 0;
-        buffer.append("<tr><td>\nSkip:<td><input type=text name=skip");
+        buffer.append("<tr><td>\nSkip:<td><input type=text size=30 name=skip");
         if (temp == null || temp.isEmpty())
             buffer.append(">\n");
         else
@@ -102,6 +103,13 @@ public class UserWatchlist extends HttpServlet
         if (page == null || page.isEmpty())
         {
             buffer.append(ServletUtils.generateFooter("User watchlist"));
+            out.write(buffer.toString());
+            out.close();
+            return;
+        }
+        if (!page.equals("User:MER-C/UserWatchlist.js"))
+        {
+            buffer.append("TESTING WOOP WOOP WOOP!");
             out.write(buffer.toString());
             out.close();
             return;
@@ -150,9 +158,9 @@ public class UserWatchlist extends HttpServlet
         for (int i = skip; i < numtokens && i < (skip + 30); i++)
         {
             String token = tk.nextToken();
-            int split = token.indexOf("%23");
-            String user = token.substring(0, split - 1).trim();
-            String reason = token.substring(split + 3).trim();
+            int split = token.indexOf("#");
+            String user = ServletUtils.sanitize(token.substring(0, split - 1)).trim();
+            String reason = ServletUtils.sanitize(token.substring(split + 1)).trim();
 
             // user summary links and reason
             StringBuilder tempbuffer = new StringBuilder(500);
@@ -169,10 +177,10 @@ public class UserWatchlist extends HttpServlet
             
             // contribs
             Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-            cutoff.add(Calendar.DAY_OF_MONTH, -3);
-            Wiki.Revision[] contribs = enWiki.contribs(user, "", null, cutoff);
+            cutoff.add(Calendar.DAY_OF_MONTH, -5);
+            Wiki.Revision[] contribs = enWiki.contribs(user, "", cutoff, null);
             if (contribs.length == 0)
-                buffer.append("<p>No recent contributions.");
+                buffer.append("<p>No recent contributions or user does not exist.");
             else
                 buffer.append(ParserUtils.revisionsToHTML(enWiki, contribs));
         }
@@ -180,5 +188,16 @@ public class UserWatchlist extends HttpServlet
         buffer.append(ServletUtils.generateFooter("User watchlist"));
         out.write(buffer.toString());
         out.close();
+    }
+    
+    /**
+     *  Main for testing/offline stuff. The results are found in results.html,
+     *  which is in either the current or home directory.
+     *  @param args command line arguments (ignored)
+     *  @throws IOException if a network error occurs
+     */
+    public static void main(String[] args) throws IOException
+    {
+        
     }
 }

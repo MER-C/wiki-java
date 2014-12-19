@@ -3899,7 +3899,8 @@ public class Wiki implements Serializable
      *
      *  @param user the user or IP to get contributions for
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return the contributions of the user
+     *  @return the contributions of the user, or a zero length array if the user
+     *  does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
@@ -3962,7 +3963,8 @@ public class Wiki implements Serializable
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param prefix a prefix of usernames. Overrides <tt>user</tt>.  Use "" to
      *  not specify one.
-     *  @return contributions of this user
+     *  @return contributions of this user, or a zero length array if the user
+     *  does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
@@ -6970,7 +6972,7 @@ public class Wiki implements Serializable
             else
             {
                 // don't forget the extra colon
-                int index = namespaceIdentifier(ns).length() + 1;
+                int index = namespaceIdentifier(ns).length();
                 temp[index] = Character.toUpperCase(temp[index]);
             }
         }
