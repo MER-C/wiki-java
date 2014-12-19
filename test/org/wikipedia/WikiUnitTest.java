@@ -31,7 +31,7 @@ public class WikiUnitTest
         arWiki.setMaxLag(-1);
         // testing grounds for admin stuff
         testWiki = new Wiki("test.wikipedia.org");
-        org.wikiutils.LoginUtils.guiLogin(testWiki);
+        // org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
     }
     
@@ -260,6 +260,13 @@ public class WikiUnitTest
         assertNull("diff: no previous revision", enWiki.getRevision(586849481L).diff(Wiki.PREVIOUS_REVISION));
     }
     
+    @Test
+    public void contribs() throws Exception
+    {
+        // should really be null, but the API returns zero
+        assertEquals("contribs: non-existent user", testWiki.contribs("Dsdlgfkjsdlkfdjilgsujilvjcl").length, 0);
+    }
+    
     /**
      *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
      *  @throws Exception if something goes wrong
@@ -268,7 +275,7 @@ public class WikiUnitTest
     public void getPageText() throws Exception
     {
         String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
-        assertEquals("getPageText", text, "This revision is not deleted!");
+        assertEquals("getPageText", text, "This revision is not deleted!\n");
     }
     
     /**

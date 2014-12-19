@@ -175,8 +175,14 @@ public class ParserUtils
             else
                 buffer.append(DELETED);
             
+            // size
+            buffer.append(" .. (");
+            buffer.append(rev.getSize());
+            buffer.append(" bytes) (");
+            buffer.append(rev.getSizeDiff());
+            
             // edit summary
-            buffer.append(" (");
+            buffer.append(") .. (");
             String summary = rev.getSummary();
             if (summary == null)
                 buffer.append(DELETED);
@@ -264,12 +270,16 @@ public class ParserUtils
                 buffer.append("\">contribs</a>)");
             }
             else
-            {
                 buffer.append(DELETED);
-            }
+            
+            // size
+            buffer.append(" .. (");
+            buffer.append(rev.getSize());
+            buffer.append(" bytes) (");
+            buffer.append(rev.getSizeDiff());
             
             // edit summary
-            buffer.append(" .. (");
+            buffer.append(") .. (");
             if (rev.getSummary() != null)
                 buffer.append(rev.getSummary());
             else
