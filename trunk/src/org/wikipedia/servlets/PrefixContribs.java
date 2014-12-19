@@ -41,7 +41,6 @@ public class PrefixContribs extends HttpServlet
      */
     static
     {
-        enWiki.setUsingCompressedRequests(false);
         enWiki.setMaxLag(-1);
     }
     

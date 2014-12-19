@@ -42,8 +42,6 @@ public class SpamArchiveSearch extends HttpServlet
     {
         enWiki = new Wiki("en.wikipedia.org");
         meta = new Wiki("meta.wikimedia.org");
-        enWiki.setUsingCompressedRequests(false); // This is Google's fault.
-        meta.setUsingCompressedRequests(false);
         enWiki.setMaxLag(0);
         meta.setMaxLag(0);
     }
