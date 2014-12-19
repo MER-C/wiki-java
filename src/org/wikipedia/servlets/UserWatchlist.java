@@ -26,9 +26,8 @@ import javax.servlet.*;
 import javax.servlet.http.*;
 import org.wikipedia.*;
 
-import java.util.logging.Logger;
 /**
- *
+ *  
  *  @version 0.01
  *  @author MER-C
  */
@@ -41,7 +40,6 @@ public class UserWatchlist extends HttpServlet
      */
     static
     {
-        // enWiki.setUsingCompressedRequests(false);
         enWiki.setMaxLag(-1);
     }
     
@@ -188,16 +186,5 @@ public class UserWatchlist extends HttpServlet
         buffer.append(ServletUtils.generateFooter("User watchlist"));
         out.write(buffer.toString());
         out.close();
-    }
-    
-    /**
-     *  Main for testing/offline stuff. The results are found in results.html,
-     *  which is in either the current or home directory.
-     *  @param args command line arguments (ignored)
-     *  @throws IOException if a network error occurs
-     */
-    public static void main(String[] args) throws IOException
-    {
-        
     }
 }

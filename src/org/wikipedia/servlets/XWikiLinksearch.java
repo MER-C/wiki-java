@@ -75,10 +75,7 @@ public class XWikiLinksearch extends HttpServlet
         importantwikis[17] = new Wiki("mediawiki.org");
         importantwikis[18] = new Wiki("wikidata.org");
         for (Wiki tempwiki : importantwikis)
-        {
-            tempwiki.setUsingCompressedRequests(false);
             tempwiki.setMaxLag(-1);
-        }
     }
     /**
      *  Main for testing/offline stuff. The results are found in results.html,

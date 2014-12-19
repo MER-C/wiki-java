@@ -38,11 +38,8 @@ public class ImageCCI extends HttpServlet
 
     static
     {
-         // non-compression is Google's fault
         enWiki.setMaxLag(0);
-        enWiki.setUsingCompressedRequests(false);
         commons.setMaxLag(0);
-        commons.setUsingCompressedRequests(false);
     }
 
     /**
