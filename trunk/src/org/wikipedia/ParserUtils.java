@@ -210,7 +210,7 @@ public class ParserUtils
         for (Wiki.Revision rev : revisions)
         {
             // diff link
-            String page = rev.getPage();
+            String page = recode(rev.getPage());
             StringBuilder temp2 = new StringBuilder("<a href=\"");
             temp2.append(wiki.base);
             temp2.append(page.replace(' ', '_'));
@@ -250,7 +250,7 @@ public class ParserUtils
             buffer.append("</a> .. ");
             
             // usernames never contain XSS characters
-            String temp = rev.getUser();
+            String temp = recode(rev.getUser());
             if (temp != null)
             {
                 buffer.append("<a href=\"http://");
@@ -276,17 +276,37 @@ public class ParserUtils
             buffer.append(" .. (");
             buffer.append(rev.getSize());
             buffer.append(" bytes) (");
+            int sizediff = rev.getSizeDiff();
+            if (sizediff > 0)
+                buffer.append("<span style=\"color: #009900\">");
+            else
+                buffer.append("<span style=\"color: #990000\">");
             buffer.append(rev.getSizeDiff());
+            buffer.append("</span>");
             
             // edit summary
             buffer.append(") .. (");
             if (rev.getSummary() != null)
-                buffer.append(rev.getSummary());
+                buffer.append(recode(rev.getSummary()));
             else
                 buffer.append(DELETED);
             buffer.append(")\n");
         }
         buffer.append("</ul>\n");
         return buffer.toString();
+    }
+    
+    /**
+     *  Reverse of Wiki.decode()
+     *  @param in input string
+     *  @return recoded input string
+     */
+    public static String recode(String in)
+    {
+        in = in.replace("&", "&amp;");
+        in = in.replace("<", "&lt;").replace(">", "&gt;"); // html tags
+        in = in.replace("\"", "&quot;");
+        in = in.replace("'", "&#039;");
+        return in;
     }
 }
