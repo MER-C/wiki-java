@@ -64,7 +64,7 @@ public class UserWatchlist extends HttpServlet
         buffer.append("There is a limit of 30 users per request, though the list may be ");
         buffer.append("of indefinite length.<p>");
         buffer.append("Syntax: one user per line, reason after # . Example:");
-        buffer.append("<pre>Example user # Copyright violations\nSomeone # Spam</pre>");
+        buffer.append("<pre>Example user # Copyright violations\n//This is a comment\nSomeone # Spam</pre>");
         
         // page input
         buffer.append("<form action=\"./userwatchlist.jsp\" method=GET>\n");
@@ -105,6 +105,11 @@ public class UserWatchlist extends HttpServlet
             out.close();
             return;
         }
+        // if (page.matches("^User:.+/.+\\.(cs|j)s$"))
+        // {
+        //     String us = page.substring(5, page.indexOf('/'));
+        //     Wiki.User us2 = enWiki.getUser(us);
+        //     if (us2 == null || !us2.isA("admin"))
         if (!page.equals("User:MER-C/UserWatchlist.js"))
         {
             buffer.append("TESTING WOOP WOOP WOOP!");
@@ -132,6 +137,61 @@ public class UserWatchlist extends HttpServlet
         
         // previous/next page
         buffer.append("<hr>");
+        makePagination(buffer, page, numtokens, skip);
+        
+        for (int i = skip; i < numtokens && i < (skip + 30); i++)
+        {
+            String token = tk.nextToken().trim();
+            // line starts with "//" == comment
+            if (token.isEmpty() || token.startsWith("//"))
+                continue;
+            
+            int split = token.indexOf("#");
+            String user;
+            String reason = "";
+            if (split < 0)
+                user = ServletUtils.sanitize(token);
+            else
+            {
+                user = ServletUtils.sanitize(token.substring(0, split - 1)).trim();
+                reason = ServletUtils.sanitize(token.substring(split + 1)).trim();
+            }
+
+            // user summary links and reason
+            StringBuilder tempbuffer = new StringBuilder(500);
+            tempbuffer.append("<h3>||</h3>\n<p>\n<ul>\n");
+            tempbuffer.append("<li><a href=\"//en.wikipedia.org/wiki/User:||\">||</a> ");
+            tempbuffer.append("(<a href=\"//en.wikipedia.org/wiki/User_talk:||\">talk</a> ");
+            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:Contributions/||\">contribs</a> ");
+            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:Block/||\">block</a> ");
+            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:DeletedContributions/||\">deleted contribs</a>)\n");
+            if (!reason.isEmpty())
+            {
+                tempbuffer.append("<li><i>");
+                tempbuffer.append(reason);
+                tempbuffer.append("</i>");
+            }
+            tempbuffer.append("\n</ul>");
+            buffer.append(tempbuffer.toString().replace("||", user));
+            
+            // contribs
+            Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
+            cutoff.add(Calendar.DAY_OF_MONTH, -5);
+            Wiki.Revision[] contribs = enWiki.contribs(user, "", cutoff, null);
+            if (contribs.length == 0)
+                buffer.append("<p>No recent contributions or user does not exist.");
+            else
+                buffer.append(ParserUtils.revisionsToHTML(enWiki, contribs));
+        }
+        makePagination(buffer, page, numtokens, skip);
+        
+        buffer.append(ServletUtils.generateFooter("User watchlist"));
+        out.write(buffer.toString());
+        out.close();
+    }
+    
+    private void makePagination(StringBuilder buffer, String page, int numtokens, int skip)
+    {
         if (skip > 0)
         {
             buffer.append("<a href=\"./userwatchlist.jsp?page=");
@@ -152,39 +212,5 @@ public class UserWatchlist extends HttpServlet
         }
         else
             buffer.append("Next 30");
-        
-        for (int i = skip; i < numtokens && i < (skip + 30); i++)
-        {
-            String token = tk.nextToken();
-            int split = token.indexOf("#");
-            String user = ServletUtils.sanitize(token.substring(0, split - 1)).trim();
-            String reason = ServletUtils.sanitize(token.substring(split + 1)).trim();
-
-            // user summary links and reason
-            StringBuilder tempbuffer = new StringBuilder(500);
-            tempbuffer.append("<h3>||</h3>\n<p>\n<ul>\n");
-            tempbuffer.append("<li><a href=\"//en.wikipedia.org/wiki/User:||\">||</a> ");
-            tempbuffer.append("(<a href=\"//en.wikipedia.org/wiki/User_talk:||\">talk</a> ");
-            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:Contributions/||\">contribs</a> ");
-            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:Block/||\">block</a> ");
-            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:DeletedContributions/||\">deleted contribs</a>)\n");
-            tempbuffer.append("<li><i>");
-            tempbuffer.append(reason);
-            tempbuffer.append("</i>\n</ul>");
-            buffer.append(tempbuffer.toString().replace("||", user));
-            
-            // contribs
-            Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-            cutoff.add(Calendar.DAY_OF_MONTH, -5);
-            Wiki.Revision[] contribs = enWiki.contribs(user, "", cutoff, null);
-            if (contribs.length == 0)
-                buffer.append("<p>No recent contributions or user does not exist.");
-            else
-                buffer.append(ParserUtils.revisionsToHTML(enWiki, contribs));
-        }
-        
-        buffer.append(ServletUtils.generateFooter("User watchlist"));
-        out.write(buffer.toString());
-        out.close();
     }
 }
