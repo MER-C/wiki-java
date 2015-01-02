@@ -64,7 +64,7 @@ public class UserWatchlist extends HttpServlet
         buffer.append("There is a limit of 30 users per request, though the list may be ");
         buffer.append("of indefinite length.<p>");
         buffer.append("Syntax: one user per line, reason after # . Example:");
-        buffer.append("<pre>Example user # Copyright violations\n//This is a comment\nSomeone # Spam</pre>");
+        buffer.append("<pre>Example user # Copyright violations\n// This is a comment\nSomeone # Spam</pre>");
         
         // page input
         buffer.append("<form action=\"./userwatchlist.jsp\" method=GET>\n");
@@ -89,6 +89,8 @@ public class UserWatchlist extends HttpServlet
         else
         {
             skip = Integer.parseInt(temp);
+            if (skip < 0)
+                skip = 0;
             buffer.append(" value=\"");
             buffer.append(skip);
             buffer.append("\">\n");
@@ -105,12 +107,19 @@ public class UserWatchlist extends HttpServlet
             out.close();
             return;
         }
-        // if (page.matches("^User:.+/.+\\.(cs|j)s$"))
-        // {
-        //     String us = page.substring(5, page.indexOf('/'));
-        //     Wiki.User us2 = enWiki.getUser(us);
-        //     if (us2 == null || !us2.isA("admin"))
-        if (!page.equals("User:MER-C/UserWatchlist.js"))
+        if (page.matches("^User:.+/.+\\.(cs|j)s$"))
+        {
+            String us = page.substring(5, page.indexOf('/'));
+            Wiki.User us2 = enWiki.getUser(us);
+            if (us2 == null || !us2.isA("sysop")) // if (!page.equals("User:MER-C/UserWatchlist.js"))
+            {
+                buffer.append("TESTING WOOP WOOP WOOP!");
+                out.write(buffer.toString());
+                out.close();
+                return;
+            }
+        }
+        else
         {
             buffer.append("TESTING WOOP WOOP WOOP!");
             out.write(buffer.toString());
@@ -132,20 +141,26 @@ public class UserWatchlist extends HttpServlet
             out.close();
             return;
         }
+        
+        // preliminary token parsing
         StringTokenizer tk = new StringTokenizer(text, "\n");
-        int numtokens = tk.countTokens();
-        
-        // previous/next page
-        buffer.append("<hr>");
-        makePagination(buffer, page, numtokens, skip);
-        
-        for (int i = skip; i < numtokens && i < (skip + 30); i++)
+        ArrayList<String> tokens = new ArrayList<>();
+        while (tk.hasMoreTokens())
         {
             String token = tk.nextToken().trim();
             // line starts with "//" == comment
-            if (token.isEmpty() || token.startsWith("//"))
-                continue;
-            
+            if (!token.isEmpty() && !token.startsWith("//"))
+                tokens.add(token);
+        }
+        
+        
+        // previous/next page
+        buffer.append("<hr>");
+        makePagination(buffer, page, tokens.size(), skip);
+        
+        for (int i = skip; i < tokens.size() && i < (skip + 30); i++)
+        {
+            String token = tokens.get(i);
             int split = token.indexOf("#");
             String user;
             String reason = "";
@@ -163,8 +178,9 @@ public class UserWatchlist extends HttpServlet
             tempbuffer.append("<li><a href=\"//en.wikipedia.org/wiki/User:||\">||</a> ");
             tempbuffer.append("(<a href=\"//en.wikipedia.org/wiki/User_talk:||\">talk</a> ");
             tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:Contributions/||\">contribs</a> ");
+            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:DeletedContributions/||\">deleted contribs</a> ");
             tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:Block/||\">block</a> ");
-            tempbuffer.append("| <a href=\"//en.wikipedia.org/wiki/Special:DeletedContributions/||\">deleted contribs</a>)\n");
+            tempbuffer.append("| <a href=\"//en.wikipedia.org/w/index.php?title=Special:Log&type=block&page=User:||\">block log</a>)\n");
             if (!reason.isEmpty())
             {
                 tempbuffer.append("<li><i>");
@@ -183,7 +199,7 @@ public class UserWatchlist extends HttpServlet
             else
                 buffer.append(ParserUtils.revisionsToHTML(enWiki, contribs));
         }
-        makePagination(buffer, page, numtokens, skip);
+        makePagination(buffer, page, tokens.size(), skip);
         
         buffer.append(ServletUtils.generateFooter("User watchlist"));
         out.write(buffer.toString());
