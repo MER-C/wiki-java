@@ -79,6 +79,15 @@ public class UserWatchlist extends HttpServlet
             buffer.append(page);
             buffer.append("\">\n");
         }
+        // links to input page
+        if (page != null && !page.isEmpty())
+        {
+            buffer.append("<a href=\"//en.wikipedia.org/wiki/");
+            buffer.append(page);
+            buffer.append("\">visit</a> | <a href=\"//en.wikipedia.org/w/index.php?action=edit&title=");
+            buffer.append(page);
+            buffer.append("\">edit</a>");
+        }
         
         // skip input
         String temp = request.getParameter("skip");
@@ -152,7 +161,6 @@ public class UserWatchlist extends HttpServlet
             if (!token.isEmpty() && !token.startsWith("//"))
                 tokens.add(token);
         }
-        
         
         // previous/next page
         buffer.append("<hr>");
