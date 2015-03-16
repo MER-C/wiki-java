@@ -3382,7 +3382,7 @@ public class Wiki implements Serializable
 
         // then we use ImageIO to read from it
         logurl(url2, "getImage");
-        URLConnection connection = new URL(url2).openConnection();
+        URLConnection connection = makeConnection(url2);
         setCookies(connection);
         connection.connect();
         // there should be a better way to do this
@@ -3545,7 +3545,7 @@ public class Wiki implements Serializable
                 // this is it
                 url = parseAttribute(line, "url", a);
                 logurl(url, "getOldImage");
-                URLConnection connection = new URL(url).openConnection();
+                URLConnection connection = makeConnection(url);
                 setCookies(connection);
                 connection.connect();
                 // there should be a better way to do this
@@ -6612,7 +6612,7 @@ public class Wiki implements Serializable
     {
         // connect
         logurl(url, caller);
-        URLConnection connection = new URL(url).openConnection();
+        URLConnection connection = makeConnection(url);
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         setCookies(connection);
@@ -6684,7 +6684,7 @@ public class Wiki implements Serializable
     protected String post(String url, String text, String caller) throws IOException
     {
         logurl(url, caller);
-        URLConnection connection = new URL(url).openConnection();
+        URLConnection connection = makeConnection(url);
         setCookies(connection);
         connection.setDoOutput(true);
         connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
@@ -6725,7 +6725,7 @@ public class Wiki implements Serializable
     {
         // set up the POST
         logurl(url, caller);
-        URLConnection connection = new URL(url).openConnection();
+        URLConnection connection = makeConnection(url);
         String boundary = "----------NEXT PART----------";
         connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
         setCookies(connection);
@@ -6784,6 +6784,19 @@ public class Wiki implements Serializable
             }
         }
         return temp.toString();
+    }
+    
+    /**
+     *  Creates a new URL connection. Override to change SSL handling, use a 
+     *  proxy, etc.
+     *  @param url a URL string
+     *  @return a connection to that URL
+     *  @throws IOException if a network error occurs
+     *  @since 0.31
+     */
+    protected URLConnection makeConnection(String url) throws IOException
+    {
+        return new URL(url).openConnection();
     }
 
     /**
