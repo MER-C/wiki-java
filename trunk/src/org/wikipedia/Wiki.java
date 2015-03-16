@@ -1384,7 +1384,7 @@ public class Wiki implements Serializable
      *  For a given namespace denoted as an integer, fetch the corresponding
      *  identification string e.g. <tt>namespaceIdentifier(1)</tt> should return
      *  "Talk" on en.wp. (This does the exact opposite to <tt>namespace()</tt>). 
-     *  Strings returned are localized.
+     *  Strings returned are always localized.
      * 
      *  @param namespace an integer corresponding to a namespace. If it does not
      *  correspond to a namespace, we assume you mean the main namespace (i.e.
@@ -1431,7 +1431,7 @@ public class Wiki implements Serializable
     protected void populateNamespaceCache() throws IOException
     {
         String line = fetch(query + "meta=siteinfo&siprop=namespaces%7Cnamespacealiases", "namespace");
-        namespaces = new HashMap<>(30);
+        namespaces = new LinkedHashMap<>(30);
         
         // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
         for (int a = line.indexOf("<ns "); a > 0; a = line.indexOf("<ns ", ++a))
@@ -1439,8 +1439,12 @@ public class Wiki implements Serializable
             int ns = Integer.parseInt(parseAttribute(line, "id", a));
             int b = line.indexOf('>', a) + 1;
             int c = line.indexOf('<', b);
+            // this must be first so that namespaceIdentifier always returns the
+            // localized name
             namespaces.put(normalize(decode(line.substring(b, c))), ns);
-            namespaces.put(parseAttribute(line, "canonical", a), ns);
+            String canonicalnamespace = parseAttribute(line, "canonical", a);
+            if (canonicalnamespace != null) // not present for main namespace
+                namespaces.put(canonicalnamespace, ns);
         }
 
         log(Level.INFO, "namespace", "Successfully retrieved namespace list (" + namespaces.size() + " namespaces)");
@@ -5678,7 +5682,11 @@ public class Wiki implements Serializable
             ret.put("emailable", info.contains("emailable=\""));
             ret.put("editcount", Integer.parseInt(parseAttribute(info, "editcount", 0)));
             ret.put("gender", Gender.valueOf(parseAttribute(info, "gender", 0)));
-            ret.put("created", timestampToCalendar(parseAttribute(info, "registration", 0), true));
+            
+            String registrationdate = parseAttribute(info, "registration", 0);
+            // remove check when https://phabricator.wikimedia.org/T24097 is resolved
+            if (registrationdate != null && !registrationdate.isEmpty())
+                ret.put("created", timestampToCalendar(registrationdate, true));
             
             // groups
             ArrayList<String> temp = new ArrayList<>();
