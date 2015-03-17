@@ -29,9 +29,7 @@ public class WikiUnitTest
         deWiki.setMaxLag(-1);
         arWiki = new Wiki("ar.wikipedia.org");
         arWiki.setMaxLag(-1);
-        // testing grounds for admin stuff
         testWiki = new Wiki("test.wikipedia.org");
-        // org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
     }
     
@@ -243,15 +241,11 @@ public class WikiUnitTest
         assertFalse("getRevision: content not deleted", rev.isContentDeleted());
         assertFalse("getRevision: page not deleted", rev.isPageDeleted());
         
-        // revdel
+        // revdel, logged out
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         rev = enWiki.getRevision(596714684L);
-        assertTrue("getRevision: user revdeled", rev.isUserDeleted());
-        assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
-        assertTrue("getRevision: content revdeled", rev.isContentDeleted());
-        // need to not be an admin to run these tests
-        // assertNull("getRevision: summary revdeled", rev.getSummary());
-        // assertNull("getRevision: user revdeled", rev.getUser());
+        assertNull("getRevision: summary revdeled", rev.getSummary());
+        assertNull("getRevision: user revdeled", rev.getUser());
     }
     
     @Test
@@ -276,29 +270,5 @@ public class WikiUnitTest
     {
         String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
         assertEquals("getPageText", text, "This revision is not deleted!\n");
-    }
-    
-    /**
-     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-     *  @throws Exception if something goes wrong
-     */
-    @Test
-    public void getDeletedText() throws Exception
-    {
-        // requires admin rights
-        String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
-        assertEquals("getDeletedText", text, "This revision is also deleted!");
-    }
-    
-    /**
-     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-     *  @throws Exception if something goes wrong
-     */
-    @Test
-    public void RevisionGetText() throws Exception
-    {
-        Wiki.Revision deleted = testWiki.getRevision(217078L);
-        assertEquals(deleted.getText(), "This revision is deleted!");
-    }
-        
+    }   
 }
