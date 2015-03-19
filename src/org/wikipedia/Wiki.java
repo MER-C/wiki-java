@@ -5096,7 +5096,7 @@ public class Wiki implements Serializable
      */
     public String[] prefixIndex(String prefix) throws IOException
     {
-        return listPages(prefix, null, ALL_NAMESPACES, -1, -1);
+        return listPages(prefix, null, ALL_NAMESPACES, -1, -1, null);
     }
 
     /**
@@ -5109,7 +5109,7 @@ public class Wiki implements Serializable
      */
     public String[] shortPages(int cutoff) throws IOException
     {
-        return listPages("", null, MAIN_NAMESPACE, -1, cutoff);
+        return listPages("", null, MAIN_NAMESPACE, -1, cutoff, null);
     }
 
     /**
@@ -5123,7 +5123,7 @@ public class Wiki implements Serializable
      */
     public String[] shortPages(int cutoff, int namespace) throws IOException
     {
-        return listPages("", null, namespace, -1, cutoff);
+        return listPages("", null, namespace, -1, cutoff, null);
     }
 
     /**
@@ -5136,7 +5136,7 @@ public class Wiki implements Serializable
      */
     public String[] longPages(int cutoff) throws IOException
     {
-        return listPages("", null, MAIN_NAMESPACE, cutoff, -1);
+        return listPages("", null, MAIN_NAMESPACE, cutoff, -1, null);
     }
 
     /**
@@ -5150,7 +5150,7 @@ public class Wiki implements Serializable
      */
     public String[] longPages(int cutoff, int namespace) throws IOException
     {
-        return listPages("", null, namespace, cutoff, -1);
+        return listPages("", null, namespace, cutoff, -1, null);
     }
 
     /**
@@ -5172,7 +5172,7 @@ public class Wiki implements Serializable
      */
     public String[] listPages(String prefix, HashMap<String, Object> protectionstate, int namespace) throws IOException
     {
-        return listPages(prefix, protectionstate, namespace, -1, -1);
+        return listPages(prefix, protectionstate, namespace, -1, -1, null);
     }
 
     /**
@@ -5193,12 +5193,14 @@ public class Wiki implements Serializable
      *  not specify one.
      *  @param maximum the maximum size in bytes these pages can be. Use -1 to
      *  not specify one.
+     *  @param redirects Boolean.TRUE = list redirects only, Boolean.FALSE = list
+     *  non-redirects only, null = list both
      *  @return the specified list of pages
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
     public String[] listPages(String prefix, HashMap<String, Object> protectionstate, int namespace, int minimum, 
-        int maximum) throws IOException
+        int maximum, Boolean redirects) throws IOException
     {
         // @revised 0.15 to add short/long pages
         // No varargs namespace here because MW API only supports one namespace
@@ -5254,6 +5256,10 @@ public class Wiki implements Serializable
             url.append("&apmaxsize=");
             url.append(maximum);
         }
+        if (redirects == Boolean.TRUE)
+            url.append("&apfilterredir=redirects");
+        else if (redirects == Boolean.FALSE)
+            url.append("&apfilterredir=nonredirects");
 
         // parse
         ArrayList<String> pages = new ArrayList<>(6667);
