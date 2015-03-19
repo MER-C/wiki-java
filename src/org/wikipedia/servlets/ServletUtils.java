@@ -2,19 +2,18 @@
  *  @(#)ServletUtils.java 0.01 22/02/2011
  *  Copyright (C) 2011 - 2014 MER-C
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License
- *  as published by the Free Software Foundation; either version 3
- *  of the License, or (at your option) any later version.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software Foundation,
- *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ *  GNU Affero General Public License for more details.
+
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.wikipedia.servlets;
@@ -95,9 +94,10 @@ public class ServletUtils
         sb.append(toolname);
         sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software: ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of ");
-        sb.append("the GNU General Public License as published by the Free ");
-        sb.append("Software Foundation, either version 3 of the License, or (at ");
-        sb.append("your\noption) any later version.\n<p>Source code is available ");
+        sb.append("the <a href=\"//gnu.org/licenses/agpl.html\">Affero GNU General ");
+        sb.append("Public License</a> as published by the Free Software Foundation,");
+        sb.append("either version 3 of the License, or (at your\noption) any later ");
+        sb.append("version.\n<p>Source code is available ");
         sb.append("<a href=\"//code.google.com/p/wiki-java\">here</a>. Report ");
         sb.append("bugs at <a href=\"//en.wikipedia.org/wiki/User_talk:MER-C\">my ");
         sb.append("talk page</a>\n(fast) or the tracker associated with the source ");
