@@ -5023,7 +5023,7 @@ public class Wiki implements Serializable
         
         // generic target name
         String target = null;
-        if (xml.contains("title=\""))
+        if (xml.contains(" title=\"")) // space is important -- commons.getImageHistory("File:Chief1.gif");
             target = parseAttribute(xml, "title", 0);
 
         String timestamp = convertTimestamp(parseAttribute(xml, "timestamp", 0));
@@ -5272,6 +5272,8 @@ public class Wiki implements Serializable
             // find next value
             else if (line.contains("apcontinue="))
                 next = parseAttribute(line, "apcontinue", 0);
+            else
+                next = null;
 
             // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
