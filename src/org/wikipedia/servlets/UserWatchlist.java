@@ -42,10 +42,17 @@ public class UserWatchlist extends HttpServlet
     }
     
     /**
-     * @param request servlet request
-     * @param response servlet response
-     * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException if an I/O error occurs
+     *  This servlet is intended to run on Google App Engine, see { @link
+     *  https://cloud.google.com/appengine/docs/quotas here } and { @link
+     *  https://cloud.google.com/appengine/docs/java#Java_The_sandbox here }
+     *  for what you can and cannot do in this environment.
+     *  <p>
+     *  This servlet runs at { @link https://wikipediatools.appspot.com/userwatchlist.jsp }.
+     * 
+     *  @param request servlet request
+     *  @param response servlet response
+     *  @throws ServletException if a servlet-specific error occurs
+     *  @throws IOException if an I/O error occurs
      */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException

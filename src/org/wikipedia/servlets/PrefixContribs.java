@@ -44,9 +44,9 @@ public class PrefixContribs extends HttpServlet
     
     /**
      *  This servlet is intended to run on Google App Engine, see { @link
-     *  https://code.google.com/appengine/docs/quotas.html here } and { @link
-     *  https://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
-     *  here } for what you can and cannot do in this environment. The 
+     *  https://cloud.google.com/appengine/docs/quotas here } and { @link
+     *  https://cloud.google.com/appengine/docs/java#Java_The_sandbox here }
+     *  for what you can and cannot do in this environment. 
      *  <p>
      *  This servlet runs at https://wikipediatools.appspot.com/prefixcontribs.jsp .
      *

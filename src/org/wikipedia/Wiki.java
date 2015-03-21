@@ -31,16 +31,17 @@ import javax.security.auth.login.*;
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.7 or greater. Uses the <a
- *  href="https://www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for 
- *  most operations. It is recommended that the server runs the latest version
+ *  href="//www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most 
+ *  operations. It is recommended that the server runs the latest version
  *  of MediaWiki (1.23), otherwise some functions may not work.
  *  <p>
- *  Extended documentation is available <a href="https://code.google.com/p/wiki-java/wiki/ExtendedDocumentation">here</a>. 
+ *  Extended documentation is available 
+ *  <a href="//github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>. 
  *  All wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
  *  </p>
- *  Please file bug reports <a href="https://en.wikipedia.org/w/index.php?title=User_talk:MER-C&action=edit&section=new">here</a> (fast)
- *  or at the <a href="https://code.google.com/p/wiki-java/issues/list">Google code bug tracker</a> (slow).
+ *  Please file bug reports <a href="//en.wikipedia.org/wiki/User_talk:MER-C">here</a>
+ *  or at the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
  *
  *  @author MER-C and contributors
  *  @version 0.30
@@ -428,7 +429,7 @@ public class Wiki implements Serializable
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
     private transient int statusinterval = 100; // status check
-    private String useragent = "Wiki.java " + version + "(https://code.google.com/p/wiki-java/)";
+    private String useragent = "Wiki.java " + version + "(https://github.com/MER-C/wiki-java/)";
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
     private boolean resolveredirect = false;

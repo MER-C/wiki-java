@@ -92,19 +92,22 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software: ");
-        sb.append("you can redistribute it and/or modify it\nunder the terms of ");
+        sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software:    ");
+        sb.append("you can redistribute it and/or modify it\nunder the terms of    ");
         sb.append("the <a href=\"//gnu.org/licenses/agpl.html\">Affero GNU General ");
         sb.append("Public License</a> as published by the Free Software Foundation,");
         sb.append("either version 3 of the License, or (at your\noption) any later ");
         sb.append("version.\n<p>Source code is available ");
-        sb.append("<a href=\"//code.google.com/p/wiki-java\">here</a>. Report ");
+        sb.append("<a href=\"//github.com/MER-C/wiki-java\">here</a>. Report ");
         sb.append("bugs at <a href=\"//en.wikipedia.org/wiki/User_talk:MER-C\">my ");
-        sb.append("talk page</a>\n(fast) or the tracker associated with the source ");
-        sb.append("(slow).\n\n<p><b>Tools:</b> <a href=\"./linksearch.jsp\">Cross-wiki linksearch</a> ");
-        sb.append("|\n<a href=\"./imagecci.jsp\">Image contribution surveyor</a> |\n");
-        sb.append("<a href=\"./spamarchivesearch.jsp\">Spam blacklist archive search</a> | \n");
-        sb.append("<a href=\"./prefixcontribs.jsp\">Prefix contributions</a></body>\n</html>");
+        sb.append("talk page</a>\nor the <a href=\"//github.com/MER-C/wiki-java/issues\">Github issue tracker</a>.");
+        
+        sb.append("\n\n<p><b>Tools:</b>\n");
+        sb.append("  <a href=\"./linksearch.jsp\">Cross-wiki linksearch</a> | \n");
+        sb.append("  <a href=\"./imagecci.jsp\">Image contribution surveyor</a> |\n");
+        sb.append("  <a href=\"./spamarchivesearch.jsp\">Spam blacklist archive search</a> | \n");
+        sb.append("  <a href=\"./prefixcontribs.jsp\">Prefix contributions</a> \n");
+        sb.append("</body>\n</html>");
         return sb.toString();
     }
     

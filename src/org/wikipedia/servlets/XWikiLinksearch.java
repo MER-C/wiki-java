@@ -97,10 +97,10 @@ public class XWikiLinksearch extends HttpServlet
 
     /**
      *  This servlet is intended to run on Google App Engine, see { @link
-     *  https://code.google.com/appengine/docs/quotas.html here } and { @link
-     *  https://code.google.com/appengine/docs/java/runtime.html#The_Sandbox
-     *  here } for what you can and cannot do in this environment. More
-     *  precisely, at ~1s / wiki, we cannot search more than 40 wikis.
+     *  https://cloud.google.com/appengine/docs/quotas here } and { @link
+     *  https://cloud.google.com/appengine/docs/java#Java_The_sandbox here }
+     *  for what you can and cannot do in this environment. More precisely, at
+     *  ~1s / wiki, we cannot search more than 40 wikis.
      *  <p>
      *  This servlet runs at { @link https://wikipediatools.appspot.com/linksearch.jsp }.
      * 
