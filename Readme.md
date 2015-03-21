@@ -11,7 +11,7 @@ JOptionPane to isolate your development environment.
 
 ## Licenses
 
-* The package [org.wikipedia.servlets](src.org.wikipedia.servlets) is licensed under [AGPLv3+](COPYING.AGPL)
+* The package [org.wikipedia.servlets](src/org/wikipedia/servlets) is licensed under [AGPLv3+](COPYING.AGPL)
 * Everything else: [GPLv3+](COPYING.GPL)
 
 ## Documentation
