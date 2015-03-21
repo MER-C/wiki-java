@@ -16,8 +16,8 @@ JOptionPane to isolate your development environment.
 
 ## Documentation
 
-*[Javadoc](https://wikipediatools.appspot.com/doc/index.html)
-*[Extended documentation](https://github.com/MER-C/wiki-java/wiki/Extended-documentation),
+* [Javadoc](https://wikipediatools.appspot.com/doc/index.html)
+* [Extended documentation](https://github.com/MER-C/wiki-java/wiki/Extended-documentation),
  including an example program
-*See [the page on Wikipedia](https://en.wikipedia.org/wiki/User:MER-C/Wiki.java)
+* See [the page on Wikipedia](https://en.wikipedia.org/wiki/User:MER-C/Wiki.java)
  for some old revision history.
