@@ -217,6 +217,7 @@ public class WikiUnitTest
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:blah.jpg"));
         assertEquals("normalize", "Category:Wikipedia:blah", enWiki.normalize("Category:Wikipedia:blah"));
+        assertEquals("normalize", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));
     }
     
     @Test
@@ -246,6 +247,10 @@ public class WikiUnitTest
         rev = enWiki.getRevision(596714684L);
         assertNull("getRevision: summary revdeled", rev.getSummary());
         assertNull("getRevision: user revdeled", rev.getUser());
+        assertTrue("getRevision: user revdeled", rev.isUserDeleted());
+        assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
+        // NOT IMPLEMENTED:
+        // assertTrue("getRevision: content revdeled", rev.isContentDeleted());
     }
     
     @Test

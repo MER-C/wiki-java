@@ -6992,20 +6992,27 @@ public class Wiki implements Serializable
             s = s.substring(1);
         if (s.isEmpty())
             return s;
+        
+        int ns = namespace(s);
+        // localize namespace names
+        if (ns != MAIN_NAMESPACE)
+        {
+            int colon = s.indexOf(":");
+            s = namespaceIdentifier(ns) + s.substring(colon);
+        }
         char[] temp = s.toCharArray();
         if (wgCapitalLinks)
         {
             // convert first character in the actual title to upper case
-            int ns = namespace(s);
             if (ns == MAIN_NAMESPACE)
                 temp[0] = Character.toUpperCase(temp[0]);
             else
             {
-                // don't forget the extra colon
-                int index = namespaceIdentifier(ns).length();
-                temp[index] = Character.toUpperCase(temp[index]);
+                int index = namespaceIdentifier(ns).length() + 1; // + 1 for colon
+                temp[index] = Character.toUpperCase(temp[index]); 
             }
         }
+
         for (int i = 0; i < temp.length; i++)
         {
             switch (temp[i])

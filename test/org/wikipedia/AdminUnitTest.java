@@ -6,7 +6,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 /**
- *  Unit tests for Wiki.java
+ *  Unit tests for Wiki.java requiring administrator access.
  *  @author MER-C
  */
 
@@ -25,17 +25,7 @@ public class AdminUnitTest
         enWiki.setMaxLag(-1);
     }
     
-    @Test
-    public void getRevision() throws Exception
-    {
-        // revdel
-        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
-        Wiki.Revision rev = enWiki.getRevision(596714684L);
-        assertTrue("getRevision: user revdeled", rev.isUserDeleted());
-        assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
-        assertTrue("getRevision: content revdeled", rev.isContentDeleted());
-    }
-    
+
     /**
      *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
      *  @throws Exception if something goes wrong
