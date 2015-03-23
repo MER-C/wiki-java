@@ -1,5 +1,6 @@
 package org.wikipedia;
 
+import java.net.URLEncoder;
 import java.util.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -275,5 +276,36 @@ public class WikiUnitTest
     {
         String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
         assertEquals("getPageText", text, "This revision is not deleted!\n");
-    }   
+    }
+    
+    @Test
+    public void constructNamespaceString() throws Exception
+    {
+        StringBuilder temp = new StringBuilder();
+        enWiki.constructNamespaceString(temp, "blah", 1);
+        assertEquals("constructNamespaceString", "&blahnamespace=1|2|3", temp.toString());
+    }
+    
+    @Test
+    public void constructTitleString() throws Exception
+    {
+        String[] titles = new String[101];
+        for (int i = 0; i < titles.length; i++)
+            titles[i] = "a" + i;
+        String[] expected = new String[]
+        {
+            // slowmax == 50 for Wikimedia wikis if not logged in
+            URLEncoder.encode("A0|A1|A2|A3|A4|A5|A6|A7|A8|A9|A10|A11|A12|A13|A14|" +
+                "A15|A16|A17|A18|A19|A20|A21|A22|A23|A24|A25|A26|A27|A28|A29|A30|" +
+                "A31|A32|A33|A34|A35|A36|A37|A38|A39|A40|A41|A42|A43|A44|A45|A46|" +
+                "A47|A48|A49", "UTF-8"),
+            URLEncoder.encode("A50|A51|A52|A53|A54|A55|A56|A57|A58|A59|A60|A61|A62|" +
+                "A63|A64|A65|A66|A67|A68|A69|A70|A71|A72|A73|A74|A75|A76|A77|A78|A79|" +
+                "A80|A81|A82|A83|A84|A85|A86|A87|A88|A89|A90|A91|A92|A93|A94|A95|A96|" + 
+                "A97|A98|A99", "UTF-8"),
+            URLEncoder.encode("A100", "UTF-8")
+        };
+        String[] actual = enWiki.constructTitleString(titles);
+        assertArrayEquals("constructTitleString", expected, actual);
+    }
 }

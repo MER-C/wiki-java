@@ -6965,7 +6965,7 @@ public class Wiki implements Serializable
         for (int i = 0; i < titles.length; i++)
         {
             buffer.append(normalize(titles[i]));
-            if (i == titles.length - 1 || i == slowmax - 1)
+            if (i == titles.length - 1 || (i % slowmax == slowmax - 1))
             {
                 ret[i / slowmax] = URLEncoder.encode(buffer.toString(), "UTF-8");
                 buffer = new StringBuilder();
