@@ -1519,7 +1519,8 @@ public class Wiki implements Serializable
         // will not have a separate closing tag
         if (!text.contains("</rev>"))
             return "";
-        int a = text.indexOf("xml:space=\"preserve\">") + 21;
+        int a = text.indexOf("<rev ");
+        a = text.indexOf("xml:space=\"preserve\">", a) + 21;
         int b = text.indexOf("</rev>", a);
         return decode(text.substring(a, b));
     }

@@ -167,8 +167,12 @@ public class WikiUnitTest
     }
     
     @Test
-    public void getSectionText()
+    public void getSectionText() throws Exception
     {
+        assertEquals("getSectionText(): section 0", "This is section 0.", testWiki.getSectionText("User:MER-C/UnitTests/SectionTest", 0));
+        assertEquals("getSectionText(): section 2", "===Section 3===\nThis is section 2.", 
+            testWiki.getSectionText("User:MER-C/UnitTests/SectionTest", 2));
+        /*
         try
         {
             enWiki.getSectionText("User:MER-C/monobook.css", 4920);
@@ -184,6 +188,7 @@ public class WikiUnitTest
             ex.printStackTrace();
             fail("getSectionText: should throw IllegalArgumentException");
         }
+        */
     }
     
     @Test
@@ -282,7 +287,7 @@ public class WikiUnitTest
     public void constructNamespaceString() throws Exception
     {
         StringBuilder temp = new StringBuilder();
-        enWiki.constructNamespaceString(temp, "blah", 1);
+        enWiki.constructNamespaceString(temp, "blah", 1, 2, 3);
         assertEquals("constructNamespaceString", "&blahnamespace=1|2|3", temp.toString());
     }
     
