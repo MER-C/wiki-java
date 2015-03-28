@@ -38,6 +38,7 @@
 						<sourceFileInclude>org/wikipedia/*.java</sourceFileInclude>
 						<sourceFileInclude>org/wikiutils/*.java</sourceFileInclude>
 					</sourceFileIncludes>
+                                        <additionalparam>-Xdoclint:none</additionalparam>
 				</configuration>
 				<executions>
 					<execution>
