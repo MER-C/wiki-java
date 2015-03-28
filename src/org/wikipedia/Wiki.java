@@ -414,13 +414,13 @@ public class Wiki implements Serializable
     private String timezone = "UTC";
 
     // user management
-    private HashMap<String, String> cookies = new HashMap<>(12);
+    private Map<String, String> cookies = new HashMap<>(12);
     private User user;
     private int statuscounter = 0;
 
     // various caches
-    private HashMap<String, Integer> namespaces = null;
-    private ArrayList<String> watchlist = null;
+    private LinkedHashMap<String, Integer> namespaces = null;
+    private List<String> watchlist = null;
 
     // preferences
     private int max = 500;
@@ -623,9 +623,9 @@ public class Wiki implements Serializable
      *  @since 0.30
      *  @throws IOException if a network error occurs
      */
-    public HashMap<String, Object> getSiteInfo() throws IOException
+    public Map<String, Object> getSiteInfo() throws IOException
     {
-        HashMap<String, Object> ret = new HashMap<>();
+        Map<String, Object> ret = new HashMap<>();
         String line = fetch(query + "action=query&meta=siteinfo", "getSiteInfo");
         wgCapitalLinks = parseAttribute(line, "case", 0).equals("first-letter");
         ret.put("usingcapitallinks", wgCapitalLinks);
@@ -1029,10 +1029,10 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.14
      */
-    public HashMap<String, Integer> getSiteStatistics() throws IOException
+    public Map<String, Integer> getSiteStatistics() throws IOException
     {
         String text = fetch(query + "meta=siteinfo&siprop=statistics", "getSiteStatistics");
-        HashMap<String, Integer> ret = new HashMap<>(20);
+        Map<String, Integer> ret = new HashMap<>(20);
         ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
         ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
         ret.put("files", Integer.parseInt(parseAttribute(text, "images", 0)));
@@ -1156,7 +1156,7 @@ public class Wiki implements Serializable
         // @revised 0.11 to take advantage of Collection.retainAll()
         // @revised 0.14 genericised to all page titles, not just category members
 
-        ArrayList<String> aa = new ArrayList<>(5000); // silly workaroiund
+        List<String> aa = new ArrayList<>(5000); // silly workaroiund
         aa.addAll(Arrays.asList(a));
         aa.retainAll(Arrays.asList(b));
         return aa.toArray(new String[aa.size()]);
@@ -1184,7 +1184,7 @@ public class Wiki implements Serializable
      */
     public static String[] relativeComplement(String[] a, String[] b)
     {
-        ArrayList<String> aa = new ArrayList<>(5000); // silly workaroiund
+        List<String> aa = new ArrayList<>(5000); // silly workaroiund
         aa.addAll(Arrays.asList(a));
         aa.removeAll(Arrays.asList(b));
         return aa.toArray(new String[aa.size()]);
@@ -1224,7 +1224,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public HashMap getPageInfo(String page) throws IOException
+    public Map getPageInfo(String page) throws IOException
     {
         return getPageInfo(new String[] { page } )[0];
     }
@@ -1259,9 +1259,9 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public HashMap[] getPageInfo(String[] pages) throws IOException
+    public Map[] getPageInfo(String[] pages) throws IOException
     {
-        HashMap[] info = new HashMap[pages.length];
+        Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
         url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
         String[] titles = constructTitleString(pages);
@@ -1276,7 +1276,7 @@ public class Wiki implements Serializable
             {
                 int x = line.indexOf("</page>", j);
                 String item = line.substring(j, x);
-                HashMap<String, Object> tempmap = new HashMap<>(15);
+                Map<String, Object> tempmap = new HashMap<>(15);
 
                 // does the page exist?
                 boolean exists = !item.contains("missing=\"\"");
@@ -1298,7 +1298,7 @@ public class Wiki implements Serializable
 
                 // parse protection level
                 // expected form: <pr type="edit" level="sysop" expiry="infinity" cascade="" />
-                HashMap<String, Object> protectionstate = new HashMap<>();
+                Map<String, Object> protectionstate = new HashMap<>();
                 for (int z = item.indexOf("<pr "); z > 0; z = item.indexOf("<pr ", ++z))
                 {
                     String type = parseAttribute(item, "type", z);
@@ -1417,11 +1417,11 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public HashMap<String, Integer> getNamespaces() throws IOException
+    public LinkedHashMap<String, Integer> getNamespaces() throws IOException
     {
         if (namespaces == null)
             populateNamespaceCache();
-        return (HashMap<String, Integer>)namespaces.clone();
+        return (LinkedHashMap<String, Integer>)namespaces.clone();
     }
 
     /**
@@ -1461,7 +1461,7 @@ public class Wiki implements Serializable
     public boolean[] exists(String[] titles) throws IOException
     {
         boolean[] ret = new boolean[titles.length];
-        HashMap[] info = getPageInfo(titles);
+        Map[] info = getPageInfo(titles);
         for (int i = 0; i < titles.length; i++)
             ret[i] = (Boolean)info[i].get("exists");
         return ret;
@@ -1680,7 +1680,7 @@ public class Wiki implements Serializable
         long start = System.currentTimeMillis();
 
         // protection and token
-        HashMap info = getPageInfo(title);
+        Map info = getPageInfo(title);
         if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -1821,7 +1821,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Cannot delete: Permission denied");
 
         // edit token
-        HashMap info = getPageInfo(title);
+        Map info = getPageInfo(title);
         if (!(Boolean)info.get("exists"))
         {
             log(Level.INFO, "delete", "Page \"" + title + "\" does not exist.");
@@ -1977,7 +1977,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getImagesOnPage");
 
         // xml form: <im ns="6" title="File:Example.jpg" />
-        ArrayList<String> images = new ArrayList<>(750);
+        List<String> images = new ArrayList<>(750);
         for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
             images.add(parseAttribute(line, "title", a));
         
@@ -2028,7 +2028,7 @@ public class Wiki implements Serializable
 
         // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
         // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
-        ArrayList<String> categories = new ArrayList<>(750);
+        List<String> categories = new ArrayList<>(750);
         int a, b; // beginIndex and endIndex
         for ( a = line.indexOf("<cl "); a > 0; a = b )
         {
@@ -2065,7 +2065,7 @@ public class Wiki implements Serializable
         String line = fetch(url.toString(), "getTemplates");
 
         // xml form: <tl ns="10" title="Template:POTD" />
-        ArrayList<String> templates = new ArrayList<>(750);
+        List<String> templates = new ArrayList<>(750);
         for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
             templates.add(parseAttribute(line, "title", a));
         
@@ -2085,13 +2085,13 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.18
      */
-    public HashMap<String, String> getInterWikiLinks(String title) throws IOException
+    public Map<String, String> getInterWikiLinks(String title) throws IOException
     {
         String url = query + "prop=langlinks&lllimit=max&titles=" + URLEncoder.encode(normalize(title), "UTF-8");
         String line = fetch(url, "getInterwikiLinks");
 
         // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
-        HashMap<String, String> interwikis = new HashMap<>(750);
+        Map<String, String> interwikis = new HashMap<>(750);
         for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
         {
             String language = parseAttribute(line, "lang", a);
@@ -2119,7 +2119,7 @@ public class Wiki implements Serializable
         url.append("prop=links&pllimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String plcontinue = null;
-        ArrayList<String> links = new ArrayList<>(750);
+        List<String> links = new ArrayList<>(750);
         do
         {
             String line;
@@ -2154,7 +2154,7 @@ public class Wiki implements Serializable
         url.append("prop=extlinks&ellimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String eloffset = null;
-        ArrayList<String> links = new ArrayList<>(750);
+        List<String> links = new ArrayList<>(750);
         do
         {
             String line;
@@ -2349,7 +2349,7 @@ public class Wiki implements Serializable
             url.append(calendarToTimestamp(end));
         }
         String rvcontinue = null;
-        ArrayList<Revision> revisions = new ArrayList<>(1500);
+        List<Revision> revisions = new ArrayList<>(1500);
 
         // main loop
         do
@@ -2435,7 +2435,7 @@ public class Wiki implements Serializable
         url.append(URLEncoder.encode(title, "UTF-8"));
         
         String drvcontinue = null;
-        ArrayList<Revision> delrevs = new ArrayList<>(500);
+        List<Revision> delrevs = new ArrayList<>(500);
         do
         {
             String response;
@@ -2523,7 +2523,7 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "adr", namespace);
         
         String adrcontinue = null;
-        ArrayList<Revision> delrevs = new ArrayList<>(500);
+        List<Revision> delrevs = new ArrayList<>(500);
         do
         {
             String response;
@@ -2584,7 +2584,7 @@ public class Wiki implements Serializable
         url.append(namespace);
         
         String drcontinue = null;
-        ArrayList<String> pages = new ArrayList<>();
+        List<String> pages = new ArrayList<>();
         do
         {
             String text;
@@ -2689,7 +2689,7 @@ public class Wiki implements Serializable
             throw new UnsupportedOperationException("Tried to move a category.");
         
         // protection and token
-        HashMap info = getPageInfo(title);
+        Map info = getPageInfo(title);
         // determine whether the page exists
         if (!(Boolean)info.get("exists"))
             throw new IllegalArgumentException("Tried to move a non-existant page!");
@@ -2772,13 +2772,13 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if we cannot protect
      *  @since 0.30
      */
-    public synchronized void protect(String page, HashMap<String, Object> protectionstate, String reason) throws IOException, LoginException
+    public synchronized void protect(String page, Map<String, Object> protectionstate, String reason) throws IOException, LoginException
     {
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
         
         long start = System.currentTimeMillis();
-        HashMap info = getPageInfo(page);
+        Map info = getPageInfo(page);
         String protectToken = (String)info.get("token");
         
         StringBuilder out = new StringBuilder("title=");
@@ -2852,7 +2852,7 @@ public class Wiki implements Serializable
      */
     public void unprotect(String page, String reason) throws IOException, LoginException
     {
-        HashMap<String, Object> state = new HashMap<>();
+        Map<String, Object> state = new HashMap<>();
         state.put("edit", NO_PROTECTION);
         state.put("move", NO_PROTECTION);
         if (namespace(page) == FILE_NAMESPACE)
@@ -3201,7 +3201,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
         // protection and token
-        HashMap info = getPageInfo(rev.getPage());
+        Map info = getPageInfo(rev.getPage());
         if (!checkRights(info, "edit"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -3413,7 +3413,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.20
      */
-    public HashMap<String, Object> getFileMetadata(String file) throws IOException
+    public Map<String, Object> getFileMetadata(String file) throws IOException
     {
         // This seems a good candidate for bulk queries.
         // TODO: support prop=videoinfo
@@ -3424,7 +3424,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
-        HashMap<String, Object> metadata = new HashMap<>(30);
+        Map<String, Object> metadata = new HashMap<>(30);
 
         // size, width, height, mime type
         metadata.put("size", new Integer(parseAttribute(line, "size", 0)));
@@ -3465,7 +3465,7 @@ public class Wiki implements Serializable
             return new String[0];
 
         // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
-        ArrayList<String> duplicates = new ArrayList<>(10);
+        List<String> duplicates = new ArrayList<>(10);
         for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
             duplicates.add("File:" + parseAttribute(line, "name", a));
 
@@ -3493,7 +3493,7 @@ public class Wiki implements Serializable
         String line = fetch(url, "getImageHistory");
         if (line.contains("missing=\"\""))
             return new LogEntry[0];
-        ArrayList<LogEntry> history = new ArrayList<>(40);
+        List<LogEntry> history = new ArrayList<>(40);
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
         for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
@@ -3603,7 +3603,7 @@ public class Wiki implements Serializable
             url.append("&aiend=");
             url.append(calendarToTimestamp(end));
         }
-        ArrayList<LogEntry> uploads = new ArrayList<>();
+        List<LogEntry> uploads = new ArrayList<>();
         String aicontinue = null;
         do
         {
@@ -3670,7 +3670,7 @@ public class Wiki implements Serializable
         filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
 
         // protection and token
-        HashMap info = getPageInfo("File:" + filename);
+        Map info = getPageInfo("File:" + filename);
         if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -3688,7 +3688,7 @@ public class Wiki implements Serializable
             // upload the image
             for (int i = 0; i < chunks; i++)
             {
-                HashMap<String, Object> params = new HashMap<>(50);
+                Map<String, Object> params = new HashMap<>(50);
                 params.put("filename", filename);
                 params.put("token", wpEditToken);
                 params.put("ignorewarnings", "true");
@@ -3759,7 +3759,7 @@ public class Wiki implements Serializable
         // unstash upload if chunked
         if (chunks > 1)
         {
-            HashMap<String, Object> params = new HashMap<>(50);
+            Map<String, Object> params = new HashMap<>(50);
             params.put("filename", filename);
             params.put("token", wpEditToken);
             params.put("text", contents);
@@ -3847,7 +3847,7 @@ public class Wiki implements Serializable
             url.append("&auprefix=");
             url.append(URLEncoder.encode(normalize(prefix), "UTF-8"));
         }
-        ArrayList<String> members = new ArrayList<>(6667); // enough for most requests
+        List<String> members = new ArrayList<>(6667); // enough for most requests
         do
         {
             String temp = url.toString();
@@ -3996,7 +3996,7 @@ public class Wiki implements Serializable
             temp.append("&ucend=");
             temp.append(calendarToTimestamp(end));
         }
-        ArrayList<Revision> revisions = new ArrayList<>(7500);
+        List<Revision> revisions = new ArrayList<>(7500);
         String uccontinue = "", ucstart = "";
         if (start != null)
         {
@@ -4150,7 +4150,7 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        HashMap[] info = getPageInfo(titles);
+        Map[] info = getPageInfo(titles);
         for (int i = 0; i < titles.length; i++)
         {
             StringBuilder data = new StringBuilder("title=");
@@ -4281,7 +4281,7 @@ public class Wiki implements Serializable
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
         
-        ArrayList<Revision> wl = new ArrayList<>(667);
+        List<Revision> wl = new ArrayList<>(667);
         String wlstart = "";
         do
         {
@@ -4336,7 +4336,7 @@ public class Wiki implements Serializable
 
         // some random variables we need later
         boolean done = false;
-        ArrayList<String[]> results = new ArrayList<>(5000);
+        List<String[]> results = new ArrayList<>(5000);
 
         // fetch and iterate through the search results
         while (!done)
@@ -4385,7 +4385,7 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "iu", ns);
         
         // fiddle
-        ArrayList<String> pages = new ArrayList<>(1333);
+        List<String> pages = new ArrayList<>(1333);
         String next = "";
         do
         {
@@ -4443,7 +4443,7 @@ public class Wiki implements Serializable
             url.append("&blfilterredir=redirects");
 
         // main loop
-        ArrayList<String> pages = new ArrayList<>(6667); // generally enough
+        List<String> pages = new ArrayList<>(6667); // generally enough
         String blcontinue = null;
         do
         {
@@ -4484,7 +4484,7 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "ei", ns);
 
         // main loop
-        ArrayList<String> pages = new ArrayList<>(6667); // generally enough
+        List<String> pages = new ArrayList<>(6667); // generally enough
         String eicontinue = null;
         do
         {
@@ -4553,7 +4553,7 @@ public class Wiki implements Serializable
         }
         else
             constructNamespaceString(url, "cm", ns);
-        ArrayList<String> members = new ArrayList<>();
+        List<String> members = new ArrayList<>();
         String next = "";
         do
         {
@@ -4598,7 +4598,7 @@ public class Wiki implements Serializable
      *  the list of urls (instance of <tt>java.net.URL</tt>)
      *  @since 0.06
      */
-    public ArrayList[] linksearch(String pattern) throws IOException
+    public List[] linksearch(String pattern) throws IOException
     {
         return linksearch(pattern, "http");
     }
@@ -4620,7 +4620,7 @@ public class Wiki implements Serializable
      *  the list of urls (instance of <tt>java.net.URL</tt>)
      *  @since 0.24
      */
-    public ArrayList[] linksearch(String pattern, String protocol, int... ns) throws IOException
+    public List[] linksearch(String pattern, String protocol, int... ns) throws IOException
     {
         // FIXME: Change return type to ArrayList<Object[]> or Object[][]
         // First index refers to item number, linksearch()[x][0] = page title
@@ -4636,7 +4636,7 @@ public class Wiki implements Serializable
 
         // some variables we need later
         boolean done = false;
-        ArrayList[] ret = new ArrayList[] // no reason for more than 500 links
+        List[] ret = new ArrayList[] // no reason for more than 500 links
         {
             new ArrayList<String>(667), // page titles
             new ArrayList<URL>(667) // urls
@@ -4738,7 +4738,7 @@ public class Wiki implements Serializable
         urlBase.append("&bkstart=");
 
         // connection
-        ArrayList<LogEntry> entries = new ArrayList<>(1333);
+        List<LogEntry> entries = new ArrayList<>(1333);
         do
         {
             String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
@@ -4953,7 +4953,7 @@ public class Wiki implements Serializable
         }
 
         // only now we can actually start to retrieve the logs
-        ArrayList<LogEntry> entries = new ArrayList<>(6667); // should be enough
+        List<LogEntry> entries = new ArrayList<>(6667); // should be enough
         do
         {
             String line = fetch(url.toString() + "&lestart=" + lestart, "getLogEntries");
@@ -5078,7 +5078,7 @@ public class Wiki implements Serializable
             int a = xml.indexOf("new=\"") + 5;
             int b = xml.indexOf('\"', a);
             StringTokenizer tk = new StringTokenizer(xml.substring(a, b), ", ");
-            ArrayList<String> temp = new ArrayList<>();
+            List<String> temp = new ArrayList<>();
             while (tk.hasMoreTokens())
                 temp.add(tk.nextToken());
             details = temp.toArray(new String[temp.size()]);
@@ -5172,7 +5172,7 @@ public class Wiki implements Serializable
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, HashMap<String, Object> protectionstate, int namespace) throws IOException
+    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace) throws IOException
     {
         return listPages(prefix, protectionstate, namespace, -1, -1, null);
     }
@@ -5201,7 +5201,7 @@ public class Wiki implements Serializable
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, HashMap<String, Object> protectionstate, int namespace, int minimum, 
+    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace, int minimum, 
         int maximum, Boolean redirects) throws IOException
     {
         // @revised 0.15 to add short/long pages
@@ -5264,7 +5264,7 @@ public class Wiki implements Serializable
             url.append("&apfilterredir=nonredirects");
 
         // parse
-        ArrayList<String> pages = new ArrayList<>(6667);
+        List<String> pages = new ArrayList<>(6667);
         String next = null;
         do
         {
@@ -5321,7 +5321,7 @@ public class Wiki implements Serializable
         
         String url = query + "action=query&list=querypage&qplimit=max&qppage=" + page + "&qpcontinue=";
         String offset = "";
-        ArrayList<String> pages = new ArrayList<>(1333);
+        List<String> pages = new ArrayList<>(1333);
         
         do
         {
@@ -5501,7 +5501,7 @@ public class Wiki implements Serializable
         // fetch, parse
         url.append("&rcstart=");
         String rcstart = calendarToTimestamp(makeCalendar());
-        ArrayList<Revision> revisions = new ArrayList<>(750);
+        List<Revision> revisions = new ArrayList<>(750);
         do
         {
             String temp = url.toString();
@@ -5602,7 +5602,7 @@ public class Wiki implements Serializable
         url.append("&iwblprop=iwtitle%7Ciwprefix");
 
         String iwblcontinue = "";
-        ArrayList<String[]> links = new ArrayList<>(500);
+        List<String[]> links = new ArrayList<>(500);
         do
         {
             String line;
@@ -5682,11 +5682,11 @@ public class Wiki implements Serializable
          *  @throws IOException if a network error occurs
          *  @since 0.24
          */
-        public HashMap<String, Object> getUserInfo() throws IOException
+        public Map<String, Object> getUserInfo() throws IOException
         {
             String info = fetch(query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers="
                 + URLEncoder.encode(username, "UTF-8"), "getUserInfo");
-            HashMap<String, Object> ret = new HashMap<>(10);
+            Map<String, Object> ret = new HashMap<>(10);
 
             ret.put("blocked", info.contains("blockedby=\""));
             ret.put("emailable", info.contains("emailable=\""));
@@ -5699,7 +5699,7 @@ public class Wiki implements Serializable
                 ret.put("created", timestampToCalendar(registrationdate, true));
             
             // groups
-            ArrayList<String> temp = new ArrayList<>();
+            List<String> temp = new ArrayList<>();
             for (int x = info.indexOf("<g>"); x > 0; x = info.indexOf("<g>", ++x))
             {
                 int y = info.indexOf("</g>", x);
@@ -7069,9 +7069,9 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
-    protected boolean checkRights(HashMap<String, Object> pageinfo, String action) throws IOException
+    protected boolean checkRights(Map<String, Object> pageinfo, String action) throws IOException
     {
-        HashMap<String, Object> protectionstate = (HashMap<String, Object>)pageinfo.get("protection");
+        Map<String, Object> protectionstate = (Map<String, Object>)pageinfo.get("protection");
         if (protectionstate.containsKey(action))
         {
             String level = (String)protectionstate.get(action);

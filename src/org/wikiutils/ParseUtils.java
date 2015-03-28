@@ -442,7 +442,7 @@ public class ParseUtils
          *  @return true, if the position will be ignored
          *  Contributed by Hunsu.
          */
-        private static boolean isIgnorePosition(HashMap<Integer, Integer> map, int position)
+        private static boolean isIgnorePosition(Map<Integer, Integer> map, int position)
         {
                 if (map == null)
                         return false;
