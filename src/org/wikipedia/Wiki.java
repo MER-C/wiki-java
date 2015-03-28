@@ -419,8 +419,8 @@ public class Wiki implements Serializable
     private int statuscounter = 0;
 
     // various caches
-    private LinkedHashMap<String, Integer> namespaces = null;
-    private List<String> watchlist = null;
+    private transient LinkedHashMap<String, Integer> namespaces = null;
+    private transient List<String> watchlist = null;
 
     // preferences
     private int max = 500;
