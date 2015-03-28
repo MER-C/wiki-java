@@ -433,6 +433,8 @@ public class Wiki implements Serializable
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
     private boolean resolveredirect = false;
+    private Level loglevel = Level.ALL;
+    private static final Logger logger = Logger.getLogger("wiki");
 
     // retry flag
     private boolean retry = true;
@@ -494,6 +496,7 @@ public class Wiki implements Serializable
         // and scriptpath in constructors and do not do anything else than super(x)!
         // http://stackoverflow.com/questions/3404301/whats-wrong-with-overridable-method-calls-in-constructors
         // TODO: make this more sane.
+        logger.setLevel(loglevel);
         log(Level.CONFIG, "<init>", "Using Wiki.java " + version);
         initVars();
     }
@@ -887,6 +890,10 @@ public class Wiki implements Serializable
         log(Level.CONFIG, "setStatusCheckInterval", "Status check interval set to " + interval);
     }
 
+    public void setLoglevel(Level loglevel) {
+        this.loglevel = loglevel;
+        logger.setLevel(loglevel);
+    }
     // META STUFF
 
     /**
@@ -7143,7 +7150,6 @@ public class Wiki implements Serializable
      */
     protected void log(Level level, String method, String text)
     {
-        Logger logger = Logger.getLogger("wiki");
         logger.logp(level, "Wiki", method, "[{0}] {1}", new Object[] { domain, text });
     }
 
@@ -7155,7 +7161,6 @@ public class Wiki implements Serializable
      */
     protected void logurl(String url, String method)
     {
-        Logger logger = Logger.getLogger("wiki");
         logger.logp(Level.INFO, "Wiki", method, "Fetching URL {0}", url);
     }
 
