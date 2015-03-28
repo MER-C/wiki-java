@@ -5640,7 +5640,7 @@ public class Wiki implements Serializable
      *  Subclass for wiki users.
      *  @since 0.05
      */
-    public class User implements Cloneable
+    public class User implements Cloneable, Serializable
     {
         private String username;
         private String[] rights = null; // cache
