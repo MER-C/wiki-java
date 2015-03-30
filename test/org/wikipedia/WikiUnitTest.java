@@ -155,7 +155,7 @@ public class WikiUnitTest
     @Test
     public void getInterWikiLinks() throws Exception
     {
-        HashMap<String, String> temp = enWiki.getInterWikiLinks("Gkdfkkl&djfdf");
+        Map<String, String> temp = enWiki.getInterWikiLinks("Gkdfkkl&djfdf");
         assertTrue("getInterWikiLinks: non-existent page", temp.isEmpty());
     }
     
@@ -208,7 +208,7 @@ public class WikiUnitTest
     @Test
     public void getSiteInfo() throws Exception
     {
-        HashMap<String, Object> info = enWiki.getSiteInfo();
+        Map<String, Object> info = enWiki.getSiteInfo();
         assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
         assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
         info = new Wiki("en.wiktionary.org").getSiteInfo();

@@ -51,11 +51,11 @@ public class LoggedInTests
         // edit
         wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
         wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
-             
+*/             
         // watch
         wiki.watch("Main Page", "Blah");
         wiki.unwatch("Main Page", "Blah");
-  
+/*        
         // watchlist
         for (Wiki.Revision item : wiki.watchlist(false))
             System.out.println(item);
@@ -70,7 +70,7 @@ public class LoggedInTests
         // deleted revisions
         for (Wiki.Revision rev : wiki.getDeletedHistory("User:MER-C/UnitTests/Delete"))
             System.out.println(rev);
- */              
+
         // deleted prefix index
         for (String page : wiki.deletedPrefixIndex("B", Wiki.MAIN_NAMESPACE))
             System.out.println(page);
@@ -99,5 +99,6 @@ public class LoggedInTests
         // enWiki.revisionDelete(Boolean.TRUE, null, Boolean.TRUE, "Testing", Boolean.TRUE, new Wiki.Revision[] { rev });
         // enWiki.revisionDelete(Boolean.FALSE, null, null, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
         // enWiki.revisionDelete(null, null, Boolean.FALSE, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
+*/        
     }
 }

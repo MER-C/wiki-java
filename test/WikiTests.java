@@ -36,7 +36,8 @@ public class WikiTests
         deWiki.setMaxLag(-1);
         Wiki testWiki = new Wiki("test.wikipedia.org");
         testWiki.setMaxLag(-1);
-/*           
+
+        /*
         // imageUsage()
         for (String page : enWiki.imageUsage("Wiki.png", Wiki.PROJECT_NAMESPACE, Wiki.TEMPLATE_NAMESPACE))
             System.out.println(page);
@@ -54,7 +55,7 @@ public class WikiTests
             System.out.println(rev);
 
         // getPageInfo(): protected, cascade protected page
-        HashMap<String, Object> blah = enWiki.getPageInfo(" Main  Page ");
+        Map<String, Object> blah = enWiki.getPageInfo(" Main  Page ");
         for(Map.Entry<String, Object> entry : blah.entrySet())
         {
             System.out.print(entry.getKey());
@@ -73,7 +74,7 @@ public class WikiTests
         }
         // enwiki now has a custom protection level
         // see also issue 39
-        HashMap<String, Object> blah5[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk", "Crème brûlée" });
+        Map<String, Object> blah5[] = enWiki.getPageInfo(new String[] { "Template:La", "Template:La", "Zombie", "Ksdhfsjk", "Crème brûlée" });
         for (int i = 0; i < blah5.length; i++)
         {
             for (Map.Entry<String, Object> entry : blah5[i].entrySet())
@@ -186,7 +187,7 @@ public class WikiTests
             System.out.println("[[:" + entry.getKey() + ":" + entry.getValue() + "]]");
             
         // linksearch
-        ArrayList[] blah4 = enWiki.linksearch("bom.gov.au");
+        List[] blah4 = enWiki.linksearch("bom.gov.au");
         for (int i = 0; i < blah4[0].size(); i++)
             System.out.println(blah4[0].get(i) + " --- " + blah4[1].get(i));
 
@@ -203,12 +204,12 @@ public class WikiTests
         HashMap<String, Object> protect = new HashMap<>();
         protect.put("cascade", true);
         protect.put("edit", Wiki.FULL_PROTECTION);
-        for (String page : enWiki.listPages("", protect, Wiki.MAIN_NAMESPACE, -1, -1))
+        for (String page : enWiki.listPages("", protect, Wiki.MAIN_NAMESPACE, -1, -1, null))
             System.out.println(page);
         protect = new HashMap<>();
         protect.put("upload", Wiki.FULL_PROTECTION);
         protect.put("edit", Wiki.FULL_PROTECTION);
-        for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1))
+        for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1, null))
             System.out.println(page);
 
         // getRevisions
@@ -225,9 +226,8 @@ public class WikiTests
             System.out.println(cat);
         for (String cat : enWiki.getCategories("Albert Einstein", true, true))
             System.out.println(cat);
-        */
         for (String s : testWiki.getCategoryMembers("A", true))
             System.out.println(s);
-
+        */
     }
 }

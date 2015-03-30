@@ -4111,14 +4111,6 @@ public class Wiki implements Serializable
      */
     public void watch(String... titles) throws IOException, CredentialNotFoundException
     {
-        /*
-         *  Ideally, we would have a setRawWatchlist() equivalent in the API, and as such
-         *  not have to send title.length requests. Then we can do away with watchInternal() 
-         *  and this method will consist of the following:
-         *
-         *  watchlist.addAll(Arrays.asList(titles);
-         *  setRawWatchlist(watchlist.toArray(new String[0]));
-         */
         watchInternal(false, titles);
         watchlist.addAll(Arrays.asList(titles));
     }
@@ -4157,17 +4149,20 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        Map[] info = getPageInfo(titles);
-        for (int i = 0; i < titles.length; i++)
+        for (String titlestring : constructTitleString(titles))
         {
-            StringBuilder data = new StringBuilder("title=");
-            data.append(URLEncoder.encode(normalize(titles[i]), "UTF-8"));
+            StringBuilder request = new StringBuilder("titles=");
+            request.append(titlestring);
             if (unwatch)
-                data.append("&unwatch");
-            data.append("&token=");
-            String watchToken = (String)info[i].get("watchtoken");
-            data.append(URLEncoder.encode(watchToken, "UTF-8"));
-            post(apiUrl + "action=watch", data.toString(), state);
+                request.append("&unwatch=1");
+            request.append("&token=");
+            
+            // fetch token
+            String temp = fetch(query + "meta=tokens&type=watch", "watchInternal");
+            String watchToken = parseAttribute(temp, "watchtoken", 0);
+            request.append(URLEncoder.encode(watchToken, "UTF-8"));
+            
+            post(apiUrl + "action=watch", request.toString(), state);
         }
         log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
     }
