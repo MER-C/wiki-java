@@ -73,7 +73,7 @@ public class AllWikiLinksearch
                     builder.append("=== Results for ");
                     builder.append(wiki.getDomain());
                     builder.append(" ===\n");
-                    ArrayList[] links = wiki.linksearch("*." + domain);
+                    List[] links = wiki.linksearch("*." + domain);
                     linknumber = links[0].size();
                     if (linknumber != 0)
                     {

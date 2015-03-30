@@ -442,7 +442,7 @@ public class ParseUtils
          *  @return true, if the position will be ignored
          *  Contributed by Hunsu.
          */
-        private static boolean isIgnorePosition(HashMap<Integer, Integer> map, int position)
+        public static boolean isIgnorePosition(Map<Integer, Integer> map, int position)
         {
                 if (map == null)
                         return false;
@@ -463,7 +463,7 @@ public class ParseUtils
          *  @return the start and end of text contanied between no
          *  Contributed by Hunsu.
          */
-        private static HashMap<Integer, Integer> getIgnorePositions(String text, String start, String end)
+        public static HashMap<Integer, Integer> getIgnorePositions(String text, String start, String end)
         {
                 int startPos = text.indexOf(start);
                 if (startPos == -1)

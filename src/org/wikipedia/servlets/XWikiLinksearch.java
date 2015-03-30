@@ -235,17 +235,17 @@ public class XWikiLinksearch extends HttpServlet
         buffer.append("</h2>\n");
         for (Wiki wiki : wikis)
         {
-            ArrayList[] temp = wiki.linksearch("*." + domain, "http", ns);
+            List[] temp = wiki.linksearch("*." + domain, "http", ns);
             // silly api designs aplenty here!
             if (https)
             {
-                ArrayList[] temp2 = wiki.linksearch("*." + domain, "https", ns);
+                List[] temp2 = wiki.linksearch("*." + domain, "https", ns);
                 temp[0].addAll(temp2[0]);
                 temp[1].addAll(temp2[1]);
             }
             if (mailto)
             {
-                ArrayList[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
+                List[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
                 temp[0].addAll(temp2[0]);
                 temp[1].addAll(temp2[1]);
             }

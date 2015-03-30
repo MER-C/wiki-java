@@ -38,6 +38,7 @@
 						<sourceFileInclude>org/wikipedia/*.java</sourceFileInclude>
 						<sourceFileInclude>org/wikiutils/*.java</sourceFileInclude>
 					</sourceFileIncludes>
+                                        <additionalparam>-Xdoclint:none</additionalparam>
 				</configuration>
 				<executions>
 					<execution>
@@ -50,4 +51,11 @@
 			</plugin>
 		</plugins>
 	</build>
+    <dependencies>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+    </dependencies>
 </project>
