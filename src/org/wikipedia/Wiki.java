@@ -890,10 +890,17 @@ public class Wiki implements Serializable
         log(Level.CONFIG, "setStatusCheckInterval", "Status check interval set to " + interval);
     }
 
-    public void setLoglevel(Level loglevel) {
+    /**
+     *  Set the logging level used by the internal logger.
+     *  @param loglevel one of the levels specified in java.util.logging.LEVEL
+     *  @since 0.31
+     */
+    public void setLogLevel(Level loglevel)
+    {
         this.loglevel = loglevel;
         logger.setLevel(loglevel);
     }
+    
     // META STUFF
 
     /**
