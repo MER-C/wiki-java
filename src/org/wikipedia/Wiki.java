@@ -1882,7 +1882,7 @@ public class Wiki implements Serializable
     
     /**
      *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
-     *  revisions and files by default.
+     *  revisions and files by default. This method is throttled.
      *  @param title a page to undelete
      *  @param reason the reason for undeletion
      *  @param revisions a list of revisions for selective undeletion
@@ -4104,6 +4104,67 @@ public class Wiki implements Serializable
             throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
         throttle(start);
         log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
+    }
+    
+    /**
+     *  Unblocks a user. This method is throttled.
+     *  @param blockeduser the user to unblock
+     *  @param reason the reason for unblocking
+     *  @throws CredentialNotFoundException if not an admin
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if you have been blocked
+     *  @since 0.31
+     */
+    public synchronized void unblock(String blockeduser, String reason) throws IOException, LoginException
+    {
+        long start = System.currentTimeMillis();
+        if (user == null || !user.isA("sysop"))
+           throw new CredentialNotFoundException("Cannot unblock: permission denied!");
+        
+        // fetch token
+        String temp = fetch(query + "action=query&meta=tokens", "unblock");
+        String token = parseAttribute(temp, "csrftoken", 0);
+        
+        // send request
+        String request = "user=" + URLEncoder.encode(blockeduser, "UTF-8") +
+            "&reason=" + URLEncoder.encode(reason, "UTF-8") + "&token=" +
+            URLEncoder.encode(token, "UTF-8");
+        String response = post(query + "action=unblock", request, "unblock");
+        
+        // done
+        try
+        {
+            if (!response.contains("<unblock "))
+                checkErrorsAndUpdateStatus(response, "unblock");
+            else if (response.contains("code=\"cantunblock\""))
+                log(Level.INFO, "unblock", blockeduser + " is not blocked.");
+            else if (response.contains("code=\"blockedasrange\""))
+            {
+                log(Level.SEVERE, "unblock", "IP " + blockeduser + " is rangeblocked.");
+                return; // throw exception? 
+            }
+                
+        }
+        catch (IOException e)
+        {
+            // retry once
+            if (retry)
+            {
+                retry = false;
+                log(Level.WARNING, "undelete", "Exception: " + e.getMessage() + " Retrying...");
+                unblock(blockeduser, reason);
+            }
+            else
+            {
+                log(Level.SEVERE, "unblock", "EXCEPTION: " + e);
+                throw e;
+            }
+        }
+        if (retry)
+            log(Level.INFO, "unblock", "Successfully unblocked " + blockeduser);
+        retry = true;
+        throttle(start);
     }
 
     // WATCHLIST METHODS
