@@ -288,7 +288,7 @@ public class WikiUnitTest
     {
         StringBuilder temp = new StringBuilder();
         enWiki.constructNamespaceString(temp, "blah", 1, 2, 3);
-        assertEquals("constructNamespaceString", "&blahnamespace=1|2|3", temp.toString());
+        assertEquals("constructNamespaceString", "&blahnamespace=1%7C2%7C3", temp.toString());
     }
     
     @Test
