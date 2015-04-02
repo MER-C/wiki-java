@@ -1,3 +1,7 @@
+# Wiki.java
+
+[ ![Codeship Status for MER-C/wiki-java](https://codeship.com/projects/46dd6420-bb60-0132-1d73-5ea58638974e/status?branch=master)](https://codeship.com/projects/72144)
+
 A Java wiki bot framework that is only one file -- [org/wikipedia/Wiki.java](src/org/wikipedia/Wiki.java). 
 This project also contains the source code to the tools hosted at https://wikipediatools.appspot.com
 and other Wikipedia-related bits and pieces.
