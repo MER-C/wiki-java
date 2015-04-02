@@ -465,13 +465,27 @@ public class ParseUtils
          */
         public static HashMap<Integer, Integer> getIgnorePositions(String text, String start, String end)
         {
-                int startPos = text.indexOf(start);
+                int startPos;
+
+                if ( start.equals("^") ) {
+                    startPos=0;
+                } else {
+                    startPos = text.indexOf(start);
+                }
+
                 if (startPos == -1)
                         return null;
                 HashMap<Integer, Integer> noWikiPos = new HashMap<Integer, Integer>();
                 while (startPos != -1)
                 {
-                        int endPos = text.indexOf(end, startPos);
+                        int endPos;
+
+                        if ( end.equals("$") ){
+                            endPos=text.length()-1;
+                        } else {
+                            endPos = text.indexOf(end, startPos);
+                        }
+
                         if (endPos != -1)
                                 noWikiPos.put(startPos, endPos);
                         else
@@ -481,7 +495,7 @@ public class ParseUtils
                 }
                 return noWikiPos;
         }
-        
+
         /**
          *  Gets the internal links contained in the given wikitext.
          *  @param text the wikitext
