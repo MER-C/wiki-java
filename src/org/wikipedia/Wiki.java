@@ -1666,10 +1666,11 @@ public class Wiki implements Serializable
      *
      *  @param text the text of the page
      *  @param title the title of the page
-     *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
-     *  longer than 200 characters are truncated server-side.
+     *  @param summary the edit summary or the title of the new section. See 
+     *  [[Help:Edit summary]]. Summaries longer than 200 characters are 
+     *  truncated server-side.
      *  @param minor whether the edit should be marked as minor, See 
-     * [[Help:Minor edit]].
+     *  [[Help:Minor edit]].
      *  @param bot whether to mark the edit as a bot edit (ignored if one does
      *  not have the necessary permissions)
      *  @param section the section to edit. Use -1 to specify a new section and
@@ -1709,8 +1710,12 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(normalize(title), "UTF-8"));
         buffer.append("&text=");
         buffer.append(URLEncoder.encode(text, "UTF-8"));
-        buffer.append("&summary=");
-        buffer.append(URLEncoder.encode(summary, "UTF-8"));
+        if (section != -1)
+        {
+            // edit summary created automatically if making a new section
+            buffer.append("&summary=");
+            buffer.append(URLEncoder.encode(summary, "UTF-8"));
+        }
         buffer.append("&token=");
         buffer.append(URLEncoder.encode(wpEditToken, "UTF-8"));
         if (basetime != null)
@@ -1726,7 +1731,10 @@ public class Wiki implements Serializable
         if (bot && user.isAllowedTo("bot"))
             buffer.append("&bot=1");
         if (section == -1)
-            buffer.append("&section=new");
+        {
+            buffer.append("&section=new&sectiontitle=");
+            buffer.append(URLEncoder.encode(summary, "UTF-8"));
+        }
         else if (section != -2)
         {
             buffer.append("&section=");
