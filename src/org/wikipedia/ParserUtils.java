@@ -116,7 +116,7 @@ public class ParserUtils
     public static String revisionsToWikitext(Wiki wiki, Wiki.Revision[] revisions)
     {
         StringBuilder buffer = new StringBuilder(revisions.length * 100);
-        buffer.append("<div style=\"font-family: monospace\">\n");
+        buffer.append("<div style=\"font-family: monospace; font-size: 120%\">\n");
         for (Wiki.Revision rev : revisions)
         {
             // base oldid link
@@ -206,9 +206,17 @@ public class ParserUtils
     public static String revisionsToHTML(Wiki wiki, Wiki.Revision[] revisions)
     {
         StringBuilder buffer = new StringBuilder(100000);
-        buffer.append("<ul style=\"font-family: monospace\">\n");
+        buffer.append("<ul style=\"font-family: monospace; font-size: 120%\">\n");
+        boolean colored = true;
         for (Wiki.Revision rev : revisions)
-        {
+        {         
+            // alternate background color for readability
+            if (colored)
+                buffer.append("<li style=\"background-color: #eeeeee\">(");
+            else
+                buffer.append("<li>(");
+            colored = !colored;
+            
             // diff link
             String page = recode(rev.getPage());
             StringBuilder temp2 = new StringBuilder("<a href=\"");
@@ -216,9 +224,9 @@ public class ParserUtils
             temp2.append(page.replace(' ', '_'));
             temp2.append("&oldid=");
             temp2.append(rev.getRevid());
-            buffer.append("<li>(");
             buffer.append(temp2);
             buffer.append("&diff=prev\">prev</a>) ");
+            
             // date
             buffer.append(temp2);
             buffer.append("\">");
