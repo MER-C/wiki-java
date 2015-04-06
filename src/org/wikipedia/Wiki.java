@@ -1248,9 +1248,9 @@ public class Wiki implements Serializable
      *  <ul>
      *  <li><b>displaytitle</b>: (String) the title of the page that is actually 
      *    displayed. Example: "iPod"
-     *  <li><b>protection</b>: (HashMap) the {@link #protect(java.lang.String, 
-     *    java.util.HashMap) protection state} of the page (HashMap). Does not 
-     *    cover implied protection levels (e.g. MediaWiki namespace).
+     *  <li><b>protection</b>: (Map) the {@link #protect(java.lang.String, 
+     *    java.util.Map, java.lang.String) protection state} of the page. Does 
+     *    not cover implied protection levels (e.g. MediaWiki namespace).
      *  <li><b>token</b>: (String) an edit token for the page, must be logged in
      *    to be non-trivial
      *  <li><b>exists</b>: (Boolean) whether the page exists
@@ -1268,7 +1268,7 @@ public class Wiki implements Serializable
      *  </ul>
      *
      *  @param pages the pages to get info for.
-     *  @return (see above). The HashMaps will come out in the same order as the
+     *  @return (see above). The Maps will come out in the same order as the
      *  processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.23
@@ -5736,7 +5736,7 @@ public class Wiki implements Serializable
          *  Gets various properties of this user. Groups and rights are cached
          *  for the current logged in user. Returns:
          *  <ul>
-         *  <li><b>editcount</b>: (int) {@link #countEdits() the user's edit 
+         *  <li><b>editcount</b>: (int) {@link #countEdits()} the user's edit 
          *    count
          *  <li><b>groups</b>: (String[]) the groups the user is in (see
          *    [[Special:Listgrouprights]])
