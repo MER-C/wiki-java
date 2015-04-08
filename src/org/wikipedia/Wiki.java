@@ -1513,15 +1513,51 @@ public class Wiki implements Serializable
      * 
      * @param title the title of the page
      * @return the number of global usages
+     * @throws IOException 
      */
-    public int getGlobalUsageCount(String title)
+    public int getGlobalUsageCount(String title) throws IOException
     {
-    	if(!title.toUpperCase().startsWith("FILE:"))
+    	title = normalize(title);
+    	if(namespace(title) != FILE_NAMESPACE)
     		throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
-    	String url = query + "&prop=globalusage&format=xml&gulimit=5000&titles=" + title;
+    	String url = query + "prop=globalusage&gulimit=500&titles=" + URLEncoder.encode(title, "UTF-8");
+    	String next = "";
     	int count = 0;
-    	for(int i=url.indexOf("<gu");i>0;i=url.indexOf("<gu", i+1))
-    		++count;
+    	
+    	do
+        {
+            if (!next.isEmpty())
+                next = "&gucontinue=" + URLEncoder.encode(next, "UTF-8");
+            String line = fetch(url+next, "getGlobalUsageCount");
+
+            // parse cmcontinue if it is there
+            if (line.contains("<query-continue>"))
+                next = parseAttribute(line, "gucontinue", 0);
+            else
+                next = null;
+
+            for(int i=line.indexOf("<gu");i>0;i=line.indexOf("<gu", i+1))
+        		++count;
+            
+            /* copy paste * /
+            // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
+            for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
+            {
+                String member = decode(parseAttribute(line, "title", x));
+                
+                // fetch subcategories
+                boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
+                if (subcat && iscat)
+                    members.addAll(Arrays.asList(getCategoryMembers(member, true, ns)));
+                
+                // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
+                if (!subcat || !nocat || !iscat)
+                    members.add(member);
+            }
+            /**/
+        }
+        while (next != null);
+
     	return count;
     }
 
