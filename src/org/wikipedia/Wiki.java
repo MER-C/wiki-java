@@ -1509,6 +1509,42 @@ public class Wiki implements Serializable
     }
 
     /**
+     * Get the number of global usages for a file.
+     * 
+     * @param title the title of the page
+     * @return the number of global usages
+     * @throws IOException 
+     */
+    public int getGlobalUsageCount(String title) throws IOException
+    {
+    	title = normalize(title);
+    	if(namespace(title) != FILE_NAMESPACE)
+    		throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
+    	String url = query + "prop=globalusage&gulimit=500&titles=" + URLEncoder.encode(title, "UTF-8");
+    	String next = "";
+    	int count = 0;
+    	
+    	do
+        {
+            if (!next.isEmpty())
+                next = "&gucontinue=" + URLEncoder.encode(next, "UTF-8");
+            String line = fetch(url+next, "getGlobalUsageCount");
+
+            // parse cmcontinue if it is there
+            if (line.contains("<query-continue>"))
+                next = parseAttribute(line, "gucontinue", 0);
+            else
+                next = null;
+
+            for(int i=line.indexOf("<gu");i>0;i=line.indexOf("<gu", i+1))
+        		++count;
+        }
+        while (next != null);
+
+    	return count;
+    }
+
+    /**
      *  Gets the text of a specific section. Useful for section editing.
      *  @param title the title of the relevant page
      *  @param number the section number of the section to retrieve text for
