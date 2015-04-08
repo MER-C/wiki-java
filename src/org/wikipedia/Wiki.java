@@ -1507,6 +1507,23 @@ public class Wiki implements Serializable
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + title);
         return temp;
     }
+    
+    /**
+     * Gets the number of global usages for a file.
+     * 
+     * @param title the title of the page
+     * @return the number of global usages
+     */
+    public int getGlobalUsageCount(String title)
+    {
+    	if(!title.toUpperCase().startsWith("FILE:"))
+    		throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
+    	String url = query + "&prop=globalusage&format=xml&gulimit=5000&titles=" + title;
+    	int count = 0;
+    	for(int i=url.indexOf("<gu");i>0;i=url.indexOf("<gu", i+1))
+    		++count;
+    	return count;
+    }
 
     /**
      *  Gets the text of a specific section. Useful for section editing.
