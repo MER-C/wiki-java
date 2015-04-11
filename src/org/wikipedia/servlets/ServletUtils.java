@@ -95,7 +95,7 @@ public class ServletUtils
         sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software:    ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of    ");
         sb.append("the <a href=\"//gnu.org/licenses/agpl.html\">Affero GNU General ");
-        sb.append("Public License</a> as published by the Free Software Foundation,");
+        sb.append("Public License</a> as published by the Free Software Foundation, ");
         sb.append("either version 3 of the License, or (at your\noption) any later ");
         sb.append("version.\n<p>Source code is available ");
         sb.append("<a href=\"//github.com/MER-C/wiki-java\">here</a>. Report ");

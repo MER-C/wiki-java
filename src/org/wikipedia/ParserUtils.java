@@ -249,7 +249,7 @@ public class ParserUtils
                 buffer.append(". ");
             
             // pages never contain XSS characters
-            buffer.append("<a href=\"http://");
+            buffer.append("<a href=\"//");
             buffer.append(wiki.getDomain());
             buffer.append("/wiki/");
             buffer.append(page.replace(' ', '_'));
@@ -261,17 +261,17 @@ public class ParserUtils
             String temp = recode(rev.getUser());
             if (temp != null)
             {
-                buffer.append("<a href=\"http://");
+                buffer.append("<a href=\"//");
                 buffer.append(wiki.getDomain());
                 buffer.append("/wiki/User:");
                 buffer.append(temp);
                 buffer.append("\">");
                 buffer.append(temp);
-                buffer.append("</a> (<a href=\"http://");
+                buffer.append("</a> (<a href=\"//");
                 buffer.append(wiki.getDomain());
                 buffer.append("/wiki/User talk:");
                 buffer.append(temp);
-                buffer.append("\">talk</a> | <a href=\"http://");
+                buffer.append("\">talk</a> | <a href=\"//");
                 buffer.append(wiki.getDomain());
                 buffer.append("/wiki/Special:Contributions/");
                 buffer.append(temp);
