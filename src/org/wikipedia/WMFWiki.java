@@ -1,6 +1,6 @@
 /**
  *  @(#)WMFWiki.java 0.01 29/03/2011
- *  Copyright (C) 2011 - 2013 MER-C
+ *  Copyright (C) 2011 - 2015 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,6 +21,7 @@
 package org.wikipedia;
 
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.logging.*;
 
@@ -80,5 +81,45 @@ public class WMFWiki extends Wiki
         Logger temp = Logger.getLogger("wiki");
         temp.log(Level.INFO, "WMFWiki.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
         return wikis.toArray(new WMFWiki[size]);
+    }
+    
+    /**
+     *  Get the global usage for a file (requires extension GlobalUsage).
+     * 
+     *  @param title the title of the page (must contain "File:")
+     *  @return the global usage of the file, 
+     *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if <tt>namespace(title) != FILE_NAMESPACE</tt>
+     */
+    public String[][] getGlobalUsage(String title) throws IOException
+    {
+    	title = normalize(title);
+    	if (namespace(title) != FILE_NAMESPACE)
+            throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
+    	String url = query + "prop=globalusage&gulimit=10&titles=" + URLEncoder.encode(title, "UTF-8");
+    	String next = "";
+    	ArrayList<String[]> usage = new ArrayList<>(500);
+    	
+    	do
+        {
+            if (!next.isEmpty())
+                next = "&gucontinue=" + URLEncoder.encode(next, "UTF-8");
+            String line = fetch(url+next, "getGlobalUsageCount");
+
+            // parse cmcontinue if it is there
+            if (line.contains("<query-continue>"))
+                next = parseAttribute(line, "gucontinue", 0);
+            else
+                next = null;
+
+            for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
+                usage.add(new String[] {
+                    parseAttribute(line, "wiki", i),
+                    parseAttribute(line, "title", i)
+                });
+        }
+        while (next != null);
+
+    	return usage.toArray(new String[0][0]);
     }
 }

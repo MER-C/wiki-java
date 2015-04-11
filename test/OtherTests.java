@@ -17,6 +17,7 @@
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+import java.util.Arrays;
 import org.wikipedia.*;
 
 /**
@@ -25,10 +26,16 @@ import org.wikipedia.*;
  */
 public class OtherTests
 {
+    private static WMFWiki enWiki = new WMFWiki("en.wikipedia.org");
+    
     public static void main(String[] args) throws java.io.IOException
     {
         // WMFWiki.getSiteMatrix()
-        for (Wiki x : WMFWiki.getSiteMatrix())
-            System.out.println(x.getDomain());
+        // for (Wiki x : WMFWiki.getSiteMatrix())
+        //     System.out.println(x.getDomain());
+        
+        // WMFWiki.getGlobalUsage()
+        for (String[] x : enWiki.getGlobalUsage("File:Deinocheirusbcn.JPG"))
+            System.out.println(Arrays.toString(x));
     }
 }

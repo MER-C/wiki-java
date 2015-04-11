@@ -6986,7 +6986,7 @@ public class Wiki implements Serializable
      *  is not present
      *  @since 0.28
      */
-    private String parseAttribute(String xml, String attribute, int index)
+    protected String parseAttribute(String xml, String attribute, int index)
     {
         // let's hope the JVM always inlines this
         if (xml.contains(attribute + "=\""))
