@@ -87,7 +87,7 @@ public class WMFWiki extends Wiki
      *  Get the global usage for a file (requires extension GlobalUsage).
      * 
      *  @param title the title of the page (must contain "File:")
-     *  @return the global usage of the file, 
+     *  @return the global usage of the file, including the wiki and page the file is used on
      *  @throws IOException if a network error occurs
      *  @throws UnsupportedOperationException if <tt>namespace(title) != FILE_NAMESPACE</tt>
      */
@@ -96,7 +96,7 @@ public class WMFWiki extends Wiki
     	title = normalize(title);
     	if (namespace(title) != FILE_NAMESPACE)
             throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
-    	String url = query + "prop=globalusage&gulimit=10&titles=" + URLEncoder.encode(title, "UTF-8");
+    	String url = query + "prop=globalusage&gulimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
     	String next = "";
     	ArrayList<String[]> usage = new ArrayList<>(500);
     	
@@ -106,7 +106,7 @@ public class WMFWiki extends Wiki
                 next = "&gucontinue=" + URLEncoder.encode(next, "UTF-8");
             String line = fetch(url+next, "getGlobalUsageCount");
 
-            // parse cmcontinue if it is there
+            // parse gucontinue if it is there
             if (line.contains("<query-continue>"))
                 next = parseAttribute(line, "gucontinue", 0);
             else
