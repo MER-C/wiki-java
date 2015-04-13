@@ -20,11 +20,11 @@ package org.wikipedia.servlets;
 
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import javax.swing.JOptionPane;
 import javax.servlet.*;
 import javax.servlet.http.*;
 import org.wikipedia.Wiki;
+import org.wikipedia.tools.ContributionSurveyor;
 
 /**
  *  Crude tool for generating image CCIs for users. See [[WP:CCI]].
@@ -52,7 +52,7 @@ public class ImageCCI extends HttpServlet
         String user = JOptionPane.showInputDialog(null, "Enter user to survey");
         OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(user + ".txt"), "UTF-8");
         StringBuilder buffer = new StringBuilder(10000);
-        churn(user, buffer);
+        fetchCCI(user, buffer);
         out.write(buffer.toString());
         out.close();
         System.exit(0);
@@ -87,7 +87,7 @@ public class ImageCCI extends HttpServlet
             out = response.getWriter();
             try
             {
-                churn(user, buffer);
+                fetchCCI(user, buffer);
             }
             catch (IOException ex)
             {
@@ -119,45 +119,15 @@ public class ImageCCI extends HttpServlet
      *  @param buffer the StringBuilder to write to
      *  @throws IOException if a network error occurs
      */
-    public static void churn(String user, StringBuilder buffer) throws IOException
+    public static void fetchCCI(String user, StringBuilder buffer) throws IOException
     {
-        // search enwiki upload log
         Wiki.User wpuser = enWiki.getUser(user);
-        HashSet<String> wpUploads = new HashSet<>(10000);
-        if (wpuser == null)
-        {
-            buffer.append("Error: user does not exist!");
-            return;
-        }
-        Wiki.LogEntry[] entries = enWiki.getUploads(wpuser);
-        for (Wiki.LogEntry entry : entries)
-            wpUploads.add((String)entry.getTarget());
-
-        // search commons upload log
-        Wiki.User comuser = commons.getUser(user);
-        HashSet<String> commonsUploads = new HashSet<>(10000);
-        if (comuser != null)
-        {
-            entries = commons.getUploads(comuser);
-            for (Wiki.LogEntry entry : entries)
-                commonsUploads.add((String)entry.getTarget());
-        }
-
-        // search for transferred images
-        HashSet<String> commonsTransfer = new HashSet<>(10000);
-        String[][] temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
-        for (String[] x : temp)
-            commonsTransfer.add(x[0]);
-
-        // remove all files that have been reuploaded to Commons
-        wpUploads.removeAll(commonsUploads);
-        wpUploads.removeAll(commonsTransfer);
-        commonsTransfer.removeAll(commonsUploads);
+        String[][] survey = ContributionSurveyor.imageContributionSurvey(enWiki, wpuser);
 
         // output results
         buffer.append("=== Uploads to en.wikipedia.org ===\n");
         int i = 0;
-        for (String entry : wpUploads)
+        for (String entry : survey[0])
         {
             i++;
             if (i % 20 == 1)
@@ -174,7 +144,7 @@ public class ImageCCI extends HttpServlet
         }
         buffer.append("\n=== Uploads to commons.wikimedia.org ===\n");
         i = 0;
-        for (String entry : commonsUploads)
+        for (String entry : survey[1])
         {
             i++;
             if (i % 20 == 1)
@@ -192,7 +162,7 @@ public class ImageCCI extends HttpServlet
         buffer.append("\n=== Transferred files on commons.wikimedia.org ===\n");
         buffer.append("WARNING: may be inaccurate, depending on username.\n");
         i = 0;
-        for (String entry : commonsTransfer)
+        for (String entry : survey[2])
         {
             i++;
             if (i % 20 == 1)

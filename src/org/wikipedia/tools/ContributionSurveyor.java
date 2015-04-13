@@ -171,7 +171,6 @@ public class ContributionSurveyor
     public static void contributionSurvey(Wiki homewiki, String[] users, File output, boolean userspace, boolean images) throws IOException
     {
         FileWriter out = new FileWriter(output);
-        Wiki commons = new Wiki("commons.wikimedia.org");
         for (String user : users)
         {
             // determine if user exists; if so, stats
@@ -251,27 +250,24 @@ public class ContributionSurveyor
             // survey images
             if (images && wpuser != null)
             {
-                Wiki.User comuser = commons.getUser(user);
-                Wiki.LogEntry[] uploads = homewiki.getUploads(wpuser);
-                if (uploads.length > 0)
+                String[][] survey = imageContributionSurvey(homewiki, wpuser);
+                if (survey[0].length > 0)
                 {
                     out.write("====Local uploads (" + user + ")====\n");
-                    HashSet<String> list = new HashSet<>(10000);
-                    for (Wiki.LogEntry upload : uploads)
-                        list.add(upload.getTarget());
-                    out.write(ParserUtils.formatList(list.toArray(new String[list.size()])));
+                    out.write(ParserUtils.formatList(survey[0]));
                     out.write("\n");
                 }
-
-                // commons
-                uploads = commons.getUploads(comuser);
-                if (uploads.length > 0)
+                if (survey[1].length > 0)
                 {
                     out.write("====Commons uploads (" + user + ")====\n");
-                    HashSet<String> list = new HashSet<>(10000);
-                    for (Wiki.LogEntry upload : uploads)
-                        list.add(upload.getTarget());
-                    out.write(ParserUtils.formatList(list.toArray(new String[list.size()])));
+                    out.write(ParserUtils.formatList(survey[1]));
+                    out.write("\n");
+                }
+                if (survey[2].length > 0)
+                {
+                    out.write("====Transferred uploads (" + user + ")====\n");
+                    out.write("WARNING: may be inaccurate, depending on username.");
+                    out.write(ParserUtils.formatList(survey[2]));
                     out.write("\n");
                 }
             }
@@ -283,5 +279,47 @@ public class ContributionSurveyor
             + df.format(date) + " (UTC).");
         out.flush();
         out.close();
+    }
+    
+    /**
+     *  Performs an image contribution survey on a user.
+     *  @param homewiki a wiki
+     *  @param user a user on that wiki
+     *  @return first element = local uploads, second element = uploads on Wikimedia
+     *  Commons by the user, third element = images transferred to Commons (may
+     *  be inaccurate depending on username).
+     *  @throws IOException if a network error occurs
+     */
+    public static String[][] imageContributionSurvey(Wiki homewiki, Wiki.User user) throws IOException
+    {
+        // fetch local uploads
+        HashSet<String> localuploads = new HashSet<>(10000);
+        for (Wiki.LogEntry upload : homewiki.getUploads(user))
+            localuploads.add(upload.getTarget());
+        
+        // fetch commons uploads
+        Wiki commons = new Wiki("commons.wikimedia.org");
+        Wiki.User comuser = commons.getUser(user.getUsername());
+        HashSet<String> comuploads = new HashSet<>(10000);
+        if (comuser != null)
+            for (Wiki.LogEntry upload : commons.getUploads(user))
+                comuploads.add(upload.getTarget());
+        
+        // fetch transferred commons uploads
+        HashSet<String> commonsTransfer = new HashSet<>(10000);
+        String[][] temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
+        for (String[] x : temp)
+            commonsTransfer.add(x[0]);
+
+        // remove all files that have been reuploaded to Commons
+        localuploads.removeAll(comuploads);
+        localuploads.removeAll(commonsTransfer);
+        commonsTransfer.removeAll(comuploads);
+        
+        return new String[][] {
+            localuploads.toArray(new String[localuploads.size()]),
+            comuploads.toArray(new String[comuploads.size()]),
+            commonsTransfer.toArray(new String[commonsTransfer.size()])
+        };
     }
 }
