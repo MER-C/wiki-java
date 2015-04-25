@@ -3369,12 +3369,30 @@ public class Wiki implements Serializable
      *
      *  @param title the title of the image (may contain "File")
      *  @return the image data or null if the image doesn't exist
+     *  @deprecated expects a file as additional parameter
      *  @throws IOException if a network error occurs
      *  @since 0.10
      */
+    @Deprecated
     public byte[] getImage(String title) throws IOException
     {
         return getImage(title, -1, -1);
+    }
+    
+    /**
+     *  Fetches an image and saves it in the given file. Warning: This does overwrite any file content!
+     *  Works for external repositories. 
+     *
+     *  @param title the title of the image (may contain "File")
+     *  @param file the file to save the image to.
+     *  @return true or false if the image doesn't exist
+     *  @throws FileNotFoundException if the file is a directory, cannot be created or opened
+     *  @throws IOException if a network error occurs
+     *  @since 0.30
+     */
+    public boolean getImage(String title, File file) throws FileNotFoundException, IOException
+    {
+        return getImage(title, -1, -1, file);
     }
 
     /**
@@ -3386,8 +3404,10 @@ public class Wiki implements Serializable
      *  @param height the height of the thumbnail (use -1 for actual height)
      *  @return the image data or null if the image doesn't exist
      *  @throws IOException if a network error occurs
+     *  @deprecated expects a file as additional parameter
      *  @since 0.13
      */
+    @Deprecated
     public byte[] getImage(String title, int width, int height) throws IOException
     {
         // this is a two step process - first we fetch the image url
@@ -3410,13 +3430,63 @@ public class Wiki implements Serializable
         setCookies(connection);
         connection.connect();
         // there should be a better way to do this
+        try(
         BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream()){
         int c;
         while ((c = in.read()) != -1)
             out.write(c);
         log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
         return out.toByteArray();
+        }
+    }
+    
+    /**
+     *  Fetches a thumbnail of an image file and saves the image data
+     *  into the given file. Warning: This does overwrite any file content!
+     *  Works for external repositories.
+     *
+     *  @param title the title of the image (may contain "File")
+     *  @param width the width of the thumbnail (use -1 for actual width)
+     *  @param height the height of the thumbnail (use -1 for actual height)
+     *  @param file a write-able file to save the data to.
+     *  @return true or false if the image doesn't exist
+     *  @throws FileNotFoundException if the file is a directory, cannot be created or opened
+     *  @throws IOException if a network error occurs
+     *  @since 0.30
+     */
+    public boolean getImage(String title, int width, int height, File file) throws FileNotFoundException, IOException
+    {
+        // this is a two step process - first we fetch the image url
+        title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=imageinfo&iiprop=url&titles=");
+        url.append(URLEncoder.encode(normalize("File:" + title), "UTF-8"));
+        url.append("&iiurlwidth=");
+        url.append(width);
+        url.append("&iiurlheight=");
+        url.append(height);
+        String line = fetch(url.toString(), "getImage");
+        if (!line.contains("<imageinfo>"))
+            return false;
+        String url2 = parseAttribute(line, "url", 0);
+
+        // then we use ImageIO to read from it
+        logurl(url2, "getImage");
+        URLConnection connection = makeConnection(url2);
+        setCookies(connection);
+        connection.connect();
+        // there should be a better way to do this
+		try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
+			 BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
+		{
+			int c;
+			while ((c = in.read()) != -1)
+				outStream.write(c);
+			outStream.flush();
+		}
+		log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
+		return true;
     }
 
     /**
