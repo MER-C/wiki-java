@@ -433,6 +433,7 @@ public class Wiki implements Serializable
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
     private boolean resolveredirect = false;
+    private String protocol = "https://";
     private Level loglevel = Level.ALL;
     private static final Logger logger = Logger.getLogger("wiki");
 
@@ -454,7 +455,7 @@ public class Wiki implements Serializable
     // CONSTRUCTORS AND CONFIGURATION
 
     /**
-     *  Creates a new connection to the English Wikipedia.
+     *  Creates a new connection to the English Wikipedia via HTTPS.
      *  @since 0.02
      */
     public Wiki()
@@ -463,10 +464,10 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Creates a new connection to a wiki. WARNING: if the wiki uses a
-     *  $wgScriptpath other than the default <tt>/w</tt>, you need to call
+     *  Creates a new connection to a wiki via HTTPS. WARNING: if the wiki uses
+     *  a $wgScriptpath other than the default <tt>/w</tt>, you need to call
      *  <tt>getScriptPath()</tt> to automatically set it. Alternatively, you
-     *  can use the constructor below if you know it in advance.
+     *  can use the constructor below if you know it in advance. 
      *
      *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
      *  en.wikipedia.org)
@@ -478,7 +479,7 @@ public class Wiki implements Serializable
 
     /**
      *  Creates a new connection to a wiki with $wgScriptpath set to
-     *  <tt>scriptPath</tt>.
+     *  <tt>scriptPath</tt> via HTTPS.
      *
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
@@ -486,10 +487,25 @@ public class Wiki implements Serializable
      */
     public Wiki(String domain, String scriptPath)
     {
+        this(domain, scriptPath, "https://");
+    }
+    
+    /**
+     *  Creates a new connection to a wiki with $wgScriptpath set to
+     *  <tt>scriptPath</tt> via the specified protocol.
+     * 
+     *  @param domain the wiki domain name
+     *  @param scriptPath the script path
+     *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
+     *  @since 0.31
+     */
+    public Wiki(String domain, String scriptPath, String protocol)
+    {
         if (domain == null || domain.isEmpty())
             domain = "en.wikipedia.org";
         this.domain = domain;
         this.scriptPath = scriptPath;
+        this.protocol = protocol;
 
         // init variables
         // This is fine as long as you do not have parameters other than domain
@@ -513,7 +529,7 @@ public class Wiki implements Serializable
      */
     protected void initVars()
     {
-        StringBuilder basegen = new StringBuilder("https://");
+        StringBuilder basegen = new StringBuilder(protocol);
         basegen.append(domain);
         basegen.append(scriptPath);
         StringBuilder apigen = new StringBuilder(basegen);        
