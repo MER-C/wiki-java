@@ -4680,8 +4680,8 @@ public class Wiki implements Serializable
      *  @since 0.03
      */
     public String[] getCategoryMembers(String name, int... ns) throws IOException
-    { 
-        return getCategoryMembers(name, false, ns);
+    {
+        return getCategoryMembers(name, 0, new ArrayList<String>(), ns);
     }
 
     /**
@@ -4693,16 +4693,48 @@ public class Wiki implements Serializable
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
-     *  @since 0.03 
+     *  @since 0.03
      */
-    public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
+    public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException{
+        return getCategoryMembers(name, (subcat?1:0), new ArrayList<String>(), ns);
+    }
+    /**
+     *  Gets the members of a category with maxdepth recursion.
+     *
+     *  Call as <tt>getCategoryMembers("Cat", 999, new int[0])</tt> to avoid
+     *  ambiguity.
+     *
+     *  @param name the name of the category
+     *  @param maxdepth depth of recursion for subcategories
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return a String[] containing page titles of members of the category
+     *  @throws IOException if a network error occurs
+     *  @since 0.31
+     */
+    public String[] getCategoryMembers(String name, int maxdepth, int... ns) throws IOException
+    {
+        return getCategoryMembers(name, maxdepth, new ArrayList<String>(), ns);
+    }
+
+    /**
+     *  Gets the members of a category.
+     *
+     *  @param name the name of the category
+     *  @param maxdepth depth of recursion for subcategories
+     *  @param visitedcategories list of already visited categories
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return a String[] containing page titles of members of the category
+     *  @throws IOException if a network error occurs
+     *  @since 0.03
+     */
+    protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories, int... ns) throws IOException
     {
         name = name.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
         url.append(URLEncoder.encode(normalize("Category:" + name), "UTF-8"));
         boolean nocat = ns.length != 0;
-        if (subcat && nocat)
+        if (maxdepth>0 && nocat)
         {
             for (int i = 0; nocat && i < ns.length; i++)
                 nocat = (ns[i] != CATEGORY_NAMESPACE);
@@ -4730,19 +4762,22 @@ public class Wiki implements Serializable
             for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
             {
                 String member = parseAttribute(line, "title", x);
-                
+
                 // fetch subcategories
                 boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
-                if (subcat && iscat)
-                    members.addAll(Arrays.asList(getCategoryMembers(member, false, ns)));
-                
+                if (maxdepth>0 && iscat && !visitedcategories.contains(member)){
+                    String[] categoryMembers = getCategoryMembers(member, --maxdepth, visitedcategories, ns);
+                    visitedcategories.add(member);
+                    members.addAll(Arrays.asList(categoryMembers));
+                }
+
                 // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
-                if (!subcat || !nocat || !iscat)
+                if (!(maxdepth>0) || !nocat || !iscat)
                     members.add(member);
             }
         }
         while (next != null);
-        
+
         int size = members.size();
         log(Level.INFO, "getCategoryMembers", "Successfully retrieved contents of Category:" + name + " (" + size + " items)");
         return members.toArray(new String[size]);
