@@ -31,12 +31,12 @@ import javax.security.auth.login.*;
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.7 or greater. Uses the <a
- *  href="//www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most 
+ *  href="//www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
  *  of MediaWiki (1.23), otherwise some functions may not work.
  *  <p>
- *  Extended documentation is available 
- *  <a href="//github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>. 
+ *  Extended documentation is available
+ *  <a href="//github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>.
  *  All wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
  *  </p>
@@ -52,7 +52,7 @@ public class Wiki implements Serializable
     // *Admin stuff
     // *More multiqueries
     // *Generators (hard)
-    
+
     // NAMESPACES
 
     /**
@@ -285,7 +285,7 @@ public class Wiki implements Serializable
      *  @since 0.11
      */
     public static final int ASSERT_NONE = 0;
-    
+
     /**
      *  Assert that we are logged in (i.e. 1). This is checked every action.
      *  @see #setAssertionMode
@@ -307,7 +307,7 @@ public class Wiki implements Serializable
      *  @since 0.11
      */
     public static final int ASSERT_NO_MESSAGES = 4;
-    
+
     /**
      *  Assert that we have a sysop flag (i.e. 8). This is checked intermittently.
      *  @see #setAssertionMode
@@ -439,7 +439,7 @@ public class Wiki implements Serializable
 
     // retry flag
     private boolean retry = true;
-   
+
     // serial version
     private static final long serialVersionUID = -8745212681497643456L;
 
@@ -450,7 +450,7 @@ public class Wiki implements Serializable
     private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
     // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
-    private static final int LOG2_CHUNK_SIZE = 22; 
+    private static final int LOG2_CHUNK_SIZE = 22;
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -467,7 +467,7 @@ public class Wiki implements Serializable
      *  Creates a new connection to a wiki via HTTPS. WARNING: if the wiki uses
      *  a $wgScriptpath other than the default <tt>/w</tt>, you need to call
      *  <tt>getScriptPath()</tt> to automatically set it. Alternatively, you
-     *  can use the constructor below if you know it in advance. 
+     *  can use the constructor below if you know it in advance.
      *
      *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
      *  en.wikipedia.org)
@@ -489,11 +489,11 @@ public class Wiki implements Serializable
     {
         this(domain, scriptPath, "https://");
     }
-    
+
     /**
      *  Creates a new connection to a wiki with $wgScriptpath set to
      *  <tt>scriptPath</tt> via the specified protocol.
-     * 
+     *
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
      *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
@@ -523,8 +523,8 @@ public class Wiki implements Serializable
      *
      *  *Your wiki not supporting HTTPS
      *  *Server-side cache management (maxage and smaxage API parameters)
-     *  
-     *  <br><br>Contributed by Tedder 
+     *
+     *  <br><br>Contributed by Tedder
      *  @since 0.24
      */
     protected void initVars()
@@ -532,7 +532,7 @@ public class Wiki implements Serializable
         StringBuilder basegen = new StringBuilder(protocol);
         basegen.append(domain);
         basegen.append(scriptPath);
-        StringBuilder apigen = new StringBuilder(basegen);        
+        StringBuilder apigen = new StringBuilder(basegen);
         apigen.append("/api.php?format=xml&");
         // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
         // parameter]]. Let's exploit it.
@@ -609,10 +609,10 @@ public class Wiki implements Serializable
     {
         return (String)getSiteInfo().get("scriptpath");
     }
-    
+
     /**
      *  Detects whether a wiki forces upper case for the first character in a
-     *  title and sets the bot framework up to use it. Example: en.wikipedia = 
+     *  title and sets the bot framework up to use it. Example: en.wikipedia =
      *  true, en.wiktionary = false. Default = true. See [[mw:Manual:$wgCapitalLinks]].
      *  @return see above
      *  @deprecated use getSiteInfo
@@ -624,20 +624,20 @@ public class Wiki implements Serializable
     {
         return (Boolean)getSiteInfo().get("usingcapitallinks");
     }
-    
+
     /**
      *  Gets various properties of the wiki and sets the bot framework up to use
      *  them. Returns:
      *  <ul>
-     *  <li><b>usingcapitallinks</b>: (Boolean) whether a wiki forces upper case 
-     *    for the title. Example: en.wikipedia = true, en.wiktionary = false. 
+     *  <li><b>usingcapitallinks</b>: (Boolean) whether a wiki forces upper case
+     *    for the title. Example: en.wikipedia = true, en.wiktionary = false.
      *    Default = true. See [[mw:Manual:$wgCapitalLinks]].
      *  <li><b>scriptpath</b>: (String) the $wgScriptpath wiki variable. Default
      *    = <tt>/w</tt>. See [[mw:Manual:$wgScriptpath]].
      *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
      *  <li><b>timezone</b>: (String) the timezone the wiki is in, default = UTC
      *  </ul>
-     *  
+     *
      *  @return (see above)
      *  @since 0.30
      *  @throws IOException if a network error occurs
@@ -656,7 +656,7 @@ public class Wiki implements Serializable
         initVars();
         return ret;
     }
-    
+
     /**
      *  Sets the user agent HTTP header to be used for requests. Default is
      *  "Wiki.java " + version.
@@ -699,7 +699,7 @@ public class Wiki implements Serializable
     {
         return zipped;
     }
-    
+
     /**
      *  Checks whether API action=query dependencies automatically resolve
      *  redirects (default = false).
@@ -710,7 +710,7 @@ public class Wiki implements Serializable
     {
         return resolveredirect;
     }
-    
+
     /**
      *  Sets whether API action=query dependencies automatically resolve
      *  redirects (default = false).
@@ -916,7 +916,7 @@ public class Wiki implements Serializable
         this.loglevel = loglevel;
         logger.setLevel(loglevel);
     }
-    
+
     // META STUFF
 
     /**
@@ -947,7 +947,7 @@ public class Wiki implements Serializable
         buffer.append(URLEncoder.encode(wpLoginToken, "UTF-8"));
         String line = post(apiUrl + "action=login", buffer.toString(), "login");
         buffer = null;
-        
+
         // check for success
         if (line.contains("result=\"Success\""))
         {
@@ -984,7 +984,7 @@ public class Wiki implements Serializable
     {
         login(username,password.toCharArray());
     }
-    
+
     /**
      *  Logs out of the wiki. This method is thread safe (so that we don't log
      *  out during an edit). All operations are conducted offline, so you can
@@ -1054,7 +1054,7 @@ public class Wiki implements Serializable
      *  files, edits, users and admins. Equivalent to [[Special:Statistics]].
      *
      *  @return a map containing the stats. Use "articles", "pages", "files"
-     *  "edits", "users", "activeusers", "admins" or "jobs" to retrieve the 
+     *  "edits", "users", "activeusers", "admins" or "jobs" to retrieve the
      *  respective value
      *  @throws IOException if a network error occurs
      *  @since 0.14
@@ -1223,7 +1223,7 @@ public class Wiki implements Serializable
     // PAGE METHODS
 
     /**
-     *  Returns the corresponding talk page to this page. 
+     *  Returns the corresponding talk page to this page.
      *
      *  @param title the page title
      *  @return the name of the talk page corresponding to <tt>title</tt>
@@ -1258,21 +1258,21 @@ public class Wiki implements Serializable
     {
         return getPageInfo(new String[] { page } )[0];
     }
-    
+
     /**
      *  Gets miscellaneous page info. Returns:
      *  <ul>
-     *  <li><b>displaytitle</b>: (String) the title of the page that is actually 
+     *  <li><b>displaytitle</b>: (String) the title of the page that is actually
      *    displayed. Example: "iPod"
-     *  <li><b>protection</b>: (Map) the {@link #protect(java.lang.String, 
-     *    java.util.Map, java.lang.String) protection state} of the page. Does 
+     *  <li><b>protection</b>: (Map) the {@link #protect(java.lang.String,
+     *    java.util.Map, java.lang.String) protection state} of the page. Does
      *    not cover implied protection levels (e.g. MediaWiki namespace).
      *  <li><b>token</b>: (String) an edit token for the page, must be logged in
      *    to be non-trivial
      *  <li><b>exists</b>: (Boolean) whether the page exists
      *  <li><b>lastpurged</b>: (Calendar) when the page was last purged or null
      *    if the page does not exist
-     *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the 
+     *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the
      *    page does not exist
      *  <li><b>size</b>: (Integer) the size of the page or -1 if the page does
      *    not exist
@@ -1298,7 +1298,7 @@ public class Wiki implements Serializable
         for (String temp : titles)
         {
             String line = fetch(url.toString() + temp, "getPageInfo");
-            
+
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
             // </page>
@@ -1346,13 +1346,13 @@ public class Wiki implements Serializable
                 }
                 // MediaWiki namespace
                 String parsedtitle = parseAttribute(item, "title", 0);
-                if (namespace(parsedtitle) == MEDIAWIKI_NAMESPACE) 		
-                { 		
-                    protectionstate.put("edit", FULL_PROTECTION); 		
-                    protectionstate.put("move", FULL_PROTECTION); 		
-                    if (!exists) 		
-                        protectionstate.put("create", FULL_PROTECTION); 		
-                } 		
+                if (namespace(parsedtitle) == MEDIAWIKI_NAMESPACE)
+                {
+                    protectionstate.put("edit", FULL_PROTECTION);
+                    protectionstate.put("move", FULL_PROTECTION);
+                    if (!exists)
+                        protectionstate.put("create", FULL_PROTECTION);
+                }
 
                 protectionstate.put("cascade", item.contains("cascade=\"\""));
                 tempmap.put("protection", protectionstate);
@@ -1368,7 +1368,7 @@ public class Wiki implements Serializable
                 // number of watchers
                 if (item.contains("watchers=\""))
                     tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
-                
+
                 // reorder
                 for (int i = 0; i < pages.length; i++)
                     if (normalize(pages[i]).equals(parsedtitle))
@@ -1379,9 +1379,9 @@ public class Wiki implements Serializable
         log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + Arrays.toString(pages));
         return info;
     }
-    
+
     /**
-     *  Returns the namespace a page is in. No need to override this to 
+     *  Returns the namespace a page is in. No need to override this to
      *  add custom namespaces, though you may want to define static fields e.g.
      *  <tt>public static final int PORTAL_NAMESPACE = 100;</tt> for the Portal
      *  namespace on the English Wikipedia.
@@ -1398,7 +1398,7 @@ public class Wiki implements Serializable
         // cache this, as it will be called often
         if (namespaces == null)
             populateNamespaceCache();
-        
+
         // sanitise
         if (!title.contains(":"))
             return MAIN_NAMESPACE;
@@ -1414,9 +1414,9 @@ public class Wiki implements Serializable
     /**
      *  For a given namespace denoted as an integer, fetch the corresponding
      *  identification string e.g. <tt>namespaceIdentifier(1)</tt> should return
-     *  "Talk" on en.wp. (This does the exact opposite to <tt>namespace()</tt>). 
+     *  "Talk" on en.wp. (This does the exact opposite to <tt>namespace()</tt>).
      *  Strings returned are always localized.
-     * 
+     *
      *  @param namespace an integer corresponding to a namespace. If it does not
      *  correspond to a namespace, we assume you mean the main namespace (i.e.
      *  return "").
@@ -1439,9 +1439,9 @@ public class Wiki implements Serializable
                 return entry.getKey();
         return ""; // never reached...
     }
-    
+
     /**
-     *  Gets the namespaces used by this wiki. 
+     *  Gets the namespaces used by this wiki.
      *  @return a map containing e.g. {"Media" => -2, "Special" => -1, ...}.
      *  Changes in this map do not propagate back to this Wiki object.
      *  @throws IOException if a network error occurs
@@ -1463,7 +1463,7 @@ public class Wiki implements Serializable
     {
         String line = fetch(query + "meta=siteinfo&siprop=namespaces%7Cnamespacealiases", "namespace");
         namespaces = new LinkedHashMap<>(30);
-        
+
         // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
         for (int a = line.indexOf("<ns "); a > 0; a = line.indexOf("<ns ", ++a))
         {
@@ -1480,10 +1480,10 @@ public class Wiki implements Serializable
 
         log(Level.INFO, "namespace", "Successfully retrieved namespace list (" + namespaces.size() + " namespaces)");
      }
-    
+
     /**
-     *  Determines whether a series of pages exist. 
-     *  @param titles the titles to check. 
+     *  Determines whether a series of pages exist.
+     *  @param titles the titles to check.
      *  @return whether the pages exist, in the same order as the processed array
      *  @throws IOException if a network error occurs
      *  @since 0.10
@@ -1545,7 +1545,7 @@ public class Wiki implements Serializable
         // This is currently broken because fetch() intercepts the API error.
         // if (text.contains("code=\"rvnosuchsection\""))
         //    throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
-        // if the section does not contain any text, <rev xml:space=\"preserve\"> 
+        // if the section does not contain any text, <rev xml:space=\"preserve\">
         // will not have a separate closing tag
         if (!text.contains("</rev>"))
             return "";
@@ -1682,10 +1682,10 @@ public class Wiki implements Serializable
      *
      *  @param text the text of the page
      *  @param title the title of the page
-     *  @param summary the edit summary or the title of the new section. See 
-     *  [[Help:Edit summary]]. Summaries longer than 200 characters are 
+     *  @param summary the edit summary or the title of the new section. See
+     *  [[Help:Edit summary]]. Summaries longer than 200 characters are
      *  truncated server-side.
-     *  @param minor whether the edit should be marked as minor, See 
+     *  @param minor whether the edit should be marked as minor, See
      *  [[Help:Minor edit]].
      *  @param bot whether to mark the edit as a bot edit (ignored if one does
      *  not have the necessary permissions)
@@ -1903,7 +1903,7 @@ public class Wiki implements Serializable
         retry = true;
         throttle(start);
     }
-    
+
     /**
      *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
      *  revisions and files by default. This method is throttled.
@@ -1921,7 +1921,7 @@ public class Wiki implements Serializable
         long start = System.currentTimeMillis();
         if (user == null || !user.isAllowedTo("undelete"))
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
-        
+
         // deleted revisions token
         String titleenc = URLEncoder.encode(normalize(title), "UTF-8");
         String delrev = query + "action=query&list=deletedrevs&drlimit=1&drprop=token&titles=" + titleenc;
@@ -1931,7 +1931,7 @@ public class Wiki implements Serializable
             return;
         }
         String drtoken = parseAttribute(delrev, "token", 0);
-        
+
         StringBuilder out = new StringBuilder("title=");
         out.append(titleenc);
         out.append("&reason=");
@@ -1949,7 +1949,7 @@ public class Wiki implements Serializable
             out.append(calendarToTimestamp(revisions[revisions.length - 1].getTimestamp()));
         }
         String response = post(apiUrl + "action=undelete", out.toString(), "undelete");
-        
+
         // done
         try
         {
@@ -1982,7 +1982,7 @@ public class Wiki implements Serializable
     /**
      *  Purges the server-side cache for various pages.
      *  @param titles the titles of the page to purge
-     *  @param links update the links tables 
+     *  @param links update the links tables
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
@@ -2005,7 +2005,7 @@ public class Wiki implements Serializable
      *
      *  @param title a page
      *  @return the list of images used in the page.  Note that each String in the array will begin with the
-     *  prefix "File:" 
+     *  prefix "File:"
      *  @throws IOException if a network error occurs
      *  @since 0.16
      */
@@ -2018,7 +2018,7 @@ public class Wiki implements Serializable
         List<String> images = new ArrayList<>(750);
         for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
             images.add(parseAttribute(line, "title", a));
-        
+
         int temp = images.size();
         log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + title + " (" + temp + " images)");
         return images.toArray(new String[temp]);
@@ -2046,7 +2046,7 @@ public class Wiki implements Serializable
      *  the element of the returned string array (separated by "|").
      *  Capped at <tt>max</tt> number of categories, there's no reason why
      *  there should be more than that.
-     * 
+     *
      *  @param title a page
      *  @param sortkey return a sortkey as well (default = false)
      *  @param ignoreHidden skip hidden categories (default = false)
@@ -2106,7 +2106,7 @@ public class Wiki implements Serializable
         List<String> templates = new ArrayList<>(750);
         for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
             templates.add(parseAttribute(line, "title", a));
-        
+
         int size = templates.size();
         log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + title + " (" + size + " templates)");
         return templates.toArray(new String[size]);
@@ -2166,18 +2166,18 @@ public class Wiki implements Serializable
             else
                 line = fetch(url.toString() + "&plcontinue=" + URLEncoder.encode(plcontinue, "UTF-8"), "getLinksOnPage");
             plcontinue = parseAttribute(line, "plcontinue", 0);
-            
+
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<pl "); a > 0; a = line.indexOf("<pl ", ++a))
                 links.add(parseAttribute(line, "title", a));
         }
         while (plcontinue != null);
-        
+
         int size = links.size();
     	log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
     	return links.toArray(new String[size]);
     }
-    
+
     /**
      *  Gets the list of external links used on a particular page.
      *
@@ -2211,7 +2211,7 @@ public class Wiki implements Serializable
             }
         }
         while (eloffset != null);
-        
+
         int size = links.size();
     	log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
     	return links.toArray(new String[size]);
@@ -2292,7 +2292,7 @@ public class Wiki implements Serializable
             return null;
         return parseRevision(line.substring(a, b), title);
     }
-    
+
     /**
      *  Gets the newest page name or the name of a page where the asked page
      *  redirects.
@@ -2300,12 +2300,12 @@ public class Wiki implements Serializable
      *  @return the page redirected to or null if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
-     */ 
+     */
     public String resolveRedirect(String title) throws IOException
     {
         return resolveRedirects(new String[] { title })[0];
     }
-    
+
     /**
      *  Gets the newest page name or the name of a page where the asked pages
      *  redirect.
@@ -2314,7 +2314,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.29
      *  @author Nirvanchik/MER-C
-     */ 
+     */
     public String[] resolveRedirects(String[] titles) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
@@ -2326,7 +2326,7 @@ public class Wiki implements Serializable
         for (String blah : temp)
         {
             String line = fetch(url.toString() + blah, "resolveRedirects");
-            
+
             // expected form: <redirects><r from="Main page" to="Main Page"/>
             // <r from="Home Page" to="Home page"/>...</redirects>
             // TODO: look for the <r> tag instead
@@ -2340,7 +2340,7 @@ public class Wiki implements Serializable
         }
         return ret;
     }
-    
+
     /**
      *  Gets the entire revision history of a page. Be careful when using
      *  this method as some pages (such as [[Wikipedia:Administrators'
@@ -2398,7 +2398,7 @@ public class Wiki implements Serializable
             else
                 line = fetch(url.toString() + "&rvcontinue=" + rvcontinue, "getPageHistory");
             rvcontinue = parseAttribute(line, "rvcontinue", 0);
-            
+
             // parse stuff
             for (int a = line.indexOf("<rev "); a > 0; a = line.indexOf("<rev ", ++a))
             {
@@ -2422,7 +2422,7 @@ public class Wiki implements Serializable
         log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
         return temp;
     }
-    
+
     /**
      *  Gets the deleted history of a page.
      *  @param title a page
@@ -2435,7 +2435,7 @@ public class Wiki implements Serializable
     {
         return getDeletedHistory(title, null, null, false);
     }
-    
+
     /**
      *  Gets the deleted history of a page.
      *  @param title a page
@@ -2454,7 +2454,7 @@ public class Wiki implements Serializable
         // admin queries are annoying
         if (!user.isAllowedTo("deletedhistory"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
-        
+
         StringBuilder url = new StringBuilder(query);
         url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment&drvlimit=max");
         if (reverse)
@@ -2471,7 +2471,7 @@ public class Wiki implements Serializable
         }
         url.append("&titles=");
         url.append(URLEncoder.encode(title, "UTF-8"));
-        
+
         String drvcontinue = null;
         List<Revision> delrevs = new ArrayList<>(500);
         do
@@ -2482,7 +2482,7 @@ public class Wiki implements Serializable
             else
                 response = fetch(url.toString(), "getDeletedHistory");
             drvcontinue = parseAttribute(response, "drvcontinue", 0);
-            
+
             // parse
             int x = response.indexOf("<deletedrevs>");
             if (x < 0) // no deleted history
@@ -2501,14 +2501,14 @@ public class Wiki implements Serializable
             }
         }
         while (drvcontinue != null);
-        
+
         int size = delrevs.size();
         log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
         return delrevs.toArray(new Revision[size]);
     }
-    
+
     /**
-     *  Gets the deleted contributions of a user. Equivalent to 
+     *  Gets the deleted contributions of a user. Equivalent to
      *  [[Special:Deletedcontributions]].
      *  @param u a user
      *  @return the deleted contributions of that user
@@ -2520,9 +2520,9 @@ public class Wiki implements Serializable
     {
         return deletedContribs(u, null, null, false, ALL_NAMESPACES);
     }
-    
+
     /**
-     *  Gets the deleted contributions of a user in the given namespace. Equivalent to 
+     *  Gets the deleted contributions of a user in the given namespace. Equivalent to
      *  [[Special:Deletedcontributions]].
      *  @param u a user
      *  @param start the EARLIEST of the two dates
@@ -2541,7 +2541,7 @@ public class Wiki implements Serializable
         // admin queries are annoying
         if (!user.isAllowedTo("deletedhistory"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
-        
+
         StringBuilder url = new StringBuilder(query);
         url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment&adrlimit=max");
         if (reverse)
@@ -2559,7 +2559,7 @@ public class Wiki implements Serializable
         url.append("&adruser=");
         url.append(URLEncoder.encode(u, "UTF-8"));
         constructNamespaceString(url, "adr", namespace);
-        
+
         String adrcontinue = null;
         List<Revision> delrevs = new ArrayList<>(500);
         do
@@ -2570,7 +2570,7 @@ public class Wiki implements Serializable
             else
                 response = fetch(url.toString(), "deletedContribs");
             adrcontinue = parseAttribute(response, "adrcontinue", 0);
-            
+
             // parse
             int x = response.indexOf("<deletedrevs>");
             if (x < 0) // no deleted history
@@ -2589,17 +2589,17 @@ public class Wiki implements Serializable
             }
         }
         while (adrcontinue != null);
-        
+
         int size = delrevs.size();
         log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
         return delrevs.toArray(new Revision[size]);
     }
-    
+
     /**
      *  Returns all deleted pages that begin with the given prefix. WARNING:
      *  this does not behave like [[Special:Prefixindex]]. See [[Special:Undelete]]
      *  with no arguments.
-     *  
+     *
      *  @param prefix a prefix without a namespace specifier, empty string
      *  lists all deleted pages in the namespace.
      *  @param namespace one (and only one) namespace
@@ -2620,7 +2620,7 @@ public class Wiki implements Serializable
         url.append(URLEncoder.encode(prefix, "UTF-8"));
         url.append("&drnamespace=");
         url.append(namespace);
-        
+
         String drcontinue = null;
         List<String> pages = new ArrayList<>();
         do
@@ -2640,9 +2640,9 @@ public class Wiki implements Serializable
         log(Level.INFO, "deletedPrefixIndex", "Successfully retrieved deleted page list (" + size + " items).");
         return pages.toArray(new String[size]);
     }
-    
+
     /**
-     *  Gets the text of a deleted page (it's like getPageText, but for deleted 
+     *  Gets the text of a deleted page (it's like getPageText, but for deleted
      *  pages).
      *  @param page a page
      *  @return the deleted text
@@ -2654,12 +2654,12 @@ public class Wiki implements Serializable
     {
         if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
-        
+
         // TODO: this can be multiquery(?)
         StringBuilder url = new StringBuilder(query);
         url.append("list=deletedrevs&drlimit=1&drprop=content&titles=");
         url.append(URLEncoder.encode(page, "UTF-8"));
-        
+
         // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
         String line = fetch(url.toString(), "getDeletedText");
         int a = line.indexOf("<rev ");
@@ -2725,7 +2725,7 @@ public class Wiki implements Serializable
         // check namespace
         if (namespace(title) == CATEGORY_NAMESPACE)
             throw new UnsupportedOperationException("Tried to move a category.");
-        
+
         // protection and token
         Map info = getPageInfo(title);
         // determine whether the page exists
@@ -2784,10 +2784,10 @@ public class Wiki implements Serializable
         retry = true;
         throttle(start);
     }
-   
+
     /**
-     *  Protects a page. Structure of <tt>protectionstate</tt> (everything is 
-     *  optional, if a value is not present, then the corresponding values will 
+     *  Protects a page. Structure of <tt>protectionstate</tt> (everything is
+     *  optional, if a value is not present, then the corresponding values will
      *  be left untouched):
      *  <pre>
      *  {
@@ -2800,8 +2800,8 @@ public class Wiki implements Serializable
      *     cascadesource => String // souce of cascading protection (here ignored)
      *  };
      *  </pre>
-     *   
-     *  @param page the page 
+     *
+     *  @param page the page
      *  @param protectionstate (see above)
      *  @param reason the reason for (un)protection
      *  @throws IOException if a network error occurs
@@ -2814,11 +2814,11 @@ public class Wiki implements Serializable
     {
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
-        
+
         long start = System.currentTimeMillis();
         Map info = getPageInfo(page);
         String protectToken = (String)info.get("token");
-        
+
         StringBuilder out = new StringBuilder("title=");
         out.append(URLEncoder.encode(page, "UTF-8"));
         out.append("&reason=");
@@ -2877,7 +2877,7 @@ public class Wiki implements Serializable
         retry = true;
         throttle(start);
     }
-    
+
     /**
      *  Completely unprotects a page.
      *  @param page the page to unprotect
@@ -2917,7 +2917,7 @@ public class Wiki implements Serializable
     /**
      *  Gets a revision based on a given oldid. Automatically fills out all
      *  attributes of that revision except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
-     * 
+     *
      *  @param oldid an oldid
      *  @return the revision corresponding to that oldid, or null if it has been
      *  deleted
@@ -2928,14 +2928,14 @@ public class Wiki implements Serializable
     {
         return getRevisions( new long[] { oldid })[0];
     }
-    
+
     /**
      *  Gets revisions based on given oldids. Automatically fills out all
      *  attributes of those revisions except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
      *
      *  @param oldids a list of oldids
      *  @return the revisions corresponding to those oldids, in the order of the
-     *  input array. If a particular revision has been deleted, the corresponding 
+     *  input array. If a particular revision has been deleted, the corresponding
      *  index is null.
      *  @throws IOException if a network error occurs
      *  @since 0.29
@@ -3010,7 +3010,7 @@ public class Wiki implements Serializable
      *  provided that they are the most recent revisions on that page. If this
      *  is not the case, then this method does nothing. See
      *  [[mw:Manual:Parameters to index.php#Actions]] (look under rollback)
-     *  for more information. 
+     *  for more information.
      *
      *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
      *  be true for the rollback to succeed
@@ -3090,11 +3090,11 @@ public class Wiki implements Serializable
             log(Level.INFO, "rollback", "Successfully reverted edits by " + user + " on " + revision.getPage());
         retry = true;
     }
-    
+
     /**
      *  Deletes and undeletes revisions.
-     * 
-     *  @param hidecontent hide the content of the revision (true/false 
+     *
+     *  @param hidecontent hide the content of the revision (true/false
      *  = hide/unhide, null = status quo)
      *  @param hidereason hide the edit summary or the reason for an action
      *  @param hideuser hide who made the revision/action
@@ -3103,19 +3103,19 @@ public class Wiki implements Serializable
      *  (ignored if we cannot <tt>suppressrevision</tt>, null = status quo).
      *  @param revisions the list of revisions to (un)delete
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException 
+     *  @throws CredentialNotFoundException
      *  @throws AccountLockedException if the user is blocked
      */
     public synchronized void revisionDelete(Boolean hidecontent, Boolean hideuser, Boolean hidereason, String reason, Boolean suppress,
         Revision[] revisions) throws IOException, LoginException
     {
         long start = System.currentTimeMillis();
-        
+
         if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
 
         String deltoken = (String)getPageInfo(revisions[0].getPage()).get("token");
-        
+
         StringBuilder out = new StringBuilder("reason=");
         out.append(URLEncoder.encode(reason, "UTF-8"));
         out.append("&type=revision"); // FIXME: allow log entry deletion
@@ -3155,7 +3155,7 @@ public class Wiki implements Serializable
         if (temp.lastIndexOf("%7C") == temp.length() - 2)
             temp.delete(temp.length() - 2, temp.length());
         out.append(temp);
-        
+
         // send/read response
         String response = post(apiUrl + "action=revisiondelete", out.toString(), "revisionDelete");
         try
@@ -3181,7 +3181,7 @@ public class Wiki implements Serializable
         }
         if (retry)
             log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + revisions.length + " revisions.");
-        retry = true;       
+        retry = true;
         for (Revision rev : revisions)
         {
             if (hideuser != null)
@@ -3349,7 +3349,7 @@ public class Wiki implements Serializable
             size = Integer.parseInt(parseAttribute(xml, "size", 0));
         else if (xml.contains("len=\"")) // deletedrevs
             size = Integer.parseInt(parseAttribute(xml, "len", 0));
-        
+
         Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, rvnew, size);
         // set rcid
         if (xml.contains("rcid=\""))
@@ -3358,19 +3358,19 @@ public class Wiki implements Serializable
         // rollback token; will automatically be null if we cannot rollback
         if (xml.contains("rollbacktoken=\""))
             revision.setRollbackToken(parseAttribute(xml, "rollbacktoken", 0));
-        
+
         // previous revision
         if (xml.contains("parentid")) // page history/getRevision
             revision.previous = Long.parseLong(parseAttribute(xml, "parentid", 0));
         else if (xml.contains("old_revid")) // watchlist
             revision.previous = Long.parseLong(parseAttribute(xml, "old_revid", 0));
-        
+
         // sizediff
         if (xml.contains("oldlen=\"")) // recentchanges
             revision.sizediff = revision.size - Integer.parseInt(parseAttribute(xml, "oldlen", 0));
         else if (xml.contains("sizediff=\""))
             revision.sizediff = Integer.parseInt(parseAttribute(xml, "sizediff", 0));
-        
+
         // revisiondelete
         revision.summaryDeleted = xml.contains("commenthidden=\"");
         revision.userDeleted = xml.contains("userhidden=\"");
@@ -3381,7 +3381,7 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches an image file and returns the image data in a <tt>byte[]</tt>.
-     *  Works for external repositories. 
+     *  Works for external repositories.
      *
      *  @param title the title of the image (may contain "File")
      *  @return the image data or null if the image doesn't exist
@@ -3394,10 +3394,10 @@ public class Wiki implements Serializable
     {
         return getImage(title, -1, -1);
     }
-    
+
     /**
      *  Fetches an image and saves it in the given file. Warning: This does overwrite any file content!
-     *  Works for external repositories. 
+     *  Works for external repositories.
      *
      *  @param title the title of the image (may contain "File")
      *  @param file the file to save the image to.
@@ -3456,7 +3456,7 @@ public class Wiki implements Serializable
         return out.toByteArray();
         }
     }
-    
+
     /**
      *  Fetches a thumbnail of an image file and saves the image data
      *  into the given file. Warning: This does overwrite any file content!
@@ -3527,7 +3527,7 @@ public class Wiki implements Serializable
         // TODO: support prop=videoinfo
         // fetch
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles=" 
+        String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles="
                 + URLEncoder.encode(normalize("File:" + file), "UTF-8");
         String line = fetch(url, "getFileMetadata");
         if (line.contains("missing=\"\""))
@@ -3596,7 +3596,7 @@ public class Wiki implements Serializable
     public LogEntry[] getImageHistory(String title) throws IOException
     {
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles=" 
+        String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles="
                 + URLEncoder.encode(normalize("File:" + title), "UTF-8");
         String line = fetch(url, "getImageHistory");
         if (line.contains("missing=\"\""))
@@ -3675,7 +3675,7 @@ public class Wiki implements Serializable
         }
         return null;
     }
-    
+
     /**
      *  Gets the uploads of a user.
      *  @param user the user to get uploads for
@@ -3687,7 +3687,7 @@ public class Wiki implements Serializable
     {
         return getUploads(user, null, null);
     }
-    
+
     /**
      *  Gets the uploads of a user between the specified times.
      *  @param user the user to get uploads for
@@ -3721,7 +3721,7 @@ public class Wiki implements Serializable
             else
                 line = fetch(url.toString() + "&aicontinue=" + aicontinue, "getUploads");
             aicontinue = parseAttribute(line, "aicontinue", 0);
-            
+
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
                 int b = line.indexOf("/>", i);
@@ -3733,7 +3733,7 @@ public class Wiki implements Serializable
             }
         }
         while (aicontinue != null);
-        
+
         int size = uploads.size();
         log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)");
         return uploads.toArray(new LogEntry[size]);
@@ -3743,7 +3743,7 @@ public class Wiki implements Serializable
      *  Uploads an image. Equivalent to [[Special:Upload]]. Supported
      *  extensions are (case-insensitive) "png", "jpg", "gif" and "svg". You
      *  need to be logged on to do this. Automatically breaks uploads into
-     *  2^<tt>LOG2_CHUNK_SIZE</tt> byte size chunks. This method is thread safe 
+     *  2^<tt>LOG2_CHUNK_SIZE</tt> byte size chunks. This method is thread safe
      *  and subject to the throttle.
      *
      *  @param file the image file
@@ -3824,7 +3824,7 @@ public class Wiki implements Serializable
                     // write the actual file
                     long buffersize = Math.min(1 << LOG2_CHUNK_SIZE, filesize - offset);
                     byte[] by = new byte[(int)buffersize]; // 32 bit problem. Why must array indices be ints?
-                    fi.read(by); 
+                    fi.read(by);
                     params.put("chunk\"; filename=\"" + file.getName(), by);
 
                     // Each chunk presumably requires a new edit token
@@ -3863,7 +3863,7 @@ public class Wiki implements Serializable
                 }
             }
         }
-        
+
         // unstash upload if chunked
         if (chunks > 1)
         {
@@ -3898,7 +3898,7 @@ public class Wiki implements Serializable
         username = URLEncoder.encode(normalize(username), "UTF-8");
         return fetch(query + "list=users&ususers=" + username, "userExists").contains("userid=\"");
     }
-    
+
     /**
      *  Gets the specified number of users (as a String) starting at the
      *  given string, in alphabetical order. Equivalent to [[Special:Listusers]].
@@ -3913,7 +3913,7 @@ public class Wiki implements Serializable
     {
         return allUsers(start, number, "");
     }
-    
+
     /**
      *  Returns all usernames with the given prefix.
      *  @param prefix a username prefix (without User:)
@@ -3925,7 +3925,7 @@ public class Wiki implements Serializable
     {
         return allUsers("", -1, prefix);
     }
-     
+
     /**
      *  Gets the specified number of users (as a String) starting at the
      *  given string, in alphabetical order. Equivalent to [[Special:Listusers]].
@@ -4065,7 +4065,7 @@ public class Wiki implements Serializable
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
      *  addresses. Equivalent to [[Special:Contributions]]. To fetch contribs
-     *  for an IP range, specify part of an IP address e.g. prefix="127.0." 
+     *  for an IP range, specify part of an IP address e.g. prefix="127.0."
      *  for 127.0.0.0/16; for IPv6 addresses use e.g. prefix="2001:db8:0:0:0:".
      *  MediaWiki always fully expands IPv6 addresses and converts all digits
      *  A through F to uppercase. (No sanitization is done on IP addresses). Be
@@ -4122,7 +4122,7 @@ public class Wiki implements Serializable
                 uccontinue = "&uccontinue=" + URLEncoder.encode(parseAttribute(line, "uccontinue", 0), "UTF-8");
             else
                 uccontinue = null; // depleted list
-            
+
             // xml form: <item user="Wizardman" ... size="59460" />
             for (int a = line.indexOf("<item "); a > 0; a = line.indexOf("<item ", ++a))
             {
@@ -4199,7 +4199,7 @@ public class Wiki implements Serializable
         throttle(start);
         log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
     }
-    
+
     /**
      *  Unblocks a user. This method is throttled.
      *  @param blockeduser the user to unblock
@@ -4215,17 +4215,17 @@ public class Wiki implements Serializable
         long start = System.currentTimeMillis();
         if (user == null || !user.isA("sysop"))
            throw new CredentialNotFoundException("Cannot unblock: permission denied!");
-        
+
         // fetch token
         String temp = fetch(query + "action=query&meta=tokens", "unblock");
         String token = parseAttribute(temp, "csrftoken", 0);
-        
+
         // send request
         String request = "user=" + URLEncoder.encode(blockeduser, "UTF-8") +
             "&reason=" + URLEncoder.encode(reason, "UTF-8") + "&token=" +
             URLEncoder.encode(token, "UTF-8");
         String response = post(query + "action=unblock", request, "unblock");
-        
+
         // done
         try
         {
@@ -4236,9 +4236,9 @@ public class Wiki implements Serializable
             else if (response.contains("code=\"blockedasrange\""))
             {
                 log(Level.SEVERE, "unblock", "IP " + blockeduser + " is rangeblocked.");
-                return; // throw exception? 
+                return; // throw exception?
             }
-                
+
         }
         catch (IOException e)
         {
@@ -4318,12 +4318,12 @@ public class Wiki implements Serializable
             if (unwatch)
                 request.append("&unwatch=1");
             request.append("&token=");
-            
+
             // fetch token
             String temp = fetch(query + "meta=tokens&type=watch", "watchInternal");
             String watchToken = parseAttribute(temp, "watchtoken", 0);
             request.append(URLEncoder.encode(watchToken, "UTF-8"));
-            
+
             post(apiUrl + "action=watch", request.toString(), state);
         }
         log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
@@ -4406,12 +4406,12 @@ public class Wiki implements Serializable
             getRawWatchlist();
         return watchlist.contains(title);
     }
-    
+
     /**
-     *  Fetches the most recent changes to pages on your watchlist. Data is  
-     *  retrieved from the <tt>recentchanges</tt> table and hence cannot be  
+     *  Fetches the most recent changes to pages on your watchlist. Data is
+     *  retrieved from the <tt>recentchanges</tt> table and hence cannot be
      *  older than about a month.
-     * 
+     *
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
@@ -4421,12 +4421,12 @@ public class Wiki implements Serializable
     {
         return watchlist(false);
     }
-    
+
     /**
-     *  Fetches recent changes to pages on your watchlist. Data is retrieved 
-     *  from the <tt>recentchanges</tt> table and hence cannot be older than 
+     *  Fetches recent changes to pages on your watchlist. Data is retrieved
+     *  from the <tt>recentchanges</tt> table and hence cannot be older than
      *  about a month.
-     * 
+     *
      *  @param allrev show all revisions to the pages, instead of the top most
      *  change
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -4444,14 +4444,14 @@ public class Wiki implements Serializable
         if (allrev)
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
-        
+
         List<Revision> wl = new ArrayList<>(667);
         String wlstart = "";
         do
         {
             String line = fetch(url.toString() + "&wlstart=" + wlstart, "watchlist");
             wlstart = parseAttribute(line, "wlstart", 0);
-            
+
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
             {
@@ -4547,7 +4547,7 @@ public class Wiki implements Serializable
         url.append("list=imageusage&iulimit=max&iutitle=");
         url.append(URLEncoder.encode(normalize("File:" + image), "UTF-8"));
         constructNamespaceString(url, "iu", ns);
-        
+
         // fiddle
         List<String> pages = new ArrayList<>(1333);
         String next = "";
@@ -4618,7 +4618,7 @@ public class Wiki implements Serializable
             else
                 line = fetch(url.toString() + "&blcontinue=" + blcontinue, "whatLinksHere");
             blcontinue = parseAttribute(line, "blcontinue", 0);
-            
+
             // xml form: <bl pageid="217224" ns="0" title="Mainpage" redirect="" />
             for (int x = line.indexOf("<bl "); x > 0; x = line.indexOf("<bl ", ++x))
                 pages.add(parseAttribute(line, "title", x));
@@ -4659,7 +4659,7 @@ public class Wiki implements Serializable
             else
                 line = fetch(url.toString() + "&eicontinue=" + eicontinue, "whatTranscludesHere");
             eicontinue = parseAttribute(line, "eicontinue", 0);
-            
+
             // xml form: <ei pageid="7997510" ns="0" title="Maike Evers" />
             for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
                 pages.add(parseAttribute(line, "title", x));
@@ -4669,7 +4669,7 @@ public class Wiki implements Serializable
         log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
     }
-    
+
     /**
      *  Gets the members of a category.
      *
@@ -4677,8 +4677,8 @@ public class Wiki implements Serializable
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
-     *  @since 0.03 
-     */   
+     *  @since 0.03
+     */
     public String[] getCategoryMembers(String name, int... ns) throws IOException
     { 
         return getCategoryMembers(name, false, ns);
@@ -4907,7 +4907,7 @@ public class Wiki implements Serializable
         {
             String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
             bkstart = parseAttribute(line, "bkstart", 0);
-            
+
             // parse xml
             for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
             {
@@ -4917,7 +4917,7 @@ public class Wiki implements Serializable
                 LogEntry le = parseLogEntry(temp);
                 le.type = BLOCK_LOG;
                 le.action = "block";
-                // parseLogEntries parses block target into le.user due to mw.api 
+                // parseLogEntries parses block target into le.user due to mw.api
                 // attribute name
                 if (le.user == null) // autoblock
                     le.target = "#" + parseAttribute(temp, "id", 0);
@@ -4971,7 +4971,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets log entries for a specific user. Equivalent to [[Special:Log]]. 
+     *  Gets log entries for a specific user. Equivalent to [[Special:Log]].
      *  @param user the user to get log entries for
      *  @throws IOException if a network error occurs
      *  @return the set of log entries created by that user
@@ -5000,7 +5000,7 @@ public class Wiki implements Serializable
      *  Gets all log entries that occurred between the specified dates.
      *  WARNING: the start date is the most recent of the dates given, and
      *  the order of enumeration is from newest to oldest. Equivalent to
-     *  [[Special:Log]]. 
+     *  [[Special:Log]].
      *
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
@@ -5036,7 +5036,7 @@ public class Wiki implements Serializable
      *  Gets the specified amount of log entries between the given times by
      *  the given user on the given target. Equivalent to [[Special:Log]].
      *  WARNING: the start date is the most recent of the dates given, and
-     *  the order of enumeration is from newest to oldest. 
+     *  the order of enumeration is from newest to oldest.
      *
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
@@ -5056,7 +5056,7 @@ public class Wiki implements Serializable
      *  @return the specified log entries
      *  @since 0.08
      */
-    public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, String action, 
+    public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, String action,
             User user, String target, int namespace) throws IOException
     {
         // construct the query url from the parameters given
@@ -5067,7 +5067,7 @@ public class Wiki implements Serializable
         if (amount < 1)
             throw new IllegalArgumentException("Tried to retrieve less than one log entry!");
         url.append(amount > max ? max : amount);
-        
+
         // log type
         if (!log.equals(ALL_LOGS))
         {
@@ -5082,9 +5082,9 @@ public class Wiki implements Serializable
                 url.append(log);
                 url.append("/");
                 url.append(action);
-            }      
+            }
         }
-        
+
         if (namespace != ALL_NAMESPACES)
         {
             url.append("&lenamespace=");
@@ -5122,7 +5122,7 @@ public class Wiki implements Serializable
         {
             String line = fetch(url.toString() + "&lestart=" + lestart, "getLogEntries");
             lestart = parseAttribute(line, "lestart", 0);
-            
+
             // parse xml. We need to repeat the test because the XML may contain more than the required amount.
             while (line.contains("<item") && entries.size() < amount)
             {
@@ -5160,7 +5160,7 @@ public class Wiki implements Serializable
      *  @return the parsed log entry
      *  @since 0.18
      */
-    protected LogEntry parseLogEntry(String xml) 
+    protected LogEntry parseLogEntry(String xml)
     {
         // note that we can override these in the calling method
         String type = "", action = "";
@@ -5186,7 +5186,7 @@ public class Wiki implements Serializable
         User performer = null;
         if (xml.contains("user=\""))
             performer = new User(parseAttribute(xml, "user", 0));
-        
+
         // generic target name
         String target = null;
         if (xml.contains(" title=\"")) // space is important -- commons.getImageHistory("File:Chief1.gif");
@@ -5365,7 +5365,7 @@ public class Wiki implements Serializable
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace, int minimum, 
+    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace, int minimum,
         int maximum, Boolean redirects) throws IOException
     {
         // @revised 0.15 to add short/long pages
@@ -5404,7 +5404,7 @@ public class Wiki implements Serializable
                     apprtype.append("%7C");
                     apprlevel.append((String)entry.getValue());
                     apprlevel.append("%7C");
-                }      
+                }
             }
             apprtype.delete(apprtype.length() - 3, apprtype.length());
             apprlevel.delete(apprlevel.length() - 3, apprlevel.length());
@@ -5458,19 +5458,19 @@ public class Wiki implements Serializable
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
         return pages.toArray(new String[size]);
     }
-    
+
     /**
      *  Fetches data from one of a set of miscellaneous special pages.
-     *  WARNING: some of these may be *CACHED*, *DISABLED* and/or *LIMITED* on 
+     *  WARNING: some of these may be *CACHED*, *DISABLED* and/or *LIMITED* on
      *  large wikis.
-     * 
-     *  @param page one of { Ancientpages, BrokenRedirects, Deadendpages, 
+     *
+     *  @param page one of { Ancientpages, BrokenRedirects, Deadendpages,
      *  Disambiguations, DoubleRedirects, Listredirects, Lonelypages, Longpages,
      *  Mostcategories, Mostimages, Mostinterwikis, Mostlinkedcategories,
      *  Mostlinkedtemplates, Mostlinked, Mostrevisions, Fewestrevisions, Shortpages,
      *  Uncategorizedcategories, Uncategorizedpages, Uncategorizedimages,
      *  Uncategorizedtemplates, Unusedcategories, Unusedimages, Wantedcategories,
-     *  Wantedfiles, Wantedpages, Wantedtemplates, Unwatchedpages, Unusedtemplates, 
+     *  Wantedfiles, Wantedpages, Wantedtemplates, Unwatchedpages, Unusedtemplates,
      *  Withoutinterwiki }. This parameter is *case sensitive*.
      *  @return the list of pages returned by that particular special page
      *  @throws IOException if a network error occurs
@@ -5482,16 +5482,16 @@ public class Wiki implements Serializable
     {
         if (page.equals("Unwatchedpages") && (user == null || !user.isAllowedTo("unwatchedpages")))
             throw new CredentialNotFoundException("User does not have the \"unwatchedpages\" permission.");
-        
+
         String url = query + "action=query&list=querypage&qplimit=max&qppage=" + page + "&qpcontinue=";
         String offset = "";
         List<String> pages = new ArrayList<>(1333);
-        
+
         do
         {
             String line = fetch(url + offset, "queryPage");
             offset = parseAttribute(line, "qpoffset", 0);
-            
+
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
             for (int x = line.indexOf("<page "); x > 0; x = line.indexOf("<page ", ++x))
                 pages.add(parseAttribute(line, "title", x));
@@ -5830,18 +5830,18 @@ public class Wiki implements Serializable
          *  Gets various properties of this user. Groups and rights are cached
          *  for the current logged in user. Returns:
          *  <ul>
-         *  <li><b>editcount</b>: (int) {@link #countEdits()} the user's edit 
+         *  <li><b>editcount</b>: (int) {@link #countEdits()} the user's edit
          *    count
          *  <li><b>groups</b>: (String[]) the groups the user is in (see
          *    [[Special:Listgrouprights]])
          *  <li><b>rights</b>: (String[]) the stuff the user can do
-         *  <li><b>emailable</b>: (Boolean) whether the user can be emailed 
+         *  <li><b>emailable</b>: (Boolean) whether the user can be emailed
          *    through [[Special:Emailuser]] or emailUser()
          *  <li><b>blocked</b>: (Boolean) whether the user is blocked
          *  <li><b>gender</b>: (Wiki.Gender) the user's gender
          *  <li><b>created</b>: (Calendar) when the user account was created
          *  </ul>
-         * 
+         *
          *  @return (see above)
          *  @throws IOException if a network error occurs
          *  @since 0.24
@@ -5856,12 +5856,12 @@ public class Wiki implements Serializable
             ret.put("emailable", info.contains("emailable=\""));
             ret.put("editcount", Integer.parseInt(parseAttribute(info, "editcount", 0)));
             ret.put("gender", Gender.valueOf(parseAttribute(info, "gender", 0)));
-            
+
             String registrationdate = parseAttribute(info, "registration", 0);
             // remove check when https://phabricator.wikimedia.org/T24097 is resolved
             if (registrationdate != null && !registrationdate.isEmpty())
                 ret.put("created", timestampToCalendar(registrationdate, true));
-            
+
             // groups
             List<String> temp = new ArrayList<>();
             for (int x = info.indexOf("<g>"); x > 0; x = info.indexOf("<g>", ++x))
@@ -6278,7 +6278,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Fetches the contents of this revision. 
+         *  Fetches the contents of this revision.
          *  @return the contents of the appropriate article at <tt>timestamp</tt>
          *  @throws IOException if a network error occurs
          *  @throws IllegalArgumentException if page == Special:Log/xxx.
@@ -6305,9 +6305,9 @@ public class Wiki implements Serializable
             log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
             return decode(temp);
         }
-        
+
         /**
-         *  Gets the rendered text of this revision. 
+         *  Gets the rendered text of this revision.
          *  @return the rendered contents of the appropriate article at
          *  <tt>timestamp</tt>
          *  @throws IOException if a network error occurs
@@ -6335,13 +6335,13 @@ public class Wiki implements Serializable
             log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
             return decode(temp);
         }
-        
+
         /**
          *  Returns true if the revision content is RevisionDeleted. WARNING:
-         *  the return value is meaningless until <tt>getRenderedText</tt>, 
-         *  <tt>getText</tt> or <tt>diff()</tt> is called because of MW api 
+         *  the return value is meaningless until <tt>getRenderedText</tt>,
+         *  <tt>getText</tt> or <tt>diff()</tt> is called because of MW api
          *  limitations.
-         * 
+         *
          *  @return (see above)
          *  @since 0.31
          */
@@ -6354,7 +6354,7 @@ public class Wiki implements Serializable
         /**
          *  Returns a HTML rendered diff table; see the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  @param other another revision on the same page. 
+         *  @param other another revision on the same page.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @since 0.21
@@ -6367,7 +6367,7 @@ public class Wiki implements Serializable
         /**
          *  Returns a HTML rendered diff table between this revision and the
          *  given text. Useful for emulating the "show changes" functionality.
-         *  See the table at the <a 
+         *  See the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
@@ -6486,10 +6486,10 @@ public class Wiki implements Serializable
         {
             return bot;
         }
-        
+
         /**
          *  Determines whether this revision created a new page. <br>
-         *  WARNING: Will return false for all revisions prior to 2007 
+         *  WARNING: Will return false for all revisions prior to 2007
          *  (I think?) -- this is a MediaWiki problem.<br>
          *  WARNING: Returning true does not imply this is the bottommost
          *  revision on the page due to histmerges.<br>
@@ -6512,7 +6512,7 @@ public class Wiki implements Serializable
         {
             return summary;
         }
-        
+
         /**
          *  Returns true if the edit summary is RevisionDeleted.
          *  @return (see above)
@@ -6535,7 +6535,7 @@ public class Wiki implements Serializable
         {
             return user;
         }
-        
+
         /**
          *  Returns true if the user is RevisionDeleted.
          *  @return (see above)
@@ -6545,7 +6545,7 @@ public class Wiki implements Serializable
         {
             return userDeleted;
         }
-        
+
         /**
          *  Returns true if this revision is deleted (different from revdeleted).
          *  @return (see above)
@@ -6596,9 +6596,9 @@ public class Wiki implements Serializable
         {
             return size;
         }
-        
+
         /**
-         *  Returns the change in page size caused by this revision. 
+         *  Returns the change in page size caused by this revision.
          *  @return see above
          *  @since 0.28
          */
@@ -6661,9 +6661,9 @@ public class Wiki implements Serializable
                 return 0; // might not happen, but
             return timestamp.after(other.timestamp) ? 1 : -1;
         }
-        
+
         /**
-         *  Gets the previous revision. 
+         *  Gets the previous revision.
          *  @return the previous revision, or null if this is the first revision
          *  or this object was spawned via contribs().
          *  @throws IOException if a network error occurs
@@ -6673,7 +6673,7 @@ public class Wiki implements Serializable
         {
             return previous == 0 ? null : getRevision(previous);
         }
-        
+
         /**
          *  Gets the next revision.
          *  @return the next revision, or null if this is the last revision
@@ -6683,7 +6683,7 @@ public class Wiki implements Serializable
          */
         public Revision getNext() throws IOException
         {
-            return next == 0 ? null : getRevision(next); 
+            return next == 0 ? null : getRevision(next);
         }
 
         /**
@@ -6837,7 +6837,7 @@ public class Wiki implements Serializable
                 // assert !temp.contains("error code=\"assertuserfailed\"") : "Session expired.";
                 throw new AssertionError("Session expired.");
             // Something *really* bad happened. Most of these are self-explanatory
-            // and are indicative of bugs (not necessarily in this framework) or 
+            // and are indicative of bugs (not necessarily in this framework) or
             // can be avoided entirely.
             if (!temp.matches("code=\"(rvnosuchsection)")) // list "good" errors here
                 throw new UnknownError("MW API error. Server response was: " + temp);
@@ -6852,7 +6852,7 @@ public class Wiki implements Serializable
      *  @param caller the caller of this method
      *  @throws IOException if a network error occurs
      *  @return the server response
-     *  @see #multipartPost(java.lang.String, java.util.Map, java.lang.String) 
+     *  @see #multipartPost(java.lang.String, java.util.Map, java.lang.String)
      *  @since 0.24
      */
     protected String post(String url, String text, String caller) throws IOException
@@ -6882,7 +6882,7 @@ public class Wiki implements Serializable
         }
         return temp.toString();
     }
-    
+
     /**
      *  Performs a multi-part HTTP POST.
      *  @param url the url to post to
@@ -6908,7 +6908,7 @@ public class Wiki implements Serializable
         connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
         connection.connect();
         boundary = "--" + boundary + "\r\n";
-        
+
         // write stuff to a local buffer
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(bout))
@@ -6959,9 +6959,9 @@ public class Wiki implements Serializable
         }
         return temp.toString();
     }
-    
+
     /**
-     *  Creates a new URL connection. Override to change SSL handling, use a 
+     *  Creates a new URL connection. Override to change SSL handling, use a
      *  proxy, etc.
      *  @param url a URL string
      *  @return a connection to that URL
@@ -6976,7 +6976,7 @@ public class Wiki implements Serializable
     /**
      *  Checks for errors from standard read/write requests and performs
      *  occasional status checks.
-     * 
+     *
      *  @param line the response from the server to analyze
      *  @param caller what we tried to do
      *  @throws CredentialNotFoundException if permission denied
@@ -7005,7 +7005,7 @@ public class Wiki implements Serializable
         }
         else
             statuscounter++;
-        
+
         // successful
         if (line.contains("result=\"Success\""))
             return;
@@ -7062,9 +7062,9 @@ public class Wiki implements Serializable
         in = in.replace("&#039;", "'");
         return in;
     }
-    
+
     /**
-     *  Parses the next XML attribute with the given name. 
+     *  Parses the next XML attribute with the given name.
      *  @param xml the xml to search
      *  @param attribute the attribute to search
      *  @param index where to start looking
@@ -7084,7 +7084,7 @@ public class Wiki implements Serializable
         else
             return null;
     }
-    
+
     /**
      *  Convenience method for converting a namespace list into String form.
      *  @param sb the url StringBuilder to append to
@@ -7107,10 +7107,10 @@ public class Wiki implements Serializable
         }
         sb.append(namespaces[temp - 1]);
     }
-    
+
     /**
      *  Cuts up a list of titles into batches for prop=X&titles=Y type queries.
-     *  @param titles a list of titles. 
+     *  @param titles a list of titles.
      *  @return the titles ready for insertion into a URL
      *  @throws IOException if a network error occurs
      *  @since 0.29
@@ -7140,7 +7140,7 @@ public class Wiki implements Serializable
         }
         return ret;
     }
-    
+
     /**
      *  Convenience method for normalizing MediaWiki titles. (Converts all
      *  underscores to spaces).
@@ -7157,7 +7157,7 @@ public class Wiki implements Serializable
             s = s.substring(1);
         if (s.isEmpty())
             return s;
-        
+
         int ns = namespace(s);
         // localize namespace names
         if (ns != MAIN_NAMESPACE)
@@ -7174,7 +7174,7 @@ public class Wiki implements Serializable
             else
             {
                 int index = namespaceIdentifier(ns).length() + 1; // + 1 for colon
-                temp[index] = Character.toUpperCase(temp[index]); 
+                temp[index] = Character.toUpperCase(temp[index]);
             }
         }
 
@@ -7200,7 +7200,7 @@ public class Wiki implements Serializable
         String temp2 = new String(temp).trim().replaceAll("\\s+", " ");
         return Normalizer.normalize(temp2, Normalizer.Form.NFC);
     }
-    
+
     /**
      *  Ensures no less than <tt>throttle</tt> milliseconds pass between edits
      *  and other write actions.
@@ -7245,7 +7245,7 @@ public class Wiki implements Serializable
                 return user.isAllowedTo("editprotected");
         }
         if ((Boolean)protectionstate.get("cascade") == Boolean.TRUE) // can be null
-            return user.isAllowedTo("editprotected"); 
+            return user.isAllowedTo("editprotected");
         return true;
     }
 
@@ -7374,7 +7374,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Converts a timestamp of the form used by the API (yyyy-mm-ddThh:mm:ssZ) 
+     *  Converts a timestamp of the form used by the API (yyyy-mm-ddThh:mm:ssZ)
      *  to the form yyyymmddhhmmss.
      *
      *  @param timestamp the timestamp to convert
