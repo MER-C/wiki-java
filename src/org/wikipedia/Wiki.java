@@ -518,13 +518,11 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Edit this if you need to change the API and human interface
-     *  url configuration of the wiki. Some example uses:
+     *  Edit this if you need to change the API and human interface url
+     *  configuration of the wiki. One example use is server-side cache 
+     *  management (maxage and smaxage API parameters).
      *
-     *  *Your wiki not supporting HTTPS
-     *  *Server-side cache management (maxage and smaxage API parameters)
-     *
-     *  <br><br>Contributed by Tedder
+     *  <p>Contributed by Tedder
      *  @since 0.24
      */
     protected void initVars()
@@ -4695,9 +4693,11 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.03
      */
-    public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException{
-        return getCategoryMembers(name, (subcat?1:0), new ArrayList<String>(), ns);
+    public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
+    {
+        return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<String>(), ns);
     }
+    
     /**
      *  Gets the members of a category with maxdepth recursion.
      *
@@ -4765,14 +4765,15 @@ public class Wiki implements Serializable
 
                 // fetch subcategories
                 boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
-                if (maxdepth>0 && iscat && !visitedcategories.contains(member)){
+                if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
+                {
                     String[] categoryMembers = getCategoryMembers(member, --maxdepth, visitedcategories, ns);
                     visitedcategories.add(member);
                     members.addAll(Arrays.asList(categoryMembers));
                 }
 
                 // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
-                if (!(maxdepth>0) || !nocat || !iscat)
+                if (!(maxdepth > 0) || !nocat || !iscat)
                     members.add(member);
             }
         }
