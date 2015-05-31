@@ -6339,7 +6339,7 @@ public class Wiki implements Serializable
                 temp = fetch(url, "Revision.getText");
             }
             log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
-            return decode(temp);
+            return temp;
         }
 
         /**
@@ -7093,9 +7093,9 @@ public class Wiki implements Serializable
     {
         // Remove entity references. Oddly enough, URLDecoder doesn't nuke these.
         in = in.replace("&lt;", "<").replace("&gt;", ">"); // html tags
-        in = in.replace("&amp;", "&");
         in = in.replace("&quot;", "\"");
         in = in.replace("&#039;", "'");
+        in = in.replace("&amp;", "&");
         return in;
     }
 

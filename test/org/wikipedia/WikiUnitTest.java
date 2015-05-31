@@ -281,6 +281,9 @@ public class WikiUnitTest
     {
         String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
         assertEquals("getPageText", text, "This revision is not deleted!\n");
+        text = testWiki.getPageText("User:MER-C/UnitTests/pagetext");
+        assertEquals("page text: decoding", text, "&#039;&#039;italic&#039;&#039;" +
+            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n");
     }
     
     @Test
@@ -312,5 +315,16 @@ public class WikiUnitTest
         };
         String[] actual = enWiki.constructTitleString(titles);
         assertArrayEquals("constructTitleString", expected, actual);
+    }
+    
+    // INNER CLASS TESTS
+    
+    @Test
+    public void revisionGetText() throws Exception
+    {
+        Wiki.Revision rev = testWiki.getRevision(230472);
+        String text = rev.getText();
+        assertEquals("revision text: decoding", text, "&#039;&#039;italic&#039;&#039;" +
+            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n");
     }
 }
