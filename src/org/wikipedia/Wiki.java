@@ -3511,6 +3511,7 @@ public class Wiki implements Serializable
      *  * size (file size, Integer)
      *  * width (Integer)
      *  * height (Integer)
+     *  * sha1 (String)
      *  * mime (MIME type, String)
      *  * plus EXIF metadata (Strings)
      *
@@ -3525,7 +3526,7 @@ public class Wiki implements Serializable
         // TODO: support prop=videoinfo
         // fetch
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=size%7Cmime%7Cmetadata&titles="
+        String url = query + "prop=imageinfo&iiprop=size%7Csha1%7Cmime%7Cmetadata&titles="
                 + URLEncoder.encode(normalize("File:" + file), "UTF-8");
         String line = fetch(url, "getFileMetadata");
         if (line.contains("missing=\"\""))
@@ -3536,6 +3537,7 @@ public class Wiki implements Serializable
         metadata.put("size", new Integer(parseAttribute(line, "size", 0)));
         metadata.put("width", new Integer(parseAttribute(line, "width", 0)));
         metadata.put("height", new Integer(parseAttribute(line, "height", 0)));
+        metadata.put("sha1", parseAttribute(line, "sha1", 0));
         metadata.put("mime", parseAttribute(line, "mime", 0));
 
         // exif
