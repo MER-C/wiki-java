@@ -3438,19 +3438,18 @@ public class Wiki implements Serializable
             return null;
         String url2 = parseAttribute(line, "url", 0);
 
-        // then we use ImageIO to read from it
+        // then we read the image
         logurl(url2, "getImage");
         URLConnection connection = makeConnection(url2);
         setCookies(connection);
         connection.connect();
+        
         // there should be a better way to do this
-
         InputStream input = connection.getInputStream();
         if ("gzip".equals(connection.getContentEncoding()))
             input = new GZIPInputStream(input);
 
-        try(
-            BufferedInputStream in = new BufferedInputStream(input);
+        try (BufferedInputStream in = new BufferedInputStream(input);
             ByteArrayOutputStream out = new ByteArrayOutputStream())
         {
             int c;
@@ -3491,27 +3490,27 @@ public class Wiki implements Serializable
             return false;
         String url2 = parseAttribute(line, "url", 0);
 
-        // then we use ImageIO to read from it
+        // then we read the image
         logurl(url2, "getImage");
         URLConnection connection = makeConnection(url2);
         setCookies(connection);
         connection.connect();
-        // there should be a better way to do this
 
+        // there should be a better way to do this
         InputStream input = connection.getInputStream();
         if ("gzip".equals(connection.getContentEncoding()))
             input = new GZIPInputStream(input);
 
         try (BufferedInputStream in = new BufferedInputStream(input);
-			 BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
-		{
-			int c;
-			while ((c = in.read()) != -1)
-				outStream.write(c);
-			outStream.flush();
-		}
-		log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
-		return true;
+            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
+       {
+            int c;
+            while ((c = in.read()) != -1)
+                    outStream.write(c);
+            outStream.flush();
+       }
+       log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
+       return true;
     }
 
     /**
@@ -3647,6 +3646,7 @@ public class Wiki implements Serializable
     public byte[] getOldImage(LogEntry entry) throws IOException
     {
         // @revised 0.24 BufferedImage => byte[]
+        // TODO: write out to file, because large images exist and cause OOMs
 
         // check for type
         if (!entry.getType().equals(UPLOAD_LOG))
@@ -3669,19 +3669,26 @@ public class Wiki implements Serializable
                 URLConnection connection = makeConnection(url);
                 setCookies(connection);
                 connection.connect();
+                
                 // there should be a better way to do this
-                BufferedInputStream in = new BufferedInputStream(connection.getInputStream());
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                int c;
-                while ((c = in.read()) != -1)
-                    out.write(c);
+                InputStream input = connection.getInputStream();
+                if ("gzip".equals(connection.getContentEncoding()))
+                    input = new GZIPInputStream(input);
 
-                // scrape archive name for logging purposes
-                String archive = parseAttribute(line, "archivename", 0);
-                if (archive == null)
-                    archive = title;
-                log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
-                return out.toByteArray();
+                try (BufferedInputStream in = new BufferedInputStream(input);
+                    ByteArrayOutputStream out = new ByteArrayOutputStream())
+                {
+                    int c;
+                    while ((c = in.read()) != -1)
+                        out.write(c);
+
+                    // scrape archive name for logging purposes
+                    String archive = parseAttribute(line, "archivename", 0);
+                    if (archive == null)
+                        archive = title;
+                    log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
+                    return out.toByteArray();
+                }
             }
         }
         return null;
