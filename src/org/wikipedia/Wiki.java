@@ -3631,6 +3631,69 @@ public class Wiki implements Serializable
         history.set(size - 1, last);
         return history.toArray(new LogEntry[size]);
     }
+    
+    /**
+     *  Gets an old image revision and writes the image data in a file.
+     *  Warning: This does overwrite any file content!
+     *  You will have to do the thumbnailing yourself.
+     *  @param entry the upload log entry that corresponds to the image being
+     *  uploaded
+     *  @param file the file to write the image to
+     *  @return true if the file exists in the local repository (i.e. not on
+     *  Commons or deleted)
+     *  @throws FileNotFoundException if the file is a directory, cannot be created or opened
+     *  @throws IOException if a network error occurs
+     *  @throws IllegalArgumentException if the entry is not in the upload log
+     *  @since 0.30
+     */
+    public boolean getOldImage(LogEntry entry, File file) throws IOException
+    {
+        // check for type
+        if (!entry.getType().equals(UPLOAD_LOG))
+            throw new IllegalArgumentException("You must provide an upload log entry!");
+        // no thumbnails for image history, sorry.
+        String title = entry.getTarget();
+        String url = query + "prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=" + URLEncoder.encode(title, "UTF-8");
+        String line = fetch(url, "getOldImage");
+
+        // find the correct log entry by comparing timestamps
+        // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
+        for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
+        {
+            String timestamp = convertTimestamp(parseAttribute(line, "timestamp", a));
+            if (timestamp.equals(calendarToTimestamp(entry.getTimestamp())))
+            {
+                // this is it
+                url = parseAttribute(line, "url", a);
+                logurl(url, "getOldImage");
+                URLConnection connection = makeConnection(url);
+                setCookies(connection);
+                connection.connect();
+                
+                // there should be a better way to do this
+                InputStream input = connection.getInputStream();
+                if ("gzip".equals(connection.getContentEncoding()))
+                    input = new GZIPInputStream(input);
+
+                try (BufferedInputStream in = new BufferedInputStream(input);
+                	 BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
+                {
+                    int c;
+                    while ((c = in.read()) != -1)
+                        outStream.write(c);
+                    outStream.flush();
+
+                    // scrape archive name for logging purposes
+                    String archive = parseAttribute(line, "archivename", 0);
+                    if (archive == null)
+                        archive = title;
+                    log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     /**
      *  Gets an old image revision and returns the image data in a <tt>byte[]</tt>.
@@ -3639,14 +3702,15 @@ public class Wiki implements Serializable
      *  uploaded
      *  @return the image data that was uploaded, as long as it exists in the
      *  local repository (i.e. not on Commons or deleted)
+     *  @deprecated expects a file as additional parameter
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the entry is not in the upload log
      *  @since 0.20
      */
+    @Deprecated
     public byte[] getOldImage(LogEntry entry) throws IOException
     {
         // @revised 0.24 BufferedImage => byte[]
-        // TODO: write out to file, because large images exist and cause OOMs
 
         // check for type
         if (!entry.getType().equals(UPLOAD_LOG))
