@@ -22,10 +22,12 @@ package org.wikipedia;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.logging.*;
 import java.util.zip.GZIPInputStream;
+
 import javax.security.auth.login.*;
 
 /**
@@ -3424,40 +3426,14 @@ public class Wiki implements Serializable
     @Deprecated
     public byte[] getImage(String title, int width, int height) throws IOException
     {
-        // this is a two step process - first we fetch the image url
-        title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        StringBuilder url = new StringBuilder(query);
-        url.append("prop=imageinfo&iiprop=url&titles=");
-        url.append(URLEncoder.encode(normalize("File:" + title), "UTF-8"));
-        url.append("&iiurlwidth=");
-        url.append(width);
-        url.append("&iiurlheight=");
-        url.append(height);
-        String line = fetch(url.toString(), "getImage");
-        if (!line.contains("<imageinfo>"))
+        File image = File.createTempFile("wiki-java_getImage", null);
+        image.deleteOnExit();
+
+        boolean downloaded = getImage(title, width, height, image);
+        if (!downloaded)
             return null;
-        String url2 = parseAttribute(line, "url", 0);
 
-        // then we read the image
-        logurl(url2, "getImage");
-        URLConnection connection = makeConnection(url2);
-        setCookies(connection);
-        connection.connect();
-        
-        // there should be a better way to do this
-        InputStream input = connection.getInputStream();
-        if ("gzip".equals(connection.getContentEncoding()))
-            input = new GZIPInputStream(input);
-
-        try (BufferedInputStream in = new BufferedInputStream(input);
-            ByteArrayOutputStream out = new ByteArrayOutputStream())
-        {
-            int c;
-            while ((c = in.read()) != -1)
-                out.write(c);
-            log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
-            return out.toByteArray();
-        }
+        return Files.readAllBytes(image.toPath());
     }
 
     /**
@@ -3711,52 +3687,15 @@ public class Wiki implements Serializable
     public byte[] getOldImage(LogEntry entry) throws IOException
     {
         // @revised 0.24 BufferedImage => byte[]
+        File image = File.createTempFile("wiki-java_getOldImage", null);
+        image.deleteOnExit();
 
-        // check for type
-        if (!entry.getType().equals(UPLOAD_LOG))
-            throw new IllegalArgumentException("You must provide an upload log entry!");
-        // no thumbnails for image history, sorry.
-        String title = entry.getTarget();
-        String url = query + "prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=" + URLEncoder.encode(title, "UTF-8");
-        String line = fetch(url, "getOldImage");
+        boolean downloaded = getOldImage(entry, image);
+        if (!downloaded)
+            return null;
 
-        // find the correct log entry by comparing timestamps
-        // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
-        for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
-        {
-            String timestamp = convertTimestamp(parseAttribute(line, "timestamp", a));
-            if (timestamp.equals(calendarToTimestamp(entry.getTimestamp())))
-            {
-                // this is it
-                url = parseAttribute(line, "url", a);
-                logurl(url, "getOldImage");
-                URLConnection connection = makeConnection(url);
-                setCookies(connection);
-                connection.connect();
-                
-                // there should be a better way to do this
-                InputStream input = connection.getInputStream();
-                if ("gzip".equals(connection.getContentEncoding()))
-                    input = new GZIPInputStream(input);
-
-                try (BufferedInputStream in = new BufferedInputStream(input);
-                    ByteArrayOutputStream out = new ByteArrayOutputStream())
-                {
-                    int c;
-                    while ((c = in.read()) != -1)
-                        out.write(c);
-
-                    // scrape archive name for logging purposes
-                    String archive = parseAttribute(line, "archivename", 0);
-                    if (archive == null)
-                        archive = title;
-                    log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
-                    return out.toByteArray();
-                }
-            }
-        }
-        return null;
-    }
+        return Files.readAllBytes(image.toPath());
+     }
 
     /**
      *  Gets the uploads of a user.
