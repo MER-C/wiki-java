@@ -6,7 +6,7 @@ A Java wiki bot framework that is only one file -- [org/wikipedia/Wiki.java](src
 Some functionality provided by MediaWiki extensions deployed on Wikimedia sites
 is available in [org/wikipedia/WMFWiki.java](src/org/wikipedia/WMFWiki.java). 
 This project also contains the source code to the tools hosted at 
-https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces.
+https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces. Requires JDK >= 1.7.
 
 Latest stable version: [0.30](https://github.com/MER-C/wiki-java/releases/tag/0.30) -- 
 MediaWiki versions 1.23+
