@@ -979,10 +979,11 @@ public class Wiki implements Serializable
             throw new FailedLoginException("Login failed: unknown reason.");
         }
     }
+
     //Enables login while using a string password
     public synchronized void login(String username, String password) throws IOException, FailedLoginException
     {
-        login(username,password.toCharArray());
+        login(username, password.toCharArray());
     }
 
     /**
@@ -1256,7 +1257,7 @@ public class Wiki implements Serializable
      */
     public Map getPageInfo(String page) throws IOException
     {
-        return getPageInfo(new String[] { page } )[0];
+        return getPageInfo(new String[] { page })[0];
     }
 
     /**
@@ -1335,11 +1336,11 @@ public class Wiki implements Serializable
                     String level = parseAttribute(item, "level", z);
                     protectionstate.put(type, level);
                     //if (level != NO_PROTECTION)
-                        String expiry = parseAttribute(item, "expiry", z);
-                        if (expiry.equals("infinity"))
-                            protectionstate.put(type + "expiry", null);
-                        else
-                            protectionstate.put(type + "expiry", timestampToCalendar(expiry, true));
+                    String expiry = parseAttribute(item, "expiry", z);
+                    if (expiry.equals("infinity"))
+                        protectionstate.put(type + "expiry", null);
+                    else
+                        protectionstate.put(type + "expiry", timestampToCalendar(expiry, true));
                     // protected via cascade
                     if (item.contains("source=\""))
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
@@ -1479,7 +1480,7 @@ public class Wiki implements Serializable
         }
 
         log(Level.INFO, "namespace", "Successfully retrieved namespace list (" + namespaces.size() + " namespaces)");
-     }
+    }
 
     /**
      *  Determines whether a series of pages exist.
@@ -2068,9 +2069,9 @@ public class Wiki implements Serializable
         // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
         List<String> categories = new ArrayList<>(750);
         int a, b; // beginIndex and endIndex
-        for ( a = line.indexOf("<cl "); a > 0; a = b )
+        for (a = line.indexOf("<cl "); a > 0; a = b)
         {
-            b = line.indexOf("<cl ", a+1);
+            b = line.indexOf("<cl ", a + 1);
             if (ignoreHidden && line.substring(a, (b > 0 ? b : line.length())).contains("hidden"))
                 continue;
             String category = parseAttribute(line, "title", a);
@@ -2153,7 +2154,7 @@ public class Wiki implements Serializable
      */
     public String[] getLinksOnPage(String title) throws IOException
     {
-    	StringBuilder url = new StringBuilder(query);
+        StringBuilder url = new StringBuilder(query);
         url.append("prop=links&pllimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String plcontinue = null;
@@ -2174,8 +2175,8 @@ public class Wiki implements Serializable
         while (plcontinue != null);
 
         int size = links.size();
-    	log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
-    	return links.toArray(new String[size]);
+        log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
+        return links.toArray(new String[size]);
     }
 
     /**
@@ -2188,7 +2189,7 @@ public class Wiki implements Serializable
      */
     public String[] getExternalLinksOnPage(String title) throws IOException
     {
-    	StringBuilder url = new StringBuilder(query);
+        StringBuilder url = new StringBuilder(query);
         url.append("prop=extlinks&ellimit=max&titles=");
         url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String eloffset = null;
@@ -2213,8 +2214,8 @@ public class Wiki implements Serializable
         while (eloffset != null);
 
         int size = links.size();
-    	log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
-    	return links.toArray(new String[size]);
+        log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
+        return links.toArray(new String[size]);
     }
 
     /**
@@ -2926,7 +2927,7 @@ public class Wiki implements Serializable
      */
     public Revision getRevision(long oldid) throws IOException
     {
-        return getRevisions( new long[] { oldid })[0];
+        return getRevisions(new long[] { oldid })[0];
     }
 
     /**
@@ -3479,14 +3480,14 @@ public class Wiki implements Serializable
 
         try (BufferedInputStream in = new BufferedInputStream(input);
             BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
-       {
+        {
             int c;
             while ((c = in.read()) != -1)
-                    outStream.write(c);
+                outStream.write(c);
             outStream.flush();
-       }
-       log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
-       return true;
+        }
+        log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
+        return true;
     }
 
     /**
@@ -3513,7 +3514,7 @@ public class Wiki implements Serializable
         // fetch
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=imageinfo&iiprop=size%7Csha1%7Cmime%7Cmetadata&titles="
-                + URLEncoder.encode(normalize("File:" + file), "UTF-8");
+            + URLEncoder.encode(normalize("File:" + file), "UTF-8");
         String line = fetch(url, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
@@ -3583,7 +3584,7 @@ public class Wiki implements Serializable
     {
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles="
-                + URLEncoder.encode(normalize("File:" + title), "UTF-8");
+            + URLEncoder.encode(normalize("File:" + title), "UTF-8");
         String line = fetch(url, "getImageHistory");
         if (line.contains("missing=\"\""))
             return new LogEntry[0];
@@ -3607,7 +3608,7 @@ public class Wiki implements Serializable
         history.set(size - 1, last);
         return history.toArray(new LogEntry[size]);
     }
-    
+
     /**
      *  Gets an old image revision and writes the image data in a file.
      *  Warning: This does overwrite any file content!
@@ -3645,14 +3646,14 @@ public class Wiki implements Serializable
                 URLConnection connection = makeConnection(url);
                 setCookies(connection);
                 connection.connect();
-                
+
                 // there should be a better way to do this
                 InputStream input = connection.getInputStream();
                 if ("gzip".equals(connection.getContentEncoding()))
                     input = new GZIPInputStream(input);
 
                 try (BufferedInputStream in = new BufferedInputStream(input);
-                	 BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
+                    BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
                 {
                     int c;
                     while ((c = in.read()) != -1)
@@ -3695,7 +3696,7 @@ public class Wiki implements Serializable
             return null;
 
         return Files.readAllBytes(image.toPath());
-     }
+    }
 
     /**
      *  Gets the uploads of a user.
@@ -4235,7 +4236,7 @@ public class Wiki implements Serializable
     {
         long start = System.currentTimeMillis();
         if (user == null || !user.isA("sysop"))
-           throw new CredentialNotFoundException("Cannot unblock: permission denied!");
+            throw new CredentialNotFoundException("Cannot unblock: permission denied!");
 
         // fetch token
         String temp = fetch(query + "action=query&meta=tokens", "unblock");
@@ -4480,7 +4481,7 @@ public class Wiki implements Serializable
                 wl.add(parseRevision(line.substring(i, j), ""));
             }
         }
-        while(wlstart != null);
+        while (wlstart != null);
         int size = wl.size();
         log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + size + " items)");
         return wl.toArray(new Revision[size]);
@@ -4576,7 +4577,7 @@ public class Wiki implements Serializable
         {
             // connect
             if (!pages.isEmpty())
-                next = "&iucontinue="  + next;
+                next = "&iucontinue=" + next;
             String line = fetch(url + next, "imageUsage");
             next = parseAttribute(line, "iucontinue", 0);
 
@@ -4720,7 +4721,7 @@ public class Wiki implements Serializable
     {
         return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<String>(), ns);
     }
-    
+
     /**
      *  Gets the members of a category with maxdepth recursion.
      *
@@ -4757,7 +4758,7 @@ public class Wiki implements Serializable
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
         url.append(URLEncoder.encode(normalize("Category:" + name), "UTF-8"));
         boolean nocat = ns.length != 0;
-        if (maxdepth>0 && nocat)
+        if (maxdepth > 0 && nocat)
         {
             for (int i = 0; nocat && i < ns.length; i++)
                 nocat = (ns[i] != CATEGORY_NAMESPACE);
@@ -5012,7 +5013,7 @@ public class Wiki implements Serializable
         logRecord.append(" entries)");
         log(Level.INFO, "getIPBlockList", logRecord.toString());
         return entries.toArray(new LogEntry[size]);
-     }
+    }
 
     /**
      *  Gets the most recent set of log entries up to the given amount.
@@ -5116,7 +5117,7 @@ public class Wiki implements Serializable
      *  @since 0.08
      */
     public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, String action,
-            User user, String target, int namespace) throws IOException
+        User user, String target, int namespace) throws IOException
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
@@ -5152,7 +5153,7 @@ public class Wiki implements Serializable
         if (user != null)
         {
             url.append("&leuser=");
-             // should already be normalized since we have a User object
+            // should already be normalized since we have a User object
             url.append(URLEncoder.encode(user.getUsername(), "UTF-8"));
         }
         if (!target.isEmpty())
@@ -5836,7 +5837,7 @@ public class Wiki implements Serializable
             iwblcontinue = parseAttribute(line, "iwblcontinue", 0);
 
             // xml form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wroclaw" iwprefix="pl" iwtitle="Main_Page" />
-            for (int x = line.indexOf("<iw "); x > 0;  x = line.indexOf("<iw ", ++x))
+            for (int x = line.indexOf("<iw "); x > 0; x = line.indexOf("<iw ", ++x))
             {
                 links.add(new String[]
                 {
@@ -5845,7 +5846,7 @@ public class Wiki implements Serializable
                 });
             }
         }
-        while(iwblcontinue != null);
+        while (iwblcontinue != null);
         log(Level.INFO, "getInterWikiBacklinks", "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)");
         return links.toArray(new String[0][0]);
     }
@@ -7241,7 +7242,7 @@ public class Wiki implements Serializable
         {
             switch (temp[i])
             {
-                // illegal characters
+            // illegal characters
                 case '{':
                 case '}':
                 case '<':
