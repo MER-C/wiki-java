@@ -1745,7 +1745,7 @@ public class Wiki implements Serializable
         }
         if (minor)
             buffer.append("&minor=1");
-        if (bot && user.isAllowedTo("bot"))
+        if (bot && user != null && user.isAllowedTo("bot"))
             buffer.append("&bot=1");
         if (section == -1)
         {
@@ -2453,7 +2453,7 @@ public class Wiki implements Serializable
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
-        if (!user.isAllowedTo("deletedhistory"))
+        if (user == null || !user.isAllowedTo("deletedhistory"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
@@ -2540,7 +2540,7 @@ public class Wiki implements Serializable
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
-        if (!user.isAllowedTo("deletedhistory"))
+        if (user == null || !user.isAllowedTo("deletedhistory"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
@@ -2612,7 +2612,7 @@ public class Wiki implements Serializable
     public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException, CredentialNotFoundException
     {
         // this is currently BROKEN
-        if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
+        if (user == null || !user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
         StringBuilder url = new StringBuilder(query);
@@ -2653,7 +2653,7 @@ public class Wiki implements Serializable
      */
     public String getDeletedText(String page) throws IOException, CredentialNotFoundException
     {
-        if (!user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
+        if (user == null || !user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
         // TODO: this can be multiquery(?)
