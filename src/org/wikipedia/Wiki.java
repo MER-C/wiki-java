@@ -1187,10 +1187,10 @@ public class Wiki implements Serializable
         // @revised 0.11 to take advantage of Collection.retainAll()
         // @revised 0.14 genericised to all page titles, not just category members
 
-        List<String> aa = new ArrayList<>(5000); // silly workaroiund
-        aa.addAll(Arrays.asList(a));
-        aa.retainAll(Arrays.asList(b));
-        return aa.toArray(new String[aa.size()]);
+        List<String> intersec = new ArrayList<>(5000); // silly workaround
+        intersec.addAll(Arrays.asList(a));
+        intersec.retainAll(Arrays.asList(b));
+        return intersec.toArray(new String[intersec.size()]);
     }
 
     /**
@@ -1215,10 +1215,10 @@ public class Wiki implements Serializable
      */
     public static String[] relativeComplement(String[] a, String[] b)
     {
-        List<String> aa = new ArrayList<>(5000); // silly workaroiund
-        aa.addAll(Arrays.asList(a));
-        aa.removeAll(Arrays.asList(b));
-        return aa.toArray(new String[aa.size()]);
+        List<String> compl = new ArrayList<>(5000); // silly workaround
+        compl.addAll(Arrays.asList(a));
+        compl.removeAll(Arrays.asList(b));
+        return compl.toArray(new String[compl.size()]);
     }
 
     // PAGE METHODS
@@ -1539,7 +1539,7 @@ public class Wiki implements Serializable
     {
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=content&titles=");
-        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         url.append("&rvsection=");
         url.append(number);
         String text = fetch(url.toString(), "getSectionText");
@@ -2000,8 +2000,9 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the list of images used on a particular page. Capped at
-     *  <tt>max</tt> number of images, there's no reason why there should be
+     *  Gets the list of images used on a particular page. If there are
+     *  redirected images, both the source and target page are included. Capped
+     *  at <tt>max</tt> number of images, there's no reason why there should be
      *  more than that.
      *
      *  @param title a page
@@ -2062,7 +2063,7 @@ public class Wiki implements Serializable
         if (sortkey || ignoreHidden)
             url.append("&clprop=sortkey%7Chidden");
         url.append("&titles=");
-        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
         String line = fetch(url.toString(), "getCategories");
 
         // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
@@ -2237,7 +2238,7 @@ public class Wiki implements Serializable
      */
     public LinkedHashMap<String, String> getSectionMap(String page) throws IOException
     {
-        String url = apiUrl + "action=parse&text={{:" + URLEncoder.encode(page, "UTF-8") + "}}__TOC__&prop=sections";
+        String url = apiUrl + "action=parse&text={{:" + URLEncoder.encode(normalize(page), "UTF-8") + "}}__TOC__&prop=sections";
         String line = fetch(url, "getSectionMap");
 
         // xml form: <s toclevel="1" level="2" line="How to nominate" number="1" />
@@ -2471,7 +2472,7 @@ public class Wiki implements Serializable
             url.append(calendarToTimestamp(end));
         }
         url.append("&titles=");
-        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
 
         String drvcontinue = null;
         List<Revision> delrevs = new ArrayList<>(500);
@@ -2525,7 +2526,7 @@ public class Wiki implements Serializable
     /**
      *  Gets the deleted contributions of a user in the given namespace. Equivalent to
      *  [[Special:Deletedcontributions]].
-     *  @param u a user
+     *  @param username a user
      *  @param start the EARLIEST of the two dates
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
@@ -2536,7 +2537,7 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
      *  @since 0.30
      */
-    public Revision[] deletedContribs(String u, Calendar end, Calendar start, boolean reverse, int... namespace)
+    public Revision[] deletedContribs(String username, Calendar end, Calendar start, boolean reverse, int... namespace)
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
@@ -2558,7 +2559,7 @@ public class Wiki implements Serializable
             url.append(calendarToTimestamp(end));
         }
         url.append("&adruser=");
-        url.append(URLEncoder.encode(u, "UTF-8"));
+        url.append(URLEncoder.encode(normalize(username), "UTF-8"));
         constructNamespaceString(url, "adr", namespace);
 
         String adrcontinue = null;
@@ -2659,7 +2660,7 @@ public class Wiki implements Serializable
         // TODO: this can be multiquery(?)
         StringBuilder url = new StringBuilder(query);
         url.append("list=deletedrevs&drlimit=1&drprop=content&titles=");
-        url.append(URLEncoder.encode(page, "UTF-8"));
+        url.append(URLEncoder.encode(normalize(page), "UTF-8"));
 
         // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
         String line = fetch(url.toString(), "getDeletedText");
@@ -2743,9 +2744,9 @@ public class Wiki implements Serializable
         // post data
         StringBuilder buffer = new StringBuilder(10000);
         buffer.append("from=");
-        buffer.append(URLEncoder.encode(title, "UTF-8"));
+        buffer.append(URLEncoder.encode(normalize(title), "UTF-8"));
         buffer.append("&to=");
-        buffer.append(URLEncoder.encode(newTitle, "UTF-8"));
+        buffer.append(URLEncoder.encode(normalize(newTitle), "UTF-8"));
         buffer.append("&reason=");
         buffer.append(URLEncoder.encode(reason, "UTF-8"));
         buffer.append("&token=");
@@ -2821,7 +2822,7 @@ public class Wiki implements Serializable
         String protectToken = (String)info.get("token");
 
         StringBuilder out = new StringBuilder("title=");
-        out.append(URLEncoder.encode(page, "UTF-8"));
+        out.append(URLEncoder.encode(normalize(page), "UTF-8"));
         out.append("&reason=");
         out.append(URLEncoder.encode(reason, "UTF-8"));
         out.append("&token=");
@@ -3630,7 +3631,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("You must provide an upload log entry!");
         // no thumbnails for image history, sorry.
         String title = entry.getTarget();
-        String url = query + "prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=" + URLEncoder.encode(title, "UTF-8");
+        String url = query + "prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=" + URLEncoder.encode(normalize(title), "UTF-8");
         String line = fetch(url, "getOldImage");
 
         // find the correct log entry by comparing timestamps
@@ -6359,7 +6360,7 @@ public class Wiki implements Serializable
             }
             else
             {
-                String url = base + URLEncoder.encode(title, "UTF-8") + "&oldid=" + revid + "&action=raw";
+                String url = base + URLEncoder.encode(normalize(title), "UTF-8") + "&oldid=" + revid + "&action=raw";
                 temp = fetch(url, "Revision.getText");
             }
             log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
@@ -7203,7 +7204,8 @@ public class Wiki implements Serializable
 
     /**
      *  Convenience method for normalizing MediaWiki titles. (Converts all
-     *  underscores to spaces).
+     *  underscores to spaces, localizes namespace names, fixes case of first
+     *  char and does some other unicode fixes).
      *  @param s the string to normalize
      *  @return the normalized string
      *  @throws IllegalArgumentException if the title is invalid
