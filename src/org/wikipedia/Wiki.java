@@ -438,6 +438,9 @@ public class Wiki implements Serializable
     private String protocol = "https://";
     private Level loglevel = Level.ALL;
     private static final Logger logger = Logger.getLogger("wiki");
+    
+    // Store time when the last throttled action was executed
+    private long lastThrottleActionTime = 0;
 
     // retry flag
     private boolean retry = true;
@@ -1709,7 +1712,7 @@ public class Wiki implements Serializable
         // @revised 0.16 to use API edit. No more screenscraping - yay!
         // @revised 0.17 section editing
         // @revised 0.25 optional bot flagging
-        long start = System.currentTimeMillis();
+    	throttle();
 
         // protection and token
         Map info = getPageInfo(title);
@@ -1787,7 +1790,6 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "edit", "Successfully edited " + title);
         retry = true;
-        throttle(start);
     }
 
     /**
@@ -1855,7 +1857,7 @@ public class Wiki implements Serializable
      */
     public synchronized void delete(String title, String reason) throws IOException, LoginException
     {
-        long start = System.currentTimeMillis();
+        throttle();
         if (user == null || !user.isAllowedTo("delete"))
             throw new CredentialNotFoundException("Cannot delete: Permission denied");
 
@@ -1902,7 +1904,6 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "delete", "Successfully deleted " + title);
         retry = true;
-        throttle(start);
     }
 
     /**
@@ -1919,7 +1920,7 @@ public class Wiki implements Serializable
      */
     public synchronized void undelete(String title, String reason, Revision... revisions) throws IOException, LoginException
     {
-        long start = System.currentTimeMillis();
+        throttle();
         if (user == null || !user.isAllowedTo("undelete"))
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
 
@@ -1977,7 +1978,6 @@ public class Wiki implements Serializable
         retry = true;
         for (Revision rev : revisions)
             rev.pageDeleted = false;
-        throttle(start);
     }
 
     /**
@@ -2714,7 +2714,7 @@ public class Wiki implements Serializable
     public synchronized void move(String title, String newTitle, String reason, boolean noredirect, boolean movetalk,
         boolean movesubpages) throws IOException, LoginException
     {
-        long start = System.currentTimeMillis();
+        throttle();
         // check for log in
         if (user == null || !user.isAllowedTo("move"))
         {
@@ -2783,7 +2783,6 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "move", "Successfully moved " + title + " to " + newTitle);
         retry = true;
-        throttle(start);
     }
 
     /**
@@ -2816,7 +2815,7 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
 
-        long start = System.currentTimeMillis();
+        throttle();
         Map info = getPageInfo(page);
         String protectToken = (String)info.get("token");
 
@@ -2876,7 +2875,6 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "edit", "Successfully protected " + page);
         retry = true;
-        throttle(start);
     }
 
     /**
@@ -3110,7 +3108,7 @@ public class Wiki implements Serializable
     public synchronized void revisionDelete(Boolean hidecontent, Boolean hideuser, Boolean hidereason, String reason, Boolean suppress,
         Revision[] revisions) throws IOException, LoginException
     {
-        long start = System.currentTimeMillis();
+        throttle();
 
         if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
@@ -3190,7 +3188,6 @@ public class Wiki implements Serializable
             if (hidereason != null)
                 rev.summaryDeleted = hidereason;
         }
-        throttle(start);
     }
 
     /**
@@ -3232,8 +3229,7 @@ public class Wiki implements Serializable
     public synchronized void undo(Revision rev, Revision to, String reason, boolean minor,
         boolean bot) throws IOException, LoginException
     {
-        // throttle
-        long start = System.currentTimeMillis();
+        throttle();
 
         // check here to see whether the titles correspond
         if (to != null && !rev.getPage().equals(to.getPage()))
@@ -3301,7 +3297,6 @@ public class Wiki implements Serializable
             log(Level.INFO, "undo", log);
         }
         retry = true;
-        throttle(start);
     }
 
     /**
@@ -3787,8 +3782,7 @@ public class Wiki implements Serializable
         // TODO: upload via URL
 
         // the usual stuff
-        // throttle
-        long start = System.currentTimeMillis();
+        throttle();
 
         // check for log in
         if (user == null || !user.isAllowedTo("upload"))
@@ -3900,7 +3894,6 @@ public class Wiki implements Serializable
             String response = multipartPost(apiUrl + "action=upload", params, "upload");
             checkErrorsAndUpdateStatus(response, "upload");
         }
-        throttle(start);
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
     }
 
@@ -4179,7 +4172,7 @@ public class Wiki implements Serializable
      */
     public synchronized void emailUser(User user, String message, String subject, boolean emailme) throws IOException, LoginException
     {
-        long start = System.currentTimeMillis();
+        throttle();
 
         // check if blocked, logged in
         if (this.user == null || !this.user.isAllowedTo("sendemail"))
@@ -4218,7 +4211,6 @@ public class Wiki implements Serializable
         checkErrorsAndUpdateStatus(response, "email");
         if (response.contains("error code=\"cantsend\""))
             throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
-        throttle(start);
         log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
     }
 
@@ -4234,7 +4226,7 @@ public class Wiki implements Serializable
      */
     public synchronized void unblock(String blockeduser, String reason) throws IOException, LoginException
     {
-        long start = System.currentTimeMillis();
+        throttle();
         if (user == null || !user.isA("sysop"))
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
 
@@ -4280,7 +4272,6 @@ public class Wiki implements Serializable
         if (retry)
             log(Level.INFO, "unblock", "Successfully unblocked " + blockeduser);
         retry = true;
-        throttle(start);
     }
 
     // WATCHLIST METHODS
@@ -7264,14 +7255,13 @@ public class Wiki implements Serializable
     /**
      *  Ensures no less than <tt>throttle</tt> milliseconds pass between edits
      *  and other write actions.
-     *  @param start the time at which the write method was entered
      *  @since 0.30
      */
-    private synchronized void throttle(long start)
+    private synchronized void throttle()
     {
         try
         {
-            long time = throttle - System.currentTimeMillis() + start;
+            long time = throttle - System.currentTimeMillis() + lastThrottleActionTime;
             if (time > 0)
                 Thread.sleep(time);
         }
@@ -7279,6 +7269,7 @@ public class Wiki implements Serializable
         {
             // nobody cares
         }
+        this.lastThrottleActionTime = System.currentTimeMillis();
     }
 
     // user rights methods
