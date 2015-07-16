@@ -966,19 +966,14 @@ public class Wiki implements Serializable
         else
         {
             log(Level.WARNING, "login", "Failed to log in as " + username);
-            try
-            {
-                Thread.sleep(20000); // to prevent brute force
-            }
-            catch (InterruptedException e)
-            {
-                // nobody cares
-            }
             // test for some common failure reasons
             if (line.contains("WrongPass") || line.contains("WrongPluginPass"))
                 throw new FailedLoginException("Login failed: incorrect password.");
             else if (line.contains("NotExists"))
                 throw new FailedLoginException("Login failed: user does not exist.");
+            else if (line.contains("Throttled"))
+                throw new FailedLoginException("Login failed: throttled (wait: "
+                    + parseAttribute(line, "wait", 0) + ")");
             throw new FailedLoginException("Login failed: unknown reason.");
         }
     }
