@@ -441,6 +441,8 @@ public class Wiki implements Serializable
     
     // Store time when the last throttled action was executed
     private long lastThrottleActionTime = 0;
+    // Store time when next login attempt can be executed
+    private long nextLoginTime = -1;
 
     // retry flag
     private boolean retry = true;
@@ -923,19 +925,36 @@ public class Wiki implements Serializable
     // META STUFF
 
     /**
-     *  Logs in to the wiki. This method is thread-safe. If the specified
-     *  username or password is incorrect, the thread blocks for 20 seconds
-     *  then throws an exception.
+     *  Logs in to the wiki. This method is thread-safe. You can set
+     *  ignoreRateLimit to false (default: true), if you don't want the API
+     *  to take care of throttling due to numerous failed login attempts.
      *
      *  @param username a username
      *  @param password a password (as a char[] due to JPasswordField)
+     *  @param rateLimit makes this call "blocking", i.e. does obey rate limits
      *  @throws FailedLoginException if the login failed due to incorrect
-     *  username and/or password
+     *  username and/or password and/or rate limits; Refer to the Exception's
+     *  message to get the reason
      *  @throws IOException if a network error occurs
      *  @see #logout
      */
-    public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
+    public synchronized void login(String username, char[] password, boolean rateLimit) throws IOException, FailedLoginException
     {
+        if (rateLimit)
+        {
+            long sleepDuration = nextLoginTime - System.currentTimeMillis();
+            if (sleepDuration > 0)
+            {
+                // TODO log sleepDuration?
+                try
+                {
+                    Thread.sleep(sleepDuration);
+                }
+                catch (InterruptedException ignore)
+                {
+                }
+            }
+        }
         // post login request
         username = normalize(username);
         StringBuilder buffer = new StringBuilder(500);
@@ -972,16 +991,65 @@ public class Wiki implements Serializable
             else if (line.contains("NotExists"))
                 throw new FailedLoginException("Login failed: user does not exist.");
             else if (line.contains("Throttled"))
+            {
+                int wait = new Integer(parseAttribute(line, "wait", 0));
+                nextLoginTime = System.currentTimeMillis() + 1000 * wait;
                 throw new FailedLoginException("Login failed: throttled (wait: "
-                    + parseAttribute(line, "wait", 0) + ")");
+                    + wait + ")");
+            }
             throw new FailedLoginException("Login failed: unknown reason.");
         }
     }
 
-    //Enables login while using a string password
+    /**
+     *  Logs in to the wiki. This method is thread-safe. You can set
+     *  ignoreRateLimit to false (default: true), if you don't want the API
+     *  to take care of throttling due to numerous failed login attempts.
+     *
+     *  @param username a username
+     *  @param password a string with the password
+     *  @param rateLimit makes this call "blocking", i.e. does obey rate limits
+     *  @throws FailedLoginException if the login failed due to incorrect
+     *  username and/or password and/or rate limits; Refer to the Exception's
+     *  message to get the reason
+     *  @throws IOException if a network error occurs
+     *  @see #logout
+     */
+    public synchronized void login(String username, String password, boolean rateLimit) throws IOException, FailedLoginException
+    {
+        login(username, password.toCharArray(), rateLimit);
+    }
+
+    /**
+     *  Logs in to the wiki. This method is thread-safe.
+     *
+     *  @param username a username
+     *  @param password a string with the password
+     *  @throws FailedLoginException if the login failed due to incorrect
+     *  username and/or password and/or rate limits; Refer to the Exception's
+     *  message to get the reason
+     *  @throws IOException if a network error occurs
+     *  @see #logout
+     */
     public synchronized void login(String username, String password) throws IOException, FailedLoginException
     {
-        login(username, password.toCharArray());
+        login(username, password.toCharArray(), true);
+    }
+
+    /**
+     *  Logs in to the wiki. This method is thread-safe.
+     *
+     *  @param username a username
+     *  @param password a password
+     *  @throws FailedLoginException if the login failed due to incorrect
+     *  username and/or password and/or rate limits; Refer to the Exception's
+     *  message to get the reason
+     *  @throws IOException if a network error occurs
+     *  @see #logout
+     */
+    public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
+    {
+        login(username, password, true);
     }
 
     /**
