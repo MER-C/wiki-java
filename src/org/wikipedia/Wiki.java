@@ -774,7 +774,7 @@ public class Wiki implements Serializable
     /**
      *  Determines whether this wiki is equal to another object.
      *  @param obj the object to compare
-     *  @return whether this wiki is equal to such object
+     *  @return whether the domains of the wikis are equal
      *  @since 0.10
      */
     @Override
@@ -6116,7 +6116,7 @@ public class Wiki implements Serializable
         /**
          *  Tests whether this user is equal to another one.
          *  @param x another object
-         *  @return whether the users are equal
+         *  @return whether the usernames of the users are equal
          *  @since 0.08
          */
         @Override
