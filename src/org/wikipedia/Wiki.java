@@ -1988,17 +1988,11 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
 
         // deleted revisions token
-        String titleenc = encode(title, true);
-        String delrev = query + "action=query&list=deletedrevs&drlimit=1&drprop=token&titles=" + titleenc;
-        if (!delrev.contains("token=\"")) // nothing to undelete
-        {
-            log(Level.WARNING, "undelete", "Page \"" + title + "\" has no deleted revisions!");
-            return;
-        }
-        String drtoken = parseAttribute(delrev, "token", 0);
+        String delrev = fetch(query + "meta=tokens", "undelete");
+        String drtoken = parseAttribute(delrev, "csrftoken", 0);
 
         StringBuilder out = new StringBuilder("title=");
-        out.append(titleenc);
+        out.append(encode(title, true));
         out.append("&reason=");
         out.append(encode(reason, false));
         out.append("&token=");
@@ -2019,7 +2013,11 @@ public class Wiki implements Serializable
         try
         {
             if (!response.contains("<undelete title="))
+            {
                 checkErrorsAndUpdateStatus(response, "undelete");
+                if (response.contains("cantundelete"))
+                    log(Level.WARNING, "undelete", "Can't undelete: " + title + " has no deleted revisions.");
+            }            
         }
         catch (IOException e)
         {
