@@ -12,7 +12,7 @@ import static org.junit.Assert.*;
 
 public class AdminUnitTest
 {
-    private static Wiki testWiki, enWiki;
+    private static Wiki testWiki;
     
     @BeforeClass
     public static void setUpClass()
@@ -20,9 +20,6 @@ public class AdminUnitTest
         testWiki = new Wiki("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
-        enWiki = new Wiki("en.wikipedia.org");
-        org.wikiutils.LoginUtils.guiLogin(enWiki);
-        enWiki.setMaxLag(-1);
     }
     
 
@@ -35,6 +32,7 @@ public class AdminUnitTest
     {
         String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
         assertEquals("getDeletedText", text, "This revision is also deleted!");
+        assertNull("getDeletedText: page never deleted", testWiki.getDeletedText("Tfs;hojfsdhp;osjfeas;lioejg"));
     }
     
     /**

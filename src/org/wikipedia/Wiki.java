@@ -2708,7 +2708,7 @@ public class Wiki implements Serializable
      *  Gets the text of a deleted page (it's like getPageText, but for deleted
      *  pages).
      *  @param page a page
-     *  @return the deleted text
+     *  @return the deleted text, or null if there is no deleted text to retrieve
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
      *  @since 0.30
@@ -2720,14 +2720,17 @@ public class Wiki implements Serializable
 
         // TODO: this can be multiquery(?)
         StringBuilder url = new StringBuilder(query);
-        url.append("list=deletedrevs&drlimit=1&drprop=content&titles=");
+        url.append("prop=deletedrevisions&drvlimit=1&drvprop=content&titles=");
         url.append(encode(page, true));
 
         // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
         String line = fetch(url.toString(), "getDeletedText");
         int a = line.indexOf("<rev ");
+        if (a < 0)
+            return null;
         a = line.indexOf(">", a) + 1;
         int b = line.indexOf("</rev>", a);
+        log(Level.INFO, "getDeletedText", "Successfully retrieved deleted text of page " + page);
         return line.substring(a, b);
     }
 
@@ -6408,15 +6411,19 @@ public class Wiki implements Serializable
             {
                 String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
                 temp = fetch(url, "Revision.getText");
-                // TODO
+                int a = temp.indexOf("<rev ");
+                a = temp.indexOf(">", a) + 1;
+                int b = temp.indexOf("</rev>", a);
+                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
+                return temp.substring(a, b);
             }
             else
             {
                 String url = base + encode(title, true) + "&oldid=" + revid + "&action=raw";
                 temp = fetch(url, "Revision.getText");
+                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
+                return temp;
             }
-            log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
-            return temp;
         }
 
         /**

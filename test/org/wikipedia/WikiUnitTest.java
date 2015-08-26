@@ -1,5 +1,6 @@
 package org.wikipedia;
 
+import java.io.File;
 import java.net.URLEncoder;
 import java.util.*;
 import org.junit.BeforeClass;
@@ -129,7 +130,9 @@ public class WikiUnitTest
     @Test
     public void getImage() throws Exception
     {
-        assertNull("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah"));
+        File tempfile = File.createTempFile("wiki-java_getImage", null);
+        tempfile.deleteOnExit();
+        assertFalse("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah", tempfile));
     }
     
     @Test
@@ -272,15 +275,13 @@ public class WikiUnitTest
         assertEquals("contribs: non-existent user", testWiki.contribs("Dsdlgfkjsdlkfdjilgsujilvjcl").length, 0);
     }
     
-    /**
-     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-     *  @throws Exception if something goes wrong
-     */
     @Test
     public void getPageText() throws Exception
     {
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
         assertEquals("getPageText", text, "This revision is not deleted!\n");
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
         text = testWiki.getPageText("User:MER-C/UnitTests/pagetext");
         assertEquals("page text: decoding", text, "&#039;&#039;italic&#039;&#039;" +
             "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n");
@@ -322,6 +323,7 @@ public class WikiUnitTest
     @Test
     public void revisionGetText() throws Exception
     {
+        // https://test.wikipedia.org/w/index.php?oldid=230472
         Wiki.Revision rev = testWiki.getRevision(230472);
         String text = rev.getText();
         assertEquals("revision text: decoding", text, "&#039;&#039;italic&#039;&#039;" +
