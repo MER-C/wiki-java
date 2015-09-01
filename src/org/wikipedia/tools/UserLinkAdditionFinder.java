@@ -1,6 +1,6 @@
 /**
  *  @(#)UserLinkAdditionFinder.java 0.01 01/09/2015
- *  Copyright (C) 2013 - 2014 MER-C
+ *  Copyright (C) 2015 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -76,19 +76,19 @@ public class UserLinkAdditionFinder
                 catch (IOException ex)
                 {
                     return new String[] {
-                        "|- [[Special:Diff/" + revision.getRevid() + "]] \n || \t",
-                        "IOException when fetching revision \n"
+                        "" + revision.getRevid(),
+                        "IOException when fetching revision"
                     };
                 }
             })
+            .filter(links -> links.length > 1)
             // parse diffs
             .forEach(links -> {
-                StringBuilder temp = new StringBuilder("|- || [[Special:Diff/");
+                StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
                 temp.append(links[0]);
-                temp.append("]] || ");
+                temp.append("]]\n|| ");
                 for (int i = 1; i < links.length; i++)
                 {
-                    temp.append("\t* ");
                     temp.append(links[i]);
                     temp.append("\n");
                 }
@@ -110,12 +110,12 @@ public class UserLinkAdditionFinder
 
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
-        String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;"; // <td class="diff-addedline">
-        String diffaddedend = "&lt;/td&gt;"; // </td>
-        String deltabegin = "&lt;ins class=&quot;diffchange diffchange-inline&quot;&gt;"; // <ins class="diffchange diffchange-inline">
-        String deltaend = "&lt;/ins&gt;"; // </ins>
+        String diffaddedbegin = "<td class=\"diff-addedline\">";
+        String diffaddedend = "</td>";
+        String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
+        String deltaend = "</ins>";
         // link regex
-        Pattern pattern = Pattern.compile("https?://.+?\\..+?[\\s\\]]");
+        Pattern pattern = Pattern.compile("https?://.+?\\..{2,}?\\s");
         
         ArrayList<String> links = new ArrayList<>();
         links.add("" + revision.getRevid());
@@ -123,12 +123,13 @@ public class UserLinkAdditionFinder
         // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
         diff = diff.toLowerCase();
         diff = diff.replace(deltaend + " " + deltabegin, " ");
+        diff = diff.replace("&lt;", "<");
         for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))
         {
             int y2 = diff.indexOf(diffaddedend, j);
             String addedline = diff.substring(j + diffaddedbegin.length(), y2);
-            addedline = addedline.replaceFirst("^&lt;div&gt;", "");
-            addedline = addedline.replace("&lt;/div&gt;", "");
+            addedline = addedline.replaceFirst("^<div>", "");
+            addedline = addedline.replace("</div>", "");
             if (addedline.contains(deltabegin))
             {
                 for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
@@ -138,14 +139,16 @@ public class UserLinkAdditionFinder
                     // extract links
                     Matcher matcher = pattern.matcher(delta);
                     while (matcher.find())
-                        links.add(matcher.group());
+                        links.add(matcher.group().split("[\\|<\\]]")[0]);
+                        
+                    k = y3;
                 }
             }
             else
             {
                 Matcher matcher = pattern.matcher(addedline);
                 while (matcher.find())
-                    links.add(matcher.group());
+                    links.add(matcher.group().split("[\\|<\\]]")[0]);
             }
             j = y2;
         }
