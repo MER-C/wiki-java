@@ -2665,23 +2665,26 @@ public class Wiki implements Serializable
      *
      *  @param prefix a prefix without a namespace specifier, empty string
      *  lists all deleted pages in the namespace.
-     *  @param namespace one (and only one) namespace
+     *  @param namespace one (and only one) namespace -- not ALL_NAMESPACES
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot view deleted pages
+     *  @throws IllegalArgumentException if namespace == ALL_NAMESPACES
      *  @since 0.31
      */
     public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException, CredentialNotFoundException
     {
-        // this is currently BROKEN
         if (user == null || !user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
-
+        
+        // disallow ALL_NAMESPACES, this query is extremely slow and likely to error out.
+        if (namespace == ALL_NAMESPACES)
+            throw new IllegalArgumentException("deletedPrefixIndex: you must choose a namespace.");
+        
         StringBuilder url = new StringBuilder(query);
-        // drdir also reverses sort order for some reason
-        url.append("list=deletedrevs&drlimit=max&drunique=1&drdir=newer&drprefix=");
+        url.append("generator=alldeletedrevisions&gadrdir=newer&gadrgeneratetitles=1&gadrprefix=");
         url.append(encode(prefix, false));
-        url.append("&drnamespace=");
+        url.append("&gadrlimit=max&gadrnamespace=");
         url.append(namespace);
 
         String drcontinue = null;
@@ -2692,8 +2695,8 @@ public class Wiki implements Serializable
             if (drcontinue == null)
                 text = fetch(url.toString(), "deletedPrefixIndex");
             else
-                text = fetch(url.toString() + "&drcontinue=" + encode(drcontinue, false), "deletedPrefixIndex");
-            drcontinue = parseAttribute(text, drcontinue, 0);
+                text = fetch(url.toString() + "&gadrcontinue=" + encode(drcontinue, false), "deletedPrefixIndex");
+            drcontinue = parseAttribute(text, "gadrcontinue", 0);
 
             for (int x = text.indexOf("<page ", 0); x > 0; x = text.indexOf("<page ", ++x))
                 pages.add(parseAttribute(text, "title", x));
