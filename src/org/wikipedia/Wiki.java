@@ -1225,7 +1225,31 @@ public class Wiki implements Serializable
         String line = fetch(url.toString(), "random");
         return parseAttribute(line, "title", 0);
     }
-
+    
+    /**
+     *  Fetches edit and other types of tokens.
+     *  @param type one of "csrf", "patrol", "rollback", "userrights", "watch"
+     *  @return the token
+     *  @throws IOException if a network error occurs
+     *  @since 0.32
+     */
+    public String getToken(String type) throws IOException
+    {
+        // Note: not called in some methods because we can fetch additional
+        // useful information.
+        String content = fetch(query + "meta=tokens&type=" + type, "getToken");
+        String token = parseAttribute(content, type + "token", 0);
+        
+        // this is a good chance to check whether we are still logged in
+        //if (token.equals("\\+"))
+        //{
+        //    log(Level.SEVERE, "emailUser", "Cookies have expired.");
+        //    logout();
+        //    throw new CredentialExpiredException("Cookies have expired.");
+        //}
+        return token;
+    }
+    
     // STATIC MEMBERS
 
     /**
@@ -1987,16 +2011,12 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("undelete"))
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
 
-        // deleted revisions token
-        String delrev = fetch(query + "meta=tokens", "undelete");
-        String drtoken = parseAttribute(delrev, "csrftoken", 0);
-
         StringBuilder out = new StringBuilder("title=");
         out.append(encode(title, true));
         out.append("&reason=");
         out.append(encode(reason, false));
         out.append("&token=");
-        out.append(encode(drtoken, false));
+        out.append(encode(getToken("csrf"), false));
         if (revisions.length != 0)
         {
             out.append("&timestamps=");
@@ -2880,19 +2900,17 @@ public class Wiki implements Serializable
      */
     public synchronized void protect(String page, Map<String, Object> protectionstate, String reason) throws IOException, LoginException
     {
+        throttle();
+        
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
-
-        throttle();
-        Map info = getPageInfo(page);
-        String protectToken = (String)info.get("token");
-
+        
         StringBuilder out = new StringBuilder("title=");
         out.append(encode(page, true));
         out.append("&reason=");
         out.append(encode(reason, false));
         out.append("&token=");
-        out.append(encode(protectToken, false));
+        out.append(encode(getToken("csrf"), false));
         // cascade protection
         if (protectionstate.containsKey("cascade"))
             out.append("&cascade=1");
@@ -3181,8 +3199,6 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
 
-        String deltoken = (String)getPageInfo(revisions[0].getPage()).get("token");
-
         StringBuilder out = new StringBuilder("reason=");
         out.append(encode(reason, false));
         out.append("&type=revision"); // FIXME: allow log entry deletion
@@ -3194,7 +3210,7 @@ public class Wiki implements Serializable
         }
         out.append(revisions[revisions.length - 1].getRevid());
         out.append("&token=");
-        out.append(encode(deltoken, false));
+        out.append(encode(getToken("csrf"), false));
         if (user.isAllowedTo("suppressrevision") && suppress != null)
         {
             if (suppress)
@@ -4253,18 +4269,11 @@ public class Wiki implements Serializable
             log(Level.WARNING, "emailUser", "User " + user.getUsername() + " is not emailable");
             return;
         }
-        String token = (String)getPageInfo("User:" + user.getUsername()).get("token");
-        if (token.equals("\\+"))
-        {
-            log(Level.SEVERE, "emailUser", "Cookies have expired.");
-            logout();
-            throw new CredentialExpiredException("Cookies have expired.");
-        }
 
         // post email
         StringBuilder buffer = new StringBuilder(20000);
         buffer.append("token=");
-        buffer.append(encode(token, false));
+        buffer.append(encode(getToken("csrf"), false));
         buffer.append("&target=");
         buffer.append(encode(user.getUsername(), false));
         if (emailme)
@@ -4298,14 +4307,10 @@ public class Wiki implements Serializable
         if (user == null || !user.isA("sysop"))
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
 
-        // fetch token
-        String temp = fetch(query + "action=query&meta=tokens", "unblock");
-        String token = parseAttribute(temp, "csrftoken", 0);
-
         // send request
         String request = "user=" + encode(blockeduser, false) +
             "&reason=" + encode(reason, false) + "&token=" +
-            encode(token, false);
+            encode(getToken("csrf"), false);
         String response = post(query + "action=unblock", request, "unblock");
 
         // done
@@ -4399,11 +4404,7 @@ public class Wiki implements Serializable
             if (unwatch)
                 request.append("&unwatch=1");
             request.append("&token=");
-
-            // fetch token
-            String temp = fetch(query + "meta=tokens&type=watch", "watchInternal");
-            String watchToken = parseAttribute(temp, "watchtoken", 0);
-            request.append(encode(watchToken, false));
+            request.append(getToken("watch"));
 
             post(apiUrl + "action=watch", request.toString(), state);
         }
