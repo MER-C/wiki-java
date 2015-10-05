@@ -1370,7 +1370,8 @@ public class Wiki implements Serializable
      *  <li><b>pageid</b>: (Long) the id of the page or -1 if the page does not
      *    exist
      *  <li><b>timestamp</b>: (Calendar) when this method was called
-     *  <li><b>watchtoken</b>: (String) watchlist token or null if logged out
+     *  <li><b>watchtoken</b>: (String) watchlist token or null if logged out.
+     *  <b>DEPRECATED</b>: use getToken() instead.
      *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
      *  </ul>
      *
@@ -1454,7 +1455,12 @@ public class Wiki implements Serializable
 
                 // watchlist token
                 if (user != null)
+                {
+                    // no longer needed now that watchInternal uses getToken(). Will be
+                    // removed shortly.
                     tempmap.put("watchtoken", parseAttribute(item, "watchtoken", 0));
+                    logger.log(Level.WARNING, "getPageInfo: watchtoken is deprecated and will be removed shortly.");
+                }
 
                 // number of watchers
                 if (item.contains("watchers=\""))
