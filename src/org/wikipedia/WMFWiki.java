@@ -59,14 +59,14 @@ public class WMFWiki extends Wiki
     {
         WMFWiki wiki = new WMFWiki("en.wikipedia.org");
         wiki.setMaxLag(0);
-        String line = wiki.fetch("http://en.wikipedia.org/w/api.php?format=xml&action=sitematrix", "WMFWiki.getSiteMatrix");
+        String line = wiki.fetch("https://en.wikipedia.org/w/api.php?format=xml&action=sitematrix", "WMFWiki.getSiteMatrix");
         ArrayList<WMFWiki> wikis = new ArrayList<WMFWiki>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
         // <site url="http://ab.wiktionary.org" code="wiktionary" closed="" />
         for (int x = line.indexOf("url=\""); x >= 0; x = line.indexOf("url=\"", x))
         {
-            int a = line.indexOf("http://", x) + 7;
+            int a = line.indexOf("https://", x) + 8;
             int b = line.indexOf('\"', a);
             int c = line.indexOf("/>", b);
             x = c;
