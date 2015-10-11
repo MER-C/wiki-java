@@ -4010,9 +4010,45 @@ public class Wiki implements Serializable
      */
     public String[] allUsers(String start, int number) throws IOException
     {
-        return allUsers(start, number, "");
+        return allUsers(start, number, "", "", "", "");
     }
 
+    /**
+     *  Returns all usernames of users in given group(s)
+     *  @param group a group name. Use pipe-char "|" to separate if several 
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.28
+     */
+    public String[] allUsersInGroup(String group) throws IOException
+    {
+        return allUsers("", -1, "", group, "", "");
+    }
+     
+    /**
+     *  Returns all usernames of users who are not in given group(s)
+     *  @param excludegroup a group name. Use pipe-char "|" to separate if several 
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.28
+     */
+    public String[] allUsersNotInGroup(String excludegroup) throws IOException
+    {
+        return allUsers("", -1, "", "", excludegroup, "");
+    }
+    
+    /**
+     *  Returns all usernames of users who have given right(s)
+     *  @param rights a right name. Use pipe-char "|" to separate if several 
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.28
+     */
+    public String[] allUsersWithRight(String rights) throws IOException
+    {
+        return allUsers("", -1, "", "", "", rights);
+    }
+    
     /**
      *  Returns all usernames with the given prefix.
      *  @param prefix a username prefix (without User:)
@@ -4022,9 +4058,9 @@ public class Wiki implements Serializable
      */
     public String[] allUsersWithPrefix(String prefix) throws IOException
     {
-        return allUsers("", -1, prefix);
+        return allUsers("", -1, prefix, "", "", "");
     }
-
+    
     /**
      *  Gets the specified number of users (as a String) starting at the
      *  given string, in alphabetical order. Equivalent to [[Special:Listusers]].
@@ -4032,12 +4068,15 @@ public class Wiki implements Serializable
      *  @param start the string to start enumeration
      *  @param number the number of users to return
      *  @param prefix list all users with this prefix (overrides start and amount),
-     *  use "" to not specify one
+     *  @param group list all users in this group(s). Use pipe-char "|" to separate group names.
+     *  @param excludegroup list all users who are not in this group(s). Use pipe-char "|" to separate group names.
+     *  @param rights list all users with this right(s). Use pipe-char "|" to separate right names.
+     *  use "" to not
      *  @return a String[] containing the usernames
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public String[] allUsers(String start, int number, String prefix) throws IOException
+    public String[] allUsers(String start, int number, String prefix, String group, String excludegroup, String rights) throws IOException
     {
         // sanitise
         StringBuilder url = new StringBuilder(query);
@@ -4045,7 +4084,7 @@ public class Wiki implements Serializable
         String next = "";
         if (prefix.isEmpty())
         {
-            url.append(number > slowmax ? slowmax : number);
+            url.append( ( number > slowmax || number == -1 ) ? slowmax : number);
             next = encode(start, false);
         }
         else
@@ -4053,6 +4092,21 @@ public class Wiki implements Serializable
             url.append(slowmax);
             url.append("&auprefix=");
             url.append(encode(prefix, true));
+        }
+        if (!group.isEmpty())
+        {
+            url.append("&augroup=");
+            url.append(encode(group, false));
+        }
+        if (!excludegroup.isEmpty())
+        {
+            url.append("&auexcludegroup=");
+            url.append(encode(excludegroup, false));
+        }
+        if (!rights.isEmpty())
+        {
+            url.append("&aurights=");
+            url.append(encode(rights, false));
         }
         List<String> members = new ArrayList<>(6667); // enough for most requests
         do
