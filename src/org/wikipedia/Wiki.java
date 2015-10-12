@@ -4018,7 +4018,7 @@ public class Wiki implements Serializable
      *  @param group a group name. Use pipe-char "|" to separate if several 
      *  @return (see above)
      *  @throws IOException if a network error occurs
-     *  @since 0.28
+     *  @since 0.32
      */
     public String[] allUsersInGroup(String group) throws IOException
     {
@@ -4030,7 +4030,7 @@ public class Wiki implements Serializable
      *  @param excludegroup a group name. Use pipe-char "|" to separate if several 
      *  @return (see above)
      *  @throws IOException if a network error occurs
-     *  @since 0.28
+     *  @since 0.32
      */
     public String[] allUsersNotInGroup(String excludegroup) throws IOException
     {
@@ -4042,7 +4042,7 @@ public class Wiki implements Serializable
      *  @param rights a right name. Use pipe-char "|" to separate if several 
      *  @return (see above)
      *  @throws IOException if a network error occurs
-     *  @since 0.28
+     *  @since 0.32
      */
     public String[] allUsersWithRight(String rights) throws IOException
     {
@@ -4071,7 +4071,7 @@ public class Wiki implements Serializable
      *  @param group list all users in this group(s). Use pipe-char "|" to separate group names.
      *  @param excludegroup list all users who are not in this group(s). Use pipe-char "|" to separate group names.
      *  @param rights list all users with this right(s). Use pipe-char "|" to separate right names.
-     *  use "" to not
+     *  use "" to not not specify one
      *  @return a String[] containing the usernames
      *  @throws IOException if a network error occurs
      *  @since 0.28
