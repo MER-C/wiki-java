@@ -58,7 +58,7 @@ public class WikiUnitTest
     @Test
     public void userExists() throws Exception
     {
-        assertTrue(":I should exist!", enWiki.userExists("MER-C"));
+        assertTrue("I should exist!", enWiki.userExists("MER-C"));
         assertFalse("Anon should not exist", enWiki.userExists("127.0.0.1"));
     }
     
@@ -140,6 +140,24 @@ public class WikiUnitTest
     {
         assertArrayEquals("getPageHistory: non-existent page", new Wiki.Revision[0], enWiki.getPageHistory("EOTkd&ssdf"));
         assertArrayEquals("getPageHistory: special page", new Wiki.Revision[0], enWiki.getPageHistory("Special:Specialpages"));
+    }
+    
+    @Test
+    public void getPageInfo() throws Exception
+    {
+        Map<String, Object>[] pageinfo = enWiki.getPageInfo(new String[] { "Main Page", "IPod" });
+        
+        // Main Page
+        Map<String, Object> protection = (Map<String, Object>)pageinfo[0].get("protectionstate");
+        assertEquals("getPageInfo: Main Page edit protection level", Wiki.FULL_PROTECTION, protection.get("edit"));
+        assertNull("getPageInfo: Main Page edit protection expiry", protection.get("editexpiry"));
+        assertEquals("getPageInfo: Main Page move protection level", Wiki.FULL_PROTECTION, protection.get("move"));
+        assertNull("getPageInfo: Main Page move protection expiry", protection.get("moveexpiry"));
+        assertTrue("getPageInfo: Main Page cascade protection", (Boolean)protection.get("cascade"));
+        assertEquals("getPageInfo: Main Page display title", "Main Page", pageinfo[0].get("displaytitle"));
+        
+        // different display title
+        assertEquals("getPageInfo: iPod display title", "iPod", pageinfo[1].get("displaytitle"));
     }
     
     @Test
