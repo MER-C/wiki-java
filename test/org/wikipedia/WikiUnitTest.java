@@ -168,7 +168,7 @@ public class WikiUnitTest
         Map<String, Object>[] pageinfo = enWiki.getPageInfo(new String[] { "Main Page", "IPod" });
         
         // Main Page
-        Map<String, Object> protection = (Map<String, Object>)pageinfo[0].get("protectionstate");
+        Map<String, Object> protection = (Map<String, Object>)pageinfo[0].get("protection");
         assertEquals("getPageInfo: Main Page edit protection level", Wiki.FULL_PROTECTION, protection.get("edit"));
         assertNull("getPageInfo: Main Page edit protection expiry", protection.get("editexpiry"));
         assertEquals("getPageInfo: Main Page move protection level", Wiki.FULL_PROTECTION, protection.get("move"));
