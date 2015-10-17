@@ -115,7 +115,7 @@ public class UserLinkAdditionFinder
         String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
         String deltaend = "</ins>";
         // link regex
-        Pattern pattern = Pattern.compile("https?://.+?\\..{2,}?\\s");
+        Pattern pattern = Pattern.compile("https?://.+?\\..{2,}?(?:\\s|]|<|$)");
         
         ArrayList<String> links = new ArrayList<>();
         links.add("" + revision.getRevid());
@@ -139,7 +139,7 @@ public class UserLinkAdditionFinder
                     // extract links
                     Matcher matcher = pattern.matcher(delta);
                     while (matcher.find())
-                        links.add(matcher.group().split("[\\|<\\]]")[0]);
+                        links.add(matcher.group().split("[\\|<\\]\\s]")[0]);
                         
                     k = y3;
                 }
@@ -148,7 +148,7 @@ public class UserLinkAdditionFinder
             {
                 Matcher matcher = pattern.matcher(addedline);
                 while (matcher.find())
-                    links.add(matcher.group().split("[\\|<\\]]")[0]);
+                    links.add(matcher.group().split("[\\|<\\]\\s]")[0]);
             }
             j = y2;
         }
