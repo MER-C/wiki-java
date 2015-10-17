@@ -22,10 +22,6 @@ package org.wikipedia.tools;
 
 import java.io.IOException;
 import org.wikipedia.Wiki;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -35,7 +31,7 @@ import static org.junit.Assert.*;
  */
 public class UserLinkAdditionFinderUnitTest
 {
-    private Wiki testWiki = new Wiki("test.wikipedia.org");
+    private final Wiki testWiki = new Wiki("test.wikipedia.org");
     
     @Test
     public void parseDiff() throws IOException
