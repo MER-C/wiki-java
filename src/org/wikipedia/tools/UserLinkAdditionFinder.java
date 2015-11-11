@@ -106,7 +106,11 @@ public class UserLinkAdditionFinder
     public static String[] parseDiff(Wiki.Revision revision) throws IOException
     {
         // fetch the diff
-        String diff = revision.diff(Wiki.PREVIOUS_REVISION);
+        String diff = null;
+        if (revision.isNew())
+            diff = revision.getText();
+        else
+            diff = revision.diff(Wiki.PREVIOUS_REVISION);
 
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
