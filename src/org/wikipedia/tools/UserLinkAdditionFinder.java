@@ -48,6 +48,7 @@ public class UserLinkAdditionFinder
         if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
             System.exit(0);      
         
+        Set<String> domains = new HashSet<>();
         System.out.println("{| class=\"wikitable\"\n");
         
         Files.lines(fc.getSelectedFile().toPath(), Charset.forName("UTF-8"))
@@ -91,10 +92,18 @@ public class UserLinkAdditionFinder
                 {
                     temp.append(links[i]);
                     temp.append("\n");
+                    // get domain name
+                    String[] temp2 = links[i].split("/");
+                    domains.add(temp2[2].replace("www.", ""));
                 }
                 System.out.println(temp.toString());
             });
         System.out.println("|}");
+        
+        System.out.println("== Domain list ==");
+        for (String domain : domains)
+            System.out.println("*{{spamlink|" + domain + "}}");
+        System.out.flush();
     }
     
     /**
