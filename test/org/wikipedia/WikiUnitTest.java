@@ -326,6 +326,18 @@ public class WikiUnitTest
     }
     
     @Test
+    public void allUsersInGroup() throws Exception
+    {
+        assertArrayEquals("allUsersInGroup: nonsense", new String[0], testWiki.allUsersInGroup("sdfkd|&"));
+    }
+    
+    @Test
+    public void allUserswithRight() throws Exception
+    {
+        assertArrayEquals("allUsersWithRight: nonsense", new String[0], testWiki.allUsersWithRight("sdfkd|&"));
+    }
+    
+    @Test
     public void constructNamespaceString() throws Exception
     {
         StringBuilder temp = new StringBuilder();

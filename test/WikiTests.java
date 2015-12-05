@@ -229,5 +229,12 @@ public class WikiTests
         for (String s : testWiki.getCategoryMembers("A", true))
             System.out.println(s);
         */
+        
+        // all users with group
+        for (String checkuser : enWiki.allUsersInGroup("checkuser"))
+            System.out.println(checkuser);
+        // all users with right
+        for (String oversight : enWiki.allUsersWithRight("hideuser"))
+            System.out.println(oversight);
     }
 }
