@@ -4074,10 +4074,10 @@ public class Wiki implements Serializable
      *  @param start the string to start enumeration
      *  @param number the number of users to return
      *  @param prefix list all users with this prefix (overrides start and amount),
+     *  use "" to not not specify one
      *  @param group list all users in this group(s). Use pipe-char "|" to separate group names.
      *  @param excludegroup list all users who are not in this group(s). Use pipe-char "|" to separate group names.
      *  @param rights list all users with this right(s). Use pipe-char "|" to separate right names.
-     *  use "" to not not specify one
      *  @return a String[] containing the usernames
      *  @throws IOException if a network error occurs
      *  @since 0.28
@@ -4121,7 +4121,11 @@ public class Wiki implements Serializable
             if (!next.isEmpty())
                 temp += ("&aufrom=" + encode(next, false));
             String line = fetch(temp, "allUsers");
-
+            
+            // bail if nonsense groups/rights
+            if (line.contains("Unrecognized values for parameter"))
+                return new String[0];
+            
             // parse
             next = parseAttribute(line, "aufrom", 0);
             for (int w = line.indexOf("<u "); w > 0; w = line.indexOf("<u ", ++w))
