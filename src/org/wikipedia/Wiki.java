@@ -1496,10 +1496,13 @@ public class Wiki implements Serializable
         if (namespaces == null)
             populateNamespaceCache();
 
-        // sanitise
+        // perform a limited normalization
+        if (title.startsWith(":"))
+            title = title.substring(1);
         if (!title.contains(":"))
             return MAIN_NAMESPACE;
-        String namespace = title.substring(0, title.indexOf(':'));
+        title = title.replace("_", " ");
+        String namespace = title.substring(0, 1).toUpperCase() + title.substring(1, title.indexOf(':'));
 
         // look up the namespace of the page in the namespace cache
         if (!namespaces.containsKey(namespace))

@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
  */
 public class WikiUnitTest
 {
-    private static Wiki enWiki, deWiki, arWiki, testWiki;
+    private static Wiki enWiki, deWiki, arWiki, testWiki, enWikt;
     
     public WikiUnitTest()
     {
@@ -43,7 +43,7 @@ public class WikiUnitTest
      *  Initialize wiki objects.
      */
     @BeforeClass
-    public static void setUpClass()
+    public static void setUpClass() throws Exception
     {
         enWiki = new Wiki("en.wikipedia.org");
         enWiki.setMaxLag(-1);
@@ -53,15 +53,23 @@ public class WikiUnitTest
         arWiki.setMaxLag(-1);
         testWiki = new Wiki("test.wikipedia.org");
         testWiki.setMaxLag(-1);
+        enWikt = new Wiki("en.wiktionary.org");
+        enWikt.setMaxLag(-1);
+        enWikt.getSiteInfo();
     }
     
     @Test
     public void namespace() throws Exception
     {
-        assertEquals("NS: en, category", Wiki.CATEGORY_NAMESPACE, enWiki.namespace("Category:CSD"));
-        assertEquals("NS: en, alias", Wiki.PROJECT_NAMESPACE, enWiki.namespace("WP:CSD"));
+        assertEquals("NS: en category", Wiki.CATEGORY_NAMESPACE, enWiki.namespace("Category:CSD"));
+        assertEquals("NS: en category lower case", Wiki.CATEGORY_NAMESPACE, enWiki.namespace("category:CSD"));
+        assertEquals("NS: en help talk", Wiki.HELP_TALK_NAMESPACE, enWiki.namespace("Help talk:About"));
+        assertEquals("NS: en help talk lower case", Wiki.HELP_TALK_NAMESPACE, enWiki.namespace("help talk:About"));
+        assertEquals("NS: en help talk lower case underscore", Wiki.HELP_TALK_NAMESPACE, enWiki.namespace("help_talk:About"));
+        assertEquals("NS: en alias", Wiki.PROJECT_NAMESPACE, enWiki.namespace("WP:CSD"));
         assertEquals("NS: main ns fail", Wiki.MAIN_NAMESPACE, enWiki.namespace("Star Wars: The Old Republic"));
         assertEquals("NS: main ns fail2", Wiki.MAIN_NAMESPACE, enWiki.namespace("Some Category: Blah"));
+        assertEquals("NS: leading colon", Wiki.FILE_NAMESPACE, enWiki.namespace(":File:Blah.jpg"));
         assertEquals("NS: i18n fail", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Kategorie:Begriffsklärung"));
         assertEquals("NS: mixed i18n", Wiki.CATEGORY_NAMESPACE, deWiki.namespace("Category:Begriffsklärung"));
         assertEquals("NS: rtl fail", Wiki.CATEGORY_NAMESPACE, arWiki.namespace("تصنيف:صفحات_للحذف_السريع"));
@@ -252,7 +260,7 @@ public class WikiUnitTest
         Map<String, Object> info = enWiki.getSiteInfo();
         assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
         assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
-        info = new Wiki("en.wiktionary.org").getSiteInfo();
+        info = enWikt.getSiteInfo();
         assertFalse("siteinfo: caplinks false", (Boolean)info.get("usingcapitallinks"));
     }
     
@@ -262,9 +270,16 @@ public class WikiUnitTest
         assertEquals("normalize", "Blah", enWiki.normalize("Blah"));
         assertEquals("normalize", "Blah", enWiki.normalize("blah"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
-        assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:blah.jpg"));
+        assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("file:blah.jpg"));
         assertEquals("normalize", "Category:Wikipedia:blah", enWiki.normalize("Category:Wikipedia:blah"));
-        assertEquals("normalize", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));
+        assertEquals("normalize", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));        
+
+        // capital links = false
+        // FIXME: only works because we have called getSiteInfo above
+        assertEquals("normalize", "blah", enWikt.normalize("blah"));
+        assertEquals("normalize", "Wiktionary:main page", enWikt.normalize("Wiktionary:main page"));
+        assertEquals("normalize", "Wiktionary:main page", enWikt.normalize("wiktionary:main page"));
+        
     }
     
     @Test
