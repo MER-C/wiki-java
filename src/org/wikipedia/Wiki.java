@@ -7515,7 +7515,6 @@ public class Wiki implements Serializable
     /**
      *  Grabs cookies from the URL connection provided.
      *  @param u an unconnected URLConnection
-     *  @param map the cookie store
      */
     private void grabCookies(URLConnection u)
     {
