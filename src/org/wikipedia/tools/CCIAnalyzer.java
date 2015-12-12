@@ -71,7 +71,7 @@ public class CCIAnalyzer
         
         // parse the list of diffs
         ArrayList<String> minoredits = new ArrayList<>(500);
-        for (int i = cci.indexOf("{{dif|"); i > 0; i = cci.indexOf("{{dif|", ++i))
+        for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
         {
             int x = cci.indexOf("}}", i);
             String edit = cci.substring(i, x + 2);
@@ -80,7 +80,7 @@ public class CCIAnalyzer
             String oldid = edit.substring(x + 1, y);
 
             // Fetch diff. No plain text diffs for performance reasons, see
-            // https://bugzilla.wikimedia.org/show_bug.cgi?id=13209
+            // https://phabricator.wikimedia.org/T15209
             // We don't use the Wiki.java method here, this avoids an extra query.
             String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
             // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734

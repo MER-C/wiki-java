@@ -5020,7 +5020,7 @@ public class Wiki implements Serializable
 
     /**
      *  Looks up a particular user in the IP block list, i.e. whether a user
-     *  is currently blocked. Equivalent to [[Special:Ipblocklist]].
+     *  is currently blocked. Equivalent to [[Special:BlockList]].
      *
      *  @param user a username or IP (e.g. "127.0.0.1")
      *  @return the block log entry
@@ -5034,7 +5034,7 @@ public class Wiki implements Serializable
 
     /**
      *  Lists currently operating blocks that were made in the specified
-     *  interval. Equivalent to [[Special:Ipblocklist]].
+     *  interval. Equivalent to [[Special:BlockList]].
      *
      *  @param start the start date
      *  @param end the end date
@@ -5049,10 +5049,9 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches part of the list of currently operational blocks. Equivalent to
-     *  [[Special:Ipblocklist]]. WARNING: cannot tell whether a particular IP
-     *  is autoblocked as this is non-public data (see also [[bugzilla:12321]]
-     *  and [[foundation:Privacy policy]]). Don't call this directly, use one
-     *  of the two above methods instead.
+     *  [[Special:BlockList]]. WARNING: cannot tell whether a particular IP
+     *  is autoblocked as this is non-public data (see [[wmf:Privacy policy]]).
+     *  Don't call this directly, use one of the two above methods instead.
      *
      *  @param user a particular user that might have been blocked. Use "" to
      *  not specify one. May be an IP (e.g. "127.0.0.1") or a CIDR range (e.g.
