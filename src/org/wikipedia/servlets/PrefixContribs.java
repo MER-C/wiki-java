@@ -70,7 +70,7 @@ public class PrefixContribs extends HttpServlet
         buffer.append("range or username prefix for the last 7 days. To search for an IP\n");
         buffer.append("range, use a search key of (say) 111.222. for 111.222.0.0/16. /24s ");
         buffer.append("and IPv6 addresses work similarly.\nNo sanitization is performed on ");
-        buffer.append("IP addresses.\n\n");
+        buffer.append("IP addresses. Timeouts are more likely for the longer time spans.\n\n");
         
         // form
         buffer.append("<form action=\"./prefixcontribs.jsp\" method=GET>\n<p>Search string: ");
@@ -84,7 +84,18 @@ public class PrefixContribs extends HttpServlet
         }
         else
             buffer.append(">\n");
-        buffer.append("<input type=submit value=\"Search\"></form>\n\n");
+        buffer.append("<p>For last: ");
+        String time = request.getParameter("time");
+        if (time == null)
+            time = "7";
+        LinkedHashMap<String, String> options = new LinkedHashMap<>(10);
+	options.put("1", "1 day");
+        options.put("3", "3 days");
+        options.put("7", "7 days");
+        options.put("14", "14 days");
+        options.put("30", "30 days");
+        buffer.append(ServletUtils.generateComboBox("time", options, time, false));
+        buffer.append("<p><input type=submit value=\"Search\"></form>\n\n");
         
         if (prefix != null)
         {
@@ -93,7 +104,7 @@ public class PrefixContribs extends HttpServlet
             else
             {
                 Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-                cutoff.add(Calendar.DAY_OF_MONTH, -7);
+                cutoff.add(Calendar.DAY_OF_MONTH, -1*Integer.parseInt(time));
                 Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
                 if (revisions.length == 0)
                     buffer.append("No contributions found.");
