@@ -456,6 +456,9 @@ public class ParseUtils
          *  Gets the position of the text that start with a specified String and ends
          *  with a specfied string. Used to get the start and end position of noWiki
          *  text and comments
+	 *
+	 *  <i>Start</i> may be "^" which is the beginning of the text.
+	 *  <i>End</i> may be "$" which is the end of the text.
          *
          *  @param text the text
          *  @param start the starting string
