@@ -4884,6 +4884,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
         url.append(encode("Category:" + name, true));
+        visitedcategories.add(member);
         boolean nocat = ns.length != 0;
         if (maxdepth > 0 && nocat)
         {
