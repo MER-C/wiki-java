@@ -4884,7 +4884,6 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
         url.append(encode("Category:" + name, true));
-        visitedcategories.add(member);
         boolean nocat = ns.length != 0;
         if (maxdepth > 0 && nocat)
         {
@@ -4919,8 +4918,8 @@ public class Wiki implements Serializable
                 boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
                 if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
                 {
-                    String[] categoryMembers = getCategoryMembers(member, --maxdepth, visitedcategories, ns);
                     visitedcategories.add(member);
+                    String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, ns);
                     members.addAll(Arrays.asList(categoryMembers));
                 }
 
