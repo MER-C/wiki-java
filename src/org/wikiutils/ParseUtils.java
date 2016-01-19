@@ -456,6 +456,9 @@ public class ParseUtils
          *  Gets the position of the text that start with a specified String and ends
          *  with a specfied string. Used to get the start and end position of noWiki
          *  text and comments
+	 *
+	 *  <i>Start</i> may be "^" which is the beginning of the text.
+	 *  <i>End</i> may be "$" which is the end of the text.
          *
          *  @param text the text
          *  @param start the starting string
@@ -465,13 +468,27 @@ public class ParseUtils
          */
         public static HashMap<Integer, Integer> getIgnorePositions(String text, String start, String end)
         {
-                int startPos = text.indexOf(start);
+                int startPos;
+
+                if ( start.equals("^") ) {
+                    startPos=0;
+                } else {
+                    startPos = text.indexOf(start);
+                }
+
                 if (startPos == -1)
                         return null;
                 HashMap<Integer, Integer> noWikiPos = new HashMap<Integer, Integer>();
                 while (startPos != -1)
                 {
-                        int endPos = text.indexOf(end, startPos);
+                        int endPos;
+
+                        if ( end.equals("$") ){
+                            endPos=text.length()-1;
+                        } else {
+                            endPos = text.indexOf(end, startPos);
+                        }
+
                         if (endPos != -1)
                                 noWikiPos.put(startPos, endPos);
                         else
@@ -481,7 +498,7 @@ public class ParseUtils
                 }
                 return noWikiPos;
         }
-        
+
         /**
          *  Gets the internal links contained in the given wikitext.
          *  @param text the wikitext
