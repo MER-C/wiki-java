@@ -4986,20 +4986,18 @@ public class Wiki implements Serializable
         url.append("&euoffset=");
 
         // some variables we need later
-        boolean done = false;
         List[] ret = new ArrayList[] // no reason for more than 500 links
         {
             new ArrayList<String>(667), // page titles
             new ArrayList<URL>(667) // urls
         };
-
+        String euoffset = "0";
         // begin
-        while (!done)
+        do
         {
             // if this is the last page of results then there is no euoffset parameter
-            String line = fetch(url.toString() + ret[0].size(), "linksearch");
-            if (!line.contains("euoffset=\""))
-                done = true;
+            String line = fetch(url.toString() + euoffset, "linksearch");
+            euoffset = parseAttribute(line, "euoffset", 0);
 
             // xml form: <eu ns="0" title="Main Page" url="http://example.com" />
             for (int x = line.indexOf("<eu"); x > 0; x = line.indexOf("<eu ", ++x))
@@ -5012,6 +5010,7 @@ public class Wiki implements Serializable
                     ret[1].add(new URL(link));
             }
         }
+        while (euoffset != null);
 
         // return value
         log(Level.INFO, "linksearch", "Successfully returned instances of external link " + pattern + " (" + ret[0].size() + " links)");
