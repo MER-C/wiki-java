@@ -48,7 +48,7 @@ public class UserLinkAdditionFinder
         if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
             System.exit(0);      
         
-        Set<String> domains = new HashSet<>();
+        Map<String, Set<String>> domains = new HashMap<>();
         System.out.println("{| class=\"wikitable\"\n");
         
         Files.lines(fc.getSelectedFile().toPath(), Charset.forName("UTF-8"))
@@ -88,34 +88,56 @@ public class UserLinkAdditionFinder
                 StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
                 temp.append(links[0]);
                 temp.append("]]\n|| ");
-                for (int i = 1; i < links.length; i++)
+                for (int i = 2; i < links.length; i++)
                 {
                     temp.append(links[i]);
                     temp.append("\n");
                     // get domain name
                     String[] temp2 = links[i].split("/");
-                    domains.add(temp2[2].replace("www.", ""));
+                    String domain = temp2[2].replace("www.", "");
+                    if (domains.containsKey(domain))
+                        domains.get(domain).add(links[1]);
+                    else
+                    {
+                        HashSet<String> blah = new HashSet<>();
+                        blah.add(links[1]);
+                        domains.put(domain, blah);
+                    }
                 }
                 System.out.println(temp.toString());
             });
         System.out.println("|}");
         
         System.out.println("== Domain list ==");
-        for (String domain : domains)
+        for (String domain : domains.keySet())
             System.out.println("*{{spamlink|" + domain + "}}");
+        System.out.println();
+        
+        System.out.println("== Blacklist log ==");
+        for (Map.Entry<String, Set<String>> entry : domains.entrySet())
+        {
+            String domain = entry.getKey().replace(".", "\\.");
+            System.out.print(" \\b" + domain + "\\b");
+            for (int i = domain.length(); i < 35; i++)
+                System.out.print(' ');
+            System.out.print(" # ");
+            for (String spammer : entry.getValue())
+                System.out.print("{{user|" + spammer + "}} ");
+            System.out.println();
+        }
         System.out.flush();
     }
     
     /**
      *  Returns a list of external links added by a particular revision.
      *  @param revision the revision to check of added external links.
-     *  @return an array: [0] = the revid, [1+] = added URLs.
+     *  @return an array: [0] = the revid, [1] = the user, [2+] = added URLs.
      *  @throws IOException if a network error occurs
      */
     public static String[] parseDiff(Wiki.Revision revision) throws IOException
     {
         // fetch the diff
-        String diff = null;
+        String diff;
         if (revision.isNew())
             diff = revision.getText();
         else
@@ -132,6 +154,7 @@ public class UserLinkAdditionFinder
         
         ArrayList<String> links = new ArrayList<>();
         links.add("" + revision.getRevid());
+        links.add(revision.getUser());
         
         // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
         diff = diff.toLowerCase();
