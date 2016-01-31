@@ -26,8 +26,13 @@ import org.wikibase.data.Entity;
 import org.wikipedia.Wiki;
 
 public class Wikibase extends Wiki {
+
+    public Wikibase(String url) {
+        super(url);
+    }
+    
     public Wikibase() {
-        super("www.wikidata.org");
+        this("www.wikidata.org");
     }
 
     /**
