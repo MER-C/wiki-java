@@ -1235,8 +1235,6 @@ public class Wiki implements Serializable
      */
     public String getToken(String type) throws IOException
     {
-        // Note: not called in some methods because we can fetch additional
-        // useful information.
         String content = fetch(query + "meta=tokens&type=" + type, "getToken");
         String token = parseAttribute(content, type + "token", 0);
         
@@ -1359,7 +1357,7 @@ public class Wiki implements Serializable
      *    java.util.Map, java.lang.String) protection state} of the page. Does
      *    not cover implied protection levels (e.g. MediaWiki namespace).
      *  <li><b>token</b>: (String) an edit token for the page, must be logged in
-     *    to be non-trivial
+     *    to be non-trivial. <b>DEPRECATED</b>: use getToken() instead.
      *  <li><b>exists</b>: (Boolean) whether the page exists
      *  <li><b>lastpurged</b>: (Calendar) when the page was last purged or null
      *    if the page does not exist
@@ -1450,16 +1448,15 @@ public class Wiki implements Serializable
                 tempmap.put("protection", protectionstate);
 
                 tempmap.put("displaytitle", parseAttribute(item, "displaytitle", 0));
-                tempmap.put("token", parseAttribute(item, "edittoken", 0));
                 tempmap.put("timestamp", makeCalendar());
 
+                // DEPRECATED, will be removed shortly
+                tempmap.put("token", parseAttribute(item, "edittoken", 0)); 
                 // watchlist token
                 if (user != null)
                 {
-                    // no longer needed now that watchInternal uses getToken(). Will be
-                    // removed shortly.
                     tempmap.put("watchtoken", parseAttribute(item, "watchtoken", 0));
-                    logger.log(Level.WARNING, "getPageInfo: watchtoken is deprecated and will be removed shortly.");
+                    logger.log(Level.WARNING, "getPageInfo: watchtoken and editoken are deprecated and will be removed shortly.");
                 }
 
                 // number of watchers
@@ -1810,7 +1807,7 @@ public class Wiki implements Serializable
         // @revised 0.25 optional bot flagging
         throttle();
 
-        // protection and token
+        // protection
         Map info = getPageInfo(title);
         if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
         {
@@ -1818,7 +1815,6 @@ public class Wiki implements Serializable
             log(Level.WARNING, "edit", "Cannot edit - permission denied. " + ex);
             throw ex;
         }
-        String wpEditToken = (String)info.get("token");
 
         // post data
         StringBuilder buffer = new StringBuilder(300000);
@@ -1833,7 +1829,7 @@ public class Wiki implements Serializable
             buffer.append(encode(summary, false));
         }
         buffer.append("&token=");
-        buffer.append(encode(wpEditToken, false));
+        buffer.append(encode(getToken("csrf"), false));
         if (basetime != null)
         {
             buffer.append("&starttimestamp=");
@@ -1973,7 +1969,7 @@ public class Wiki implements Serializable
         buffer.append("&reason=");
         buffer.append(encode(reason, false));
         buffer.append("&token=");
-        buffer.append(encode(deleteToken, false));
+        buffer.append(encode(getToken("csrf"), false));
         String response = post(apiUrl + "action=delete", buffer.toString(), "delete");
 
         // done
@@ -2353,7 +2349,7 @@ public class Wiki implements Serializable
     public Revision getTopRevision(String title) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvlimit=1&rvtoken=rollback&titles=");
+        url.append("prop=revisions&rvlimit=1&meta=tokens&type=rollback&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
         String line = fetch(url.toString(), "getTopRevision");
@@ -2835,7 +2831,6 @@ public class Wiki implements Serializable
             log(Level.WARNING, "move", "Cannot move - permission denied. " + ex);
             throw ex;
         }
-        String wpMoveToken = (String)info.get("token");
 
         // post data
         StringBuilder buffer = new StringBuilder(10000);
@@ -2846,7 +2841,7 @@ public class Wiki implements Serializable
         buffer.append("&reason=");
         buffer.append(encode(reason, false));
         buffer.append("&token=");
-        buffer.append(encode(wpMoveToken, false));
+        buffer.append(encode(getToken("csrf"), false));
         if (movetalk)
             buffer.append("&movetalk=1");
         if (noredirect && user.isAllowedTo("suppressredirect"))
@@ -3328,7 +3323,7 @@ public class Wiki implements Serializable
         if (to != null && !rev.getPage().equals(to.getPage()))
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
-        // protection and token
+        // protection
         Map info = getPageInfo(rev.getPage());
         if (!checkRights(info, "edit"))
         {
@@ -3336,7 +3331,6 @@ public class Wiki implements Serializable
             log(Level.WARNING, "undo", "Cannot edit - permission denied." + ex);
             throw ex;
         }
-        String wpEditToken = (String)info.get("token");
 
         // send data
         StringBuilder buffer = new StringBuilder(10000);
@@ -3359,7 +3353,7 @@ public class Wiki implements Serializable
         if (bot)
             buffer.append("&bot=1");
         buffer.append("&token=");
-        buffer.append(encode(wpEditToken, false));
+        buffer.append(encode(getToken("csrf"), false));
         String response = post(apiUrl + "action=edit", buffer.toString(), "undo");
 
         // done
@@ -3886,7 +3880,7 @@ public class Wiki implements Serializable
         }
         filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
 
-        // protection and token
+        // protection
         Map info = getPageInfo("File:" + filename);
         if (!checkRights(info, "upload"))
         {
@@ -3894,7 +3888,6 @@ public class Wiki implements Serializable
             log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
-        String wpEditToken = (String)info.get("token");
 
         // chunked upload setup
         long filesize = file.length();
@@ -3907,7 +3900,7 @@ public class Wiki implements Serializable
             {
                 Map<String, Object> params = new HashMap<>(50);
                 params.put("filename", filename);
-                params.put("token", wpEditToken);
+                params.put("token", getToken("csrf"));
                 params.put("ignorewarnings", "true");
                 if (chunks == 1)
                 {
@@ -3935,9 +3928,6 @@ public class Wiki implements Serializable
                     byte[] by = new byte[(int)buffersize]; // 32 bit problem. Why must array indices be ints?
                     fi.read(by);
                     params.put("chunk\"; filename=\"" + file.getName(), by);
-
-                    // Each chunk presumably requires a new edit token
-                    wpEditToken = (String)getPageInfo("File:" + filename).get("token");
                 }
 
                 // done
@@ -3978,7 +3968,7 @@ public class Wiki implements Serializable
         {
             Map<String, Object> params = new HashMap<>(50);
             params.put("filename", filename);
-            params.put("token", wpEditToken);
+            params.put("token", getToken("csrf"));
             params.put("text", contents);
             if (!reason.isEmpty())
                 params.put("comment", reason);
@@ -7236,6 +7226,9 @@ public class Wiki implements Serializable
         if ((assertion & ASSERT_USER) == ASSERT_USER && line.contains("error code=\"assertuserfailed\""))
             // assert !line.contains("error code=\"assertuserfailed\"") : "Session expired.";
             throw new AssertionError("Session expired.");
+        // protected page errors
+        if (line.matches("(protectednamespace|customcssjsprotected|cascadeprotected|protectedpage|protectedtitle)"))
+            throw new CredentialNotFoundException("Page is protected.");
         if (line.contains("error code=\"permissiondenied\""))
             throw new CredentialNotFoundException("Permission denied."); // session expired or stupidity
         // rate limit (automatic retry), though might be a long one (e.g. email)
