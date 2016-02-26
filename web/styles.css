@@ -1,3 +1,6 @@
 /* bump up list margins */
 ul { margin: 15px }
 ol { margin: 15px }
+
+/* fix input sizes */
+input[type=text] { width: 300px }

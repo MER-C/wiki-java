@@ -1,6 +1,6 @@
 /**
  *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2014 MER-C
+ *  Copyright (C) 2011 - 2016 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -92,7 +92,7 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software:    ");
+        sb.append(": Copyright (C) MER-C 2007-2016. This tool is free software:    ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of    ");
         sb.append("the <a href=\"//gnu.org/licenses/agpl.html\">Affero GNU General ");
         sb.append("Public License</a> as published by the Free Software Foundation, ");
