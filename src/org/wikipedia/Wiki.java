@@ -22,6 +22,7 @@ package org.wikipedia;
 
 import java.io.*;
 import java.net.*;
+import java.nio.*;
 import java.nio.file.Files;
 import java.text.Normalizer;
 import java.util.*;
@@ -4180,42 +4181,57 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the contributions by a range of IP v4 addresses. Supported ranges
-     *  are /8, /16 and /24. Do be careful with this, as calls such as
-     *  <tt>enWiki.rangeContribs("152.163.0.0/16"); // let's get all the
-     *  contributions for this AOL range!</tt> might just kill your program.
+     *  Gets the contributions by a range of IP addresses. Supported ranges are
+     *  a whole number of bytes (/8, /16, /24, /32, /40, etc.), anything not a
+     *  whole number of bytes is rounded down. WARNING: calls for large IP
+     *  ranges may not return for a VERY long time. This may also return edits
+     *  by users pretending to be IP addresses e.g. 127.0.0.l.
      *
      *  @param range the CIDR range of IP addresses to get contributions for
      *  @return the contributions of that range
      *  @throws IOException if a network error occurs
-     *  @throws NumberFormatException if we aren't able to parse the range
-     *  @deprecated doesn't support IPv6, and I am way too lazy to make it do so
+     *  @throws UnknownHostException if the IP address is not valid
+     *  @throws NumberFormatException if the subnet mask is not valid
      *  @since 0.17
      */
-    @Deprecated
     public Revision[] rangeContribs(String range) throws IOException
     {
-        // sanitize range
-        int a = range.indexOf('/');
-        if (a < 7)
-            throw new NumberFormatException("Not a valid CIDR range!");
-        int size = Integer.parseInt(range.substring(a + 1));
-        String[] numbers = range.substring(0, a).split("\\.");
-        if (numbers.length != 4)
-            throw new NumberFormatException("Not a valid CIDR range!");
-        switch (size)
+        String[] parts = range.split("/");
+        String ip = parts[0];
+        InetAddress ipaddr = InetAddress.getByName(ip);
+        byte[] bytes = ipaddr.getAddress();
+        StringBuilder contribuser = new StringBuilder();
+        if (ipaddr instanceof Inet6Address)
         {
-            case 8:
-                return contribs("", numbers[0] + ".", null, null);
-            case 16:
-                return contribs("", numbers[0] + "." + numbers[1] + ".", null, null);
-            case 24:
-                return contribs("", numbers[0] + "." + numbers[1] + "." + numbers[2] + ".", null, null);
-            case 32: // not that people are silly enough to do this...
-                return contribs(range.substring(0, range.length() - 3), "", null, null);
-            default:
-                throw new NumberFormatException("Range is not supported.");
+            // MediaWiki represents IPv6 addresses as 
+            // 0:0:0:0:0:0:0:1 or 1234:123:4567:567:AAAA:BBBB:CCCC:DDEF
+            // hex letters must be upper case
+            int numbytes = (parts.length < 2) ? 16 : (Integer.parseInt(parts[1]) >> 3);
+            bytes = Arrays.copyOf(Arrays.copyOf(bytes, numbytes), 16);
+            short[] shorts = new short[numbytes >> 1];
+            ByteBuffer.wrap(bytes, 0, numbytes).order(ByteOrder.BIG_ENDIAN)
+                .asShortBuffer().get(shorts);
+            for (int i = 0; i < shorts.length; i++)
+            {
+                contribuser.append(String.format("%X", shorts[i]));
+                if (i != 8)
+                    contribuser.append(":");
+            } 
+            if (numbytes % 2 == 1)
+                contribuser.append(String.format("%X", bytes[numbytes - 1]));
         }
+        else // IPv4
+        {
+            int numbytes = (parts.length < 2) ? 4 : (Integer.parseInt(parts[1]) >> 3);
+            bytes = Arrays.copyOf(bytes, numbytes);
+            for (int i = 0; i < bytes.length; i++)
+            {
+                contribuser.append(bytes[i]);
+                if (i != 3)
+                    contribuser.append(".");
+            }
+        }
+        return contribs("", contribuser.toString(), null, null);
     }
 
     /**
@@ -7155,7 +7171,7 @@ public class Wiki implements Serializable
             try
             {
                 int time = connection.getHeaderFieldInt("Retry-After", 10);
-                logger.log(Level.WARNING, "Current database lag " + lag + " s exceeds " + maxlag + " s, waiting " + time + " s.");
+                logger.log(Level.WARNING, "Current database lag {0} s exceeds {1} s, waiting {2} s.", new Object[] { lag, maxlag, time });
                 Thread.sleep(time * 1000);
             }
             catch (InterruptedException ex)
@@ -7316,6 +7332,14 @@ public class Wiki implements Serializable
             sb.append("%7C");
         }
         sb.append(namespaces[temp - 1]);
+        
+        // JDK 1.8:
+        // if (namespaces.length == 0)
+        //     return;
+        // StringJoiner sj = new StringJoiner("%7C");
+        // for (namespace : namespaces)
+        //     sj.add("" + namespace);
+        // sb.add(sj.toString());
     }
 
     /**
@@ -7348,6 +7372,13 @@ public class Wiki implements Serializable
             else
                 buffer.append("|");
         }
+        // JDK 1.8:
+        // StringJoiner sj = new StringJoiner("|");
+        // for (int i = 0; i < titles.length; i++)
+        // {
+        //     sj.add(normalize(titles[i]));
+        //     statement of if above, removing else
+        // }
         return ret;
     }
 
