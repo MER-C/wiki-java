@@ -29,18 +29,15 @@ public class ParseUtils
 	}
 	
 	/**
-	 * Gets the target of the redirect page. </br><b>PRECONDITION</b>: <tt>redirect</tt> must be a
-	 * Redirect.
+	 *  Gets the target of the redirect page. 
+         *  <br><b>PRECONDITION</b>: <tt>redirect</tt> must be a Redirect.
 	 * 
-	 * @param redirect The title of the redirect to get the target for.
-	 * @param wiki The wiki object to use.
-	 * 
-	 * @return String The title of the redirect's target.
-	 * 
-	 * @throws UnsupportedOperationException If the page was not a redirect page.
-	 * @throws IOException If network error
+	 *  @param redirect The title of the redirect to get the target for.
+	 *  @param wiki The wiki object to use.
+	 *  @return String The title of the redirect's target.
+	 *  @throws UnsupportedOperationException If the page was not a redirect page.
+	 *  @throws IOException if there is a network error
 	 */
-
 	public static String getRedirectTarget(String redirect, Wiki wiki) throws IOException
 	{
 		String text = wiki.getPageText(redirect).trim();

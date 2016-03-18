@@ -36,29 +36,25 @@ public class IOUtils
 
 	
 	/**
-	 * Creates a HashMap from a file. Key and Value must be separated by colons. One newline per
-	 * entry. Example line: "KEY:VALUE". Useful for storing deletion/editing reasons.  The text file to read
-	 * from must be in UTF-8 encoding.
+	 *  Creates a HashMap from a file. Key and Value must be separated by 
+         *  colons. One newline per entry. Example line: "KEY:VALUE". Useful for
+         *  storing deletion/editing reasons. The text file to read from must be
+         *  in UTF-8 encoding.
 	 * 
-	 * @param path The path of the file to read from
-	 * 
-	 * @return The HashMap we created by parsing the file
-	 * 
+	 *  @param path The path of the file to read from
+	 *  @throws FileNotFoundException if path does not represent a valid file
+	 *  @return The HashMap we created by parsing the file
 	 */
-
 	public static HashMap<String, String> buildReasonCollection(String path) throws FileNotFoundException
 	{
-		HashMap<String, String> l = new HashMap<String, String>();
-
-		for (String s : loadFromFile(path, "", "UTF-8"))
-		{
-			int i = s.indexOf(":");
-			l.put(s.substring(0, i), s.substring(i + 1));
-		}
-
-		return l;
+            HashMap<String, String> l = new HashMap<>();
+            for (String s : loadFromFile(path, "", "UTF-8"))
+            {
+                int i = s.indexOf(":");
+                l.put(s.substring(0, i), s.substring(i + 1));
+            }
+            return l;
 	}
-	
 	
 	/**
 	 * Loads list of pages contained in a file into an array. One newline per item.
@@ -148,7 +144,7 @@ public class IOUtils
 	/**
 	 * Downloads a file
 	 * 
-	 * @param title The title of the file to download <ins>on the Wiki</ins> <b>excluding</b> the "
+	 * @param title The title of the file to download <u>on the Wiki</u> <b>excluding</b> the "
 	 *           <tt>File:</tt>" prefix.
 	 * @param localpath The pathname to save this file to (e.g. "<tt>/Users/Fastily/Example.jpg</tt>
 	 *           "). Note that if a file with that name already exists at that pathname, it <span

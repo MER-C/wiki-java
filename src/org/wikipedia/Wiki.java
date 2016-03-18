@@ -1540,7 +1540,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the namespaces used by this wiki.
-     *  @return a map containing e.g. {"Media" => -2, "Special" => -1, ...}.
+     *  @return a map containing e.g. {"Media" : -2, "Special" : -1, ...}.
      *  Changes in this map do not propagate back to this Wiki object.
      *  @throws IOException if a network error occurs
      *  @since 0.28
@@ -2203,8 +2203,8 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the list of interwiki links a particular page has. The returned
-     *  map has the format language code => the page on the external wiki
-     *  linked to.
+     *  map has the format { language code : the page on the external wiki
+     *  linked to }.
      *
      *  @param title a page
      *  @return a map of interwiki links that page has (empty if there are no
@@ -2311,11 +2311,11 @@ public class Wiki implements Serializable
      *  the section numbering as in the table of contents with the section
      *  title, as in the following example:
      *
-     *  1 => How to nominate
-     *  1.1 => Step 1 - Evaluate
-     *  1.2 => Step 2 - Create subpage
-     *  1.2.1 => Step 2.5 - Transclude and link
-     *  1.3 => Step 3 - Update image
+     *  { 1 : How to nominate }, <br>
+     *  { 1.1 : Step 1 - Evaluate }, <br>
+     *  { 1.2 : Step 2 - Create subpage }, <br>
+     *  { 1.2.1 : Step 2.5 - Transclude and link }, <br>
+     *  { 1.3 : Step 3 - Update image }, <br>
      *  ...
      *
      *  @param page the page to get sections for
@@ -2884,13 +2884,13 @@ public class Wiki implements Serializable
      *  be left untouched):
      *  <pre>
      *  {
-     *     edit => one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
-     *     editexpiry => Calendar, // expiry time for edit protection, null = indefinite
+     *     edit: one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
+     *     editexpiry: Calendar, // expiry time for edit protection, null = indefinite
      *     move, moveexpiry, // as above, prevents page moving
      *     create, createexpiry, // as above, prevents page creation (no effect on existing pages)
      *     upload, uploadexpiry, // as above, prevents uploading of files (FILE_NAMESPACE only)
-     *     cascade => Boolean // Enables cascading protection (requires edit=FULL_PROTECTION). Default: false.
-     *     cascadesource => String // souce of cascading protection (here ignored)
+     *     cascade: Boolean, // Enables cascading protection (requires edit=FULL_PROTECTION). Default: false.
+     *     cascadesource: String // souce of cascading protection (here ignored)
      *  };
      *  </pre>
      *
@@ -3193,7 +3193,8 @@ public class Wiki implements Serializable
      *  (ignored if we cannot <tt>suppressrevision</tt>, null = status quo).
      *  @param revisions the list of revisions to (un)delete
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException
+     *  @throws CredentialNotFoundException if you do not have the rights to
+     *  delete revisions or log entries
      *  @throws AccountLockedException if the user is blocked
      */
     public synchronized void revisionDelete(Boolean hidecontent, Boolean hideuser, Boolean hidereason, String reason, Boolean suppress,
@@ -4166,7 +4167,7 @@ public class Wiki implements Serializable
      *  Gets the contributions of a user in a particular namespace. Equivalent
      *  to [[Special:Contributions]]. Be careful when using this method because
      *  the user may have a high edit count e.g. <tt>enWiki.contribs("MER-C",
-     *  Wiki.MAIN_NAMESPACE).length</tt> > 50000.
+     *  Wiki.MAIN_NAMESPACE).length</tt> %gt; 50000.
      *
      *  @param user the user or IP to get contributions for
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -5153,7 +5154,7 @@ public class Wiki implements Serializable
      *  @param amount the amount of log entries to get
      *  @return the most recent set of log entries
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if amount < 1
+     *  @throws IllegalArgumentException if amount &lt; 1
      *  @since 0.08
      */
     public LogEntry[] getLogEntries(int amount) throws IOException
@@ -5717,7 +5718,7 @@ public class Wiki implements Serializable
      *  [[Special:Newpages]].
      *
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
-     *  we return (e.g. exclude patrolled pages => rcoptions = HIDE_PATROLLED).
+     *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get
      *  @return the revisions that created the pages satisfying the requirements
      *  above
@@ -5737,7 +5738,7 @@ public class Wiki implements Serializable
      *  [[Special:Newpages]].
      *
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
-     *  we return (e.g. exclude patrolled pages => rcoptions = HIDE_PATROLLED).
+     *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the revisions that created the pages satisfying the requirements
@@ -6345,17 +6346,21 @@ public class Wiki implements Serializable
          *  Gets the details of this log entry. Return values are as follows:
          *
          *  <table>
+         *  <caption>Log types and return values</caption>
          *  <tr><th>Log type <th>Return value
          *  <tr><td>MOVE_LOG
          *      <td>The new page title
          *  <tr><td>USER_RENAME_LOG
          *      <td>The new username
          *  <tr><td>BLOCK_LOG
-         *      <td>new Object[] { boolean anononly, boolean nocreate, boolean noautoblock, boolean noemail, boolean nousertalk, String duration }
+         *      <td>new Object[] { boolean anononly, boolean nocreate, boolean 
+         *      noautoblock, boolean noemail, boolean nousertalk, String duration }
          *  <tr><td>USER_RIGHTS_LOG
          *      <td>The new user rights (String[])
          *  <tr><td>PROTECTION_LOG
-         *      <td>action == "protect" or "modify" => the protection level (int, -2 if unrecognized), action == "move_prot" => the old title, else null
+         *      <td>if action == "protect" or "modify" return the protection level
+         *          (int, -2 if unrecognized) if action == "move_prot" return 
+         *          the old title, else null
          *  <tr><td>Others or RevisionDeleted
          *      <td>null
          *  </table>
@@ -7157,7 +7162,7 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Checks for database lag and sleeps if lag > maxlag.
+     *  Checks for database lag and sleeps if lag &gt; maxlag.
      *  @param connection the URL connection used in the request
      *  @return true if there was sufficient database lag.
      *  @since 0.32
@@ -7343,7 +7348,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Cuts up a list of titles into batches for prop=X&titles=Y type queries.
+     *  Cuts up a list of titles into batches for prop=X&amp;titles=Y type queries.
      *  @param titles a list of titles.
      *  @return the titles ready for insertion into a URL
      *  @throws IOException if a network error occurs

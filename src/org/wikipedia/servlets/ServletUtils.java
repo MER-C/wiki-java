@@ -46,7 +46,7 @@ public class ServletUtils
     }
     
     /**
-     *  Strips < > and other unwanted stuff that leads to XSS attacks.
+     *  Strips &lt; &gt; and other unwanted stuff that leads to XSS attacks.
      *  Borrowed from http://greatwebguy.com/programming/java/simple-cross-site-scripting-xss-servlet-filter
      *  @param input an input string
      *  @return <tt>input</tt>, sanitized
@@ -82,9 +82,9 @@ public class ServletUtils
     }
     
     /**
-     *  Generates a boilerplate GPLv3 footer given a tool name
+     *  Generates a boilerplate AGPLv3 footer given a tool name
      *  @param toolname the name of the tool
-     *  @return GPLv3 form footer
+     *  @return AGPLv3 form footer
      */
     public static String generateFooter(String toolname)
     {

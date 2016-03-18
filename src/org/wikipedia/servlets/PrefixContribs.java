@@ -1,6 +1,6 @@
 /**
- *  @(#)RangeContribs.java 0.01 15/10/2012
- *  Copyright (C) 2012 - 2013 MER-C
+ *  @(#)PrefixContribs.java 0.01 15/10/2012
+ *  Copyright (C) 2012 - 2016 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -66,11 +66,13 @@ public class PrefixContribs extends HttpServlet
         
         // header
         buffer.append(ServletUtils.generateHead("Prefix contributions", null));
-        buffer.append("<p>This tool retrieves contributions of an IP ");
-        buffer.append("range or username prefix for the last 7 days. To search for an IP\n");
+        buffer.append("<p>This tool retrieves contributions of an IP range or ");
+        buffer.append("username prefix for the last 7 days. To search for an IPv4\n");
         buffer.append("range, use a search key of (say) 111.222. for 111.222.0.0/16. /24s ");
-        buffer.append("and IPv6 addresses work similarly.\nNo sanitization is performed on ");
-        buffer.append("IP addresses. Timeouts are more likely for the longer time spans.\n\n");
+        buffer.append("work similarly.\nIPv6 ranges must be specified with all bytes filled, ");
+        buffer.append("leading zeros removed and letters in upper case e.g. 1234:0:0567:AABB: .");
+        buffer.append("\nNo sanitization is performed on IP addresses. Timeouts are more likely ");
+        buffer.append("for the longer time spans.\n\n");
         
         // form
         buffer.append("<form action=\"./prefixcontribs.jsp\" method=GET>\n<p>Search string: ");
