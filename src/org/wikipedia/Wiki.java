@@ -7003,7 +7003,7 @@ public class Wiki implements Serializable
 
         // check lag and retry
         if (checkLag(connection))
-            fetch(url, caller);
+            return fetch(url, caller);
 
         // get the text
         String temp;
@@ -7063,7 +7063,7 @@ public class Wiki implements Serializable
         }
         // check lag and retry
         if (checkLag(connection))
-            post(url, text, caller);
+            return post(url, text, caller);
         
         StringBuilder temp = new StringBuilder(100000);
         try (BufferedReader in = new BufferedReader(new InputStreamReader(
@@ -7143,7 +7143,7 @@ public class Wiki implements Serializable
         
         // check lag and retry
         if (checkLag(connection))
-            multipartPost(url, params, caller);
+            return multipartPost(url, params, caller);
 
         // done, read the response
         StringBuilder temp = new StringBuilder(100000);
