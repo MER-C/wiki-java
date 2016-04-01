@@ -2499,14 +2499,29 @@ public class Wiki implements Serializable
         // populate previous/next
         int size = revisions.size();
         Revision[] temp = revisions.toArray(new Revision[size]);
-        for (int i = 0; i < size; i++)
+        if (reverse)
         {
-            if (i != 0)
-                temp[i].next = temp[i - 1].revid;
-            if (i != size - 1)
-                temp[i].sizediff = temp[i].size - temp[i + 1].size;
-            else
-                temp[i].sizediff = temp[i].size;
+            for (int i = 0; i < size; i++)
+            {
+                if (i == 0)
+                    temp[i].sizediff = temp[i].size;
+                else
+                    temp[i].sizediff = temp[i].size - temp[i - 1].size;
+                if (i != size - 1)
+                    temp[i].next = temp[i + 1].revid;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < size; i++)
+            {
+                if (i == size - 1)
+                    temp[i].sizediff = temp[i].size;
+                else
+                    temp[i].sizediff = temp[i].size - temp[i + 1].size;
+                if (i != 0)
+                    temp[i].next = temp[i - 1].revid;
+            }
         }
         log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
         return temp;
