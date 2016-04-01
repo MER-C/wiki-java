@@ -4842,7 +4842,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the members of a category.
+     *  Gets the members of a category, sorted as in the UI.
      *
      *  @param name the name of the category (with or without namespace attached)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -4852,11 +4852,11 @@ public class Wiki implements Serializable
      */
     public String[] getCategoryMembers(String name, int... ns) throws IOException
     {
-        return getCategoryMembers(name, 0, new ArrayList<String>(), ns);
+        return getCategoryMembers(name, 0, new ArrayList<String>(), false, ns);
     }
 
     /**
-     *  Gets the members of a category.
+     *  Gets the members of a category, sorted as in the UI.
      *
      *  @param name the name of the category
      *  @param subcat do you want to return members of sub-categories also? (default: false)
@@ -4868,25 +4868,24 @@ public class Wiki implements Serializable
      */
     public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
     {
-        return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<String>(), ns);
+        return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<String>(), false, ns);
     }
 
     /**
      *  Gets the members of a category with maxdepth recursion.
      *
-     *  Call as <tt>getCategoryMembers("Cat", 999, new int[0])</tt> to avoid
-     *  ambiguity.
-     *
      *  @param name the name of the category
      *  @param maxdepth depth of recursion for subcategories
+     *  @param sorttimestamp whether to sort the returned array by date/time
+     *  added to category (earliest first)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
      *  @since 0.31
      */
-    public String[] getCategoryMembers(String name, int maxdepth, int... ns) throws IOException
+    public String[] getCategoryMembers(String name, int maxdepth, boolean sorttimestamp, int... ns) throws IOException
     {
-        return getCategoryMembers(name, maxdepth, new ArrayList<String>(), ns);
+        return getCategoryMembers(name, maxdepth, new ArrayList<String>(), sorttimestamp, ns);
     }
 
     /**
@@ -4895,17 +4894,22 @@ public class Wiki implements Serializable
      *  @param name the name of the category
      *  @param maxdepth depth of recursion for subcategories
      *  @param visitedcategories list of already visited categories
+     *  @param sorttimestamp whether to sort the returned array by date/time
+     *  added to category (earliest first)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
      *  @throws IOException if a network error occurs
      *  @since 0.03
      */
-    protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories, int... ns) throws IOException
+    protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories, 
+        boolean sorttimestamp, int... ns) throws IOException
     {
         name = name.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
         url.append(encode("Category:" + name, true));
+        if (sorttimestamp)
+            url.append("&cmsort=timestamp");
         boolean nocat = ns.length != 0;
         if (maxdepth > 0 && nocat)
         {
@@ -4941,7 +4945,7 @@ public class Wiki implements Serializable
                 if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
                 {
                     visitedcategories.add(member);
-                    String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, ns);
+                    String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
                     members.addAll(Arrays.asList(categoryMembers));
                 }
 
