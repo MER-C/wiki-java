@@ -302,9 +302,10 @@ public class Wikibase extends Wiki {
         final StringBuilder url = new StringBuilder(query);
         url.append("action=wbsetqualifier");
         url.append("&claim=" + claimGUID);
-        url.append("&property=" + propertyId);
+        url.append("&property=" + propertyId.toUpperCase());
+        url.append("&snaktype=value");
         final StringBuilder postdata = new StringBuilder();
-        postdata.append("&data=" + URLEncoder.encode("{\"claims\": [" + qualifier.toJSON() + "]}", "UTF-8"));
+        postdata.append("&data=" + URLEncoder.encode(qualifier.toJSON(), "UTF-8"));
         postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
         String text1 = post(url.toString(), postdata.toString(), "addClaim");
