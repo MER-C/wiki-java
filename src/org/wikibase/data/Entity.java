@@ -107,11 +107,16 @@ public class Entity {
         if (null != labels && !labels.isEmpty()) {
             started = true;
             sbuild.append("\"labels\": {");
+            boolean firstLabelDone = false;
             for (Map.Entry<String, String> eachLabelEntry: labels.entrySet()) {
+                if (firstLabelDone) {
+                    sbuild.append(',');
+                }
                 sbuild.append("\"").append(eachLabelEntry.getKey()).append("\":{");
                 sbuild.append("\"language\":\"").append(eachLabelEntry.getKey()).append("\",");
                 sbuild.append("\"value\":").append("\"").append(eachLabelEntry.getValue()).append("\"");
                 sbuild.append("}");
+                firstLabelDone = true;
             }
             sbuild.append("}");
         }
@@ -121,11 +126,16 @@ public class Entity {
             }
             started = true;
             sbuild.append("\"descriptions\": {");
+            boolean firstDescriptionDone = false;
             for (Map.Entry<String, String> eachDescriptionEntry: descriptions.entrySet()) {
+                if (firstDescriptionDone) {
+                    sbuild.append(',');
+                }
                 sbuild.append("\"").append(eachDescriptionEntry.getKey()).append("\":{");
                 sbuild.append("\"language\":\"").append(eachDescriptionEntry.getKey()).append("\",");
                 sbuild.append("\"value\":").append("\"").append(eachDescriptionEntry.getValue()).append("\"");
                 sbuild.append("}");
+                firstDescriptionDone = true;
             }
             sbuild.append("}");
         }
@@ -135,9 +145,14 @@ public class Entity {
             }
             started = true;
             sbuild.append("\"sitelinks\": {");
+            boolean firstSitelinkDone = false;
             for (Map.Entry<String, Sitelink> eachSitelinkEntry: sitelinks.entrySet()) {
+                if (firstSitelinkDone) {
+                    sbuild.append(',');
+                }
                 sbuild.append("\"").append(eachSitelinkEntry.getKey()).append("\":");
                 sbuild.append(eachSitelinkEntry.getValue().toJSON());
+                firstSitelinkDone = true;
             }
             sbuild.append("}");
         }
