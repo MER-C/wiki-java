@@ -101,7 +101,7 @@ public class Time extends WikibaseDataType {
         };
         if (5 >= precision) {
             long factor = BigInteger.valueOf(10l).pow(9 - precision).longValue();
-            long[] yy = new long[] {year / factor, year % factor};
+            long[] yy = new long[] { year / factor, year % factor };
             long y2 = yy[0];
             if (yy[1] != 0) {
                 y2 = yy[0] + 1l;
@@ -109,8 +109,14 @@ public class Time extends WikibaseDataType {
             return String.format(patternsForOldYears[precision], y2);
         }
         String era = "";
-        if (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year < 1000l) {
-            era = (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year < 0l) ? " BC" : " AD";
+        if (null != calendar) {
+            if (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year < 1000l) {
+                era = (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year < 0l) ? " BC" : " AD";
+            } else {
+                if (year < 1000l) {
+                    era = year < 0l ? " BC" : " AD";
+                }
+            }
         }
 
         StringBuilder builder = new StringBuilder();
@@ -145,7 +151,7 @@ public class Time extends WikibaseDataType {
     public String toJSON() {
         StringBuilder sbuild = new StringBuilder("{");
         SimpleDateFormat isoFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
-        
+
         sbuild.append("\"value\":");
         sbuild.append('{');
         sbuild.append("\"precision\":").append(precision);
@@ -154,17 +160,18 @@ public class Time extends WikibaseDataType {
         sbuild.append(',');
         sbuild.append("\"after\":").append(after);
         sbuild.append(',');
-        
+
         sbuild.append("\"time\":");
         if (precision > 9) {
-            sbuild.append(calendar.get(Calendar.ERA) == GregorianCalendar.BC ? '-' : '+').append(isoFormatter.format(calendar.getTime()));
+            sbuild.append(calendar.get(Calendar.ERA) == GregorianCalendar.BC ? '-' : '+')
+                .append(isoFormatter.format(calendar.getTime()));
         } else {
             sbuild.append(year).append("-00-00T00:00:00Z");
         }
         sbuild.append('}');
         sbuild.append(',');
         sbuild.append("\"type\":\"time\"");
-        
+
         sbuild.append('}');
         return sbuild.toString();
     }
