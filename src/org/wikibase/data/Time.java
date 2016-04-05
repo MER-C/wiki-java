@@ -187,7 +187,7 @@ public class Time extends WikibaseDataType {
             sbuild.append(calendar.get(Calendar.ERA) == GregorianCalendar.BC ? '-' : '+')
                 .append(isoFormatter.format(calendar.getTime()));
         } else {
-            sbuild.append(year).append("-00-00T00:00:00Z");
+            sbuild.append(year >= 0l ? "+" : "").append(year).append("-00-00T00:00:00Z");
         }
         sbuild.append('\"');
         sbuild.append(',');
