@@ -149,8 +149,13 @@ public class Entity {
             sbuild.append("\"claims\": [");
             for (Map.Entry<Property, Set<Claim>> eachClaimListEntry: claims.entrySet()) {
                 List<String> serializedClaims = new ArrayList<String>();
+                boolean firstClaimDone = false;
                 for (Claim eachClaim: eachClaimListEntry.getValue()) {
+                    if (firstClaimDone) {
+                        sbuild.append(',');
+                    }
                     sbuild.append(eachClaim.toJSON());
+                    firstClaimDone = true;
                 }
             }
             sbuild.append("]");

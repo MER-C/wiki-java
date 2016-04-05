@@ -108,7 +108,7 @@ public class Claim {
     public void setProperty(Property property) {
         this.property = property;
     }
-    
+
     public void addQualifier(Property property, WikibaseDataType data) {
         Set<WikibaseDataType> dataset = qualifiers.get(property);
         if (null == dataset) {
@@ -135,7 +135,7 @@ public class Claim {
         sbuild.append(',');
         sbuild.append("\"type\":\"statement\"");
         sbuild.append(',');
-        sbuild.append("\"rank\":\"").append(rank.toString()).append("\"");
+        sbuild.append("\"rank\":\"").append((null != rank ? rank : Rank.NORMAL).toString()).append("\"");
         if (!qualifiers.isEmpty()) {
             sbuild.append(',');
             sbuild.append("\"qualifiers\": {");
@@ -150,7 +150,7 @@ public class Claim {
                         if (started) {
                             sbuild.append(',');
                         }
-                        
+
                         sbuild.append('{');
                         sbuild.append("\"snaktype\":\"value\"");
                         sbuild.append(',');
