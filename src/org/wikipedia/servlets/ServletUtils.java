@@ -1,6 +1,6 @@
 /**
  *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2014 MER-C
+ *  Copyright (C) 2011 - 2016 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -46,7 +46,7 @@ public class ServletUtils
     }
     
     /**
-     *  Strips < > and other unwanted stuff that leads to XSS attacks.
+     *  Strips &lt; &gt; and other unwanted stuff that leads to XSS attacks.
      *  Borrowed from http://greatwebguy.com/programming/java/simple-cross-site-scripting-xss-servlet-filter
      *  @param input an input string
      *  @return <tt>input</tt>, sanitized
@@ -82,9 +82,9 @@ public class ServletUtils
     }
     
     /**
-     *  Generates a boilerplate GPLv3 footer given a tool name
+     *  Generates a boilerplate AGPLv3 footer given a tool name
      *  @param toolname the name of the tool
-     *  @return GPLv3 form footer
+     *  @return AGPLv3 form footer
      */
     public static String generateFooter(String toolname)
     {
@@ -92,7 +92,7 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2015. This tool is free software:    ");
+        sb.append(": Copyright (C) MER-C 2007-2016. This tool is free software:    ");
         sb.append("you can redistribute it and/or modify it\nunder the terms of    ");
         sb.append("the <a href=\"//gnu.org/licenses/agpl.html\">Affero GNU General ");
         sb.append("Public License</a> as published by the Free Software Foundation, ");
