@@ -50,4 +50,9 @@ public class Item extends WikibaseDataType {
         sbuild.append('}');
         return sbuild.toString();
     }
+
+    @Override
+    public Object getDatatype() {
+        return "wikibase-item";
+    }
 }

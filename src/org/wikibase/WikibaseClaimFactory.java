@@ -48,9 +48,9 @@ public class WikibaseClaimFactory {
 
         Claim claim = new Claim();
         NamedNodeMap claimAttributes = node.getAttributes();
-        claim.setId(claimAttributes.getNamedItem("id").getNodeName());
-        claim.setRank(Rank.fromString(claimAttributes.getNamedItem("rank").getNodeName()));
-        claim.setType(claimAttributes.getNamedItem("type").getNodeName());
+        claim.setId(claimAttributes.getNamedItem("id").getNodeValue());
+        claim.setRank(Rank.fromString(claimAttributes.getNamedItem("rank").getNodeValue()));
+        claim.setType(claimAttributes.getNamedItem("type").getNodeValue());
 
         Node claimChild = node.getFirstChild();
         while (null != claimChild) {

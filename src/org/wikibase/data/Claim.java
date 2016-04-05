@@ -132,10 +132,6 @@ public class Claim {
             .append(property.getId().startsWith("P") ? property.getId().substring(1) : property.getId()).append("\"");
         sbuild.append(',');
         sbuild.append("\"datavalue\":").append(value.toJSON());
-        sbuild.append(',');
-        sbuild.append("\"type\":\"statement\"");
-        sbuild.append(',');
-        sbuild.append("\"rank\":\"").append((null != rank ? rank : Rank.NORMAL).toString()).append("\"");
         if (!qualifiers.isEmpty()) {
             sbuild.append(',');
             sbuild.append("\"qualifiers\": {");
@@ -157,6 +153,10 @@ public class Claim {
                         sbuild.append("\"property\":\"").append(propId).append("\"");
                         sbuild.append(',');
                         sbuild.append("\"datavalue\":").append(eachData.toJSON());
+                        if (eachData.getDatatype() != null) {
+                            sbuild.append(',');
+                            sbuild.append("\"datatype\":").append(eachData.getDatatype()).append('\"');
+                        }
                         sbuild.append('}');
                         started = true;
                     }
@@ -166,6 +166,11 @@ public class Claim {
             sbuild.append('}');
         }
         sbuild.append('}');
+
+        sbuild.append(',');
+        sbuild.append("\"type\":\"").append(null == type ? "statement" : type).append("\"");
+        sbuild.append(',');
+        sbuild.append("\"rank\":\"").append((null != rank ? rank : Rank.NORMAL).toString()).append("\"");
 
         sbuild.append('}');
         return sbuild.toString();

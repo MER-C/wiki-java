@@ -17,6 +17,7 @@
 package org.wikibase.data;
 
 import java.math.BigInteger;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -31,7 +32,17 @@ public class Time extends WikibaseDataType {
     private int before;
     private int after;
     private int precision;
+    private int timezone = 0;
     private URL calendarModel;
+    public Time() {
+        super();
+        try {
+            calendarModel = new URL("http://www.wikidata.org/entity/Q1985727");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private long year;
 
     public Calendar getCalendar() {
@@ -64,6 +75,14 @@ public class Time extends WikibaseDataType {
 
     public void setCalendarModel(URL calendarModel) {
         this.calendarModel = calendarModel;
+    }
+
+    public int getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(int timezone) {
+        this.timezone = timezone;
     }
 
     public int getPrecision() {
@@ -152,27 +171,32 @@ public class Time extends WikibaseDataType {
         StringBuilder sbuild = new StringBuilder("{");
         SimpleDateFormat isoFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
 
-        sbuild.append("\"value\":");
-        sbuild.append('{');
+        //sbuild.append("\"value\":");
+        //sbuild.append('{');
         sbuild.append("\"precision\":").append(precision);
         sbuild.append(',');
         sbuild.append("\"before\":").append(before);
         sbuild.append(',');
         sbuild.append("\"after\":").append(after);
         sbuild.append(',');
+        sbuild.append("\"timezone\":").append(timezone);
+        sbuild.append(',');
 
-        sbuild.append("\"time\":");
+        sbuild.append("\"time\":\"");
         if (precision > 9) {
             sbuild.append(calendar.get(Calendar.ERA) == GregorianCalendar.BC ? '-' : '+')
                 .append(isoFormatter.format(calendar.getTime()));
         } else {
             sbuild.append(year).append("-00-00T00:00:00Z");
         }
-        sbuild.append('}');
+        sbuild.append('\"');
         sbuild.append(',');
-        sbuild.append("\"type\":\"time\"");
-
+        sbuild.append("\"calendarmodel\":\"").append(calendarModel.toString()).append('\"');
         sbuild.append('}');
+        //sbuild.append(',');
+        //sbuild.append("\"type\":\"time\"");
+
+        //sbuild.append('}');
         return sbuild.toString();
     }
 }

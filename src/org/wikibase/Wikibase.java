@@ -35,6 +35,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.wikibase.data.Claim;
 import org.wikibase.data.Entity;
+import org.wikibase.data.WikibaseDataType;
 import org.wikipedia.Wiki;
 
 public class Wikibase extends Wiki {
@@ -42,7 +43,7 @@ public class Wikibase extends Wiki {
     public Wikibase(String url) {
         super(url);
     }
-    
+
     public Wikibase() {
         this("www.wikidata.org");
     }
@@ -173,8 +174,6 @@ public class Wikibase extends Wiki {
         getTokenURL.append("&titles=" + URLEncoder.encode(q, "UTF-8"));
         getTokenURL.append("&format=xml");
         String res = fetch(getTokenURL.toString(), "linkPages");
-        
-        
 
         final int pagestartindex = res.indexOf("<page ");
         final int pageendindex = res.indexOf(">", pagestartindex);
@@ -202,45 +201,71 @@ public class Wikibase extends Wiki {
 
         res = post(query + "action=wblinktitles", postdata.toString(), "linkPages");
     }
-    
+
     public String createItem(Entity createdEntity) throws IOException, WikibaseException {
-        StringBuilder url1 = new StringBuilder(query);
-        url1.append("action=query");
-        url1.append("&meta=tokens");
-        url1.append("&format=xml");
-        String text = fetch(url1.toString(), "createItem");
-        
-        DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
-        Node tokenNode;
-        try {
-            DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
-            Document document = builder.parse(new ByteArrayInputStream(text.getBytes()));
-            XPathFactory xpathFactory = XPathFactory.newInstance();
-            XPath xPath = xpathFactory.newXPath();
-            XPathExpression apiExpression = xPath.compile("/api[1]");
-            Node apiNode = (Node) apiExpression.evaluate(document, XPathConstants.NODE);
-            if (null == apiNode) {
-                throw new WikibaseException("API root node not found in text.");
-            }
-            XPathExpression tokenExpression = xPath.compile("/api[1]/query[1]/tokens[1]");
-            tokenNode = (Node) tokenExpression.evaluate(document, XPathConstants.NODE);
-        } catch (Exception e) {
-            throw new WikibaseException(e);
-        }
-        if (null == tokenNode || tokenNode.getAttributes() == null || tokenNode.getAttributes().getNamedItem("csrftoken") == null) {
-            throw new WikibaseException("Token node not found");
-        }
-        String edittoken = tokenNode.getAttributes().getNamedItem("csrftoken").getNodeValue();
-        
+        String edittoken = obtainToken();
+
         final StringBuilder url = new StringBuilder(query);
         url.append("action=wbeditentity");
         url.append("&new=item");
         final StringBuilder postdata = new StringBuilder();
         postdata.append("&data=" + URLEncoder.encode(createdEntity.toJSON(), "UTF-8"));
         postdata.append("&clear=yes");
-        postdata.append("&token="+ URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
         String text1 = post(url.toString(), postdata.toString(), "createItem");
+        String ret = null;
+
+        DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
+        try {
+            DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
+            Document document = builder.parse(new ByteArrayInputStream(text1.getBytes()));
+            XPathFactory xpathFactory = XPathFactory.newInstance();
+            XPath xPath = xpathFactory.newXPath();
+            XPathExpression apiExpression = xPath.compile("/api[1]");
+            Node apiNode = (Node) apiExpression.evaluate(document, XPathConstants.NODE);
+            if (null == apiNode || null == apiNode.getAttributes()
+                || null == apiNode.getAttributes().getNamedItem("success")) {
+                throw new WikibaseException("API root node with success parameter not found in text.");
+            }
+            if ("1".equals(apiNode.getAttributes().getNamedItem("success").getNodeValue())) {
+                XPathExpression entityExpression = xPath.compile("/api[1]/entity[1]");
+                Node entityNode = (Node) entityExpression.evaluate(document, XPathConstants.NODE);
+                if (null == entityNode || null == entityNode.getAttributes()
+                    || null == entityNode.getAttributes().getNamedItem("id")) {
+                    throw new WikibaseException("Entity node not present or without id attribute");
+                }
+                ret = entityNode.getAttributes().getNamedItem("id").getNodeValue();
+            }
+        } catch (Exception e) {
+            log(Level.WARNING, "createItem", e.getMessage());
+            return null;
+        }
+        return ret;
+    }
+
+    /**
+     * Adds specified claim to the entity with the specified ID
+     * 
+     * @param entityId
+     * @param claim
+     * @return the guid of the created claim
+     * @throws WikibaseException
+     * @throws IOException
+     */
+    public String addClaim(String entityId, Claim claim) throws WikibaseException, IOException {
+        String edittoken = obtainToken();
+
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbeditentity");
+        url.append("&id=" + (entityId.startsWith("Q") ? entityId : ("Q" + entityId)));
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&data=" + URLEncoder.encode("{\"claims\": [" + claim.toJSON() + "]}", "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "addClaim");
+
+        DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
         String ret = null;
         try {
             DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
@@ -249,32 +274,51 @@ public class Wikibase extends Wiki {
             XPath xPath = xpathFactory.newXPath();
             XPathExpression apiExpression = xPath.compile("/api[1]");
             Node apiNode = (Node) apiExpression.evaluate(document, XPathConstants.NODE);
-            if (null == apiNode || null == apiNode.getAttributes() || null == apiNode.getAttributes().getNamedItem("success")) {
+            if (null == apiNode || null == apiNode.getAttributes()
+                || null == apiNode.getAttributes().getNamedItem("success")) {
                 throw new WikibaseException("API root node with success parameter not found in text.");
             }
-            if ("1".equals(apiNode.getAttributes().getNamedItem("success"))) {
-                XPathExpression entityExpression = xPath.compile("/api[1]/entity[1]");
-                Node entityNode = (Node) entityExpression.evaluate(document, XPathConstants.NODE);
-                if (null == entityNode || null == entityNode.getAttributes() || null == entityNode.getAttributes().getNamedItem("id")) {
-                    throw new WikibaseException("Entity node not present or without id attribute");
+            if ("1".equals(apiNode.getAttributes().getNamedItem("success").getNodeValue())) {
+                XPathExpression claimExpression = xPath.compile(
+                    "/api[1]/entity[1]/claims/property[@id='" + claim.getProperty().getId().toUpperCase() + "']/claim");
+                Node claimNode = (Node) claimExpression.evaluate(document, XPathConstants.NODE);
+                if (null == claimNode || null == claimNode.getAttributes()
+                    || null == claimNode.getAttributes().getNamedItem("id")) {
+                    throw new WikibaseException("Claim node not present or without id attribute");
                 }
-                ret = entityNode.getAttributes().getNamedItem("id").getNodeValue();
+                ret = claimNode.getAttributes().getNamedItem("id").getNodeValue();
             }
-            XPathExpression tokenExpression = xPath.compile("/api[1]/query[1]/tokens[1]");
-            tokenNode = (Node) tokenExpression.evaluate(document, XPathConstants.NODE);
         } catch (Exception e) {
-            throw new WikibaseException(e);
+            log(Level.WARNING, "createItem", e.getMessage());
+            return null;
         }
+        log(Level.INFO, "addClaim", text1);
         return ret;
     }
-    
-    public void addClaim(String entityId, Claim claim) throws WikibaseException, IOException {
+
+    public String addQualifier(String claimGUID, String propertyId, WikibaseDataType qualifier) throws WikibaseException, IOException {
+        String edittoken = obtainToken();
+
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbsetqualifier");
+        url.append("&claim=" + claimGUID);
+        url.append("&property=" + propertyId);
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&data=" + URLEncoder.encode("{\"claims\": [" + qualifier.toJSON() + "]}", "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "addClaim");
+
+        return null;
+    }
+
+    private String obtainToken() throws IOException, WikibaseException {
         StringBuilder url1 = new StringBuilder(query);
         url1.append("action=query");
         url1.append("&meta=tokens");
-        url1.append("format=xml");
+        url1.append("&format=xml");
         String text = fetch(url1.toString(), "createItem");
-        
+
         DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
         Node tokenNode;
         try {
@@ -292,19 +336,11 @@ public class Wikibase extends Wiki {
         } catch (Exception e) {
             throw new WikibaseException(e);
         }
-        if (null == tokenNode || tokenNode.getAttributes() == null || tokenNode.getAttributes().getNamedItem("csrftoken") == null) {
+        if (null == tokenNode || tokenNode.getAttributes() == null
+            || tokenNode.getAttributes().getNamedItem("csrftoken") == null) {
             throw new WikibaseException("Token node not found");
         }
         String edittoken = tokenNode.getAttributes().getNamedItem("csrftoken").getNodeValue();
-        
-        final StringBuilder url = new StringBuilder(query);
-        url.append("action=wbeditentity");
-        url.append("&id=Q" + (entityId.startsWith("Q") ? entityId.substring(1) : entityId));
-        final StringBuilder postdata = new StringBuilder();
-        postdata.append("&data=" + URLEncoder.encode("\"claims\": [" + claim.toJSON() + "]", "UTF-8"));
-        postdata.append("&token="+ URLEncoder.encode(edittoken, "UTF-8"));
-        postdata.append("&format=xml");
-        String text1 = post(url.toString(), postdata.toString(), "addClaim");
-        log(Level.INFO, "addClaim", text1);
+        return edittoken;
     }
 }

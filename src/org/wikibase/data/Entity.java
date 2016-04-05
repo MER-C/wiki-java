@@ -162,8 +162,11 @@ public class Entity {
             }
             started = true;
             sbuild.append("\"claims\": [");
+            boolean firstClaimSetDone = false;
             for (Map.Entry<Property, Set<Claim>> eachClaimListEntry: claims.entrySet()) {
-                List<String> serializedClaims = new ArrayList<String>();
+                if (firstClaimSetDone) {
+                    sbuild.append(',');
+                }
                 boolean firstClaimDone = false;
                 for (Claim eachClaim: eachClaimListEntry.getValue()) {
                     if (firstClaimDone) {
@@ -172,6 +175,7 @@ public class Entity {
                     sbuild.append(eachClaim.toJSON());
                     firstClaimDone = true;
                 }
+                firstClaimSetDone = true;
             }
             sbuild.append("]");
         }

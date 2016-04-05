@@ -39,4 +39,9 @@ public class URLData extends WikibaseDataType {
         return "URLData [url=" + url + "]";
     }
 
+    @Override
+    public Object getDatatype() {
+        return "url";
+    }
+
 }

@@ -94,7 +94,7 @@ public class WikibaseEntityFactory {
             if (!idMatcher.matches()) {
                 throw new WikibaseException("String " + itemId + " is not a valid entity ID");
             }
-            Entity entity = new Entity("P" + idMatcher.group(2));
+            Entity entity = new Entity("Q" + idMatcher.group(2));
             loadItem(entity, entityNode);
             return entity;
         } catch (XPathExpressionException e) {

@@ -22,4 +22,7 @@ public class WikibaseDataType {
     public String toJSON() {
         return "{}";
     }
+    public Object getDatatype() {
+        return null;
+    }
 }
