@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -202,11 +203,11 @@ public class Wikibase extends Wiki {
         res = post(query + "action=wblinktitles", postdata.toString(), "linkPages");
     }
     
-    public void createItem(Entity createdEntity) throws IOException, WikibaseException {
+    public String createItem(Entity createdEntity) throws IOException, WikibaseException {
         StringBuilder url1 = new StringBuilder(query);
         url1.append("action=query");
         url1.append("&meta=tokens");
-        url1.append("format=xml");
+        url1.append("&format=xml");
         String text = fetch(url1.toString(), "createItem");
         
         DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
@@ -234,11 +235,37 @@ public class Wikibase extends Wiki {
         final StringBuilder url = new StringBuilder(query);
         url.append("action=wbeditentity");
         url.append("&new=item");
-        url.append("&data=" + URLEncoder.encode(createdEntity.toJSON(), "UTF-8"));
-        url.append("&clear=yes");
-        url.append("&token="+ URLEncoder.encode(edittoken, "UTF-8"));
-        url.append("&format=xmlfm");
-        String text1 = fetch(url.toString(), "createItem");
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&data=" + URLEncoder.encode(createdEntity.toJSON(), "UTF-8"));
+        postdata.append("&clear=yes");
+        postdata.append("&token="+ URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "createItem");
+        String ret = null;
+        try {
+            DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
+            Document document = builder.parse(new ByteArrayInputStream(text1.getBytes()));
+            XPathFactory xpathFactory = XPathFactory.newInstance();
+            XPath xPath = xpathFactory.newXPath();
+            XPathExpression apiExpression = xPath.compile("/api[1]");
+            Node apiNode = (Node) apiExpression.evaluate(document, XPathConstants.NODE);
+            if (null == apiNode || null == apiNode.getAttributes() || null == apiNode.getAttributes().getNamedItem("success")) {
+                throw new WikibaseException("API root node with success parameter not found in text.");
+            }
+            if ("1".equals(apiNode.getAttributes().getNamedItem("success"))) {
+                XPathExpression entityExpression = xPath.compile("/api[1]/entity[1]");
+                Node entityNode = (Node) entityExpression.evaluate(document, XPathConstants.NODE);
+                if (null == entityNode || null == entityNode.getAttributes() || null == entityNode.getAttributes().getNamedItem("id")) {
+                    throw new WikibaseException("Entity node not present or without id attribute");
+                }
+                ret = entityNode.getAttributes().getNamedItem("id").getNodeValue();
+            }
+            XPathExpression tokenExpression = xPath.compile("/api[1]/query[1]/tokens[1]");
+            tokenNode = (Node) tokenExpression.evaluate(document, XPathConstants.NODE);
+        } catch (Exception e) {
+            throw new WikibaseException(e);
+        }
+        return ret;
     }
     
     public void addClaim(String entityId, Claim claim) throws WikibaseException, IOException {
@@ -273,9 +300,11 @@ public class Wikibase extends Wiki {
         final StringBuilder url = new StringBuilder(query);
         url.append("action=wbeditentity");
         url.append("&id=Q" + (entityId.startsWith("Q") ? entityId.substring(1) : entityId));
-        url.append("&data=" + URLEncoder.encode("\"claims\": [" + claim.toJSON() + "]", "UTF-8"));
-        url.append("&token="+ URLEncoder.encode(edittoken, "UTF-8"));
-        url.append("&format=xmlfm");
-        String text1 = fetch(url.toString(), "createItem");
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&data=" + URLEncoder.encode("\"claims\": [" + claim.toJSON() + "]", "UTF-8"));
+        postdata.append("&token="+ URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "addClaim");
+        log(Level.INFO, "addClaim", text1);
     }
 }
