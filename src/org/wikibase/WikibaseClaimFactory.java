@@ -190,8 +190,10 @@ public class WikibaseClaimFactory {
                                         .parseDouble(valueNode.getAttributes().getNamedItem("latitude").getNodeValue()));
                                     coords.setLongitude(Double
                                         .parseDouble(valueNode.getAttributes().getNamedItem("longitude").getNodeValue()));
-                                    coords.setPrecision(Double
-                                        .parseDouble(valueNode.getAttributes().getNamedItem("precision").getNodeValue()));
+                                    if (valueNode.getAttributes().getNamedItem("precision") != null) {
+                                        coords.setPrecision(Double
+                                            .parseDouble(valueNode.getAttributes().getNamedItem("precision").getNodeValue()));
+                                    }
                                     String globeUrl = valueNode.getAttributes().getNamedItem("globe").getNodeValue();
                                     if (null != globeUrl && globeUrl.startsWith("http://www.wikidata.org/entity/")) {
                                         String globeItem = globeUrl.substring("http://www.wikidata.org/entity/".length());
