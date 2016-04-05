@@ -59,5 +59,14 @@ public class Sitelink {
     public String toString() {
         return "Sitelink [site=" + site + ", pageName=" + pageName + "]";
     }
+
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder('{');
+        sbuild.append("\"site\":").append('\"').append(site).append('\"');
+        sbuild.append(',');
+        sbuild.append("\"value\":").append('\"').append(pageName).append('\"');
+        sbuild.append('}');
+        return sbuild.toString();
+    }
 }
 

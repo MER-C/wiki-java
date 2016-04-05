@@ -16,6 +16,13 @@
 */
 package org.wikibase.data;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 /**
  * A Wikidata claim.
  * 
@@ -30,6 +37,12 @@ public class Claim {
     private Property property;
 
     private WikibaseDataType value;
+
+    private Map<Property, Set<WikibaseDataType>> qualifiers = new HashMap<Property, Set<WikibaseDataType>>();
+
+    public Map<Property, Set<WikibaseDataType>> getQualifiers() {
+        return Collections.unmodifiableMap(qualifiers);
+    }
 
     public WikibaseDataType getValue() {
         return value;
@@ -95,9 +108,66 @@ public class Claim {
     public void setProperty(Property property) {
         this.property = property;
     }
+    
+    public void addQualifier(Property property, WikibaseDataType data) {
+        Set<WikibaseDataType> dataset = qualifiers.get(property);
+        if (null == dataset) {
+            dataset = new HashSet<WikibaseDataType>();
+        }
+        dataset.add(data);
+        qualifiers.put(property, dataset);
+    }
 
     @Override
     public String toString() {
         return "Claim [id=" + id + ", property=" + property + ", value=" + value + "]";
+    }
+
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        sbuild.append("\"mainsnak\":");
+
+        sbuild.append('{');
+        sbuild.append("\"snaktype\":\"value\"").append(',').append("\"property\":\"").append("P")
+            .append(property.getId().startsWith("P") ? property.getId().substring(1) : property.getId()).append("\"");
+        sbuild.append(',');
+        sbuild.append("\"datavalue\":").append(value.toJSON());
+        sbuild.append(',');
+        sbuild.append("\"type\":\"statement\"");
+        sbuild.append(',');
+        sbuild.append("\"rank\":\"").append(rank.toString()).append("\"");
+        if (!qualifiers.isEmpty()) {
+            sbuild.append(',');
+            sbuild.append("\"qualifiers\": {");
+            for (Entry<Property, Set<WikibaseDataType>> qualEntry : qualifiers.entrySet()) {
+                String propId = qualEntry.getKey().getId().startsWith("P") ? qualEntry.getKey().getId()
+                    : ("P" + qualEntry.getKey().getId());
+                sbuild.append('\"').append(propId).append("\":");
+                if (!qualEntry.getValue().isEmpty()) {
+                    boolean started = false;
+                    sbuild.append('[');
+                    for (WikibaseDataType eachData : qualEntry.getValue()) {
+                        if (started) {
+                            sbuild.append(',');
+                        }
+                        
+                        sbuild.append('{');
+                        sbuild.append("\"snaktype\":\"value\"");
+                        sbuild.append(',');
+                        sbuild.append("\"property\":\"").append(propId).append("\"");
+                        sbuild.append(',');
+                        sbuild.append("\"datavalue\":").append(eachData.toJSON());
+                        sbuild.append('}');
+                        started = true;
+                    }
+                    sbuild.append(']');
+                }
+            }
+            sbuild.append('}');
+        }
+        sbuild.append('}');
+
+        sbuild.append('}');
+        return sbuild.toString();
     }
 }

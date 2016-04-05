@@ -32,7 +32,7 @@ public class Time extends WikibaseDataType {
     private int after;
     private int precision;
     private URL calendarModel;
-    private BigInteger year;
+    private long year;
 
     public Calendar getCalendar() {
         return calendar;
@@ -74,11 +74,11 @@ public class Time extends WikibaseDataType {
         this.precision = precision;
     }
 
-    public BigInteger getYear() {
+    public long getYear() {
         return year;
     }
 
-    public void setYear(BigInteger year) {
+    public void setYear(long year) {
         this.year = year;
     }
 
@@ -100,33 +100,33 @@ public class Time extends WikibaseDataType {
             }
         };
         if (5 >= precision) {
-            BigInteger factor = BigInteger.valueOf(10l).pow(9 - precision);
-            BigInteger[] yy = year.divideAndRemainder(factor);
-            BigInteger y2 = yy[0];
-            if (0 < yy[1].compareTo(BigInteger.ZERO)) {
-                y2 = yy[0].add(BigInteger.ONE);
+            long factor = BigInteger.valueOf(10l).pow(9 - precision).longValue();
+            long[] yy = new long[] {year / factor, year % factor};
+            long y2 = yy[0];
+            if (yy[1] != 0) {
+                y2 = yy[0] + 1l;
             }
             return String.format(patternsForOldYears[precision], y2);
         }
         String era = "";
-        if (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year.compareTo(BigInteger.valueOf(1000l)) < 0) {
-            era = (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year.signum() < 0) ? " BC" : " AD";
+        if (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year < 1000l) {
+            era = (calendar.get(Calendar.ERA) == GregorianCalendar.BC || year < 0l) ? " BC" : " AD";
         }
 
         StringBuilder builder = new StringBuilder();
         switch (precision) {
         case 6:
-            builder.append(Math.floor((Math.abs(year.longValue()) - 1l) / 1000.0) + 1);
+            builder.append(Math.floor((Math.abs(year) - 1l) / 1000.0) + 1);
             builder.append(" millenium");
             builder.append(era);
             break;
         case 7:
-            builder.append(Math.floor((Math.abs(year.longValue()) - 1l) / 100.0) + 1);
+            builder.append(Math.floor((Math.abs(year) - 1l) / 100.0) + 1);
             builder.append(" century");
             builder.append(era);
             break;
         case 8:
-            builder.append(Math.floor(Math.abs(year.doubleValue()) / 10) * 10);
+            builder.append(Math.floor(Math.abs((double) year) / 10) * 10);
             builder.append("s");
             builder.append(era);
             break;
@@ -139,5 +139,33 @@ public class Time extends WikibaseDataType {
 
         }
         return builder.toString();
+    }
+
+    @Override
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        SimpleDateFormat isoFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
+        
+        sbuild.append("\"value\":");
+        sbuild.append('{');
+        sbuild.append("\"precision\":").append(precision);
+        sbuild.append(',');
+        sbuild.append("\"before\":").append(before);
+        sbuild.append(',');
+        sbuild.append("\"after\":").append(after);
+        sbuild.append(',');
+        
+        sbuild.append("\"time\":");
+        if (precision > 9) {
+            sbuild.append(calendar.get(Calendar.ERA) == GregorianCalendar.BC ? '-' : '+').append(isoFormatter.format(calendar.getTime()));
+        } else {
+            sbuild.append(year).append("-00-00T00:00:00Z");
+        }
+        sbuild.append('}');
+        sbuild.append(',');
+        sbuild.append("\"type\":\"time\"");
+        
+        sbuild.append('}');
+        return sbuild.toString();
     }
 }

@@ -17,7 +17,9 @@
 package org.wikibase.data;
 
 public enum Rank {
-    DEPRECATED, NORMAL, PREFERRED;
+    DEPRECATED("deprecated"), NORMAL("normal"), PREFERRED("preferred");
+    
+    private String key;
     
     public static Rank fromString(String rankName) {
         if ("deprecated".equalsIgnoreCase(rankName)) {
@@ -27,5 +29,13 @@ public enum Rank {
             return PREFERRED;
         }
         return Rank.NORMAL;
+    }
+
+    private Rank(String key) {
+        this.key = key;
+    }
+    
+    public String toString() {
+        return key;
     }
 }

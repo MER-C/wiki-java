@@ -150,7 +150,7 @@ public class WikibaseClaimFactory {
                                                 String yearStr = yearMatcher.group(2);
                                                 String yearSignum = yearMatcher.group(1);
                                                 BigInteger year = new BigInteger(yearSignum + yearStr);
-                                                time.setYear(year);
+                                                time.setYear(year.longValue());
                                             }
                                         } else {
                                             Calendar cal = DatatypeConverter.parseDateTime(iso8601time.substring(1));

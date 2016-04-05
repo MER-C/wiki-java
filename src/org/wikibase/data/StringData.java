@@ -36,4 +36,14 @@ public class StringData extends WikibaseDataType {
     public String toString() {
         return "StringData [value=" + value + "]";
     }
+
+    @Override
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        sbuild.append("\"value\":\"").append(value).append("\"");
+        sbuild.append(',');
+        sbuild.append("\"type\":\"string\"");
+        sbuild.append('}');
+        return sbuild.toString();
+    }
 }

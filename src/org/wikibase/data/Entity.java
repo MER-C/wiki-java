@@ -16,9 +16,11 @@
 */
 package org.wikibase.data;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -97,5 +99,64 @@ public class Entity {
     @Override
     public String toString() {
         return id + ": " + (0 == labels.size() ? "not loaded" : (labels.get("en") + " (" + descriptions.get("en") + ")"));
+    }
+    
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        boolean started = false;
+        if (null != labels && !labels.isEmpty()) {
+            started = true;
+            sbuild.append("\"labels\": {");
+            for (Map.Entry<String, String> eachLabelEntry: labels.entrySet()) {
+                sbuild.append("\"").append(eachLabelEntry.getKey()).append("\":{");
+                sbuild.append("\"language\":\"").append(eachLabelEntry.getKey()).append("\",");
+                sbuild.append("\"value\":").append("\"").append(eachLabelEntry.getValue()).append("\"");
+                sbuild.append("}");
+            }
+            sbuild.append("}");
+        }
+        if (null != descriptions && !descriptions.isEmpty()) {
+            if (started) {
+                sbuild.append(',');
+            }
+            started = true;
+            sbuild.append("\"descriptions\": {");
+            for (Map.Entry<String, String> eachDescriptionEntry: descriptions.entrySet()) {
+                sbuild.append("\"").append(eachDescriptionEntry.getKey()).append("\":{");
+                sbuild.append("\"language\":\"").append(eachDescriptionEntry.getKey()).append("\",");
+                sbuild.append("\"value\":").append("\"").append(eachDescriptionEntry.getValue()).append("\"");
+                sbuild.append("}");
+            }
+            sbuild.append("}");
+        }
+        if (null != sitelinks && !sitelinks.isEmpty()) {
+            if (started) {
+                sbuild.append(',');
+            }
+            started = true;
+            sbuild.append("\"sitelinks\": {");
+            for (Map.Entry<String, Sitelink> eachSitelinkEntry: sitelinks.entrySet()) {
+                sbuild.append("\"").append(eachSitelinkEntry.getKey()).append("\":");
+                sbuild.append(eachSitelinkEntry.getValue().toJSON());
+            }
+            sbuild.append("}");
+        }
+        if (null != claims && !claims.isEmpty()) {
+            if (started) {
+                sbuild.append(',');
+            }
+            started = true;
+            sbuild.append("\"claims\": [");
+            for (Map.Entry<Property, Set<Claim>> eachClaimListEntry: claims.entrySet()) {
+                List<String> serializedClaims = new ArrayList<String>();
+                for (Claim eachClaim: eachClaimListEntry.getValue()) {
+                    sbuild.append(eachClaim.toJSON());
+                }
+            }
+            sbuild.append("]");
+        }
+
+        sbuild.append("}");
+        return sbuild.toString();
     }
 }
