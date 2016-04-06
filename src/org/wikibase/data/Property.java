@@ -16,7 +16,7 @@
 */
 package org.wikibase.data;
 
-public class Property extends WikibaseDataType {
+public class Property extends WikibaseData {
     private String id;
 
     public Property(String id) {

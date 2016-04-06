@@ -18,7 +18,7 @@ package org.wikibase.data;
 
 import java.net.URL;
 
-public class URLData extends WikibaseDataType {
+public class URLData extends WikibaseData {
     private URL url;
 
     public URLData(URL url) {
@@ -42,6 +42,15 @@ public class URLData extends WikibaseDataType {
     @Override
     public Object getDatatype() {
         return "url";
+    }
+
+    @Override
+    public String toJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        sbuild.append("\"value\":\"").append(url).append("\",");
+        sbuild.append("\"type\":\"string\"");
+        sbuild.append('}');
+        return sbuild.toString();
     }
 
 }

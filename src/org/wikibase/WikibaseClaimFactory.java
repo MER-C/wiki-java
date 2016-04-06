@@ -36,6 +36,7 @@ import org.wikibase.data.LanguageString;
 import org.wikibase.data.Property;
 import org.wikibase.data.Quantity;
 import org.wikibase.data.Rank;
+import org.wikibase.data.Snak;
 import org.wikibase.data.StringData;
 import org.wikibase.data.Time;
 import org.wikibase.data.URLData;
@@ -55,9 +56,14 @@ public class WikibaseClaimFactory {
         Node claimChild = node.getFirstChild();
         while (null != claimChild) {
             if ("mainsnak".equalsIgnoreCase(claimChild.getNodeName())) {
-                claim.setProperty(WikibasePropertyFactory
-                    .getWikibaseProperty(claimChild.getAttributes().getNamedItem("property").getNodeValue()));
+                Snak mainsnak = new Snak();
+                Property prop = WikibasePropertyFactory
+                    .getWikibaseProperty(claimChild.getAttributes().getNamedItem("property").getNodeValue());
+                claim.setProperty(prop);
+                mainsnak.setProperty(prop);
                 String datatype = claimChild.getAttributes().getNamedItem("datatype").getNodeValue();
+                mainsnak.setDatatype(datatype);
+                claim.setMainsnak(mainsnak);
                 if ("wikibase-item".equalsIgnoreCase(datatype)) {
                     Node datavalueNode = claimChild.getFirstChild();
                     while (null != datavalueNode) {

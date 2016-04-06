@@ -16,7 +16,7 @@
 */
 package org.wikibase.data;
 
-public class StringData extends WikibaseDataType {
+public class StringData extends WikibaseData {
     private String value;
 
     public String getValue() {

@@ -16,7 +16,7 @@
 */
 package org.wikibase.data;
 
-public class CommonsMedia extends WikibaseDataType {
+public class CommonsMedia extends WikibaseData {
     private String fileName;
 
     public CommonsMedia(String fileName) {

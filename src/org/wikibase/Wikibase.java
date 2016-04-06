@@ -18,8 +18,12 @@ package org.wikibase;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
@@ -35,7 +39,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.wikibase.data.Claim;
 import org.wikibase.data.Entity;
-import org.wikibase.data.WikibaseDataType;
+import org.wikibase.data.Property;
+import org.wikibase.data.Snak;
+import org.wikibase.data.WikibaseData;
 import org.wikipedia.Wiki;
 
 public class Wikibase extends Wiki {
@@ -236,6 +242,12 @@ public class Wikibase extends Wiki {
                     throw new WikibaseException("Entity node not present or without id attribute");
                 }
                 ret = entityNode.getAttributes().getNamedItem("id").getNodeValue();
+            } else {
+                XPathExpression errorExpression = xPath.compile("/api[1]/error[1]");
+                Node errorNode = (Node) errorExpression.evaluate(document, XPathConstants.NODE);
+                if (null != errorNode && null != errorNode.getAttributes() && null != errorNode.getAttributes().getNamedItem("info")) {
+                    throw new WikibaseException(errorNode.getAttributes().getNamedItem("info").getNodeValue());
+                }
             }
         } catch (Exception e) {
             log(Level.WARNING, "createItem", e.getMessage());
@@ -287,16 +299,21 @@ public class Wikibase extends Wiki {
                     throw new WikibaseException("Claim node not present or without id attribute");
                 }
                 ret = claimNode.getAttributes().getNamedItem("id").getNodeValue();
+            } else {
+                XPathExpression errorExpression = xPath.compile("/api[1]/error[1]");
+                Node errorNode = (Node) errorExpression.evaluate(document, XPathConstants.NODE);
+                if (null != errorNode && null != errorNode.getAttributes() && null != errorNode.getAttributes().getNamedItem("info")) {
+                    throw new WikibaseException(errorNode.getAttributes().getNamedItem("info").getNodeValue());
+                }
             }
         } catch (Exception e) {
             log(Level.WARNING, "createItem", e.getMessage());
             return null;
         }
-        log(Level.INFO, "addClaim", text1);
         return ret;
     }
 
-    public String addQualifier(String claimGUID, String propertyId, WikibaseDataType qualifier) throws WikibaseException, IOException {
+    public String addQualifier(String claimGUID, String propertyId, WikibaseData qualifier) throws WikibaseException, IOException {
         String edittoken = obtainToken();
 
         final StringBuilder url = new StringBuilder(query);
@@ -305,11 +322,58 @@ public class Wikibase extends Wiki {
         url.append("&property=" + propertyId.toUpperCase());
         url.append("&snaktype=value");
         final StringBuilder postdata = new StringBuilder();
-        postdata.append("&data=" + URLEncoder.encode(qualifier.toJSON(), "UTF-8"));
+        postdata.append("&value=" + URLEncoder.encode(qualifier.toJSON(), "UTF-8"));
         postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
         String text1 = post(url.toString(), postdata.toString(), "addClaim");
-
+        log(Level.INFO, "addQualifier", text1);
+        return null;
+    }
+    
+    public String addReference(String claimGUID, List<Snak> ref) throws IOException, WikibaseException {
+        String edittoken = obtainToken();
+        
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbsetreference");
+        url.append("&statement=" + claimGUID);
+        
+        StringBuilder snakBuilder = new StringBuilder("{");
+        boolean refStarted = false;
+        Map<Property, List<Snak>> referenceMap = new HashMap<Property, List<Snak>>();
+        for (Snak eachSnak: ref) {
+            List<Snak> claimList = referenceMap.get(eachSnak.getProperty());
+            if (null == claimList) {
+                claimList = new ArrayList<Snak>();
+            }
+            claimList.add(eachSnak);
+            referenceMap.put(eachSnak.getProperty(), claimList);
+        }
+        
+        for (Entry<Property, List<Snak>> eachRefEntry: referenceMap.entrySet()) {
+            if (refStarted) {
+                snakBuilder.append(',');
+            }
+            snakBuilder.append('\"').append(eachRefEntry.getKey().getId()).append("\":");
+            snakBuilder.append('[');
+            boolean entryStarted = false;
+            for (Snak eachSnak: eachRefEntry.getValue()) {
+                if (entryStarted) {
+                    snakBuilder.append(',');
+                }
+                snakBuilder.append(eachSnak.toJSON());
+                entryStarted = true;
+            }
+            snakBuilder.append(']');
+            refStarted = true;
+        }
+        snakBuilder.append('}');
+        
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&snaks=" + URLEncoder.encode(snakBuilder.toString(), "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "addClaim");
+        log(Level.INFO, "addQualifier", text1);
         return null;
     }
 

@@ -16,7 +16,7 @@
 */
 package org.wikibase.data;
 
-public class GlobeCoordinate extends WikibaseDataType {
+public class GlobeCoordinate extends WikibaseData {
     private double longitude;
     private double latitude;
     private double precision;

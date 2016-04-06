@@ -35,21 +35,30 @@ public class Claim {
     private String type;
     private Rank rank;
     private Property property;
+    private Snak mainsnak;
+    private Map<Property, Set<Snak>> qualifiers = new HashMap<Property, Set<Snak>>();
 
-    private WikibaseDataType value;
-
-    private Map<Property, Set<WikibaseDataType>> qualifiers = new HashMap<Property, Set<WikibaseDataType>>();
-
-    public Map<Property, Set<WikibaseDataType>> getQualifiers() {
-        return Collections.unmodifiableMap(qualifiers);
+    public Claim() {
+        super();
+        // TODO Auto-generated constructor stub
     }
 
-    public WikibaseDataType getValue() {
-        return value;
+    public Claim(Property property, WikibaseData value) {
+        super();
+        this.property = property;
+        this.mainsnak = new Snak(value, property);
     }
 
-    public void setValue(WikibaseDataType value) {
-        this.value = value;
+    public WikibaseData getValue() {
+        return null != mainsnak? mainsnak.getData() : null;
+    }
+
+    public void setValue(WikibaseData value) {
+        if (mainsnak != null) {
+            mainsnak.setData(value);
+        } else {
+            mainsnak = new Snak(value, this.property);
+        }
     }
 
     @Override
@@ -93,6 +102,14 @@ public class Claim {
         this.type = type;
     }
 
+    public Snak getMainsnak() {
+        return mainsnak;
+    }
+
+    public void setMainsnak(Snak mainsnak) {
+        this.mainsnak = mainsnak;
+    }
+
     public Rank getRank() {
         return rank;
     }
@@ -108,56 +125,45 @@ public class Claim {
     public void setProperty(Property property) {
         this.property = property;
     }
+    public Map<Property, Set<Snak>> getQualifiers() {
+        return Collections.unmodifiableMap(qualifiers);
+    }
 
-    public void addQualifier(Property property, WikibaseDataType data) {
-        Set<WikibaseDataType> dataset = qualifiers.get(property);
+    public void addQualifier(Property property, WikibaseData data) {
+        Set<Snak> dataset = qualifiers.get(property);
         if (null == dataset) {
-            dataset = new HashSet<WikibaseDataType>();
+            dataset = new HashSet<Snak>();
         }
-        dataset.add(data);
+        dataset.add(new Snak(data, property));
         qualifiers.put(property, dataset);
     }
 
     @Override
     public String toString() {
-        return "Claim [id=" + id + ", property=" + property + ", value=" + value + "]";
+        return "Claim [id=" + id + ", property=" + property + ", snak=" + mainsnak + "]";
     }
 
     public String toJSON() {
         StringBuilder sbuild = new StringBuilder("{");
         sbuild.append("\"mainsnak\":");
 
-        sbuild.append('{');
-        sbuild.append("\"snaktype\":\"value\"").append(',').append("\"property\":\"").append("P")
-            .append(property.getId().startsWith("P") ? property.getId().substring(1) : property.getId()).append("\"");
-        sbuild.append(',');
-        sbuild.append("\"datavalue\":").append(value.toJSON());
+
+        sbuild.append(mainsnak.toJSON());
         if (!qualifiers.isEmpty()) {
             sbuild.append(',');
             sbuild.append("\"qualifiers\": {");
-            for (Entry<Property, Set<WikibaseDataType>> qualEntry : qualifiers.entrySet()) {
+            for (Entry<Property, Set<Snak>> qualEntry : qualifiers.entrySet()) {
                 String propId = qualEntry.getKey().getId().startsWith("P") ? qualEntry.getKey().getId()
                     : ("P" + qualEntry.getKey().getId());
                 sbuild.append('\"').append(propId).append("\":");
                 if (!qualEntry.getValue().isEmpty()) {
                     boolean started = false;
                     sbuild.append('[');
-                    for (WikibaseDataType eachData : qualEntry.getValue()) {
+                    for (Snak eachSnak : qualEntry.getValue()) {
                         if (started) {
                             sbuild.append(',');
                         }
-
-                        sbuild.append('{');
-                        sbuild.append("\"snaktype\":\"value\"");
-                        sbuild.append(',');
-                        sbuild.append("\"property\":\"").append(propId).append("\"");
-                        sbuild.append(',');
-                        sbuild.append("\"datavalue\":").append(eachData.toJSON());
-                        if (eachData.getDatatype() != null) {
-                            sbuild.append(',');
-                            sbuild.append("\"datatype\":").append(eachData.getDatatype()).append('\"');
-                        }
-                        sbuild.append('}');
+                        sbuild.append(eachSnak.toJSON());
                         started = true;
                     }
                     sbuild.append(']');
@@ -165,7 +171,6 @@ public class Claim {
             }
             sbuild.append('}');
         }
-        sbuild.append('}');
 
         sbuild.append(',');
         sbuild.append("\"type\":\"").append(null == type ? "statement" : type).append("\"");

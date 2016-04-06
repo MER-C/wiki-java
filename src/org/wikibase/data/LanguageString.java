@@ -16,7 +16,7 @@
 */
 package org.wikibase.data;
 
-public class LanguageString extends WikibaseDataType {
+public class LanguageString extends WikibaseData {
     private String language;
     private String text;
 
@@ -40,6 +40,21 @@ public class LanguageString extends WikibaseDataType {
         sb.append(" (");
         sb.append(language);
         sb.append(")");
+        return sb.toString();
+    }
+
+    @Override
+    public String toJSON() {
+        StringBuilder sb = new StringBuilder("{");
+        sb.append("\"value\":");
+        sb.append('{');
+        sb.append("\"text\":\"").append(text).append('\"');
+        sb.append(',');
+        sb.append("\"language\":\"").append(language).append('\"');
+        sb.append('}');
+        
+        sb.append(",\"type\":\"monolingualtext\"");
+        sb.append('}');
         return sb.toString();
     }
 }

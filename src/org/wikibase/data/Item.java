@@ -22,7 +22,7 @@ package org.wikibase.data;
  * @author acstroe
  *
  */
-public class Item extends WikibaseDataType {
+public class Item extends WikibaseData {
     private Entity ent = null;
 
     public Entity getEnt() {

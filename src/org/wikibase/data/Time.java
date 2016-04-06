@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-public class Time extends WikibaseDataType {
+public class Time extends WikibaseData {
     private Calendar calendar;
     private int before;
     private int after;
