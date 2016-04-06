@@ -16,9 +16,11 @@
 */
 package org.wikibase.data;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -37,6 +39,8 @@ public class Claim {
     private Property property;
     private Snak mainsnak;
     private Map<Property, Set<Snak>> qualifiers = new HashMap<Property, Set<Snak>>();
+    private List<Set<Snak>> references = new ArrayList<Set<Snak>>();
+
 
     public Claim() {
         super();
@@ -118,6 +122,10 @@ public class Claim {
         this.rank = rank;
     }
 
+    public List<Set<Snak>> getReferences() {
+        return Collections.unmodifiableList(references);
+    }
+    
     public Property getProperty() {
         return property;
     }
@@ -136,6 +144,10 @@ public class Claim {
         }
         dataset.add(new Snak(data, property));
         qualifiers.put(property, dataset);
+    }
+    
+    public void addReference(Set<Snak> ref) {
+        references.add(ref);
     }
 
     @Override

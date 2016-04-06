@@ -18,6 +18,7 @@ package org.wikibase;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -307,7 +308,7 @@ public class Wikibase extends Wiki {
                 }
             }
         } catch (Exception e) {
-            log(Level.WARNING, "createItem", e.getMessage());
+            log(Level.WARNING, "addClaim", e.getMessage());
             return null;
         }
         return ret;
@@ -325,7 +326,7 @@ public class Wikibase extends Wiki {
         postdata.append("&value=" + URLEncoder.encode(qualifier.toJSON(), "UTF-8"));
         postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
-        String text1 = post(url.toString(), postdata.toString(), "addClaim");
+        String text1 = post(url.toString(), postdata.toString(), "addQualifier");
         log(Level.INFO, "addQualifier", text1);
         return null;
     }
@@ -372,11 +373,41 @@ public class Wikibase extends Wiki {
         postdata.append("&snaks=" + URLEncoder.encode(snakBuilder.toString(), "UTF-8"));
         postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
-        String text1 = post(url.toString(), postdata.toString(), "addClaim");
-        log(Level.INFO, "addQualifier", text1);
+        String text1 = post(url.toString(), postdata.toString(), "addReference");
+        log(Level.INFO, "addReference", text1);
         return null;
     }
 
+    public void setLabel(String qid, String language, String label) throws IOException, WikibaseException {
+        String token = obtainToken();
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbsetlabel");
+        url.append("&id=" + qid);
+
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&language=" + language);
+        postdata.append("&value=" + URLEncoder.encode(label, "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(token, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "setLabel");
+        log(Level.INFO, "setLabel", text1);
+    }
+    
+    public void setDescription(String qid, String language, String label) throws IOException, WikibaseException {
+        String token = obtainToken();
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbsetdescription");
+        url.append("&id=" + qid);
+
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&language=" + language);
+        postdata.append("&value=" + URLEncoder.encode(label, "UTF-8"));
+        postdata.append("&token=" + URLEncoder.encode(token, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "setDescription");
+        log(Level.INFO, "setDescription", text1);
+    }
+    
     private String obtainToken() throws IOException, WikibaseException {
         StringBuilder url1 = new StringBuilder(query);
         url1.append("action=query");

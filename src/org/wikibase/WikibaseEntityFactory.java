@@ -129,7 +129,7 @@ public class WikibaseEntityFactory {
             } else if ("descriptions".equalsIgnoreCase(entityChild.getNodeName())) {
                 Node descrNode = entityChild.getFirstChild();
                 while (null != descrNode) {
-                    if ("label".equalsIgnoreCase(descrNode.getNodeName())) {
+                    if ("description".equalsIgnoreCase(descrNode.getNodeName())) {
                         String language = descrNode.getAttributes().getNamedItem("language").getNodeValue();
                         String value = descrNode.getAttributes().getNamedItem("value").getNodeValue();
                         entity.addDescription(language, value);
