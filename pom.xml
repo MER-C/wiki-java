@@ -16,15 +16,11 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.3</version>
                 <configuration>
-                    <source>7</source>
-                    <target>7</target>
+                    <source>8</source>
+                    <target>8</target>
                     <includes>
                         <include>**/*.java</include>
                     </includes>
-                    <excludes>
-                        <exclude>org/wikipedia/servlets/**/*.java</exclude>
-                        <exclude>org/wikipedia/tools/**/*.java</exclude>
-                    </excludes>
                     <testExcludes>
                         <testExclude>**/UserLinkAdditionFinderUnitTest.java</testExclude>
                     </testExcludes>
@@ -83,6 +79,14 @@
                         <version>1.6</version>
                     </dependency>
                 </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <warSourceDirectory>${basedir}/web</warSourceDirectory>
+                </configuration>
             </plugin>
         </plugins>
     </build>
