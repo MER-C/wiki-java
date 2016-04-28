@@ -82,7 +82,14 @@ public class WikibaseEntityFactory {
             if (null == entitiesNode) {
                 throw new WikibaseException("Wikibase entities node not found.");
             }
-            entityNode = entitiesNode.getFirstChild();
+            Node presumptiveEntityNode = entitiesNode.getFirstChild();
+            while (null != presumptiveEntityNode) {
+                if ("entity".equals(presumptiveEntityNode.getNodeName())) {
+                    entityNode = presumptiveEntityNode;
+                    break;
+                }
+                presumptiveEntityNode = presumptiveEntityNode.getNextSibling();
+            }
             if (null == entityNode) {
                 throw new WikibaseException("No entity found.");
             }

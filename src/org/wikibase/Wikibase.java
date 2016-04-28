@@ -117,7 +117,6 @@ public class Wikibase extends Wiki {
 
         final String text = fetch(url.toString(), "getWikibaseItem");
 
-        System.out.println(text);
         return WikibaseEntityFactory.getWikibaseItem(text);
     }
 
@@ -413,7 +412,7 @@ public class Wikibase extends Wiki {
         url1.append("action=query");
         url1.append("&meta=tokens");
         url1.append("&format=xml");
-        String text = fetch(url1.toString(), "createItem");
+        String text = fetch(url1.toString(), "obtainToken");
 
         DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
         Node tokenNode;

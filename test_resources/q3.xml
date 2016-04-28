@@ -1,0 +1,976 @@
+<?xml version="1.0"?>
+<api success="1">
+  <entities>
+    <entity pageid="131" ns="0" title="Q3" lastrevid="324916722" modified="2016-04-24T10:42:31Z" type="item" id="Q3">
+      <labels>
+        <label language="en" value="life" />
+        <label language="fr" value="vie" />
+        <label language="ru" value="жизнь" />
+        <label language="eo" value="vivo" />
+        <label language="it" value="vita" />
+        <label language="pl" value="życie" />
+        <label language="de" value="Leben" />
+        <label language="es" value="vida" />
+        <label language="en-gb" value="life" />
+        <label language="ja" value="生命" />
+        <label language="zh-hant" value="生命" />
+        <label language="fi" value="elämä" />
+        <label language="hr" value="život" />
+        <label language="pt" value="vida" />
+        <label language="mk" value="живот" />
+        <label language="uz" value="Hayot" />
+        <label language="sl" value="življenje" />
+        <label language="nl" value="leven" />
+        <label language="bn" value="জীবন" />
+        <label language="af" value="lewe" />
+        <label language="am" value="ህይወት" />
+        <label language="an" value="Vida" />
+        <label language="ar" value="حياة" />
+        <label language="ast" value="Vida" />
+        <label language="ay" value="Jakaña" />
+        <label language="az" value="Həyat" />
+        <label language="be" value="жыццё" />
+        <label language="bg" value="Живот" />
+        <label language="bo" value="འཚོ་བ།" />
+        <label language="br" value="buhez" />
+        <label language="bs" value="Život" />
+        <label language="ca" value="vida" />
+        <label language="cs" value="život" />
+        <label language="cy" value="Bywyd" />
+        <label language="da" value="liv" />
+        <label language="el" value="ζωή" />
+        <label language="et" value="elu" />
+        <label language="eu" value="bizi" />
+        <label language="fa" value="زندگی" />
+        <label language="gl" value="Vida" />
+        <label language="he" value="חיים" />
+        <label language="hi" value="जीवन" />
+        <label language="hif" value="Zindagi" />
+        <label language="ht" value="Lavi" />
+        <label language="hu" value="élet" />
+        <label language="ia" value="vita" />
+        <label language="id" value="Kehidupan" />
+        <label language="is" value="líf" />
+        <label language="jv" value="Urip" />
+        <label language="ka" value="სიცოცხლე" />
+        <label language="kbd" value="ГъащӀэ" />
+        <label language="kk" value="Өмір" />
+        <label language="kn" value="ಜೀವನ" />
+        <label language="ko" value="생명" />
+        <label language="krc" value="Джашау" />
+        <label language="ku" value="Jiyan" />
+        <label language="ky" value="Тиричилик" />
+        <label language="la" value="vita" />
+        <label language="li" value="Leve" />
+        <label language="ln" value="Bomɔi" />
+        <label language="lt" value="Gyvenimas" />
+        <label language="lv" value="dzīvība" />
+        <label language="mg" value="Fiainana" />
+        <label language="ml" value="ജീവൻ" />
+        <label language="mn" value="Амьдрал" />
+        <label language="mr" value="जीवन" />
+        <label language="ms" value="Hidupan" />
+        <label language="mwl" value="Bida" />
+        <label language="ne" value="जीवन" />
+        <label language="new" value="उयिर्" />
+        <label language="nn" value="livet" />
+        <label language="oc" value="vida" />
+        <label language="pa" value="ਜੀਵਨ" />
+        <label language="pap" value="Bida" />
+        <label language="pnb" value="جیون" />
+        <label language="ps" value="ژوند" />
+        <label language="qu" value="Kawsay" />
+        <label language="ro" value="viață" />
+        <label language="rue" value="Жывот" />
+        <label language="rw" value="Ubuzima" />
+        <label language="sah" value="Олох" />
+        <label language="scn" value="Vita" />
+        <label language="sh" value="Život" />
+        <label language="si" value="ජීවය" />
+        <label language="sk" value="život" />
+        <label language="sq" value="jeta" />
+        <label language="sr" value="живот" />
+        <label language="su" value="Hirup" />
+        <label language="sv" value="liv" />
+        <label language="ta" value="உயிர்" />
+        <label language="te" value="జీవం" />
+        <label language="th" value="ชีวิต" />
+        <label language="tl" value="Buhay" />
+        <label language="tr" value="yaşam" />
+        <label language="tt" value="Тереклек" />
+        <label language="uk" value="життя" />
+        <label language="ur" value="حیات" />
+        <label language="vec" value="Vita" />
+        <label language="vi" value="sự sống" />
+        <label language="wa" value="Veye" />
+        <label language="war" value="Kinabuhi" />
+        <label language="yi" value="לעבן" />
+        <label language="zh" value="生命" />
+        <label language="en-ca" value="Life" />
+        <label language="de-ch" value="Leben" />
+        <label language="pt-br" value="vida" />
+        <label language="yue" value="生命" />
+        <label language="zh-cn" value="生命" />
+        <label language="zh-hans" value="生命" />
+        <label language="nb" value="liv" />
+        <label language="zh-sg" value="生命" />
+        <label language="zh-my" value="生命" />
+        <label language="zh-hk" value="生命" />
+        <label language="zh-tw" value="生命" />
+        <label language="zh-mo" value="生命" />
+        <label language="ilo" value="biag" />
+        <label language="be-tarask" value="жыцьцё" />
+        <label language="min" value="Kahidupan" />
+        <label language="ga" value="beatha" />
+        <label language="csb" value="żëcé" />
+        <label language="gu" value="જીવન" />
+        <label language="sr-ec" value="живот" />
+        <label language="sr-el" value="život" />
+        <label language="hy" value="կյանք" />
+        <label language="ba" value="Тормош" />
+        <label language="ckb" value="ژیان" />
+        <label language="ang" value="Līf" />
+        <label language="so" value="Nolosha" />
+        <label language="or" value="ଜୀବନ" />
+        <label language="ie" value="vive" />
+        <label language="bxr" value="Амидарал" />
+        <label language="nan" value="Sèⁿ-miā" />
+        <label language="tk" value="Ýaşaýyş" />
+        <label language="lb" value="Liewen" />
+        <label language="sco" value="life" />
+        <label language="fy" value="libben" />
+        <label language="cdo" value="Sĕng-mêng" />
+        <label language="lzz" value="skidala" />
+        <label language="ak" value="nkwa" />
+        <label language="gd" value="Beatha" />
+        <label language="hak" value="Sâng-miang" />
+        <label language="gsw" value="Leben" />
+        <label language="lo" value="ຊີວິດ" />
+        <label language="sw" value="Uhai" />
+        <label language="jbo" value="lo nunji&#039;e" />
+        <label language="as" value="জীৱন" />
+        <label language="lij" value="Vitta" />
+        <label language="my" value="သက်ရှိ" />
+        <label language="bho" value="जीवन" />
+      </labels>
+      <descriptions>
+        <description language="it" value="condizione propria della materia vivente" />
+        <description language="pl" value="sposób istnienia ciał białkowych, przeciwieństwo śmierci" />
+        <description language="fr" value="état de ce qui est vivant" />
+        <description language="en" value="form of matter capable of extracting energy from the environment for replication" />
+        <description language="de" value="Zustand aller Lebewesen" />
+        <description language="eo" value="Proceso per kiu estaĵoj dinamike evoluas kaj reproduktiĝas kontraste kun senviva materio" />
+        <description language="es" value="capacidad de nacer, crecer, reproducirse y morir, y, a lo largo de sucesivas generaciones, evolucionar." />
+        <description language="nl" value="een eigenschap van organismen, die zich o.a. kunnen voortplanten" />
+        <description language="ko" value="생물로서 활동할 수 있게 명맥을 잇는 힘." />
+        <description language="nb" value="fenomenet som skiller bakterier, dyr og andre organismer fra døde organismer og fra anorganiske gjenstander som krystaller" />
+        <description language="ca" value="estat intermedi entre el naixement i la mort" />
+        <description language="ru" value="активная форма существования материи, совокупность специфических физических и химических процессов, протекающих в клетке" />
+        <description language="zh-hans" value="生物体所具有的活动能力" />
+        <description language="zh-hant" value="生物體所具有的活動能力" />
+        <description language="zh-cn" value="生物体所具有的活动能力" />
+        <description language="zh-sg" value="生物体所具有的活动能力" />
+        <description language="zh-my" value="生物体所具有的活动能力" />
+        <description language="zh" value="生物体所具有的活动能力" />
+        <description language="zh-hk" value="生物體所具有的活動能力" />
+        <description language="zh-tw" value="生物體所具有的活動能力" />
+        <description language="zh-mo" value="生物體所具有的活動能力" />
+        <description language="ja" value="文脈によってさまざまな定義がある語であるが、基本的には生きているものと死んでいるもの、あるいは物質と生物を区別する特徴・属性などを指す語、あるいは抽象概念" />
+        <description language="sv" value="egenskap som alla organismer har" />
+        <description language="fi" value="kappaleiden, joilla on elintoimintoja, ominaisuus" />
+        <description language="el" value="χαρακτηριστικό που διακρίνει αντικείμενα που έχουν σηματοδότηση και αυτοδιατηρούμενες λειτουργίες από αυτά που δεν έχουν" />
+        <description language="pt-br" value="condição própria dos seres vivos" />
+        <description language="ilo" value="pannakailasinan a mangisalumina dagiti banag nga adda kadagiti panangisenial ken bukod a panagsaranay a pamay-an ken dagiti saan" />
+        <description language="fa" value="متضاد مرگ" />
+        <description language="ta" value="உடலை இயங்கச் செய்யும் ஆற்றல்" />
+        <description language="ro" value="proprietatea comună pe care o au toate organismele (materia vie)" />
+        <description language="hr" value="oblik postojanja živih bića" />
+        <description language="cs" value="období od narození do smrti" />
+        <description language="pt" value="forma de matéria capaz de extrair energia do ambiente para replicação" />
+        <description language="br" value="doare materi gouest da dennañ energiezh diouzh e endro evit strujusaat" />
+        <description language="lb" value="Zoustand vun alle Liewewiesen" />
+        <description language="uk" value="явище, що є сукупністю фундаментальних загальнобіологічних ознак, які характеризують живих істот, відрізняючи їх від неживих об&#039;єктів" />
+        <description language="hu" value="élő szervezetek létezési módja" />
+        <description language="vi" value="một quá trình diễn ra từ lúc sinh vật được tạo thành cho đến lúc nó phân rã" />
+        <description language="gl" value="proceso en curso do cal os seres vivos son unha parte" />
+        <description language="gd" value="Tha briogh aig nadur." />
+        <description language="th" value="สถานะที่แยกสิ่งมีชีวิตหรืออินทรีย์ออกจากสิ่งไม่มีชีวิตหรืออนินทรีย์และสิ่งมีชีวิตที่ตายแล้ว" />
+        <description language="ne" value="वस्तुको रूप जससँग वातावरणसँग वस्तु र शक्ति लिएर आफू जस्तै अर्को वस्तु सिर्जना गर्ने शक्ति हुन्छ" />
+        <description language="id" value="bentuk materi yang dapat mengambil energi dari lingkungan untuk replikasi" />
+      </descriptions>
+      <aliases>
+        <language id="pl">
+          <alias language="pl" value="procesy życiowe" />
+          <alias language="pl" value="żywot" />
+        </language>
+        <language id="ko">
+          <alias language="ko" value="유기체" />
+          <alias language="ko" value="삶" />
+          <alias language="ko" value="생" />
+        </language>
+        <language id="ja">
+          <alias language="ja" value="命" />
+          <alias language="ja" value="いのち" />
+          <alias language="ja" value="生" />
+        </language>
+        <language id="hi">
+          <alias language="hi" value="प्राण" />
+          <alias language="hi" value="जान" />
+          <alias language="hi" value="जीव" />
+        </language>
+        <language id="fi">
+          <alias language="fi" value="biota" />
+          <alias language="fi" value="vitae" />
+          <alias language="fi" value="eobionti" />
+        </language>
+        <language id="fa">
+          <alias language="fa" value="زندگانی" />
+          <alias language="fa" value="زیستن" />
+          <alias language="fa" value="ادامه حیات" />
+          <alias language="fa" value="معاش" />
+          <alias language="fa" value="معیشت" />
+        </language>
+        <language id="ta">
+          <alias language="ta" value="உயிர்வாழ்க்கை" />
+        </language>
+        <language id="en">
+          <alias language="en" value="biota" />
+        </language>
+        <language id="vi">
+          <alias language="vi" value="cuộc sống" />
+        </language>
+        <language id="ru">
+          <alias language="ru" value="живое существо" />
+        </language>
+      </aliases>
+      <claims>
+        <property id="P1245">
+          <claim type="statement" id="Q3$3ffd8be7-4255-61a0-680b-9463cb8529c4" rank="normal">
+            <mainsnak snaktype="value" property="P1245" datatype="external-id">
+              <datavalue value="8408" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P461">
+          <claim type="statement" id="q3$6937616b-402e-4531-3241-9491c3aaad57" rank="normal">
+            <mainsnak snaktype="value" property="P461" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="4" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P373">
+          <claim type="statement" id="q3$6D9B6B1F-6AFB-45DF-8367-D43B434D2BD4" rank="normal">
+            <mainsnak snaktype="value" property="P373" datatype="string">
+              <datavalue value="Life" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P508">
+          <claim type="statement" id="q3$23F77CD4-5CCE-4689-9EE4-E11D7A2906CF" rank="normal">
+            <mainsnak snaktype="value" property="P508" datatype="external-id">
+              <datavalue value="12970" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="33ef5efac8ec9d2de05f19b852ff1698d9036c26">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="460907" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P910">
+          <claim type="statement" id="Q3$ABBDB2FB-9019-4BAF-9955-46E75BF673FB" rank="normal">
+            <mainsnak snaktype="value" property="P910" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="5550747" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P349">
+          <claim type="statement" id="Q3$C4FA0E93-325F-471C-BB57-45380A95CA7E" rank="normal">
+            <mainsnak snaktype="value" property="P349" datatype="external-id">
+              <datavalue value="00570344" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P279">
+          <claim type="statement" id="Q3$1fc5ccaf-42aa-18ed-a9ef-ec21c781bd09" rank="normal">
+            <mainsnak snaktype="value" property="P279" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="203872" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P31">
+          <claim type="statement" id="Q3$12c100b5-4ca5-94bf-a2ba-b26b9bb29147" rank="normal">
+            <mainsnak snaktype="value" property="P31" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="937228" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P646">
+          <claim type="statement" id="Q3$941E2EAB-F8F0-4D12-9DB7-3545C2058377" rank="normal">
+            <mainsnak snaktype="value" property="P646" datatype="external-id">
+              <datavalue value="/m/04nr2" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="af38848ab5d9d9325cffd93a5ec656cc6ca889ed">
+                <snaks>
+                  <property id="P248">
+                    <snak snaktype="value" property="P248" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="15241312" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                  <property id="P577">
+                    <snak snaktype="value" property="P577" datatype="time">
+                      <datavalue type="time">
+                        <value time="+2013-10-28T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P248</property>
+                  <property>P577</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P18">
+          <claim type="statement" id="Q3$CC2AFB4E-5F46-4797-8B6E-A37DEE345520" rank="normal">
+            <mainsnak snaktype="value" property="P18" datatype="commonsMedia">
+              <datavalue value="HumanNewborn.JPG" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1014">
+          <claim type="statement" id="Q3$3AE19139-7C95-49D0-84E4-04EF142CF0C7" rank="normal">
+            <mainsnak snaktype="value" property="P1014" datatype="external-id">
+              <datavalue value="300055134" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1051">
+          <claim type="statement" id="Q3$DC878F45-8598-409D-A9BE-236CCED6FC0E" rank="normal">
+            <mainsnak snaktype="value" property="P1051" datatype="external-id">
+              <datavalue value="581" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P486">
+          <claim type="statement" id="Q3$1f5d6896-4942-42fd-acd9-3b1a31066765" rank="normal">
+            <mainsnak snaktype="value" property="P486" datatype="string">
+              <datavalue value="D019369" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P460">
+          <claim type="statement" id="Q3$abcb6847-467c-9156-1380-88fcc9a5e895" rank="normal">
+            <mainsnak snaktype="value" property="P460" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="21217721" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P227">
+          <claim type="statement" id="Q3$A4078461-B1C2-4D4D-9515-AB092E5280A3" rank="normal">
+            <mainsnak snaktype="value" property="P227" datatype="external-id">
+              <datavalue value="4034831-3" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="004ec6fbee857649acdbdbad4f97b2c8571df97b">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="48183" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P2612">
+          <claim type="statement" id="Q3$E9EE9AF9-4D9B-461D-A18E-43F0B903BCD2" rank="normal">
+            <mainsnak snaktype="value" property="P2612" datatype="external-id">
+              <datavalue value="life" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1343">
+          <claim type="statement" id="Q3$95DF8E7A-CA1D-49AA-B6C1-97299F9BC023" rank="normal">
+            <mainsnak snaktype="value" property="P1343" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="2657718" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P478">
+                <qualifiers snaktype="value" property="P478" hash="81541977c6c6d8e9a1bd5912e4ed237e9b4fa85b" datatype="string">
+                  <datavalue value="5" type="string" />
+                </qualifiers>
+              </property>
+              <property id="P304">
+                <qualifiers snaktype="value" property="P304" hash="ed1ac5084bf2d8862907f4d2da1b27750bc5b2b5" datatype="string">
+                  <datavalue value="487" type="string" />
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P478</property>
+              <property>P304</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="dc68c858747f93e8e54b70dfa8abd67bb1bb20e0">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="1975217" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+      </claims>
+      <sitelinks>
+        <sitelink site="afwiki" title="Lewe">
+          <badges />
+        </sitelink>
+        <sitelink site="alswiki" title="Leben">
+          <badges />
+        </sitelink>
+        <sitelink site="amwiki" title="ህይወት">
+          <badges />
+        </sitelink>
+        <sitelink site="angwiki" title="Līf">
+          <badges />
+        </sitelink>
+        <sitelink site="anwiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="arwiki" title="حياة">
+          <badges />
+        </sitelink>
+        <sitelink site="astwiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="aswiki" title="জীৱন">
+          <badges>
+            <badge>Q17559452</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="aywiki" title="Jakaña">
+          <badges />
+        </sitelink>
+        <sitelink site="azwiki" title="Həyat">
+          <badges />
+        </sitelink>
+        <sitelink site="bawiki" title="Тормош">
+          <badges />
+        </sitelink>
+        <sitelink site="be_x_oldwiki" title="Жыцьцё">
+          <badges />
+        </sitelink>
+        <sitelink site="bewiki" title="Жыццё">
+          <badges />
+        </sitelink>
+        <sitelink site="bewikiquote" title="Жыццё">
+          <badges />
+        </sitelink>
+        <sitelink site="bgwiki" title="Живот">
+          <badges />
+        </sitelink>
+        <sitelink site="bgwikiquote" title="Живот — Живеене">
+          <badges />
+        </sitelink>
+        <sitelink site="bhwiki" title="जीवन">
+          <badges />
+        </sitelink>
+        <sitelink site="bnwiki" title="জীবন">
+          <badges />
+        </sitelink>
+        <sitelink site="bowiki" title="འཚོ་བ།">
+          <badges />
+        </sitelink>
+        <sitelink site="brwiki" title="Buhez">
+          <badges />
+        </sitelink>
+        <sitelink site="bswiki" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="bswikiquote" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="bxrwiki" title="Амидарал">
+          <badges />
+        </sitelink>
+        <sitelink site="cawiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="cawikiquote" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="cdowiki" title="Sĕng-mêng">
+          <badges />
+        </sitelink>
+        <sitelink site="ckbwiki" title="ژیان">
+          <badges />
+        </sitelink>
+        <sitelink site="cswiki" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="cswikiquote" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="cywiki" title="Bywyd">
+          <badges />
+        </sitelink>
+        <sitelink site="dawiki" title="Liv">
+          <badges />
+        </sitelink>
+        <sitelink site="dewiki" title="Leben">
+          <badges />
+        </sitelink>
+        <sitelink site="dewikiquote" title="Leben">
+          <badges />
+        </sitelink>
+        <sitelink site="elwiki" title="Ζωή">
+          <badges />
+        </sitelink>
+        <sitelink site="elwikiquote" title="Ζωή">
+          <badges />
+        </sitelink>
+        <sitelink site="enwiki" title="Life">
+          <badges />
+        </sitelink>
+        <sitelink site="enwikiquote" title="Life">
+          <badges />
+        </sitelink>
+        <sitelink site="eowiki" title="Vivo">
+          <badges />
+        </sitelink>
+        <sitelink site="eowikiquote" title="Vivo">
+          <badges />
+        </sitelink>
+        <sitelink site="eswiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="eswikiquote" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="etwiki" title="Elu">
+          <badges />
+        </sitelink>
+        <sitelink site="etwikiquote" title="Elu">
+          <badges />
+        </sitelink>
+        <sitelink site="euwiki" title="Bizi">
+          <badges />
+        </sitelink>
+        <sitelink site="fawiki" title="زندگی">
+          <badges />
+        </sitelink>
+        <sitelink site="fawikiquote" title="زندگی">
+          <badges />
+        </sitelink>
+        <sitelink site="fiwiki" title="Elämä">
+          <badges />
+        </sitelink>
+        <sitelink site="frwiki" title="Vie">
+          <badges />
+        </sitelink>
+        <sitelink site="frwikiquote" title="Vie">
+          <badges />
+        </sitelink>
+        <sitelink site="gawiki" title="Beatha">
+          <badges />
+        </sitelink>
+        <sitelink site="glwiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="glwikiquote" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="hakwiki" title="Sâng-miang">
+          <badges />
+        </sitelink>
+        <sitelink site="hewiki" title="חיים">
+          <badges />
+        </sitelink>
+        <sitelink site="hewikiquote" title="חיים">
+          <badges />
+        </sitelink>
+        <sitelink site="hifwiki" title="Zindagi">
+          <badges />
+        </sitelink>
+        <sitelink site="hiwiki" title="जीवन">
+          <badges />
+        </sitelink>
+        <sitelink site="hiwikiquote" title="जीवन">
+          <badges />
+        </sitelink>
+        <sitelink site="hrwiki" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="hrwikiquote" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="htwiki" title="Lavi">
+          <badges />
+        </sitelink>
+        <sitelink site="huwiki" title="Élet">
+          <badges />
+        </sitelink>
+        <sitelink site="huwikiquote" title="Élet">
+          <badges />
+        </sitelink>
+        <sitelink site="hywiki" title="Կյանք">
+          <badges />
+        </sitelink>
+        <sitelink site="hywikiquote" title="Կյանք">
+          <badges />
+        </sitelink>
+        <sitelink site="iawiki" title="Vita">
+          <badges />
+        </sitelink>
+        <sitelink site="idwiki" title="Kehidupan">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="iewiki" title="Vive">
+          <badges />
+        </sitelink>
+        <sitelink site="ilowiki" title="Biag">
+          <badges />
+        </sitelink>
+        <sitelink site="iswiki" title="Líf">
+          <badges />
+        </sitelink>
+        <sitelink site="itwiki" title="Vita">
+          <badges />
+        </sitelink>
+        <sitelink site="itwikiquote" title="Vita">
+          <badges />
+        </sitelink>
+        <sitelink site="jawiki" title="生命">
+          <badges />
+        </sitelink>
+        <sitelink site="jawikiquote" title="生命">
+          <badges />
+        </sitelink>
+        <sitelink site="jvwiki" title="Urip">
+          <badges />
+        </sitelink>
+        <sitelink site="kawiki" title="სიცოცხლე">
+          <badges />
+        </sitelink>
+        <sitelink site="kbdwiki" title="ГъащӀэ">
+          <badges />
+        </sitelink>
+        <sitelink site="kkwiki" title="Өмір">
+          <badges />
+        </sitelink>
+        <sitelink site="knwiki" title="ಜೀವನ">
+          <badges />
+        </sitelink>
+        <sitelink site="kowiki" title="생명">
+          <badges />
+        </sitelink>
+        <sitelink site="kowikiquote" title="인생">
+          <badges />
+        </sitelink>
+        <sitelink site="krcwiki" title="Джашау">
+          <badges />
+        </sitelink>
+        <sitelink site="kuwiki" title="Jiyan">
+          <badges />
+        </sitelink>
+        <sitelink site="kuwikiquote" title="Jiyan">
+          <badges />
+        </sitelink>
+        <sitelink site="kywiki" title="Тиричилик">
+          <badges />
+        </sitelink>
+        <sitelink site="lawiki" title="Vita">
+          <badges />
+        </sitelink>
+        <sitelink site="lijwiki" title="Vitta">
+          <badges />
+        </sitelink>
+        <sitelink site="liwiki" title="Leve">
+          <badges />
+        </sitelink>
+        <sitelink site="lnwiki" title="Bomɔi">
+          <badges />
+        </sitelink>
+        <sitelink site="lowiki" title="ຊີວິດ">
+          <badges />
+        </sitelink>
+        <sitelink site="ltwiki" title="Gyvybė">
+          <badges />
+        </sitelink>
+        <sitelink site="ltwikiquote" title="Gyvenimas">
+          <badges />
+        </sitelink>
+        <sitelink site="lvwiki" title="Dzīvība">
+          <badges />
+        </sitelink>
+        <sitelink site="mgwiki" title="Fiainana">
+          <badges />
+        </sitelink>
+        <sitelink site="mkwiki" title="Живот">
+          <badges />
+        </sitelink>
+        <sitelink site="mlwiki" title="ജീവൻ">
+          <badges />
+        </sitelink>
+        <sitelink site="mnwiki" title="Амьдрал">
+          <badges />
+        </sitelink>
+        <sitelink site="mrwiki" title="जीवन">
+          <badges />
+        </sitelink>
+        <sitelink site="mswiki" title="Hidupan">
+          <badges />
+        </sitelink>
+        <sitelink site="mwlwiki" title="Bida">
+          <badges />
+        </sitelink>
+        <sitelink site="mywiki" title="သက်ရှိ">
+          <badges />
+        </sitelink>
+        <sitelink site="newiki" title="जीवन">
+          <badges />
+        </sitelink>
+        <sitelink site="newwiki" title="उयिर् (सन् २००६या संकिपा)">
+          <badges />
+        </sitelink>
+        <sitelink site="nlwiki" title="Leven">
+          <badges />
+        </sitelink>
+        <sitelink site="nlwikiquote" title="Leven">
+          <badges />
+        </sitelink>
+        <sitelink site="nnwiki" title="Livet">
+          <badges />
+        </sitelink>
+        <sitelink site="nnwikiquote" title="Livet">
+          <badges />
+        </sitelink>
+        <sitelink site="nowiki" title="Liv">
+          <badges />
+        </sitelink>
+        <sitelink site="ocwiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="papwiki" title="Bida">
+          <badges />
+        </sitelink>
+        <sitelink site="pawiki" title="ਜੀਵਨ">
+          <badges />
+        </sitelink>
+        <sitelink site="plwiki" title="Życie">
+          <badges />
+        </sitelink>
+        <sitelink site="plwikiquote" title="Życie">
+          <badges />
+        </sitelink>
+        <sitelink site="pnbwiki" title="جیون">
+          <badges />
+        </sitelink>
+        <sitelink site="pswiki" title="ژوند">
+          <badges />
+        </sitelink>
+        <sitelink site="ptwiki" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="ptwikiquote" title="Vida">
+          <badges />
+        </sitelink>
+        <sitelink site="quwiki" title="Kawsay">
+          <badges />
+        </sitelink>
+        <sitelink site="rowiki" title="Viață">
+          <badges />
+        </sitelink>
+        <sitelink site="rowikiquote" title="Viață">
+          <badges />
+        </sitelink>
+        <sitelink site="ruewiki" title="Жывот">
+          <badges />
+        </sitelink>
+        <sitelink site="ruwiki" title="Жизнь">
+          <badges />
+        </sitelink>
+        <sitelink site="ruwikiquote" title="Жизнь">
+          <badges />
+        </sitelink>
+        <sitelink site="rwwiki" title="Ubuzima">
+          <badges />
+        </sitelink>
+        <sitelink site="sahwiki" title="Олох">
+          <badges />
+        </sitelink>
+        <sitelink site="scnwiki" title="Vita">
+          <badges />
+        </sitelink>
+        <sitelink site="scowiki" title="Life">
+          <badges />
+        </sitelink>
+        <sitelink site="shwiki" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="simplewiki" title="Life">
+          <badges />
+        </sitelink>
+        <sitelink site="siwiki" title="ජීවය">
+          <badges />
+        </sitelink>
+        <sitelink site="skwiki" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="skwikiquote" title="Život">
+          <badges />
+        </sitelink>
+        <sitelink site="slwiki" title="Življenje">
+          <badges />
+        </sitelink>
+        <sitelink site="slwikiquote" title="Življenje">
+          <badges />
+        </sitelink>
+        <sitelink site="sowiki" title="Nolosha">
+          <badges />
+        </sitelink>
+        <sitelink site="sqwiki" title="Jeta">
+          <badges />
+        </sitelink>
+        <sitelink site="srwiki" title="Живот">
+          <badges />
+        </sitelink>
+        <sitelink site="suwiki" title="Hirup">
+          <badges />
+        </sitelink>
+        <sitelink site="svwiki" title="Liv">
+          <badges />
+        </sitelink>
+        <sitelink site="svwikiquote" title="Livet">
+          <badges />
+        </sitelink>
+        <sitelink site="swwiki" title="Uhai">
+          <badges />
+        </sitelink>
+        <sitelink site="tawiki" title="உயிர்">
+          <badges />
+        </sitelink>
+        <sitelink site="tewiki" title="జీవం">
+          <badges />
+        </sitelink>
+        <sitelink site="tewikiquote" title="జీవితం">
+          <badges />
+        </sitelink>
+        <sitelink site="thwiki" title="ชีวิต">
+          <badges />
+        </sitelink>
+        <sitelink site="thwikiquote" title="การใช้ชีวิต">
+          <badges />
+        </sitelink>
+        <sitelink site="tkwiki" title="Ýaşaýyş">
+          <badges />
+        </sitelink>
+        <sitelink site="tlwiki" title="Buhay">
+          <badges />
+        </sitelink>
+        <sitelink site="trwiki" title="Yaşam">
+          <badges />
+        </sitelink>
+        <sitelink site="trwikiquote" title="Hayat">
+          <badges />
+        </sitelink>
+        <sitelink site="tswiki" title="Vutomi">
+          <badges />
+        </sitelink>
+        <sitelink site="ttwiki" title="Тереклек">
+          <badges />
+        </sitelink>
+        <sitelink site="ukwiki" title="Життя">
+          <badges />
+        </sitelink>
+        <sitelink site="ukwikiquote" title="Життя">
+          <badges />
+        </sitelink>
+        <sitelink site="urwiki" title="حیات (مقالہ ثانی)">
+          <badges />
+        </sitelink>
+        <sitelink site="urwikiquote" title="زندگی">
+          <badges />
+        </sitelink>
+        <sitelink site="uzwiki" title="Hayot">
+          <badges />
+        </sitelink>
+        <sitelink site="uzwikiquote" title="Hayot">
+          <badges />
+        </sitelink>
+        <sitelink site="vecwiki" title="Vita">
+          <badges />
+        </sitelink>
+        <sitelink site="viwiki" title="Sự sống">
+          <badges />
+        </sitelink>
+        <sitelink site="warwiki" title="Kinabuhi">
+          <badges />
+        </sitelink>
+        <sitelink site="wawiki" title="Veye (biyolodjeye)">
+          <badges />
+        </sitelink>
+        <sitelink site="yiwiki" title="לעבן">
+          <badges />
+        </sitelink>
+        <sitelink site="zh_min_nanwiki" title="Sèⁿ-miā">
+          <badges />
+        </sitelink>
+        <sitelink site="zh_yuewiki" title="生命">
+          <badges />
+        </sitelink>
+        <sitelink site="zhwiki" title="生命">
+          <badges />
+        </sitelink>
+        <sitelink site="zhwikiquote" title="生命">
+          <badges />
+        </sitelink>
+      </sitelinks>
+    </entity>
+  </entities>
+</api>

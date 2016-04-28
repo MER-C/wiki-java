@@ -1,0 +1,3204 @@
+<?xml version="1.0"?>
+<api success="1">
+  <entities>
+    <entity pageid="130" ns="0" title="Q2" lastrevid="325050421" modified="2016-04-25T03:06:57Z" type="item" id="Q2">
+      <labels>
+        <label language="en" value="Earth" />
+        <label language="fr" value="Terre" />
+        <label language="uz" value="Yer" />
+        <label language="de" value="Erde" />
+        <label language="it" value="Terra" />
+        <label language="pl" value="Ziemia" />
+        <label language="nb" value="jorda" />
+        <label language="eo" value="Tero" />
+        <label language="ru" value="Земля" />
+        <label language="es" value="Tierra" />
+        <label language="be-tarask" value="Зямля" />
+        <label language="en-gb" value="Earth" />
+        <label language="ja" value="地球" />
+        <label language="zh-hant" value="地球" />
+        <label language="fi" value="Maa" />
+        <label language="hr" value="Zemlja" />
+        <label language="pt" value="Terra" />
+        <label language="zh" value="地球" />
+        <label language="gl" value="Terra" />
+        <label language="hu" value="Föld" />
+        <label language="vo" value="Tal" />
+        <label language="cs" value="Země" />
+        <label language="sk" value="Zem" />
+        <label language="uk" value="Земля" />
+        <label language="nn" value="jorda" />
+        <label language="ace" value="Bumoë" />
+        <label language="af" value="Aarde" />
+        <label language="ang" value="Eorðe" />
+        <label language="an" value="Tierra" />
+        <label language="frp" value="Tèrra" />
+        <label language="ast" value="Tierra" />
+        <label language="gn" value="Yvy" />
+        <label language="ay" value="Aka pacha" />
+        <label language="az" value="Yer" />
+        <label language="map-bms" value="Bumi" />
+        <label language="bcl" value="Kinaban" />
+        <label language="bar" value="Eadn" />
+        <label language="bs" value="Zemlja" />
+        <label language="br" value="Douar" />
+        <label language="ca" value="Terra" />
+        <label language="ceb" value="Kalibotan" />
+        <label language="cbk-zam" value="Tierra" />
+        <label language="cy" value="Y Ddaear" />
+        <label language="da" value="Jorden" />
+        <label language="nv" value="Nahasdzáán" />
+        <label language="dsb" value="Zemja" />
+        <label language="et" value="Maa" />
+        <label language="eml" value="Tèra" />
+        <label language="ext" value="Tierra" />
+        <label language="eu" value="Lurra" />
+        <label language="hif" value="Dunia" />
+        <label language="fo" value="Jørðin" />
+        <label language="fy" value="Ierde" />
+        <label language="fur" value="Tiere" />
+        <label language="ga" value="An Domhan" />
+        <label language="gv" value="Yn Chruinney" />
+        <label language="gd" value="Saoghal" />
+        <label language="hak" value="Thi-khiù" />
+        <label language="ha" value="Duniya" />
+        <label language="haw" value="Honua" />
+        <label language="hsb" value="Zemja" />
+        <label language="io" value="Tero" />
+        <label language="ig" value="Àlà" />
+        <label language="ilo" value="Daga" />
+        <label language="id" value="Bumi" />
+        <label language="ia" value="Terra" />
+        <label language="is" value="Jörðin" />
+        <label language="jv" value="bumi" />
+        <label language="kl" value="Nunarsuaq" />
+        <label language="pam" value="Yatu" />
+        <label language="csb" value="Zemia" />
+        <label language="kw" value="Dor" />
+        <label language="rw" value="Isi" />
+        <label language="sw" value="Dunia" />
+        <label language="kg" value="Ntoto" />
+        <label language="ht" value="Latè" />
+        <label language="ku" value="Erd" />
+        <label language="lad" value="Tierra" />
+        <label language="ltg" value="Zeme" />
+        <label language="la" value="Tellus" />
+        <label language="lv" value="Zeme" />
+        <label language="lb" value="Äerd" />
+        <label language="lt" value="Žemė" />
+        <label language="lij" value="Tæra" />
+        <label language="li" value="Eerd" />
+        <label language="ln" value="Mabelé" />
+        <label language="jbo" value="la terdi" />
+        <label language="lmo" value="Tera" />
+        <label language="mg" value="Tany" />
+        <label language="mt" value="Art" />
+        <label language="ms" value="Bumi" />
+        <label language="szl" value="Źymja" />
+        <label language="cdo" value="Dê-giù" />
+        <label language="mwl" value="Tierra" />
+        <label language="nah" value="Tlālticpactli" />
+        <label language="nl" value="Aarde" />
+        <label language="nds-nl" value="Eerde" />
+        <label language="nap" value="Terra" />
+        <label language="frr" value="Jard" />
+        <label language="pih" value="Erth" />
+        <label language="nrm" value="Tèrre" />
+        <label language="nov" value="Tere" />
+        <label language="oc" value="Tèrra" />
+        <label language="pfl" value="Erd" />
+        <label language="pap" value="Tera" />
+        <label language="pms" value="Tèra" />
+        <label language="tpi" value="Giraun" />
+        <label language="nds" value="Eer" />
+        <label language="ksh" value="Ääd" />
+        <label language="ro" value="Pământ" />
+        <label language="rmy" value="Phuv" />
+        <label language="rm" value="Terra" />
+        <label language="qu" value="Tiksimuyu" />
+        <label language="se" value="Eana" />
+        <label language="sc" value="Terra" />
+        <label language="sco" value="Yird" />
+        <label language="st" value="Lefatshe" />
+        <label language="nso" value="Lefase" />
+        <label language="sq" value="Toka" />
+        <label language="scn" value="Terra" />
+        <label language="sl" value="Zemlja" />
+        <label language="sh" value="Zemlja" />
+        <label language="su" value="Marcapada" />
+        <label language="sv" value="Jorden" />
+        <label language="tl" value="Daigdig" />
+        <label language="tr" value="Dünya" />
+        <label language="za" value="Giuznamh" />
+        <label language="vec" value="Tera" />
+        <label language="vep" value="Ma" />
+        <label language="vi" value="Trái Đất" />
+        <label language="wa" value="Daegne" />
+        <label language="vls" value="Eirde" />
+        <label language="war" value="Kalibutan" />
+        <label language="wo" value="Suuf" />
+        <label language="yo" value="Ayé" />
+        <label language="diq" value="Dınya" />
+        <label language="zea" value="Aerde" />
+        <label language="ab" value="Адгьыл" />
+        <label language="am" value="መሬት" />
+        <label language="ar" value="الأرض" />
+        <label language="arc" value="ܐܪܥܐ" />
+        <label language="arz" value="الارض" />
+        <label language="as" value="পৃথিৱী" />
+        <label language="be" value="Зямля" />
+        <label language="bg" value="Земя" />
+        <label language="bh" value="पृथ्वी" />
+        <label language="bn" value="পৃথিবী" />
+        <label language="bo" value="སའི་གོ་ལ།" />
+        <label language="chr" value="ᎡᎶᎯ" />
+        <label language="ckb" value="زەوی" />
+        <label language="cu" value="Ꙁємлꙗ" />
+        <label language="cv" value="Çĕр" />
+        <label language="dv" value="ބިން" />
+        <label language="el" value="Γη" />
+        <label language="fa" value="زمین" />
+        <label language="gan" value="地球" />
+        <label language="gu" value="પૃથ્વી" />
+        <label language="he" value="כדור הארץ" />
+        <label language="hy" value="Երկիր" />
+        <label language="iu" value="ᓄᓇ" />
+        <label language="ka" value="დედამიწა" />
+        <label language="kk" value="Жер" />
+        <label language="km" value="ផែនដី" />
+        <label language="kn" value="ಭೂಮಿ" />
+        <label language="ko" value="지구" />
+        <label language="koi" value="Мушар" />
+        <label language="krc" value="Джер" />
+        <label language="kv" value="Му" />
+        <label language="ky" value="Жер" />
+        <label language="lez" value="Чил" />
+        <label language="lo" value="ໂລກ" />
+        <label language="mdf" value="Мода" />
+        <label language="mhr" value="Мланде" />
+        <label language="mk" value="Земја" />
+        <label language="ml" value="ഭൂമി" />
+        <label language="mn" value="Дэлхий" />
+        <label language="mr" value="पृथ्वी" />
+        <label language="my" value="ကမ႓ာျဂိဳဟ္" />
+        <label language="myv" value="Мода" />
+        <label language="mzn" value="زمین" />
+        <label language="ne" value="पृथ्वी" />
+        <label language="new" value="पृथ्वी" />
+        <label language="or" value="ପୃଥିବୀ" />
+        <label language="os" value="Зæхх" />
+        <label language="pa" value="ਧਰਤੀ" />
+        <label language="pnb" value="زمین" />
+        <label language="ps" value="ځمکه" />
+        <label language="rue" value="Земля" />
+        <label language="sa" value="पृथ्वी" />
+        <label language="sah" value="Сир" />
+        <label language="si" value="මහ පොළොව" />
+        <label language="so" value="Aduunka" />
+        <label language="sr" value="Земља" />
+        <label language="ta" value="புவி" />
+        <label language="te" value="భూమి" />
+        <label language="tg" value="Замин" />
+        <label language="th" value="โลก" />
+        <label language="tt" value="Җир" />
+        <label language="ug" value="يەر شارى" />
+        <label language="ur" value="زمین" />
+        <label language="wuu" value="地球" />
+        <label language="xal" value="Делкә һариг" />
+        <label language="xmf" value="დიხაუჩა" />
+        <label language="yi" value="ערד-פלאנעט" />
+        <label language="en-ca" value="Earth" />
+        <label language="de-ch" value="Erde" />
+        <label language="pt-br" value="Terra" />
+        <label language="yue" value="地球" />
+        <label language="zh-cn" value="地球" />
+        <label language="zh-hans" value="地球" />
+        <label language="zh-sg" value="地球" />
+        <label language="zh-my" value="地球" />
+        <label language="zh-hk" value="地球" />
+        <label language="zh-tw" value="地球" />
+        <label language="zh-mo" value="地球" />
+        <label language="gsw" value="Erde" />
+        <label language="pcd" value="Tière" />
+        <label language="min" value="Bumi" />
+        <label language="sn" value="Rinopasi" />
+        <label language="tyv" value="Чер" />
+        <label language="tn" value="A" />
+        <label language="bjn" value="Bumi" />
+        <label language="sr-ec" value="Земља" />
+        <label language="sr-el" value="Zemlja" />
+        <label language="ba" value="Ер" />
+        <label language="bxr" value="Дэлхэй" />
+        <label language="ce" value="Дуьне" />
+        <label language="stq" value="Äide" />
+        <label language="pag" value="Earth" />
+        <label language="got" value="Earth" />
+        <label language="crh-latn" value="Dünya" />
+        <label language="sgs" value="Žemė" />
+        <label language="nan" value="Tē-kiû" />
+        <label language="lzh" value="地球" />
+        <label language="vro" value="Maa" />
+        <label language="hi" value="पृथ्वी" />
+        <label language="ie" value="Terra" />
+        <label language="tk" value="Ýer" />
+        <label language="ak" value="Ewiase" />
+        <label language="brh" value="dagaar" />
+        <label language="rup" value="Locu" />
+        <label language="zu" value="Umhlaba" />
+        <label language="na" value="Eb" />
+        <label language="lzz" value="Kiana" />
+        <label language="mai" value="पृथ्वी" />
+        <label language="kaa" value="Jer" />
+        <label language="av" value="Ракь" />
+        <label language="mrj" value="Мӱлӓндӹ" />
+        <label language="sd" value="زمين" />
+        <label language="no" value="Jorden" />
+        <label language="lrc" value="جأهوٙن" />
+        <label language="tet" value="Rai" />
+        <label language="azb" value="یئر" />
+        <label language="bho" value="पृथ्वी" />
+        <label language="kab" value="Tagnit" />
+        <label language="arq" value="أرض" />
+        <label language="ts" value="Misava" />
+      </labels>
+      <descriptions>
+        <description language="en" value="third planet closest to the Sun in the Solar System" />
+        <description language="fr" value="troisième planète du Système solaire" />
+        <description language="it" value="luogo primigenio degli esseri umani e terzo pianeta del sistema solare" />
+        <description language="pl" value="trzecia planeta od Słońca" />
+        <description language="ru" value="третья от Солнца планета Солнечной системы" />
+        <description language="de" value="dritter Planet unseres Sonnensystems" />
+        <description language="es" value="tercer planeta más cercano al Sol en el sistema solar" />
+        <description language="nb" value="tredje planeten i solsystemet" />
+        <description language="eo" value="tria planedo de la sunsistemo kie loĝas la homaro" />
+        <description language="zh-hant" value="距離太陽第三近的行星" />
+        <description language="ilo" value="maikatlo a planeta manipud ti Init iti Sistema a Solar" />
+        <description language="nl" value="derde planeet in ons zonnestelsel, planeet waar menselijk leven mogelijk is" />
+        <description language="ko" value="태양계의 셋째 행성" />
+        <description language="ca" value="tercer planeta del sistema solar" />
+        <description language="zh-hans" value="距离太阳第三近的行星" />
+        <description language="zh-cn" value="距离太阳第三近的行星" />
+        <description language="zh-sg" value="距离太阳第三近的行星" />
+        <description language="zh-my" value="距离太阳第三近的行星" />
+        <description language="zh" value="距离太阳第三近的行星" />
+        <description language="zh-hk" value="距離太陽第三近的行星" />
+        <description language="zh-tw" value="距離太陽第三近的行星" />
+        <description language="zh-mo" value="距離太陽第三近的行星" />
+        <description language="ja" value="太陽系第三惑星" />
+        <description language="fi" value="aurinkokunnan kolmas planeetta Auringosta lukien" />
+        <description language="en-ca" value="third planet in the Solar System" />
+        <description language="sv" value="tredje planeten från Solen i Solsystemet" />
+        <description language="uk" value="третя планета Сонячної системи" />
+        <description language="el" value="τρίτος κατά σειρά κοντινότερος στον Ήλιο πλανήτης του Ηλιακού Συστήματος" />
+        <description language="pt-br" value="terceiro planeta mais próximo do Sol" />
+        <description language="ta" value="சூரியனிலிருந்து மூன்றாவதாக உள்ள கோள். அண்டத்தில் உயிர்கள் இருப்பதாக அறியப்படும் ஒரே இடம்" />
+        <description language="nn" value="tredje planeten frå sola; einaste kjende planeten med liv" />
+        <description language="pt" value="o terceiro planeta do Sistema Solar" />
+        <description language="id" value="planet ketiga pada Tata Surya" />
+        <description language="min" value="planet ka-3 pado Tata Surya" />
+        <description language="ro" value="a treia planetă din sistemul solar" />
+        <description language="da" value="tredje planet i Solsystemet" />
+        <description language="he" value="כוכב הלכת השלישי מהשמש" />
+        <description language="en-gb" value="third planet from the Sun in the Solar System" />
+        <description language="fa" value="سومین سیاره در منظومه شمسی" />
+        <description language="cs" value="třetí planeta ve Sluneční soustavě" />
+        <description language="gu" value="સૂર્યમાળામાં આવેલ ત્રીજો ગ્રહ" />
+        <description language="eu" value="Eguzki Sistemako hirugarren planeta" />
+        <description language="oc" value="planeta del Sistèma solar" />
+        <description language="sr" value="трећа планета у Сунчевом систему" />
+        <description language="sr-ec" value="трећа планета у Сунчевом систему" />
+        <description language="sr-el" value="treća planeta u Sunčevom sistemu" />
+        <description language="te" value="సౌర మండలంలో మూడవ గ్రహం" />
+        <description language="sk" value="tretia planéta Slnečnej sústavy" />
+        <description language="si" value="සූර්‍යග්‍රහ මණ්ඩලයේ තෙවැනි ග්‍රහයා වන අප ජීවත් වන ලෝකය" />
+        <description language="br" value="trede planedenn koskoriad an Heol" />
+        <description language="lb" value="Drëtte Planéit vum Sonnesystem" />
+        <description language="hu" value="a naprendszer harmadik bolygója" />
+        <description language="ar" value="الكوكب الثالث في المجموعة الشمسية" />
+        <description language="vi" value="hành tinh thứ ba trong Hệ Mặt Trời tính từ Mặt Trời" />
+        <description language="jv" value="planet katelu saka srengéngé ing Tata Surya" />
+        <description language="hi" value="सौर मंडल मे सूर्य से तीसरे नंबर का ग्रह" />
+        <description language="mk" value="третата планета од сонцето во Сончевиот систем" />
+        <description language="scn" value="terzu pianeta dû Sistema Sulari, unni nascìu l&#039;Omu" />
+        <description language="gl" value="Terceiro planeta no sistema solar" />
+        <description language="arz" value="الدنيا" />
+        <description language="tr" value="Güneş Sistemi&#039;nde Güneş&#039;e en yakın üçüncü gezegen" />
+        <description language="tt" value="Кояш системасының Кояштан өченче планетасы" />
+        <description language="ka" value="მზის სისტემის მესამე პლანეტა" />
+        <description language="ang" value="se þridda dweoligenda tungol fram þǣre Sunnan" />
+        <description language="ur" value="نظامِ شمسی میں سورج کا تیسرا نزدیک ترین سیارہ" />
+        <description language="lv" value="trešā planēta uz saules sistēmas" />
+        <description language="sco" value="third planet closest tae the Sun in the Solar Seestem" />
+        <description language="be" value="планета" />
+        <description language="bn" value="সৌরমণ্ডলের সূর্য থেকে তৃতীয় গ্রহ" />
+        <description language="th" value="ดาวเคราะห์ในระบบสุริยะ โดยอยู่ห่างจากดวงอาทิตย์เป็นลำดับที่สาม" />
+        <description language="my" value="ေနအဖြဲ႕အစည္းတြင္ ေနမွ သုံးခုေျမာက္ ျဂိဳဟ္" />
+        <description language="hr" value="treći unutarnji planet Sunčeva sustava" />
+        <description language="ne" value="सौर्यमण्डलमा रहेको एक ग्रह" />
+        <description language="sl" value="tretji planet od Sonca" />
+        <description language="af" value="derde planeet in ons sonnestelsel, planeet waar menslike lewe ontwikkel het" />
+        <description language="cy" value="y drydedd blaned o&#039;r Haul yng Nghysawd yr Haul" />
+        <description language="bs" value="treća planeta po udaljenosti od Sunca u Sunčevom sistemu" />
+        <description language="lt" value="trečia planeta nuo saulės saulės sitemoje" />
+        <description language="ml" value="സൗരയൂഥത്തിൽ സുര്യനിൽ നിന്ന് മൂന്നാമത്" />
+        <description language="bg" value="третата най-близка планета до Слънцето в Слънчевата Система" />
+        <description language="arq" value="الكوكب التالت القريب من الشمس فل النيضام الشمسي" />
+      </descriptions>
+      <aliases>
+        <language id="it">
+          <alias language="it" value="Globo terracqueo" />
+          <alias language="it" value="Sol-3" />
+          <alias language="it" value="Gaia" />
+          <alias language="it" value="Globo terrestre" />
+          <alias language="it" value="Pianeta Terra" />
+          <alias language="it" value="♁" />
+          <alias language="it" value="⊕" />
+          <alias language="it" value="Pianeta azzurro" />
+          <alias language="it" value="mondo" />
+        </language>
+        <language id="fr">
+          <alias language="fr" value="Planète bleue" />
+          <alias language="fr" value="⊕" />
+          <alias language="fr" value="Monde" />
+          <alias language="fr" value="globe" />
+          <alias language="fr" value="Planète Terre" />
+          <alias language="fr" value="Gaïa" />
+        </language>
+        <language id="en-gb">
+          <alias language="en-gb" value="The world" />
+        </language>
+        <language id="pl">
+          <alias language="pl" value="Błękitna planeta" />
+          <alias language="pl" value="Świat" />
+        </language>
+        <language id="nl">
+          <alias language="nl" value="wereld" />
+          <alias language="nl" value="terra" />
+          <alias language="nl" value="planeet" />
+        </language>
+        <language id="ca">
+          <alias language="ca" value="Sol 3" />
+          <alias language="ca" value="planeta Terra" />
+        </language>
+        <language id="de">
+          <alias language="de" value="Blauer Planet" />
+          <alias language="de" value="Erdkörper" />
+          <alias language="de" value="Sol III" />
+          <alias language="de" value="♁" />
+          <alias language="de" value="⊕" />
+          <alias language="de" value="Sol 3" />
+          <alias language="de" value="Welt" />
+        </language>
+        <language id="nb">
+          <alias language="nb" value="Tellus" />
+          <alias language="nb" value="⊕" />
+          <alias language="nb" value="Terra" />
+          <alias language="nb" value="Gaia" />
+          <alias language="nb" value="jorden" />
+        </language>
+        <language id="sv">
+          <alias language="sv" value="Tellus" />
+          <alias language="sv" value="Sol 3" />
+          <alias language="sv" value="Terra" />
+          <alias language="sv" value="Världen" />
+        </language>
+        <language id="hi">
+          <alias language="hi" value="भूमि" />
+          <alias language="hi" value="धरती" />
+          <alias language="hi" value="ज़मीन" />
+        </language>
+        <language id="fi">
+          <alias language="fi" value="maapallo" />
+          <alias language="fi" value="Tellus" />
+        </language>
+        <language id="he">
+          <alias language="he" value="העולם" />
+        </language>
+        <language id="el">
+          <alias language="el" value="Κόσμος" />
+          <alias language="el" value="Πλανήτης Γη" />
+          <alias language="el" value="Γαία" />
+          <alias language="el" value="Υδρόγειος" />
+          <alias language="el" value="Μπλε πλανήτης" />
+        </language>
+        <language id="ja">
+          <alias language="ja" value="輿地" />
+        </language>
+        <language id="fa">
+          <alias language="fa" value="کره زمین" />
+        </language>
+        <language id="ta">
+          <alias language="ta" value="உலகம்" />
+          <alias language="ta" value="நிலவுலகு" />
+          <alias language="ta" value="பூமி" />
+        </language>
+        <language id="pt">
+          <alias language="pt" value="planeta Terra" />
+          <alias language="pt" value="nosso mundo" />
+          <alias language="pt" value="nosso planeta" />
+          <alias language="pt" value="mundo" />
+          <alias language="pt" value="planeta azul" />
+          <alias language="pt" value="o globo" />
+          <alias language="pt" value="globo" />
+          <alias language="pt" value="globo terrestre" />
+        </language>
+        <language id="uk">
+          <alias language="uk" value="планета Земля" />
+        </language>
+        <language id="da">
+          <alias language="da" value="Jordkloden" />
+          <alias language="da" value="Tellus" />
+          <alias language="da" value="Terra" />
+          <alias language="da" value="⊕" />
+          <alias language="da" value="Kloden" />
+        </language>
+        <language id="zh">
+          <alias language="zh" value="地毬" />
+        </language>
+        <language id="vi">
+          <alias language="vi" value="Quả Đất" />
+          <alias language="vi" value="Địa cầu" />
+          <alias language="vi" value="Đất mẹ" />
+          <alias language="vi" value="Thế giới" />
+          <alias language="vi" value="Hoàn cầu" />
+          <alias language="vi" value="Hòn bi xanh" />
+        </language>
+        <language id="ro">
+          <alias language="ro" value="Planeta Pământ" />
+          <alias language="ro" value="Terra" />
+          <alias language="ro" value="Pământul" />
+          <alias language="ro" value="Pamant" />
+          <alias language="ro" value="Planeta Albastră" />
+        </language>
+        <language id="cs">
+          <alias language="cs" value="planeta Země" />
+          <alias language="cs" value="modrá planeta" />
+          <alias language="cs" value="třetí planeta" />
+          <alias language="cs" value="Gaia" />
+          <alias language="cs" value="Terra" />
+        </language>
+        <language id="scn">
+          <alias language="scn" value="pianeta Terra" />
+          <alias language="scn" value="munnu" />
+          <alias language="scn" value="Suli III" />
+        </language>
+        <language id="gl">
+          <alias language="gl" value="planeta Terra" />
+          <alias language="gl" value="planeta azul" />
+        </language>
+        <language id="sk">
+          <alias language="sk" value="modrá planéta" />
+          <alias language="sk" value="planéta Zem" />
+        </language>
+        <language id="ar">
+          <alias language="ar" value="كوكب الأرض" />
+          <alias language="ar" value="الأرض" />
+          <alias language="ar" value="العالم" />
+          <alias language="ar" value="الكوكب الأزرق" />
+        </language>
+        <language id="ko">
+          <alias language="ko" value="제3행성" />
+          <alias language="ko" value="푸른 행성" />
+          <alias language="ko" value="세계" />
+          <alias language="ko" value="푸른 구슬" />
+        </language>
+        <language id="es">
+          <alias language="es" value="planeta Tierra" />
+          <alias language="es" value="mundo" />
+          <alias language="es" value="el globo" />
+          <alias language="es" value="Terra" />
+          <alias language="es" value="Gaia" />
+          <alias language="es" value="planeta azul" />
+          <alias language="es" value="La Tierra" />
+          <alias language="es" value="Madre Tierra" />
+          <alias language="es" value="tercer planeta" />
+        </language>
+        <language id="si">
+          <alias language="si" value="පෘතුවිය" />
+        </language>
+        <language id="ru">
+          <alias language="ru" value="Мир" />
+        </language>
+        <language id="bn">
+          <alias language="bn" value="ভূমণ্ডল" />
+          <alias language="bn" value="ভূ" />
+          <alias language="bn" value="ধরা" />
+          <alias language="bn" value="ধরণী" />
+          <alias language="bn" value="জগত্" />
+          <alias language="bn" value="পৃথ্বী" />
+          <alias language="bn" value="ধরিত্রী" />
+          <alias language="bn" value="অবনী" />
+          <alias language="bn" value="মেদিনী" />
+          <alias language="bn" value="বসুধা" />
+          <alias language="bn" value="বসুন্ধরা" />
+          <alias language="bn" value="ভূবন" />
+          <alias language="bn" value="বিশ্ব" />
+        </language>
+        <language id="en">
+          <alias language="en" value="Gaia" />
+          <alias language="en" value="⊕" />
+          <alias language="en" value="the world" />
+          <alias language="en" value="Earth" />
+          <alias language="en" value="Blue Planet" />
+        </language>
+        <language id="my">
+          <alias language="my" value="ကမ႓ာ" />
+          <alias language="my" value="ကမ႓ာေျမႀကီး" />
+          <alias language="my" value="ကမ႓ာျဂဳိဟ္" />
+          <alias language="my" value="ၿဂိဳဟ္ျပာ" />
+        </language>
+        <language id="sl">
+          <alias language="sl" value="Modri planet" />
+          <alias language="sl" value="♁" />
+          <alias language="sl" value="⊕" />
+          <alias language="sl" value="Svet" />
+        </language>
+        <language id="zh-hant">
+          <alias language="zh-hant" value="世界" />
+        </language>
+        <language id="af">
+          <alias language="af" value="wêreld" />
+        </language>
+        <language id="cy">
+          <alias language="cy" value="daear" />
+          <alias language="cy" value="y byd" />
+        </language>
+        <language id="hu">
+          <alias language="hu" value="A kék bolygó" />
+        </language>
+        <language id="id">
+          <alias language="id" value="Planet Bumi" />
+          <alias language="id" value="Dunia" />
+          <alias language="id" value="Planet Biru" />
+        </language>
+        <language id="tr">
+          <alias language="tr" value="Dünya" />
+          <alias language="tr" value="Yerküre" />
+          <alias language="tr" value="Küre-i Ârz" />
+        </language>
+        <language id="lt">
+          <alias language="lt" value="Pasaulis" />
+        </language>
+      </aliases>
+      <claims>
+        <property id="P1589">
+          <claim type="statement" id="Q2$9bbb058a-48ab-0a81-e88e-82bba6b2abe5" rank="normal">
+            <mainsnak snaktype="value" property="P1589" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="459173" />
+              </datavalue>
+            </mainsnak>
+            <references>
+              <reference hash="2f695d33ffd51a2512f7061e41b2a74c1dce6c26">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://adsabs.harvard.edu/abs/1988Icar...74..472K" type="string" />
+                    </snak>
+                  </property>
+                  <property id="P813">
+                    <snak snaktype="value" property="P813" datatype="time">
+                      <datavalue type="time">
+                        <value time="+2015-06-07T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                  <property>P813</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P361">
+          <claim type="statement" id="Q2$7978a3b5-4a13-bad9-0993-f54254d81183" rank="normal">
+            <mainsnak snaktype="value" property="P361" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="544" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1419">
+          <claim type="statement" id="Q2$e8ba1188-4aec-9e37-a75e-f79466c1913e" rank="normal">
+            <mainsnak snaktype="value" property="P1419" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="3241540" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$0145d74d-4ef8-6f2e-2537-79d7d5d7c96f" rank="normal">
+            <mainsnak snaktype="value" property="P1419" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="185969" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P527">
+          <claim type="statement" id="Q2$4d144282-45c8-29f2-8944-8a909b2e1602" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="715269" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$3571a718-406f-46d5-eba8-f6672fbb378f" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="27527" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$b65176c6-4b30-285a-75d9-2fd9f057903a" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="15316" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$ad98129a-4f2c-8750-b8ff-f7599b4d7824" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="51" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$15946b71-412d-53aa-deaa-9bbdabb297de" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="828" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$d3e64517-4c9c-1d8f-1473-acd177e4d993" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="538" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$456f4f7f-440d-e080-e047-3dc276ece79b" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="193927" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$b5ad93f1-401c-7946-f29a-6830c0a9b5cd" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="101949" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$b1c71dd0-4c30-2fa5-9c82-e8e1d2ff5e80" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="3230" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$edc33a4e-47ff-b29d-8b6d-777733a249a4" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="6500960" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$cc7030b0-480a-225e-c15f-cf19531ec3dd" rank="normal">
+            <mainsnak snaktype="value" property="P527" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="3960" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P522">
+          <claim type="statement" id="Q2$4dc73b98-4789-3365-d7ac-21aa14c84f96" rank="normal">
+            <mainsnak snaktype="value" property="P522" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="1348808" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1036">
+          <claim type="statement" id="Q2$ffa6547f-4285-b2de-44bd-3342e07cba4f" rank="normal">
+            <mainsnak snaktype="value" property="P1036" datatype="string">
+              <datavalue value="550" type="string" />
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$5a67f2a3-4395-18e8-5f8b-0db26f609e5b" rank="normal">
+            <mainsnak snaktype="value" property="P1036" datatype="string">
+              <datavalue value="910.02" type="string" />
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$facaa6d1-4f06-1427-8791-4e6ae3ee7f0a" rank="normal">
+            <mainsnak snaktype="value" property="P1036" datatype="string">
+              <datavalue value="525" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1245">
+          <claim type="statement" id="Q2$4b275cf3-4b20-7f91-be94-65a57ba88eff" rank="normal">
+            <mainsnak snaktype="value" property="P1245" datatype="external-id">
+              <datavalue value="7401" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1102">
+          <claim type="statement" id="Q2$5c3e8df9-4615-8c69-df4d-ee55503349cf" rank="normal">
+            <mainsnak snaktype="value" property="P1102" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+0.0033528" unit="1" upperBound="+0.0033529" lowerBound="+0.0033527" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1096">
+          <claim type="statement" id="Q2$e7589cdd-4cad-ffbb-014b-ee86a1c76bba" rank="normal">
+            <mainsnak snaktype="value" property="P1096" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+0.016710219" unit="1" upperBound="+0.016710220" lowerBound="+0.016710218" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$6D14D860-319D-4961-B9CF-E4A4F8D03838" rank="normal">
+            <mainsnak snaktype="value" property="P1096" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+0.01671123" unit="1" upperBound="+0.01671123" lowerBound="+0.01671123" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P227">
+          <claim type="statement" id="q2$B43AE569-AB2C-4E4F-BA90-DC56CD6DD24B" rank="normal">
+            <mainsnak snaktype="value" property="P227" datatype="external-id">
+              <datavalue value="4015139-6" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="66c317d05e08f2918310ccb68b89908b04c8e73e">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="36578" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P367">
+          <claim type="statement" id="q2$6AA0B3FA-5A4C-4C2C-BF45-86542CF7285B" rank="normal">
+            <mainsnak snaktype="value" property="P367" datatype="commonsMedia">
+              <datavalue value="Earth symbol.svg" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="7eb64cf9621d34c54fd4bd040ed4b61a88c4a1a0">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="328" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P398">
+          <claim type="statement" id="q2$A14029DF-851B-43DC-A616-FB4279F602D5" rank="normal">
+            <mainsnak snaktype="value" property="P398" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="405" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P397">
+          <claim type="statement" id="q2$03594614-958A-45FB-8979-BA175F8F6574" rank="normal">
+            <mainsnak snaktype="value" property="P397" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="525" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P373">
+          <claim type="statement" id="q2$92E1BBEA-5747-4AE0-B478-F2EA89E26537" rank="normal">
+            <mainsnak snaktype="value" property="P373" datatype="string">
+              <datavalue value="Earth" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="004ec6fbee857649acdbdbad4f97b2c8571df97b">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="48183" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P18">
+          <claim type="statement" id="Q2$CF2134ED-B270-4D8F-8BFC-3A7B87699E65" rank="normal">
+            <mainsnak snaktype="value" property="P18" datatype="commonsMedia">
+              <datavalue value="The Earth seen from Apollo 17.jpg" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P508">
+          <claim type="statement" id="q2$02C18380-2488-4169-851A-70D6345C0593" rank="normal">
+            <mainsnak snaktype="value" property="P508" datatype="external-id">
+              <datavalue value="5175" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="33ef5efac8ec9d2de05f19b852ff1698d9036c26">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="460907" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P610">
+          <claim type="statement" id="q2$b865c818-4572-5613-28e8-54ab1c07d7af" rank="normal">
+            <mainsnak snaktype="value" property="P610" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="513" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P910">
+          <claim type="statement" id="Q2$1E908D0E-367E-4686-AB0F-B671462E784F" rank="normal">
+            <mainsnak snaktype="value" property="P910" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="1458521" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P349">
+          <claim type="statement" id="Q2$3B8E9359-BB85-447D-B0DE-A880A7BEAB92" rank="normal">
+            <mainsnak snaktype="value" property="P349" datatype="external-id">
+              <datavalue value="00573040" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P935">
+          <claim type="statement" id="Q2$524B7E80-CFB7-4990-B8F2-D144CD30034C" rank="normal">
+            <mainsnak snaktype="value" property="P935" datatype="string">
+              <datavalue value="Earth" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="2f183743080f8e1970847d13a04fde9a796f1476">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="191168" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P706">
+          <claim type="statement" id="Q2$b045b7af-4938-e789-d7f5-794eaa21aa52" rank="normal">
+            <mainsnak snaktype="value" property="P706" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="215913" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P642">
+                <qualifiers snaktype="value" property="P642" hash="ec59dc92f25f148ac9265a7375d01a725b57a907" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="544" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P642</property>
+            </qualifiers-order>
+          </claim>
+        </property>
+        <property id="P646">
+          <claim type="statement" id="Q2$F909BD1C-D34D-423F-9ED2-3493663321AF" rank="normal">
+            <mainsnak snaktype="value" property="P646" datatype="external-id">
+              <datavalue value="/m/02j71" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="af38848ab5d9d9325cffd93a5ec656cc6ca889ed">
+                <snaks>
+                  <property id="P248">
+                    <snak snaktype="value" property="P248" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="15241312" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                  <property id="P577">
+                    <snak snaktype="value" property="P577" datatype="time">
+                      <datavalue type="time">
+                        <value time="+2013-10-28T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P248</property>
+                  <property>P577</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P576">
+          <claim type="statement" id="Q2$6657d0b5-4aa4-b465-12ed-d1b8a04ef658" rank="normal">
+            <mainsnak snaktype="somevalue" property="P576" datatype="time" />
+            <qualifiers>
+              <property id="P805">
+                <qualifiers snaktype="value" property="P805" hash="bb882ac8a0e36c3b640f4733b75a69177b0550f8" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="2003654" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P805</property>
+            </qualifiers-order>
+          </claim>
+        </property>
+        <property id="P31">
+          <claim type="statement" id="Q2$50fad68d-4f91-f878-6f29-e655af54690e" rank="normal">
+            <mainsnak snaktype="value" property="P31" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="3504248" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$c4cfed35-42dc-7306-7b8b-af6f48f31c35" rank="normal">
+            <mainsnak snaktype="value" property="P31" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="128207" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1082">
+          <claim type="statement" id="Q2$5f85cccd-49a6-e37c-6ad7-9f20d8b81e46" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+7000000" unit="1" upperBound="+8000000" lowerBound="+6000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="79740740fb6ba3ffba7ac67c7d31a2ba17f1ea63" datatype="time">
+                  <datavalue type="time">
+                    <value time="-4000-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="7" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="d47afc0ca3ebe8fe1fa51b223fdc4a692d7ba2f2">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.census.gov/ipc/www/worldhis.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$7c05b6ca-4536-36c8-9847-199d4c310bdc" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+50000000" unit="1" upperBound="+51000000" lowerBound="+49000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="345d68659be3982aa75006ca14ba483d8e3a9603" datatype="time">
+                  <datavalue type="time">
+                    <value time="-1000-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="8" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="d47afc0ca3ebe8fe1fa51b223fdc4a692d7ba2f2">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.census.gov/ipc/www/worldhis.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$ecbec999-4e84-48ea-be87-41e36baeb459" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+100000000" unit="1" upperBound="+110000000" lowerBound="+90000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="0a357d66f61c19029eaf56b0bb458f77e9de8757" datatype="time">
+                  <datavalue type="time">
+                    <value time="-0500-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="8" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="d47afc0ca3ebe8fe1fa51b223fdc4a692d7ba2f2">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.census.gov/ipc/www/worldhis.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$74db9720-4e8e-ecd6-1eb1-e7cfe7d11187" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+285000000" unit="1" upperBound="+400000000" lowerBound="+170000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="7438c23f43b45d78fc3f0e5dd8841aff1fb2400c" datatype="time">
+                  <datavalue type="time">
+                    <value time="+0001-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="d47afc0ca3ebe8fe1fa51b223fdc4a692d7ba2f2">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.census.gov/ipc/www/worldhis.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$3ba6d8a9-4f12-a90e-be9c-38de54bfec5b" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+400000000" unit="1" upperBound="+500000000" lowerBound="+300000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="cf60d41b17fe624f2febc65a06fae016d9fe0b2d" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1000-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="7" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$fb5e3ebc-47fe-0a80-b078-b2cd2c7f3afc" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+791000000" unit="1" upperBound="+792000000" lowerBound="+790000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="5448f548dc18896bae66274cfbbace7043f57b05" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1750-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$7516f6df-4408-5559-a821-84bace07bee6" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1000000000" unit="1" upperBound="+1001000000" lowerBound="+999000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="1d6331ea3d6d53a589b1206949a1e89fcf06d4cc" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1810-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="8" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$d7286e03-4d5a-f727-b7ad-91aaa162cb01" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1262000000" unit="1" upperBound="+1263000000" lowerBound="+1261000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="26151057bea3ae220df6ff389567167b57b9dd64" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1850-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$a4565287-4f3e-894e-5e1b-8ddb1e655243" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1650000000" unit="1" upperBound="+1651000000" lowerBound="+1649000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="d9f183c30a6bd548a9b151a480b4c93329445d69" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1900-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$98cc8189-448c-b242-7e22-89f0b8289c4b" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+2000000000" unit="1" upperBound="+2001000000" lowerBound="+1999000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="5a547b767d03696007895d995ad8171863f3c123" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1927-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$a45d9333-452e-b292-9501-08601097424a" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+2518629000" unit="1" upperBound="+2518629000" lowerBound="+2518629000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="a9b861aded8caecfa6e5a15ced81876e67469a83" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1950-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$3fa606f4-4b43-1f04-3599-35b235b1207a" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+2755823000" unit="1" upperBound="+2755823000" lowerBound="+2755823000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="dc3a039bc50b8c47c050720e045c59d7920243c8" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1955-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$3ab4232c-4a91-7d10-581e-2a6d65786938" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+3021475000" unit="1" upperBound="+3021475000" lowerBound="+3021475000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="41e8be07e72fe74aff6afd1823ad16829aa4c3ec" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1960-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$9a40deba-482f-2eed-35e7-e19e5dad1420" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+3334874000" unit="1" upperBound="+3334874000" lowerBound="+3334874000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="a69077fdda55049587b1e2dcc6dd3d4d7cb54edf" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1965-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$77577842-4f1f-0ecb-80d6-d45eb7e5e8f1" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+3692492000" unit="1" upperBound="+3692492000" lowerBound="+3692492000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="01fd4e193d0f55b7ed297b217266be5de5461a9a" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1970-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$17250e6f-471a-3e0c-fb0b-75c2e62b1c6c" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+4000000000" unit="1" upperBound="+4000000000" lowerBound="+4000000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="4608065a0b128639282826fa544ef1d4cda29219" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1974-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="e0db0f51f71a023e9736a5ff215b6835f6f35e66">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.un.org/esa/population/publications/sixbillion/sixbilpart1.pdf" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$7b2a6c0f-46c1-7c58-55be-060daa9be93e" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+4068109000" unit="1" upperBound="+4068109000" lowerBound="+4068109000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="fa8e75360992eafb0354d8621b1e26e1c74075d4" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1975-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$a3137978-421b-0d12-35d5-850d82207b96" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+4434682000" unit="1" upperBound="+4434682000" lowerBound="+4434682000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="f6b7d289b6f5d0aecc93b229dfcfcbc7fe2f6003" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1980-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$1e33eef1-4cca-fd34-6172-cf3692f73dfb" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+4830979000" unit="1" upperBound="+4830979000" lowerBound="+4830979000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="bc0e9869687beb98dbfba58581cf85daa2a144d4" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1985-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$0f31c586-47e4-02c5-7ef3-3a4cff6908f1" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+5000000000" unit="1" upperBound="+5000000000" lowerBound="+5000000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="f88024de07c2986d9488cca7e3968f46eedac96b" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1987-07-07T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$06ee87fc-4134-6933-0471-0c1f2fd38234" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+5263593000" unit="1" upperBound="+5263593000" lowerBound="+5263593000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="144aa6179dff57a6e20d4da7bc199ae1577a6f78" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1990-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$4223e0b6-4d2e-cd0a-196f-8d7901dc2b05" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+5674380000" unit="1" upperBound="+5674380000" lowerBound="+5674380000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="fe7cc143b8ea29162d4866ce09ed6d790c3ec10e" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1995-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$cae68193-496a-abf6-a75e-6365bac000e2" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+6000000000" unit="1" upperBound="+6000000000" lowerBound="+6000000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="b20b38c884ef9599c1cb6c55aef95a07b47869af" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1999-10-12T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="fe79ab480d3ccf241090639974e53da34a582115">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://polit.ru/news/1999/10/12/538144/" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$f20509fa-48f0-23aa-f384-9f7093befc8c" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+6070581000" unit="1" upperBound="+6070581000" lowerBound="+6070581000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="ac5c270bf0113b5785cf1a0dcd7c7a27c95dad7f" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2000-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$6d5df9db-43aa-2136-7b3e-4a24fe889f66" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+6343628000" unit="1" upperBound="+6343628000" lowerBound="+6343628000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="c0d59b2afb736f83a0e2c24e687ffb4d1ab645d4" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2005-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$71057f36-4ad6-6d15-1cee-0ba0cf8507aa" rank="deprecated">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+6800000000" unit="1" upperBound="+6810000000" lowerBound="+6790000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="91f3928694bff371d2a2d36b5da2f61da4430363" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2010-01-01T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$c0df2d1f-4e78-f05a-48a7-1b4b38ad7c29" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+7000000000" unit="1" upperBound="+7001000000" lowerBound="+6999000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="c3c57639050087a8adb59f73f5d6b024b754ba41" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2011-10-31T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="2861bf7c224e0ba2041bec8b8938ddebf05f2d4f">
+                <snaks>
+                  <property id="P248">
+                    <snak snaktype="value" property="P248" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="17518846" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P248</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$0adc8e3f-47f8-d571-c72c-4970dbab74ff" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+7000000000" unit="1" upperBound="+7000000000" lowerBound="+7000000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="2532f31a9af607cbbcbc3327f8c8a959e603abf5" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2012-02-20T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="17d6b87ea7974e80fbae78940aa736875dbedf50">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://ru.worldstat.info/blog/skolko-lyudej-zhivet-na-zemle/" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$6d3a613f-4d81-dddd-ba7c-6c76d5d09adf" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+7202951000" unit="1" upperBound="+7202951000" lowerBound="+7202951000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="6bb693f1a6d374d92f521c6df054fdc7e2a93851" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2013-12-31T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="88a6d41f324ccc996b0d5c1b9fd5041787aa9fb7">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.weltbevoelkerung.de/aktuelles/details/show/detail/News/zum-jahresbeginn-7202951000-menschen-leben-auf-der-erde.html" type="string" />
+                    </snak>
+                  </property>
+                  <property id="P813">
+                    <snak snaktype="value" property="P813" datatype="time">
+                      <datavalue type="time">
+                        <value time="+2014-09-15T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                  <property id="P407">
+                    <snak snaktype="value" property="P407" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="188" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                  <property>P813</property>
+                  <property>P407</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$9965f58a-4290-970b-984c-57be47a59e7b" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+7359044782" unit="1" upperBound="+7359044782" lowerBound="+7359044782" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="9cc0a22c821a06a5e69d6aa3b789d453994aee6c" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2015-08-12T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="665530f14b40e73f03d9b17c081272a7e98f0c53">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.geohive.com/earth/population_now.aspx" type="string" />
+                    </snak>
+                  </property>
+                  <property id="P813">
+                    <snak snaktype="value" property="P813" datatype="time">
+                      <datavalue type="time">
+                        <value time="+2015-08-12T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                  <property id="P364">
+                    <snak snaktype="value" property="P364" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="1860" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                  <property>P813</property>
+                  <property>P364</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$9B40A8AA-E593-4A82-9B3D-C05A523F0B70" rank="normal">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1500000000" unit="1" upperBound="+1500000000" lowerBound="+1500000000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="40185f245b5e77653f7e72a2806c439ad4852b23" datatype="time">
+                  <datavalue type="time">
+                    <value time="+1893-00-00T00:00:00Z" timezone="0" before="0" after="0" precision="9" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$d0a1bcaa-4c67-5e75-cade-f9609f0fb70d" rank="preferred">
+            <mainsnak snaktype="value" property="P1082" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+7392793000" unit="1" upperBound="+7392794000" lowerBound="+7392792000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P585">
+                <qualifiers snaktype="value" property="P585" hash="7160bc563b7c6fe6036c658af2071b5a1c6993f1" datatype="time">
+                  <datavalue type="time">
+                    <value time="+2016-01-05T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P585</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="d342511c7af892302d4a27be63a120d071458f24">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://www.worldometers.info/world-population/" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P1566">
+          <claim type="statement" id="Q2$BDBB493E-004F-444D-91DF-F1B0641BE230" rank="normal">
+            <mainsnak snaktype="value" property="P1566" datatype="external-id">
+              <datavalue value="6295630" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="d6193e4d78598db1a6aaa453fface1553022f1f2">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="830106" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P1051">
+          <claim type="statement" id="Q2$8475DD7F-E269-4843-9D9E-F3CF7D5F8BB2" rank="normal">
+            <mainsnak snaktype="value" property="P1051" datatype="external-id">
+              <datavalue value="499" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P244">
+          <claim type="statement" id="Q2$43516A05-34FC-42A7-929E-4B8293F7D352" rank="normal">
+            <mainsnak snaktype="value" property="P244" datatype="external-id">
+              <datavalue value="sh85040427" type="string" />
+            </mainsnak>
+            <references>
+              <reference hash="004ec6fbee857649acdbdbad4f97b2c8571df97b">
+                <snaks>
+                  <property id="P143">
+                    <snak snaktype="value" property="P143" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="48183" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P143</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P571">
+          <claim type="statement" id="Q2$4f936340-43b6-f846-e26a-89d9cf88825c" rank="normal">
+            <mainsnak snaktype="value" property="P571" datatype="time">
+              <datavalue type="time">
+                <value time="-4540000000-00-00T00:00:00Z" timezone="0" before="0" after="0" precision="2" calendarmodel="http://www.wikidata.org/entity/Q1985786" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P459">
+                <qualifiers snaktype="value" property="P459" hash="50055748803f415be3830339622dc6f402e8faee" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="6508336" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+              <property id="P805">
+                <qualifiers snaktype="value" property="P805" hash="d0e4533cf0c0b19a179ed5d2d27208ccd6d51869" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="935310" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P459</property>
+              <property>P805</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="8e7d51e38606193465d2a1e9d41ba490e06682a6">
+                <snaks>
+                  <property id="P248">
+                    <snak snaktype="value" property="P248" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="15545344" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P248</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P2067">
+          <claim type="statement" id="Q2$9da5f657-47f9-2ba7-4fb5-80f2236dc279" rank="normal">
+            <mainsnak snaktype="value" property="P2067" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+5972.370" unit="http://www.wikidata.org/entity/Q613726" upperBound="+5972.380000" lowerBound="+5972.360000" />
+              </datavalue>
+            </mainsnak>
+            <references>
+              <reference hash="916aa5515891d88208398d98807032149cfef74f">
+                <snaks>
+                  <property id="P248">
+                    <snak snaktype="value" property="P248" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="2792544" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P248</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+          <claim type="statement" id="Q2$e676c90b-4d9d-84b8-1e3a-474ec8942e43" rank="normal">
+            <mainsnak snaktype="value" property="P2067" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+5972.3" unit="http://www.wikidata.org/entity/Q613726" upperBound="+5972.4" lowerBound="+5972.2" />
+              </datavalue>
+            </mainsnak>
+            <references>
+              <reference hash="6d2399bd4ca8547e18a1fe1e32dc0ae9f2c7142a">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P2120">
+          <claim type="statement" id="Q2$2d1a5e5d-4293-993c-e4e8-26aea28c9796" rank="normal">
+            <mainsnak snaktype="value" property="P2120" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+6378137" unit="http://www.wikidata.org/entity/Q11573" upperBound="+6378137" lowerBound="+6378137" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P518">
+                <qualifiers snaktype="value" property="P518" hash="50e7adbceba0a5b99bcf4930dc39adb13f18588b" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="23538" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+              <property id="P805">
+                <qualifiers snaktype="value" property="P805" hash="bf6287fd54bc3edd81caa8187b5d8e866398a7c4" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="1155470" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P518</property>
+              <property>P805</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$66aa9cb5-4f00-64d4-8d20-7f7d1c89dbf1" rank="normal">
+            <mainsnak snaktype="value" property="P2120" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+6371.0" unit="http://www.wikidata.org/entity/Q828224" upperBound="+6371.1" lowerBound="+6370.9" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P518">
+                <qualifiers snaktype="value" property="P518" hash="e11928ecc12a1e86accc14cee7f49eae538176fa" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="2796622" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+              <property id="P805">
+                <qualifiers snaktype="value" property="P805" hash="bf6287fd54bc3edd81caa8187b5d8e866398a7c4" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="1155470" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P518</property>
+              <property>P805</property>
+            </qualifiers-order>
+            <references>
+              <reference hash="6d2399bd4ca8547e18a1fe1e32dc0ae9f2c7142a">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P2184">
+          <claim type="statement" id="Q2$41fdba14-47eb-e343-1ba8-10b6f9d03bf8" rank="normal">
+            <mainsnak snaktype="value" property="P2184" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="200325" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P2163">
+          <claim type="statement" id="Q2$1b4434ab-4325-d8a0-82d7-f40c0be9f113" rank="normal">
+            <mainsnak snaktype="value" property="P2163" datatype="external-id">
+              <datavalue value="1860481" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P2234">
+          <claim type="statement" id="Q2$684286ec-46d6-6709-5691-acd8ea5fdfee" rank="normal">
+            <mainsnak snaktype="value" property="P2234" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1083210000000" unit="http://www.wikidata.org/entity/Q4243638" upperBound="+1083220000000" lowerBound="+1083200000000" />
+              </datavalue>
+            </mainsnak>
+            <references>
+              <reference hash="6d2399bd4ca8547e18a1fe1e32dc0ae9f2c7142a">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P2233">
+          <claim type="statement" id="Q2$a6c04236-4651-f8cf-9ec0-faf372164e7e" rank="normal">
+            <mainsnak snaktype="value" property="P2233" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1.0000" unit="http://www.wikidata.org/entity/Q1811" upperBound="+1.00000000" lowerBound="+1.00000000" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+          <claim type="statement" id="Q2$fe7e0e70-41a2-1771-ffbf-24840f14fca4" rank="normal">
+            <mainsnak snaktype="value" property="P2233" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+149598023" unit="http://www.wikidata.org/entity/Q828224" upperBound="+149598024" lowerBound="+149598022" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P2243">
+          <claim type="statement" id="Q2$8b1920f2-4eda-f89b-9e98-2cc435377a3c" rank="normal">
+            <mainsnak snaktype="value" property="P2243" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+151930000" unit="http://www.wikidata.org/entity/Q828224" upperBound="+151940000" lowerBound="+151920000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P2210">
+                <qualifiers snaktype="value" property="P2210" hash="46a3b06aee4f135db9558336d56da9e721066481" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="525" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P2210</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$049773a5-4d02-c76e-fe88-c54d1b1c8450" rank="normal">
+            <mainsnak snaktype="value" property="P2243" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+1.00000261" unit="http://www.wikidata.org/entity/Q1811" upperBound="+1.00000262" lowerBound="+1.00000260" />
+              </datavalue>
+            </mainsnak>
+            <references>
+              <reference hash="9ba0580cc6299523edeea870c4cf2172a7bf0638">
+                <snaks>
+                  <property id="P248">
+                    <snak snaktype="value" property="P248" datatype="wikibase-item">
+                      <datavalue type="wikibase-entityid">
+                        <value entity-type="item" numeric-id="21128615" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                  <property id="P304">
+                    <snak snaktype="value" property="P304" datatype="string">
+                      <datavalue value="2" type="string" />
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P248</property>
+                  <property>P304</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P2244">
+          <claim type="statement" id="Q2$378ab829-4490-7fc9-9112-c9c773e7c37a" rank="normal">
+            <mainsnak snaktype="value" property="P2244" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+147095000" unit="http://www.wikidata.org/entity/Q828224" upperBound="+147096000" lowerBound="+147094000" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P2210">
+                <qualifiers snaktype="value" property="P2210" hash="46a3b06aee4f135db9558336d56da9e721066481" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="525" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P2210</property>
+            </qualifiers-order>
+          </claim>
+        </property>
+        <property id="P2248">
+          <claim type="statement" id="Q2$072b8a45-45d8-d7eb-5323-c2420e299c39" rank="normal">
+            <mainsnak snaktype="value" property="P2248" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+114.20783" unit="http://www.wikidata.org/entity/Q28390" upperBound="+114.20783" lowerBound="+114.20783" />
+              </datavalue>
+            </mainsnak>
+            <references>
+              <reference hash="8404f214e9bfbaf61da55b25242edeff9df8e663">
+                <snaks>
+                  <property id="P854">
+                    <snak snaktype="value" property="P854" datatype="url">
+                      <datavalue value="http://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" type="string" />
+                    </snak>
+                  </property>
+                  <property id="P813">
+                    <snak snaktype="value" property="P813" datatype="time">
+                      <datavalue type="time">
+                        <value time="+2015-10-22T00:00:00Z" timezone="0" before="0" after="0" precision="11" calendarmodel="http://www.wikidata.org/entity/Q1985727" />
+                      </datavalue>
+                    </snak>
+                  </property>
+                </snaks>
+                <snaks-order>
+                  <property>P854</property>
+                  <property>P813</property>
+                </snaks-order>
+              </reference>
+            </references>
+          </claim>
+        </property>
+        <property id="P913">
+          <claim type="statement" id="Q2$4814905c-4435-413f-559a-f61f52de931a" rank="normal">
+            <mainsnak snaktype="value" property="P913" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="426529" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P998">
+          <claim type="statement" id="Q2$99c3984a-4d61-fea3-36f0-812e24e18238" rank="normal">
+            <mainsnak snaktype="value" property="P998" datatype="external-id">
+              <datavalue value="Science/Astronomy/Solar_System/Planets/Earth/" type="string" />
+            </mainsnak>
+            <qualifiers>
+              <property id="P407">
+                <qualifiers snaktype="value" property="P407" hash="17da29e56d69809fde8793aaa4864de2e6bb5780" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="1860" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P407</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$62b8fdb1-4833-6aff-d7ab-8ae9a173f7a1" rank="normal">
+            <mainsnak snaktype="value" property="P998" datatype="external-id">
+              <datavalue value="World/Deutsch/Wissenschaft/Naturwissenschaften/Astronomie/Sonnensystem/Planeten/Erde" type="string" />
+            </mainsnak>
+            <qualifiers>
+              <property id="P407">
+                <qualifiers snaktype="value" property="P407" hash="bfab56097f2ee29b68110953c09618468db6871b" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="188" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P407</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$6dc8e044-4136-d7ad-ffad-65abb7d13dc6" rank="normal">
+            <mainsnak snaktype="value" property="P998" datatype="external-id">
+              <datavalue value="World/Español/Ciencia_y_tecnología/Astronomía/Sistema_Solar/Planetas/Tierra" type="string" />
+            </mainsnak>
+            <qualifiers>
+              <property id="P407">
+                <qualifiers snaktype="value" property="P407" hash="7eec2e1765f91c8f68591f1b0e4f1301b4335b90" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="1321" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P407</property>
+            </qualifiers-order>
+          </claim>
+        </property>
+        <property id="P2325">
+          <claim type="statement" id="Q2$4e6e298d-4a0c-203c-7455-cf7cf2923bce" rank="normal">
+            <mainsnak snaktype="value" property="P2325" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+358.617" unit="http://www.wikidata.org/entity/Q28390" upperBound="+358.617" lowerBound="+358.617" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P486">
+          <claim type="statement" id="Q2$2c9bd003-4dc8-e33f-83ee-7ce97de55c3d" rank="normal">
+            <mainsnak snaktype="value" property="P486" datatype="string">
+              <datavalue value="D018534" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P150">
+          <claim type="statement" id="Q2$F9660E8A-CCEF-4D9D-8B98-A0CB72FC552E" rank="normal">
+            <mainsnak snaktype="value" property="P150" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="252" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P443">
+          <claim type="statement" id="Q2$3598b2a8-4c2e-076a-612d-1160d1fc270f" rank="normal">
+            <mainsnak snaktype="value" property="P443" datatype="commonsMedia">
+              <datavalue value="It-Terra.oga" type="string" />
+            </mainsnak>
+            <qualifiers>
+              <property id="P407">
+                <qualifiers snaktype="value" property="P407" hash="a77ef6d322e3915085c305de616027d3f709c807" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="652" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P407</property>
+            </qualifiers-order>
+          </claim>
+          <claim type="statement" id="Q2$a4778389-40a8-179f-8d1a-194e3c18cf66" rank="normal">
+            <mainsnak snaktype="value" property="P443" datatype="commonsMedia">
+              <datavalue value="Fr-terre-ca-Montréal.ogg" type="string" />
+            </mainsnak>
+            <qualifiers>
+              <property id="P407">
+                <qualifiers snaktype="value" property="P407" hash="af77ed6d29942abd57488684d9dfc7c5a2659ad8" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="1450506" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P407</property>
+            </qualifiers-order>
+          </claim>
+        </property>
+        <property id="P2547">
+          <claim type="statement" id="Q2$ab29c85c-4a5d-c860-92af-0e873fae5415" rank="normal">
+            <mainsnak snaktype="value" property="P2547" datatype="quantity">
+              <datavalue type="quantity">
+                <value amount="+40075" unit="http://www.wikidata.org/entity/Q828224" upperBound="+40075" lowerBound="+40075" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P2633">
+          <claim type="statement" id="Q2$22604639-4694-1b1d-b706-956b4b958976" rank="normal">
+            <mainsnak snaktype="value" property="P2633" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="1071" />
+              </datavalue>
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1417">
+          <claim type="statement" id="Q2$70B8ED8C-10C3-4639-810A-7128412AE543" rank="normal">
+            <mainsnak snaktype="value" property="P1417" datatype="external-id">
+              <datavalue value="place/Earth" type="string" />
+            </mainsnak>
+          </claim>
+        </property>
+        <property id="P1343">
+          <claim type="statement" id="Q2$2CC22DDB-14CB-460D-AF66-2BF46B39EC15" rank="normal">
+            <mainsnak snaktype="value" property="P1343" datatype="wikibase-item">
+              <datavalue type="wikibase-entityid">
+                <value entity-type="item" numeric-id="2041543" />
+              </datavalue>
+            </mainsnak>
+            <qualifiers>
+              <property id="P248">
+                <qualifiers snaktype="value" property="P248" hash="ca1834da48f128caf4c11a3ca2bb114e2f5a3d3b" datatype="wikibase-item">
+                  <datavalue type="wikibase-entityid">
+                    <value entity-type="item" numeric-id="23859820" />
+                  </datavalue>
+                </qualifiers>
+              </property>
+            </qualifiers>
+            <qualifiers-order>
+              <property>P248</property>
+            </qualifiers-order>
+          </claim>
+        </property>
+      </claims>
+      <sitelinks>
+        <sitelink site="abwiki" title="Адгьыл">
+          <badges />
+        </sitelink>
+        <sitelink site="acewiki" title="Bumoë">
+          <badges />
+        </sitelink>
+        <sitelink site="afwiki" title="Aarde">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="alswiki" title="Erde">
+          <badges />
+        </sitelink>
+        <sitelink site="amwiki" title="መሬት">
+          <badges />
+        </sitelink>
+        <sitelink site="angwiki" title="Eorðe">
+          <badges />
+        </sitelink>
+        <sitelink site="anwiki" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="arcwiki" title="ܐܪܥܐ">
+          <badges />
+        </sitelink>
+        <sitelink site="arwiki" title="الأرض">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="arzwiki" title="الارض">
+          <badges />
+        </sitelink>
+        <sitelink site="astwiki" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="aswiki" title="পৃথিৱী">
+          <badges />
+        </sitelink>
+        <sitelink site="avwiki" title="Ракь (планета)">
+          <badges />
+        </sitelink>
+        <sitelink site="aywiki" title="Aka pacha">
+          <badges />
+        </sitelink>
+        <sitelink site="azbwiki" title="یئر">
+          <badges />
+        </sitelink>
+        <sitelink site="azwiki" title="Yer">
+          <badges />
+        </sitelink>
+        <sitelink site="azwikiquote" title="Dünya">
+          <badges />
+        </sitelink>
+        <sitelink site="barwiki" title="Eadn">
+          <badges />
+        </sitelink>
+        <sitelink site="bat_smgwiki" title="Žemė">
+          <badges />
+        </sitelink>
+        <sitelink site="bawiki" title="Ер">
+          <badges />
+        </sitelink>
+        <sitelink site="bclwiki" title="Kinaban">
+          <badges />
+        </sitelink>
+        <sitelink site="be_x_oldwiki" title="Зямля">
+          <badges />
+        </sitelink>
+        <sitelink site="bewiki" title="Планета Зямля">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="bgwiki" title="Земя">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="bhwiki" title="धरती">
+          <badges />
+        </sitelink>
+        <sitelink site="bjnwiki" title="Bumi">
+          <badges />
+        </sitelink>
+        <sitelink site="bnwiki" title="পৃথিবী">
+          <badges />
+        </sitelink>
+        <sitelink site="bowiki" title="སའི་གོ་ལ།">
+          <badges />
+        </sitelink>
+        <sitelink site="brwiki" title="Douar (planedenn)">
+          <badges />
+        </sitelink>
+        <sitelink site="bswiki" title="Zemlja (planeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="bswikiquote" title="Zemlja">
+          <badges />
+        </sitelink>
+        <sitelink site="bxrwiki" title="Дэлхэй">
+          <badges />
+        </sitelink>
+        <sitelink site="cawiki" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="cbk_zamwiki" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="cdowiki" title="Dê-giù">
+          <badges />
+        </sitelink>
+        <sitelink site="cebwiki" title="Kalibotan (planeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="cewiki" title="Дуьне">
+          <badges />
+        </sitelink>
+        <sitelink site="chrwiki" title="ᎡᎶᎯ">
+          <badges />
+        </sitelink>
+        <sitelink site="ckbwiki" title="زەوی">
+          <badges />
+        </sitelink>
+        <sitelink site="commonswiki" title="Earth">
+          <badges />
+        </sitelink>
+        <sitelink site="crhwiki" title="Dünya">
+          <badges />
+        </sitelink>
+        <sitelink site="csbwiki" title="Zemia">
+          <badges />
+        </sitelink>
+        <sitelink site="cswiki" title="Země">
+          <badges />
+        </sitelink>
+        <sitelink site="cswikiquote" title="Země">
+          <badges />
+        </sitelink>
+        <sitelink site="cuwiki" title="Ꙁємлꙗ">
+          <badges />
+        </sitelink>
+        <sitelink site="cvwiki" title="Çĕр (планета)">
+          <badges />
+        </sitelink>
+        <sitelink site="cywiki" title="Y Ddaear">
+          <badges />
+        </sitelink>
+        <sitelink site="dawiki" title="Jorden">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="dewiki" title="Erde">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="dewikiquote" title="Erde">
+          <badges />
+        </sitelink>
+        <sitelink site="dewikisource" title="Erde">
+          <badges />
+        </sitelink>
+        <sitelink site="diqwiki" title="Dınya">
+          <badges />
+        </sitelink>
+        <sitelink site="dsbwiki" title="Zemja">
+          <badges />
+        </sitelink>
+        <sitelink site="dvwiki" title="ބިން">
+          <badges />
+        </sitelink>
+        <sitelink site="elwiki" title="Γη">
+          <badges />
+        </sitelink>
+        <sitelink site="emlwiki" title="Tèra">
+          <badges />
+        </sitelink>
+        <sitelink site="enwiki" title="Earth">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="enwikiquote" title="Earth">
+          <badges />
+        </sitelink>
+        <sitelink site="eowiki" title="Tero">
+          <badges />
+        </sitelink>
+        <sitelink site="eowikiquote" title="Tero">
+          <badges />
+        </sitelink>
+        <sitelink site="eswiki" title="Tierra">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="eswikiquote" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="etwiki" title="Maa (planeet)">
+          <badges />
+        </sitelink>
+        <sitelink site="etwikiquote" title="Maa">
+          <badges />
+        </sitelink>
+        <sitelink site="euwiki" title="Lurra">
+          <badges />
+        </sitelink>
+        <sitelink site="extwiki" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="fawiki" title="زمین">
+          <badges />
+        </sitelink>
+        <sitelink site="fiu_vrowiki" title="Maa (hod&#039;otäht)">
+          <badges />
+        </sitelink>
+        <sitelink site="fiwiki" title="Maa">
+          <badges />
+        </sitelink>
+        <sitelink site="fowiki" title="Jørðin">
+          <badges />
+        </sitelink>
+        <sitelink site="frpwiki" title="Tèrra">
+          <badges />
+        </sitelink>
+        <sitelink site="frrwiki" title="Jard">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="frwiki" title="Terre">
+          <badges />
+        </sitelink>
+        <sitelink site="frwikiquote" title="Terre">
+          <badges />
+        </sitelink>
+        <sitelink site="furwiki" title="Tiere">
+          <badges />
+        </sitelink>
+        <sitelink site="fywiki" title="Ierde">
+          <badges />
+        </sitelink>
+        <sitelink site="ganwiki" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="gawiki" title="An Domhan">
+          <badges />
+        </sitelink>
+        <sitelink site="gdwiki" title="Saoghal">
+          <badges />
+        </sitelink>
+        <sitelink site="glwiki" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="gnwiki" title="Yvy">
+          <badges />
+        </sitelink>
+        <sitelink site="gotwiki" title="𐌰𐌹𐍂𐌸𐌰">
+          <badges />
+        </sitelink>
+        <sitelink site="guwiki" title="પૃથ્વી">
+          <badges />
+        </sitelink>
+        <sitelink site="gvwiki" title="Yn Dowan">
+          <badges />
+        </sitelink>
+        <sitelink site="hakwiki" title="Thi-khiù">
+          <badges />
+        </sitelink>
+        <sitelink site="hawiki" title="Duniya">
+          <badges />
+        </sitelink>
+        <sitelink site="hawwiki" title="Honua">
+          <badges />
+        </sitelink>
+        <sitelink site="hewiki" title="כדור הארץ">
+          <badges />
+        </sitelink>
+        <sitelink site="hifwiki" title="Dunia">
+          <badges />
+        </sitelink>
+        <sitelink site="hiwiki" title="पृथ्वी">
+          <badges />
+        </sitelink>
+        <sitelink site="hrwiki" title="Zemlja">
+          <badges />
+        </sitelink>
+        <sitelink site="hsbwiki" title="Zemja">
+          <badges />
+        </sitelink>
+        <sitelink site="htwiki" title="Latè">
+          <badges />
+        </sitelink>
+        <sitelink site="huwiki" title="Föld">
+          <badges />
+        </sitelink>
+        <sitelink site="hywiki" title="Երկիր">
+          <badges />
+        </sitelink>
+        <sitelink site="iawiki" title="Terra (planeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="idwiki" title="Bumi">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="iewiki" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="igwiki" title="Àlà">
+          <badges />
+        </sitelink>
+        <sitelink site="ilowiki" title="Daga (planeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="iowiki" title="Tero">
+          <badges />
+        </sitelink>
+        <sitelink site="iswiki" title="Jörðin">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="itwiki" title="Terra">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="itwikiquote" title="Terra (pianeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="iuwiki" title="ᓄᓇ">
+          <badges />
+        </sitelink>
+        <sitelink site="jawiki" title="地球">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="jawikibooks" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="jawikiquote" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="jawikiversity" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="jbowiki" title="terdi">
+          <badges />
+        </sitelink>
+        <sitelink site="jvwiki" title="Bumi">
+          <badges />
+        </sitelink>
+        <sitelink site="kaawiki" title="Jer">
+          <badges />
+        </sitelink>
+        <sitelink site="kabwiki" title="Tagnit">
+          <badges />
+        </sitelink>
+        <sitelink site="kawiki" title="დედამიწა">
+          <badges />
+        </sitelink>
+        <sitelink site="kgwiki" title="Ntoto">
+          <badges />
+        </sitelink>
+        <sitelink site="kkwiki" title="Жер">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="klwiki" title="Nunarsuaq">
+          <badges />
+        </sitelink>
+        <sitelink site="kmwiki" title="ផែនដី">
+          <badges />
+        </sitelink>
+        <sitelink site="knwiki" title="ಭೂಮಿ">
+          <badges />
+        </sitelink>
+        <sitelink site="koiwiki" title="Мушар">
+          <badges />
+        </sitelink>
+        <sitelink site="kowiki" title="지구">
+          <badges />
+        </sitelink>
+        <sitelink site="kowikibooks" title="지구">
+          <badges />
+        </sitelink>
+        <sitelink site="krcwiki" title="Джер">
+          <badges />
+        </sitelink>
+        <sitelink site="kshwiki" title="Ääd (Planeet)">
+          <badges />
+        </sitelink>
+        <sitelink site="kuwiki" title="Erd">
+          <badges />
+        </sitelink>
+        <sitelink site="kvwiki" title="Му">
+          <badges />
+        </sitelink>
+        <sitelink site="kwwiki" title="Dor">
+          <badges />
+        </sitelink>
+        <sitelink site="kywiki" title="Жер">
+          <badges />
+        </sitelink>
+        <sitelink site="ladwiki" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="lawiki" title="Tellus (planeta)">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="lbwiki" title="Äerd">
+          <badges />
+        </sitelink>
+        <sitelink site="lezwiki" title="Чил (планета)">
+          <badges />
+        </sitelink>
+        <sitelink site="lijwiki" title="Tæra">
+          <badges />
+        </sitelink>
+        <sitelink site="liwiki" title="Eerd">
+          <badges />
+        </sitelink>
+        <sitelink site="lmowiki" title="Tera">
+          <badges />
+        </sitelink>
+        <sitelink site="lnwiki" title="Mabelé">
+          <badges />
+        </sitelink>
+        <sitelink site="lowiki" title="ໂລກ">
+          <badges />
+        </sitelink>
+        <sitelink site="lrcwiki" title="جأهوٙن">
+          <badges />
+        </sitelink>
+        <sitelink site="ltgwiki" title="Zeme">
+          <badges />
+        </sitelink>
+        <sitelink site="ltwiki" title="Žemė">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="ltwikiquote" title="Žemė">
+          <badges />
+        </sitelink>
+        <sitelink site="lvwiki" title="Zeme">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="maiwiki" title="पृथ्वी">
+          <badges />
+        </sitelink>
+        <sitelink site="map_bmswiki" title="Bumi">
+          <badges />
+        </sitelink>
+        <sitelink site="mdfwiki" title="Мода (шары тяште)">
+          <badges />
+        </sitelink>
+        <sitelink site="mgwiki" title="Tany">
+          <badges />
+        </sitelink>
+        <sitelink site="mhrwiki" title="Мланде (планет)">
+          <badges />
+        </sitelink>
+        <sitelink site="minwiki" title="Bumi">
+          <badges />
+        </sitelink>
+        <sitelink site="mkwiki" title="Земја (планета)">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="mlwiki" title="ഭൂമി">
+          <badges />
+        </sitelink>
+        <sitelink site="mnwiki" title="Дэлхий">
+          <badges />
+        </sitelink>
+        <sitelink site="mrjwiki" title="Мӱлӓндӹ (планета)">
+          <badges />
+        </sitelink>
+        <sitelink site="mrwiki" title="पृथ्वी">
+          <badges />
+        </sitelink>
+        <sitelink site="mswiki" title="Bumi">
+          <badges />
+        </sitelink>
+        <sitelink site="mtwiki" title="Art">
+          <badges />
+        </sitelink>
+        <sitelink site="mwlwiki" title="Tierra">
+          <badges />
+        </sitelink>
+        <sitelink site="myvwiki" title="Мода (пертпельксэнь вал)">
+          <badges />
+        </sitelink>
+        <sitelink site="mywiki" title="ကမ္ဘာဂြိုဟ်">
+          <badges />
+        </sitelink>
+        <sitelink site="mznwiki" title="زمین">
+          <badges />
+        </sitelink>
+        <sitelink site="nahwiki" title="Tlalticpactli">
+          <badges />
+        </sitelink>
+        <sitelink site="napwiki" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="nawiki" title="Eb">
+          <badges />
+        </sitelink>
+        <sitelink site="nds_nlwiki" title="Eerde">
+          <badges />
+        </sitelink>
+        <sitelink site="ndswiki" title="Eer">
+          <badges />
+        </sitelink>
+        <sitelink site="newiki" title="पृथ्वी">
+          <badges />
+        </sitelink>
+        <sitelink site="newwiki" title="प्रिथिबी">
+          <badges />
+        </sitelink>
+        <sitelink site="nlwiki" title="Aarde (planeet)">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="nnwiki" title="Jorda">
+          <badges />
+        </sitelink>
+        <sitelink site="nnwikiquote" title="Jorda">
+          <badges />
+        </sitelink>
+        <sitelink site="novwiki" title="Tere">
+          <badges />
+        </sitelink>
+        <sitelink site="nowiki" title="Jorden">
+          <badges />
+        </sitelink>
+        <sitelink site="nrmwiki" title="Tèrre">
+          <badges />
+        </sitelink>
+        <sitelink site="nsowiki" title="Lefase">
+          <badges />
+        </sitelink>
+        <sitelink site="nvwiki" title="Nahasdzáán">
+          <badges />
+        </sitelink>
+        <sitelink site="ocwiki" title="Tèrra">
+          <badges />
+        </sitelink>
+        <sitelink site="orwiki" title="ପୃଥିବୀ">
+          <badges />
+        </sitelink>
+        <sitelink site="oswiki" title="Зæхх">
+          <badges />
+        </sitelink>
+        <sitelink site="pamwiki" title="Yatu">
+          <badges />
+        </sitelink>
+        <sitelink site="papwiki" title="Tera">
+          <badges />
+        </sitelink>
+        <sitelink site="pawiki" title="ਧਰਤੀ">
+          <badges />
+        </sitelink>
+        <sitelink site="pcdwiki" title="Tière">
+          <badges />
+        </sitelink>
+        <sitelink site="pflwiki" title="Erd">
+          <badges />
+        </sitelink>
+        <sitelink site="pihwiki" title="Erth">
+          <badges />
+        </sitelink>
+        <sitelink site="plwiki" title="Ziemia">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="plwikiquote" title="Ziemia">
+          <badges />
+        </sitelink>
+        <sitelink site="pmswiki" title="Tèra (pianeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="pnbwiki" title="زمین">
+          <badges />
+        </sitelink>
+        <sitelink site="pswiki" title="ځمکه">
+          <badges />
+        </sitelink>
+        <sitelink site="ptwiki" title="Terra">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="ptwikiquote" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="quwiki" title="Tiksimuyu">
+          <badges />
+        </sitelink>
+        <sitelink site="rmwiki" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="rmywiki" title="Phuv">
+          <badges />
+        </sitelink>
+        <sitelink site="roa_rupwiki" title="Locu">
+          <badges />
+        </sitelink>
+        <sitelink site="rowiki" title="Pământ">
+          <badges />
+        </sitelink>
+        <sitelink site="ruewiki" title="Земля (планета)">
+          <badges />
+        </sitelink>
+        <sitelink site="ruwiki" title="Земля">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="ruwikinews" title="Категория:Земля">
+          <badges />
+        </sitelink>
+        <sitelink site="rwwiki" title="Isi">
+          <badges />
+        </sitelink>
+        <sitelink site="sahwiki" title="Сир">
+          <badges />
+        </sitelink>
+        <sitelink site="sawiki" title="पृथ्वी">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="scnwiki" title="Terra (pianeta)">
+          <badges />
+        </sitelink>
+        <sitelink site="scowiki" title="The Yird">
+          <badges />
+        </sitelink>
+        <sitelink site="scwiki" title="Terra">
+          <badges />
+        </sitelink>
+        <sitelink site="sdwiki" title="زمين">
+          <badges />
+        </sitelink>
+        <sitelink site="sewiki" title="Eana">
+          <badges />
+        </sitelink>
+        <sitelink site="shwiki" title="Zemlja (planet)">
+          <badges />
+        </sitelink>
+        <sitelink site="simplewiki" title="Earth">
+          <badges>
+            <badge>Q17437798</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="siwiki" title="මහ පොළොව">
+          <badges />
+        </sitelink>
+        <sitelink site="skwiki" title="Zem">
+          <badges />
+        </sitelink>
+        <sitelink site="skwikiquote" title="Zem">
+          <badges />
+        </sitelink>
+        <sitelink site="slwiki" title="Zemlja">
+          <badges />
+        </sitelink>
+        <sitelink site="snwiki" title="Rinopasi">
+          <badges />
+        </sitelink>
+        <sitelink site="sowiki" title="Dhul">
+          <badges />
+        </sitelink>
+        <sitelink site="sqwiki" title="Toka">
+          <badges />
+        </sitelink>
+        <sitelink site="srwiki" title="Земља">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="stqwiki" title="Äide">
+          <badges />
+        </sitelink>
+        <sitelink site="stwiki" title="Lefatshe">
+          <badges />
+        </sitelink>
+        <sitelink site="suwiki" title="Marcapada">
+          <badges />
+        </sitelink>
+        <sitelink site="svwiki" title="Jorden">
+          <badges>
+            <badge>Q17559452</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="swwiki" title="Dunia">
+          <badges />
+        </sitelink>
+        <sitelink site="szlwiki" title="Źymja">
+          <badges />
+        </sitelink>
+        <sitelink site="tawiki" title="புவி">
+          <badges />
+        </sitelink>
+        <sitelink site="tetwiki" title="Rai">
+          <badges />
+        </sitelink>
+        <sitelink site="tewiki" title="భూమి">
+          <badges />
+        </sitelink>
+        <sitelink site="tgwiki" title="Замин">
+          <badges />
+        </sitelink>
+        <sitelink site="thwiki" title="โลก (ดาวเคราะห์)">
+          <badges />
+        </sitelink>
+        <sitelink site="tkwiki" title="Ýer">
+          <badges />
+        </sitelink>
+        <sitelink site="tlwiki" title="Daigdig">
+          <badges />
+        </sitelink>
+        <sitelink site="tpiwiki" title="Giraun">
+          <badges />
+        </sitelink>
+        <sitelink site="trwiki" title="Dünya">
+          <badges />
+        </sitelink>
+        <sitelink site="trwikiquote" title="Dünya">
+          <badges />
+        </sitelink>
+        <sitelink site="tswiki" title="Misava">
+          <badges />
+        </sitelink>
+        <sitelink site="ttwiki" title="Җир">
+          <badges />
+        </sitelink>
+        <sitelink site="tyvwiki" title="Чер">
+          <badges />
+        </sitelink>
+        <sitelink site="ugwiki" title="يەر شارى">
+          <badges />
+        </sitelink>
+        <sitelink site="ukwiki" title="Земля">
+          <badges />
+        </sitelink>
+        <sitelink site="ukwikiquote" title="Земля">
+          <badges />
+        </sitelink>
+        <sitelink site="urwiki" title="زمین">
+          <badges />
+        </sitelink>
+        <sitelink site="uzwiki" title="Yer">
+          <badges />
+        </sitelink>
+        <sitelink site="vecwiki" title="Tera">
+          <badges />
+        </sitelink>
+        <sitelink site="vepwiki" title="Ma">
+          <badges />
+        </sitelink>
+        <sitelink site="viwiki" title="Trái Đất">
+          <badges>
+            <badge>Q17437796</badge>
+          </badges>
+        </sitelink>
+        <sitelink site="vlswiki" title="Eirde (planete)">
+          <badges />
+        </sitelink>
+        <sitelink site="vowiki" title="Tal">
+          <badges />
+        </sitelink>
+        <sitelink site="warwiki" title="Kalibotan">
+          <badges />
+        </sitelink>
+        <sitelink site="wawiki" title="Daegne">
+          <badges />
+        </sitelink>
+        <sitelink site="wowiki" title="Suuf">
+          <badges />
+        </sitelink>
+        <sitelink site="wuuwiki" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="xalwiki" title="Делкә һариг">
+          <badges />
+        </sitelink>
+        <sitelink site="xmfwiki" title="დიხაუჩა">
+          <badges />
+        </sitelink>
+        <sitelink site="yiwiki" title="ערד-פלאנעט">
+          <badges />
+        </sitelink>
+        <sitelink site="yowiki" title="Ayé">
+          <badges />
+        </sitelink>
+        <sitelink site="zawiki" title="Giuznamh">
+          <badges />
+        </sitelink>
+        <sitelink site="zeawiki" title="Aerde">
+          <badges />
+        </sitelink>
+        <sitelink site="zh_classicalwiki" title="坤輿">
+          <badges />
+        </sitelink>
+        <sitelink site="zh_min_nanwiki" title="Tē-kiû">
+          <badges />
+        </sitelink>
+        <sitelink site="zh_yuewiki" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="zhwiki" title="地球">
+          <badges />
+        </sitelink>
+        <sitelink site="zhwikiquote" title="地球">
+          <badges />
+        </sitelink>
+      </sitelinks>
+    </entity>
+  </entities>
+</api>
