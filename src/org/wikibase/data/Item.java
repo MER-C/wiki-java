@@ -48,6 +48,6 @@ public class Item extends WikibaseData {
 
     @Override
     public String getDatatype() {
-        return "wikibase-item";
+        return "wikibase-entityid";
     }
 }

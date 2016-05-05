@@ -47,7 +47,7 @@ public class LanguageString extends WikibaseData {
     public String getDatatype() {
         return "monolingualtext";
     }
-
+    
     public String valueToJSON() {
         StringBuilder sb = new StringBuilder("{");
         sb.append("\"text\":\"").append(text).append('\"');
