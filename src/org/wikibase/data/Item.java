@@ -35,24 +35,19 @@ public class Item extends WikibaseData {
     }
 
     @Override
-    public String toJSON() {
-        StringBuilder sbuild = new StringBuilder("{");
-        
-        sbuild.append("\"type\":\"wikibase-entityid\"");
-        sbuild.append(',');
-        sbuild.append("\"value\":");
+    public String valueToJSON() {
+        StringBuilder sbuild = new StringBuilder();
         sbuild.append('{');
         sbuild.append("\"entity-type\":\"item\"");
         sbuild.append(',');
-        sbuild.append("\"numeric-id\":\"").append(ent.getId().startsWith("Q") ? ent.getId().substring(1) : ent.getId()).append("\"");
-        sbuild.append('}');
-        
+        sbuild.append("\"numeric-id\":\"").append(ent.getId().startsWith("Q") ? ent.getId().substring(1) : ent.getId())
+            .append("\"");
         sbuild.append('}');
         return sbuild.toString();
     }
 
     @Override
-    public Object getDatatype() {
+    public String getDatatype() {
         return "wikibase-item";
     }
 }

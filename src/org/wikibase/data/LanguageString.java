@@ -33,7 +33,7 @@ public class LanguageString extends WikibaseData {
     public String getText() {
         return text;
     }
-    
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(text);
@@ -44,16 +44,15 @@ public class LanguageString extends WikibaseData {
     }
 
     @Override
-    public String toJSON() {
+    public String getDatatype() {
+        return "monolingualtext";
+    }
+
+    public String valueToJSON() {
         StringBuilder sb = new StringBuilder("{");
-        sb.append("\"value\":");
-        sb.append('{');
         sb.append("\"text\":\"").append(text).append('\"');
         sb.append(',');
         sb.append("\"language\":\"").append(language).append('\"');
-        sb.append('}');
-        
-        sb.append(",\"type\":\"monolingualtext\"");
         sb.append('}');
         return sb.toString();
     }

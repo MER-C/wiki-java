@@ -49,6 +49,11 @@ public class Time extends WikibaseData {
         return calendar;
     }
 
+    @Override
+    public String getDatatype() {
+        return "time";
+    }
+
     public void setCalendar(Calendar calendar) {
         this.calendar = calendar;
     }
@@ -167,12 +172,10 @@ public class Time extends WikibaseData {
     }
 
     @Override
-    public String toJSON() {
+    public String valueToJSON() {
         StringBuilder sbuild = new StringBuilder("{");
         SimpleDateFormat isoFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ");
 
-        //sbuild.append("\"value\":");
-        //sbuild.append('{');
         sbuild.append("\"precision\":").append(precision);
         sbuild.append(',');
         sbuild.append("\"before\":").append(before);
@@ -193,10 +196,6 @@ public class Time extends WikibaseData {
         sbuild.append(',');
         sbuild.append("\"calendarmodel\":\"").append(calendarModel.toString()).append('\"');
         sbuild.append('}');
-        //sbuild.append(',');
-        //sbuild.append("\"type\":\"time\"");
-
-        //sbuild.append('}');
         return sbuild.toString();
     }
 }

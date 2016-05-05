@@ -269,10 +269,12 @@ public class Wikibase extends Wiki {
         String edittoken = obtainToken();
 
         final StringBuilder url = new StringBuilder(query);
-        url.append("action=wbeditentity");
-        url.append("&id=" + (entityId.startsWith("Q") ? entityId : ("Q" + entityId)));
+        url.append("action=wbcreateclaim");
+        url.append("&entity=" + (entityId.startsWith("Q") ? entityId : ("Q" + entityId)));
         final StringBuilder postdata = new StringBuilder();
-        postdata.append("&data=" + URLEncoder.encode("{\"claims\": [" + claim.toJSON() + "]}", "UTF-8"));
+        postdata.append("&snaktype=value");
+        postdata.append("&property=").append(claim.getProperty().getId());
+        postdata.append("&value=").append(URLEncoder.encode(claim.getValue().valueToJSON(), "UTF-8"));
         postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
         String text1 = post(url.toString(), postdata.toString(), "addClaim");
@@ -292,7 +294,7 @@ public class Wikibase extends Wiki {
             }
             if ("1".equals(apiNode.getAttributes().getNamedItem("success").getNodeValue())) {
                 XPathExpression claimExpression = xPath.compile(
-                    "/api[1]/entity[1]/claims/property[@id='" + claim.getProperty().getId().toUpperCase() + "']/claim");
+                    "/api[1]/claim[1]");
                 Node claimNode = (Node) claimExpression.evaluate(document, XPathConstants.NODE);
                 if (null == claimNode || null == claimNode.getAttributes()
                     || null == claimNode.getAttributes().getNamedItem("id")) {
@@ -322,7 +324,7 @@ public class Wikibase extends Wiki {
         url.append("&property=" + propertyId.toUpperCase());
         url.append("&snaktype=value");
         final StringBuilder postdata = new StringBuilder();
-        postdata.append("&value=" + URLEncoder.encode(qualifier.toJSON(), "UTF-8"));
+        postdata.append("&value=" + URLEncoder.encode(qualifier.valueToJSON(), "UTF-8"));
         postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
         postdata.append("&format=xml");
         String text1 = post(url.toString(), postdata.toString(), "addQualifier");

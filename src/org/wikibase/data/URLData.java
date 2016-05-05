@@ -40,17 +40,13 @@ public class URLData extends WikibaseData {
     }
 
     @Override
-    public Object getDatatype() {
-        return "url";
+    public String getDatatype() {
+        return "string";
     }
 
     @Override
-    public String toJSON() {
-        StringBuilder sbuild = new StringBuilder("{");
-        sbuild.append("\"value\":\"").append(url).append("\",");
-        sbuild.append("\"type\":\"string\"");
-        sbuild.append('}');
-        return sbuild.toString();
+    public String valueToJSON() {
+        return "\"" + url + "\"";
     }
 
 }

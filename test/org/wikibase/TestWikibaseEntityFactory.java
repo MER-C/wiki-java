@@ -1,7 +1,6 @@
 package org.wikibase;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.wikibase.data.Claim;
 import org.wikibase.data.Entity;
+import org.wikibase.data.Item;
 import org.wikibase.data.Property;
 
 public class TestWikibaseEntityFactory {
@@ -56,8 +56,7 @@ public class TestWikibaseEntityFactory {
     public void testQ2EnSitelink() {
         Assert.assertNotNull(q2);
         Assert.assertNotNull(q2.getSitelinks());
-        Assert.assertEquals(q3.getSitelinks().get("enwiki"), "Earth");
-
+        Assert.assertEquals(q2.getSitelinks().get("enwiki").getPageName(), "Earth");
     }
 
     @Test
@@ -71,7 +70,7 @@ public class TestWikibaseEntityFactory {
         Assert.assertNotNull(p610claim.getMainsnak());
         Assert.assertEquals(p610claim.getMainsnak().getDatatype(), "wikibase-item");
 
-        Assert.assertEquals(q3.getSitelinks().get("en"), "Earth");
-
+        Assert.assertTrue(p610claim.getMainsnak().getData() instanceof Item);
+        Assert.assertEquals("513", ((Item) p610claim.getMainsnak().getData()).getEnt().getId());
     }
 }

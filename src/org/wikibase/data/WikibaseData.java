@@ -19,10 +19,23 @@ package org.wikibase.data;
 public class WikibaseData {
     public static WikibaseData NO_VALUE;
     public static WikibaseData UNKNOWN_VALUE;
+
     public String toJSON() {
-        return "{}";
+        StringBuilder sbuild = new StringBuilder("{");
+
+        sbuild.append("\"type\":\"").append(this.getDatatype()).append("\"");
+        sbuild.append(',');
+        sbuild.append("\"value\":").append(valueToJSON());
+
+        sbuild.append('}');
+        return sbuild.toString();
     }
-    public Object getDatatype() {
+
+    public String valueToJSON() {
+        return "";
+    }
+
+    public String getDatatype() {
         return null;
     }
 }

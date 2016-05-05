@@ -16,8 +16,6 @@
 */
 package org.wikibase.data;
 
-import org.wikibase.WikibaseEntityFactory;
-
 public class Quantity extends WikibaseData {
     private double amount;
     private Item unit;
