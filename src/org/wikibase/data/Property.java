@@ -56,4 +56,9 @@ public class Property extends WikibaseData {
             return false;
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "Property [id=" + getId() + "]";
+    }
 }

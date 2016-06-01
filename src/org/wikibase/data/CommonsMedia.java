@@ -36,4 +36,19 @@ public class CommonsMedia extends WikibaseData {
     public String toString() {
         return "CommonsMedia [fileName=" + fileName + "]";
     }
+
+    @Override
+    public String getDatatype() {
+        return "commonsMedia";
+    }
+
+    @Override
+    public String valueToJSON() {
+        StringBuilder sbuild = new StringBuilder("{");
+        sbuild.append("\"value\":\"").append(fileName).append("\"");
+        sbuild.append(',');
+        sbuild.append("\"type\":\"string\"");
+        sbuild.append('}');
+        return sbuild.toString();
+    }
 }
