@@ -1476,6 +1476,15 @@ public class Wiki implements Serializable
     }
 
     /**
+     * Fill namespace cache.
+     * @throws IOException 
+     */
+    private synchronized void ensureNamespaceCache() throws IOException {
+        if (namespaces == null)
+            populateNamespaceCache();
+    }
+
+    /**
      *  Returns the namespace a page is in. No need to override this to
      *  add custom namespaces, though you may want to define static fields e.g.
      *  <tt>public static final int PORTAL_NAMESPACE = 100;</tt> for the Portal
@@ -1490,9 +1499,7 @@ public class Wiki implements Serializable
      */
     public int namespace(String title) throws IOException
     {
-        // cache this, as it will be called often
-        if (namespaces == null)
-            populateNamespaceCache();
+        ensureNamespaceCache();
 
         // perform a limited normalization
         if (title.startsWith(":"))
@@ -1526,8 +1533,7 @@ public class Wiki implements Serializable
      */
     public String namespaceIdentifier(int namespace) throws IOException
     {
-        if (namespaces == null)
-            populateNamespaceCache();
+        ensureNamespaceCache();
 
         // anything we cannot identify is assumed to be in the main namespace
         if (!namespaces.containsValue(namespace))
@@ -1547,8 +1553,7 @@ public class Wiki implements Serializable
      */
     public LinkedHashMap<String, Integer> getNamespaces() throws IOException
     {
-        if (namespaces == null)
-            populateNamespaceCache();
+        ensureNamespaceCache();
         return (LinkedHashMap<String, Integer>)namespaces.clone();
     }
 
