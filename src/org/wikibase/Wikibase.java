@@ -315,6 +315,51 @@ public class Wikibase extends Wiki {
         return ret;
     }
 
+    /**
+     * Removes the claim with the specified id from the entity with the specified ID
+     * 
+     * @param claimId
+     * @return the guid of the created claim
+     * @throws WikibaseException
+     * @throws IOException
+     */
+    public String removeClaim(String claimId) throws WikibaseException, IOException {
+        String edittoken = obtainToken();
+
+        final StringBuilder url = new StringBuilder(query);
+        url.append("action=wbremoveclaims");
+        final StringBuilder postdata = new StringBuilder();
+        postdata.append("&claim=" + claimId);
+        postdata.append("&token=" + URLEncoder.encode(edittoken, "UTF-8"));
+        postdata.append("&format=xml");
+        String text1 = post(url.toString(), postdata.toString(), "removeClaim");
+
+        DocumentBuilderFactory domBuilderFactory = DocumentBuilderFactory.newInstance();
+        String ret = null;
+        try {
+            DocumentBuilder builder = domBuilderFactory.newDocumentBuilder();
+            Document document = builder.parse(new ByteArrayInputStream(text1.getBytes()));
+            XPathFactory xpathFactory = XPathFactory.newInstance();
+            XPath xPath = xpathFactory.newXPath();
+            XPathExpression apiExpression = xPath.compile("/api[1]");
+            Node apiNode = (Node) apiExpression.evaluate(document, XPathConstants.NODE);
+            if (null == apiNode || null == apiNode.getAttributes()
+                || null == apiNode.getAttributes().getNamedItem("success")) {
+                throw new WikibaseException("API root node with success parameter not found in text.");
+            }
+            if (!"1".equals(apiNode.getAttributes().getNamedItem("success").getNodeValue())) {
+                XPathExpression errorExpression = xPath.compile("/api[1]/error[1]");
+                Node errorNode = (Node) errorExpression.evaluate(document, XPathConstants.NODE);
+                if (null != errorNode && null != errorNode.getAttributes() && null != errorNode.getAttributes().getNamedItem("info")) {
+                    throw new WikibaseException(errorNode.getAttributes().getNamedItem("info").getNodeValue());
+                }
+            }
+        } catch (Exception e) {
+            log(Level.WARNING, "removeClaim", e.getMessage());
+            return null;
+        }
+        return ret;
+    }
     public String addQualifier(String claimGUID, String propertyId, WikibaseData qualifier) throws WikibaseException, IOException {
         String edittoken = obtainToken();
 
