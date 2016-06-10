@@ -961,13 +961,10 @@ public class Wiki implements Serializable
         StringBuilder buffer = new StringBuilder(500);
         buffer.append("lgname=");
         buffer.append(encode(username, false));
-        // fetch token
-        String response = post(apiUrl + "action=login", buffer.toString(), "login");
-        String wpLoginToken = parseAttribute(response, "token", 0);
         buffer.append("&lgpassword=");
         buffer.append(encode(new String(password), false));
         buffer.append("&lgtoken=");
-        buffer.append(encode(wpLoginToken, false));
+        buffer.append(encode(getToken("login"), false));
         String line = post(apiUrl + "action=login", buffer.toString(), "login");
         buffer = null;
 
@@ -1230,6 +1227,7 @@ public class Wiki implements Serializable
     /**
      *  Fetches edit and other types of tokens.
      *  @param type one of "csrf", "patrol", "rollback", "userrights", "watch"
+     *  or "login"
      *  @return the token
      *  @throws IOException if a network error occurs
      *  @since 0.32
@@ -1237,16 +1235,7 @@ public class Wiki implements Serializable
     public String getToken(String type) throws IOException
     {
         String content = fetch(query + "meta=tokens&type=" + type, "getToken");
-        String token = parseAttribute(content, type + "token", 0);
-        
-        // this is a good chance to check whether we are still logged in
-        //if (token.equals("\\+"))
-        //{
-        //    log(Level.SEVERE, "emailUser", "Cookies have expired.");
-        //    logout();
-        //    throw new CredentialExpiredException("Cookies have expired.");
-        //}
-        return token;
+        return parseAttribute(content, type + "token", 0);
     }
     
     // STATIC MEMBERS
