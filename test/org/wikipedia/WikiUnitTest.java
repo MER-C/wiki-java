@@ -41,6 +41,7 @@ public class WikiUnitTest
     
     /**
      *  Initialize wiki objects.
+     *  @throws Exception if a network error occurs
      */
     @BeforeClass
     public static void setUpClass() throws Exception
@@ -168,6 +169,19 @@ public class WikiUnitTest
     {
         assertArrayEquals("getPageHistory: non-existent page", new Wiki.Revision[0], enWiki.getPageHistory("EOTkd&ssdf"));
         assertArrayEquals("getPageHistory: special page", new Wiki.Revision[0], enWiki.getPageHistory("Special:Specialpages"));
+        
+        // test for RevisionDeleted revisions
+        Wiki.Revision[] history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete");
+        for (Wiki.Revision rev : history)
+        {
+            if (rev.getRevid() == 275553L)
+            {
+                assertTrue("revdeled history: content", rev.isContentDeleted());
+                assertTrue("revdeled history: user", rev.isUserDeleted());
+                assertTrue("revdeled history: summary", rev.isSummaryDeleted());
+                break;
+            }
+        }
     }
     
     @Test
@@ -311,8 +325,7 @@ public class WikiUnitTest
         assertNull("getRevision: user revdeled", rev.getUser());
         assertTrue("getRevision: user revdeled", rev.isUserDeleted());
         assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
-        // NOT IMPLEMENTED:
-        // assertTrue("getRevision: content revdeled", rev.isContentDeleted());
+        assertTrue("getRevision: content revdeled", rev.isContentDeleted());
     }
     
     @Test

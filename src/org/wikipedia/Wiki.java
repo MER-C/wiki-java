@@ -2346,7 +2346,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=1&meta=tokens&type=rollback&titles=");
         url.append(encode(title, true));
-        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
         String line = fetch(url.toString(), "getTopRevision");
         int a = line.indexOf("<rev "); // important space
         int b = line.indexOf("/>", a);
@@ -2367,7 +2367,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=1&rvdir=newer&titles=");
         url.append(encode(title, true));
-        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
         String line = fetch(url.toString(), "getFirstRevision");
         int a = line.indexOf("<rev "); // important space!
         int b = line.indexOf("/>", a);
@@ -2456,7 +2456,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=max&titles=");
         url.append(encode(title, true));
-        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment");
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
         if (reverse)
             url.append("&rvdir=newer");
         if (start != null)
@@ -3043,7 +3043,7 @@ public class Wiki implements Serializable
     {
         // build url and connect
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize&revids=");
+        url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize%7Csha1&revids=");
         // chunkify oldids
         String[] chunks = new String[oldids.length / slowmax + 1];
         StringBuilder buffer = new StringBuilder();
@@ -3468,6 +3468,10 @@ public class Wiki implements Serializable
         // revisiondelete
         revision.summaryDeleted = xml.contains("commenthidden=\"");
         revision.userDeleted = xml.contains("userhidden=\"");
+        // Silly workaround: prop=revisions doesn't tell you whether content has
+        // been revision deleted until you fetch the content. Instead, fetch the
+        // SHA-1 of the content to minimize data transfer.
+        revision.contentDeleted = xml.contains("sha1hidden=\"");
         return revision;
     }
 
@@ -6550,17 +6554,12 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns true if the revision content is RevisionDeleted. WARNING:
-         *  the return value is meaningless until <tt>getRenderedText</tt>,
-         *  <tt>getText</tt> or <tt>diff()</tt> is called because of MW api
-         *  limitations.
-         *
+         *  Returns true if the revision content is RevisionDeleted. 
          *  @return (see above)
          *  @since 0.31
          */
         public boolean isContentDeleted()
         {
-            // not currently functional
             return contentDeleted;
         }
 
@@ -6850,6 +6849,8 @@ public class Wiki implements Serializable
             sb.append(summary == null ? "[hidden]" : summary);
             sb.append("\",summarydeleted=");
             sb.append(summaryDeleted);
+            sb.append(",contentDeleted=");
+            sb.append(contentDeleted);
             sb.append(",minor=");
             sb.append(minor);
             sb.append(",bot=");
