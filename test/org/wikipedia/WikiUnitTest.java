@@ -339,6 +339,17 @@ public class WikiUnitTest
     {
         // should really be null, but the API returns zero
         assertEquals("contribs: non-existent user", testWiki.contribs("Dsdlgfkjsdlkfdjilgsujilvjcl").length, 0);
+        
+        // RevisionDeleted content
+        Wiki.Revision[] contribs = enWiki.contribs("Allancake");
+        for (Wiki.Revision rev : contribs)
+        {
+            if (rev.getRevid() == 724989913L)
+            {
+                assertTrue("contribs: summary deleted", rev.isSummaryDeleted());
+                assertTrue("contribs: content deleted", rev.isContentDeleted());
+            }
+        }
     }
     
     @Test

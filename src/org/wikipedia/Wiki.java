@@ -3472,6 +3472,9 @@ public class Wiki implements Serializable
         // been revision deleted until you fetch the content. Instead, fetch the
         // SHA-1 of the content to minimize data transfer.
         revision.contentDeleted = xml.contains("sha1hidden=\"");
+        // list=usercontribs does tell you
+        if (xml.contains("texthidden=\""))
+            revision.contentDeleted = true;
         return revision;
     }
 
