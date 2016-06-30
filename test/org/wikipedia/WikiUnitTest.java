@@ -185,6 +185,48 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getLogEntries() throws Exception
+    {
+        // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User:Nimimaan&format=xmlfm
+        
+        // Block log
+        Calendar c = new GregorianCalendar(2016, Calendar.JUNE, 30);
+        Wiki.LogEntry[] le = enWiki.getLogEntries(c, null, 5, Wiki.ALL_LOGS, "",
+            null, "User:Nimimaan", Wiki.ALL_NAMESPACES);
+        assertEquals("getLogEntries: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
+        assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser().getUsername());
+        assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
+        assertEquals("getLogEntries/block: action", "block", le[0].getAction());
+        assertEquals("getLogEntries: target", "User:Nimimaan", le[0].getTarget());
+        assertEquals("getLogEntries: reason", "spambot", le[0].getReason());
+//        assertEquals("getLogEntries/block: parameters", new Object[] {
+//            false, true, // hard block (not anon only), account creation disabled,
+//            false, true, // autoblock enabled, email disabled
+//            true, "indefinite" // talk page access revoked, expiry
+//        }, le[0].getDetails());
+        
+        // New user log
+        assertEquals("getLogEntries/newusers: user", "Nimimaan", le[1].getUser().getUsername());
+        assertEquals("getLogEntries/newusers: log", Wiki.USER_CREATION_LOG, le[1].getType());
+        assertEquals("getLogEntries/newusers: action", "create", le[1].getAction());
+        assertEquals("getLogEntries/newusers: reason", "", le[1].getReason());
+//        assertNull("getLogEntries/newusers: parameters", le[1].getDetails());
+        
+        // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp&format=xmlfm
+        
+        // Move log
+        le = enWiki.getLogEntries(c, null, 5, Wiki.ALL_LOGS, "", null, 
+            "Talk:96th Test Wing/Temp", Wiki.ALL_NAMESPACES);
+        assertEquals("getLogEntries/move: log", Wiki.MOVE_LOG, le[0].getType());
+        assertEquals("getLogEntries/move: action", "move", le[0].getAction());
+        // TODO: test for new title, redirect suppression
+        
+        // Patrol log
+        assertEquals("getLogEntries/patrol: log", Wiki.PATROL_LOG, le[1].getType());
+        assertEquals("getLogEntries/patrol: action", "autopatrol", le[1].getAction());
+    }
+    
+    @Test
     public void getPageInfo() throws Exception
     {
         Map<String, Object>[] pageinfo = enWiki.getPageInfo(new String[] { "Main Page", "IPod" });
