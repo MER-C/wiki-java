@@ -1,6 +1,6 @@
 /**
  *  @(#)Wiki.java 0.31 29/08/2015
- *  Copyright (C) 2007 - 2014 MER-C and contributors
+ *  Copyright (C) 2007 - 2016 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -521,7 +521,7 @@ public class Wiki implements Serializable
         // http://stackoverflow.com/questions/3404301/whats-wrong-with-overridable-method-calls-in-constructors
         // TODO: make this more sane.
         logger.setLevel(loglevel);
-        log(Level.CONFIG, "<init>", "Using Wiki.java " + version);
+        logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
         initVars();
     }
 
@@ -1955,7 +1955,6 @@ public class Wiki implements Serializable
             log(Level.INFO, "delete", "Page \"" + title + "\" does not exist.");
             return;
         }
-        String deleteToken = (String)info.get("token");
 
         // post data
         StringBuilder buffer = new StringBuilder(500);
@@ -4401,9 +4400,8 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
 
         // send request
-        String request = "user=" + encode(blockeduser, false) +
-            "&reason=" + encode(reason, false) + "&token=" +
-            encode(getToken("csrf"), false);
+        String request = "user=" + encode(blockeduser, false) + "&reason=" +
+            encode(reason, false) + "&token=" + encode(getToken("csrf"), false);
         String response = post(query + "action=unblock", request, "unblock");
 
         // done
@@ -6509,6 +6507,8 @@ public class Wiki implements Serializable
             if (revid < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
+            // TODO: returning a 404 here when revision content has been deleted
+            // is not a good idea.
             String temp;
             if (pageDeleted)
             {
@@ -6626,6 +6626,24 @@ public class Wiki implements Serializable
         {
             if (pageDeleted)
             {
+                StringBuilder temp = new StringBuilder("revids=");
+                if (oldid == NEXT_REVISION)
+                    temp.append("&drvdiffto=next");
+                else if (oldid == CURRENT_REVISION)
+                    temp.append("&drvdiffto=cur");
+                else if (oldid == PREVIOUS_REVISION)
+                    temp.append("&drvdiffto=prev");
+                else if (oldid == 0L)
+                {
+                    temp.append("&drvdifftotext=");
+                    temp.append(text);
+                }
+                else
+                {
+                    temp.append("&drvdiffto=");
+                    temp.append(oldid);
+                }
+                String line = post(query + "prop=deletedrevisions", temp.toString(), "Revision.diff");
                 // TODO
                 return null;
             }

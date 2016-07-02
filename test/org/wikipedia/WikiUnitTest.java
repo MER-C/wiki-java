@@ -1,6 +1,6 @@
 /**
  *  @(#)WikiUnitTest.java 0.31 29/08/2015
- *  Copyright (C) 2014-2015 MER-C
+ *  Copyright (C) 2014-2016 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -185,6 +185,29 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getIPBlockList() throws Exception
+    {
+        // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
+        // see also getLogEntries() below
+        Wiki.LogEntry[] le = enWiki.getIPBlockList("Nimimaan");
+        assertEquals("getIPBlockList: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
+        assertEquals("getIPBlockList: user", "MER-C", le[0].getUser().getUsername());
+        assertEquals("getIPBlockList: log", Wiki.BLOCK_LOG, le[0].getType());
+        assertEquals("getIPBlockList: action", "block", le[0].getAction());
+        assertEquals("getIPBlockList: target", "User:Nimimaan", le[0].getTarget());
+        assertEquals("getIPBlockList: reason", "spambot", le[0].getReason());
+//        assertEquals("getLogEntries/block: parameters", new Object[] {
+//            false, true, // hard block (not anon only), account creation disabled,
+//            false, true, // autoblock enabled, email disabled
+//            true, "indefinite" // talk page access revoked, expiry
+//        }, le[0].getDetails());
+        
+        // This IP address should not be blocked (it is reserved)
+        le = enWiki.getIPBlockList("0.0.0.0");
+        assertEquals("getIPBlockList: not blocked", 0, le.length);
+    }
+    
+    @Test
     public void getLogEntries() throws Exception
     {
         // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User:Nimimaan&format=xmlfm
@@ -316,6 +339,7 @@ public class WikiUnitTest
         Map<String, Object> info = enWiki.getSiteInfo();
         assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
         assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
+        assertEquals("siteinfo: timezone", "UTC", (String)info.get("timezone"));
         info = enWikt.getSiteInfo();
         assertFalse("siteinfo: caplinks false", (Boolean)info.get("usingcapitallinks"));
     }
@@ -457,7 +481,13 @@ public class WikiUnitTest
         // https://test.wikipedia.org/w/index.php?oldid=230472
         Wiki.Revision rev = testWiki.getRevision(230472);
         String text = rev.getText();
-        assertEquals("revision text: decoding", text, "&#039;&#039;italic&#039;&#039;" +
-            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n");
+        assertEquals("revision text: decoding", "&#039;&#039;italic&#039;&#039;" +
+            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n", text);
+        
+        // RevisionDeleted content (returns 404)
+        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
+        // rev = enWiki.getRevision(596714684L);
+        // text = rev.getText();
+        // assertEquals("revision text: content deleted", null, text);
     }
 }
