@@ -459,6 +459,8 @@ public class Wiki implements Serializable
     // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
     private static final int LOG2_CHUNK_SIZE = 22;
+    // maximum URL length in bytes
+    private static final int URL_LENGTH_LIMIT = 5000;
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -1373,11 +1375,15 @@ public class Wiki implements Serializable
     {
         Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
+        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers");
         String[] titles = constructTitleString(pages);
         for (String temp : titles)
         {
-            String line = fetch(url.toString() + temp, "getPageInfo");
+            String line;
+            if (temp.getBytes().length > URL_LENGTH_LIMIT)
+                line = post(url.toString(), "titles=" + temp, "getPageInfo");
+            else
+                line = fetch(url.toString() + "&titles=" + temp, "getPageInfo");
 
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
@@ -2075,7 +2081,7 @@ public class Wiki implements Serializable
             url.append("&forcelinkupdate");
         String[] temp = constructTitleString(titles);
         for (String x : temp)
-            post(url.toString(), "&titles=" + x, "purge");
+            post(url.toString(), "titles=" + x, "purge");
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
 
@@ -2401,13 +2407,15 @@ public class Wiki implements Serializable
     {
         StringBuilder url = new StringBuilder(query);
         if (!resolveredirect)
-            url.append("redirects&");
-        url.append("titles=");
+            url.append("redirects");
         String[] ret = new String[titles.length];
-        String[] temp = constructTitleString(titles);
-        for (String blah : temp)
+        for (String blah : constructTitleString(titles))
         {
-            String line = fetch(url.toString() + blah, "resolveRedirects");
+            String line;
+            if (blah.getBytes().length > URL_LENGTH_LIMIT)
+                line = post(url.toString(), "titles=" + blah, "resolveRedirects");
+            else
+                line = fetch(url.toString() + "&titles=" + blah, "resolveRedirects");
 
             // expected form: <redirects><r from="Main page" to="Main Page"/>
             // <r from="Home Page" to="Home page"/>...</redirects>
