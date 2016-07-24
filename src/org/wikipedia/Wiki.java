@@ -460,7 +460,7 @@ public class Wiki implements Serializable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
     private static final int LOG2_CHUNK_SIZE = 22;
     // maximum URL length in bytes
-    private static final int URL_LENGTH_LIMIT = 5000;
+    private static final int URL_LENGTH_LIMIT = 7500;
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -968,7 +968,7 @@ public class Wiki implements Serializable
         buffer.append("&lgtoken=");
         buffer.append(encode(getToken("login"), false));
         String line = post(apiUrl + "action=login", buffer.toString(), "login");
-        buffer = null;
+        buffer.setLength(0);
 
         // check for success
         if (line.contains("result=\"Success\""))
@@ -1375,15 +1375,10 @@ public class Wiki implements Serializable
     {
         Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers");
-        String[] titles = constructTitleString(pages);
-        for (String temp : titles)
+        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
+        for (String temp : constructTitleString(pages, true))
         {
-            String line;
-            if (temp.getBytes().length > URL_LENGTH_LIMIT)
-                line = post(url.toString(), "titles=" + temp, "getPageInfo");
-            else
-                line = fetch(url.toString() + "&titles=" + temp, "getPageInfo");
+            String line = fetch(url.toString() + temp, "getPageInfo");
 
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
@@ -1471,10 +1466,12 @@ public class Wiki implements Serializable
     }
 
     /**
-     * Fill namespace cache.
-     * @throws IOException 
+     *  Fill namespace cache. Required for thread safety.
+     *  @throws IOException if a network error occurs. 
+     *  @since 0.32
      */
-    private synchronized void ensureNamespaceCache() throws IOException {
+    private synchronized void ensureNamespaceCache() throws IOException
+    {
         if (namespaces == null)
             populateNamespaceCache();
     }
@@ -2079,7 +2076,7 @@ public class Wiki implements Serializable
         url.append("action=purge");
         if (links)
             url.append("&forcelinkupdate");
-        String[] temp = constructTitleString(titles);
+        String[] temp = constructTitleString(titles, false);
         for (String x : temp)
             post(url.toString(), "titles=" + x, "purge");
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
@@ -2408,15 +2405,11 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         if (!resolveredirect)
             url.append("redirects");
+        url.append("&titles=");
         String[] ret = new String[titles.length];
-        for (String blah : constructTitleString(titles))
+        for (String blah : constructTitleString(titles, true))
         {
-            String line;
-            if (blah.getBytes().length > URL_LENGTH_LIMIT)
-                line = post(url.toString(), "titles=" + blah, "resolveRedirects");
-            else
-                line = fetch(url.toString() + "&titles=" + blah, "resolveRedirects");
-
+            String line = fetch(url.toString() + blah, "resolveRedirects");
             // expected form: <redirects><r from="Main page" to="Main Page"/>
             // <r from="Home Page" to="Home page"/>...</redirects>
             // TODO: look for the <r> tag instead
@@ -4496,7 +4489,7 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        for (String titlestring : constructTitleString(titles))
+        for (String titlestring : constructTitleString(titles, false))
         {
             StringBuilder request = new StringBuilder("titles=");
             request.append(titlestring);
@@ -7369,7 +7362,7 @@ public class Wiki implements Serializable
      *  @param namespaces the list of namespaces to append
      *  @since 0.27
      */
-    protected void constructNamespaceString(StringBuilder sb, String id, int... namespaces)
+    protected void constructNamespaceString(StringBuilder sb, String id, int[] namespaces)
     {
         int temp = namespaces.length;
         if (temp == 0)
@@ -7387,7 +7380,7 @@ public class Wiki implements Serializable
         // JDK 1.8:
         // if (namespaces.length == 0)
         //     return;
-        // StringJoiner sj = new StringJoiner("%7C");
+        // StringJoiner sj = new StringJoiner("%7C", "&" + id + "namespace=", "");
         // for (namespace : namespaces)
         //     sj.add("" + namespace);
         // sb.add(sj.toString());
@@ -7396,11 +7389,12 @@ public class Wiki implements Serializable
     /**
      *  Cuts up a list of titles into batches for prop=X&amp;titles=Y type queries.
      *  @param titles a list of titles.
+     *  @param limit whether to apply the maximum URL size
      *  @return the titles ready for insertion into a URL
      *  @throws IOException if a network error occurs
      *  @since 0.29
      */
-    protected String[] constructTitleString(String[] titles) throws IOException
+    protected String[] constructTitleString(String[] titles, boolean limit) throws IOException
     {
         // remove duplicates, sort and pad
         // Set<String> set = new TreeSet(Arrays.asList(titles));
@@ -7410,15 +7404,16 @@ public class Wiki implements Serializable
         // System.arraycopy(aaa, 0, titles, temp.length, titles.length - temp.length);
 
         // actually construct the string
-        String[] ret = new String[titles.length / slowmax + 1];
+        ArrayList<String> ret = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < titles.length; i++)
         {
             buffer.append(normalize(titles[i]));
-            if (i == titles.length - 1 || (i % slowmax == slowmax - 1))
+            if (i == titles.length - 1 || (i % slowmax == slowmax - 1) 
+                || (limit && buffer.length() > URL_LENGTH_LIMIT))
             {
-                ret[i / slowmax] = encode(buffer.toString(), false);
-                buffer = new StringBuilder();
+                ret.add(encode(buffer.toString(), false));
+                buffer.setLength(0);
             }
             else
                 buffer.append("|");
@@ -7430,7 +7425,7 @@ public class Wiki implements Serializable
         //     sj.add(normalize(titles[i]));
         //     statement of if above, removing else
         // }
-        return ret;
+        return ret.toArray(new String[ret.size()]);
     }
 
     /**

@@ -469,7 +469,7 @@ public class WikiUnitTest
                 "A97|A98|A99", "UTF-8"),
             URLEncoder.encode("A100", "UTF-8")
         };
-        String[] actual = enWiki.constructTitleString(titles);
+        String[] actual = enWiki.constructTitleString(titles, false);
         assertArrayEquals("constructTitleString", expected, actual);
     }
     
