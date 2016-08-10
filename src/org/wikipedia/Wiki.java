@@ -2084,25 +2084,34 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the list of images used on a particular page. If there are
-     *  redirected images, both the source and target page are included. Capped
-     *  at <tt>max</tt> number of images, there's no reason why there should be
-     *  more than that.
+     *  redirected images, both the source and target page are included. 
      *
      *  @param title a page
-     *  @return the list of images used in the page.  Note that each String in the array will begin with the
-     *  prefix "File:"
+     *  @return the list of images used in the page.  Note that each String in 
+     *  the array will begin with the prefix "File:"
      *  @throws IOException if a network error occurs
      *  @since 0.16
      */
     public String[] getImagesOnPage(String title) throws IOException
     {
         String url = query + "prop=images&imlimit=max&titles=" + encode(title, true);
-        String line = fetch(url, "getImagesOnPage");
-
-        // xml form: <im ns="6" title="File:Example.jpg" />
         List<String> images = new ArrayList<>(750);
-        for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
-            images.add(parseAttribute(line, "title", a));
+        String imcontinue = null;
+        
+        do
+        {
+            String line;
+            if (imcontinue == null) 
+                line = fetch(url, "getImagesOnPage");
+            else
+                line = fetch(url + "&imcontinue=" + encode(imcontinue, false), "getImagesOnPage");
+
+            // xml form: <im ns="6" title="File:Example.jpg" />
+            imcontinue = parseAttribute(line, "imcontinue", 0);
+            for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
+                images.add(parseAttribute(line, "title", a));
+        }
+        while (imcontinue != null);
 
         int temp = images.size();
         log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + title + " (" + temp + " images)");
@@ -2129,8 +2138,6 @@ public class Wiki implements Serializable
      *  categories if ignoreHidden is true. Also includes the sortkey of a
      *  category if sortkey is true. The sortkey would then be appended to
      *  the element of the returned string array (separated by "|").
-     *  Capped at <tt>max</tt> number of categories, there's no reason why
-     *  there should be more than that.
      *
      *  @param title a page
      *  @param sortkey return a sortkey as well (default = false)
@@ -2147,22 +2154,33 @@ public class Wiki implements Serializable
             url.append("&clprop=sortkey%7Chidden");
         url.append("&titles=");
         url.append(encode(title, true));
-        String line = fetch(url.toString(), "getCategories");
-
-        // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
-        // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
+        
         List<String> categories = new ArrayList<>(750);
-        int a, b; // beginIndex and endIndex
-        for (a = line.indexOf("<cl "); a > 0; a = b)
+        String clcontinue = null;
+        do
         {
-            b = line.indexOf("<cl ", a + 1);
-            if (ignoreHidden && line.substring(a, (b > 0 ? b : line.length())).contains("hidden"))
-                continue;
-            String category = parseAttribute(line, "title", a);
-            if (sortkey)
-                category += ("|" + parseAttribute(line, "sortkeyprefix", a));
-            categories.add(category);
+            String line;
+            if (clcontinue == null)
+                line = fetch(url.toString(), "getCategories");
+            else
+                line = fetch(url.toString() + "&clcontinue=" + encode(clcontinue, false), "getCategories");
+
+            // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
+            // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
+            clcontinue = parseAttribute(line, "clcontinue", 0);
+            int a, b; // beginIndex and endIndex
+            for (a = line.indexOf("<cl "); a > 0; a = b)
+            {
+                b = line.indexOf("<cl ", a + 1);
+                if (ignoreHidden && line.substring(a, (b > 0 ? b : line.length())).contains("hidden"))
+                    continue;
+                String category = parseAttribute(line, "title", a);
+                if (sortkey)
+                    category += ("|" + parseAttribute(line, "sortkeyprefix", a));
+                categories.add(category);
+            }
         }
+        while (clcontinue != null);
         int temp = categories.size();
         log(Level.INFO, "getCategories", "Successfully retrieved categories of " + title + " (" + temp + " categories)");
         return categories.toArray(new String[temp]);
@@ -2170,8 +2188,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the list of templates used on a particular page that are in a
-     *  particular namespace(s). Capped at <tt>max</tt> number of templates,
-     *  there's no reason why there should be more than that.
+     *  particular namespace(s).
      *
      *  @param title a page
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -2185,12 +2202,22 @@ public class Wiki implements Serializable
         url.append("prop=templates&tllimit=max&titles=");
         url.append(encode(title, true));
         constructNamespaceString(url, "tl", ns);
-        String line = fetch(url.toString(), "getTemplates");
-
-        // xml form: <tl ns="10" title="Template:POTD" />
+        String plcontinue = null;
         List<String> templates = new ArrayList<>(750);
-        for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
-            templates.add(parseAttribute(line, "title", a));
+        do
+        {
+            String line;
+            if (plcontinue == null)
+                line = fetch(url.toString(), "getTemplates");
+            else
+                line = fetch(url.toString() + "&plcontinue=" + encode(plcontinue, false), "getTemplates");
+
+            // xml form: <tl ns="10" title="Template:POTD" />
+            plcontinue = parseAttribute(line, "plcontinue", 0);
+            for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
+                templates.add(parseAttribute(line, "title", a));
+        }
+        while (plcontinue != null);
 
         int size = templates.size();
         log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + title + " (" + size + " templates)");
@@ -2211,18 +2238,29 @@ public class Wiki implements Serializable
     public Map<String, String> getInterWikiLinks(String title) throws IOException
     {
         String url = query + "prop=langlinks&lllimit=max&titles=" + encode(title, true);
-        String line = fetch(url, "getInterwikiLinks");
-
-        // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
         Map<String, String> interwikis = new HashMap<>(750);
-        for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
+        String llcontinue = null;
+        
+        do
         {
-            String language = parseAttribute(line, "lang", a);
-            int b = line.indexOf('>', a) + 1;
-            int c = line.indexOf('<', b);
-            String page = decode(line.substring(b, c));
-            interwikis.put(language, page);
+            String line;
+            if (llcontinue == null)
+                line = fetch(url, "getInterwikiLinks");
+            else
+                line = fetch(url + "&llcontinue=" + encode(llcontinue, false), "getInterwikiLinks");
+
+            // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
+            llcontinue = parseAttribute(line, "llcontinue", 0);
+            for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
+            {
+                String language = parseAttribute(line, "lang", a);
+                int b = line.indexOf('>', a) + 1;
+                int c = line.indexOf('<', b);
+                String page = decode(line.substring(b, c));
+                interwikis.put(language, page);
+            }
         }
+        while (llcontinue != null);
         log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links on " + title);
         return interwikis;
     }

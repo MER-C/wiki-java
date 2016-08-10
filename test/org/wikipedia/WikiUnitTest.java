@@ -446,7 +446,7 @@ public class WikiUnitTest
     public void constructNamespaceString() throws Exception
     {
         StringBuilder temp = new StringBuilder();
-        enWiki.constructNamespaceString(temp, "blah", 1, 2, 3);
+        enWiki.constructNamespaceString(temp, "blah", new int[] { 1, 2, 3 });
         assertEquals("constructNamespaceString", "&blahnamespace=1%7C2%7C3", temp.toString());
     }
     
