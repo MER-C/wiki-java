@@ -41,15 +41,16 @@ public class UserLinkAdditionFinderUnitTest
         // https://test.wikipedia.org/w/index.php?oldid=244169&diff=prev
         String[] links = UserLinkAdditionFinder.parseDiff(revs[0]);
         assertEquals("244169", links[0]);
-        assertEquals(2, links.length);
-        assertEquals("http://spam.example.com", links[1]);
+        assertEquals(3, links.length);
+        assertEquals("MER-C", links[1]);
+        assertEquals("http://spam.example.com", links[2]);
                 
         // https://test.wikipedia.org/w/index.php?oldid=244170&diff=prev
         links = UserLinkAdditionFinder.parseDiff(revs[1]);
-        assertEquals("https://en.wikipedia.org", links[1]);
+        assertEquals("https://en.wikipedia.org", links[2]);
         
         // https://test.wikipedia.org/w/index.php?oldid=244171&diff=prev
         links = UserLinkAdditionFinder.parseDiff(revs[2]);
-        assertEquals("http://www.example.net", links[1]);
+        assertEquals("http://www.example.net", links[2]);
     }
 }

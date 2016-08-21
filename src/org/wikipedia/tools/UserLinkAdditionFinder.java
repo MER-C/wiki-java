@@ -82,8 +82,9 @@ public class UserLinkAdditionFinder
                     };
                 }
             })
-            .filter(links -> links.length > 1)
-            // parse diffs
+            // remove all sets { revid, user, links... } where no links are added
+            .filter(result -> result.length > 2)
+            // transform to wikitext table output
             .forEach(links -> {
                 StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
                 temp.append(links[0]);
