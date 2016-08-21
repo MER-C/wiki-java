@@ -7405,6 +7405,7 @@ public class Wiki implements Serializable
         int temp = namespaces.length;
         if (temp == 0)
             return;
+        Arrays.sort(namespaces);
         sb.append("&");
         sb.append(id);
         sb.append("namespace=");
@@ -7437,17 +7438,20 @@ public class Wiki implements Serializable
         // remove duplicates, sort and pad
         // Set<String> set = new TreeSet(Arrays.asList(titles));
         // String[] temp = set.toArray(new String[set.size()]);
-        // String[] aaa = new String[titles.length];
-        // System.arraycopy(temp, 0, titles, 0, temp.length);
-        // System.arraycopy(aaa, 0, titles, temp.length, titles.length - temp.length);
+        // String[] aaa = Arrays.copyOf(temp, titles.length);
+        
+        // Sort per [[mw:API]]. Need to copy the array here to maintain 
+        // order in = order out.
+        String[] temp = Arrays.copyOf(titles, titles.length);
+        Arrays.sort(temp);
 
         // actually construct the string
         ArrayList<String> ret = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < titles.length; i++)
+        for (int i = 0; i < temp.length; i++)
         {
-            buffer.append(normalize(titles[i]));
-            if (i == titles.length - 1 || (i % slowmax == slowmax - 1) 
+            buffer.append(normalize(temp[i]));
+            if (i == temp.length - 1 || (i % slowmax == slowmax - 1) 
                 || (limit && buffer.length() > URL_LENGTH_LIMIT))
             {
                 ret.add(encode(buffer.toString(), false));
@@ -7458,9 +7462,9 @@ public class Wiki implements Serializable
         }
         // JDK 1.8:
         // StringJoiner sj = new StringJoiner("|");
-        // for (int i = 0; i < titles.length; i++)
+        // for (int i = 0; i < temp.length; i++)
         // {
-        //     sj.add(normalize(titles[i]));
+        //     sj.add(normalize(temp[i]));
         //     statement of if above, removing else
         // }
         return ret.toArray(new String[ret.size()]);
