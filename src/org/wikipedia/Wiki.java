@@ -7409,20 +7409,17 @@ public class Wiki implements Serializable
         sb.append("&");
         sb.append(id);
         sb.append("namespace=");
+        int previous = -1;
         for (int i = 0; i < temp - 1; i++)
         {
+            // remove duplicates
+            if (namespaces[i] == previous)
+                continue;
+            previous = namespaces[i];
             sb.append(namespaces[i]);
             sb.append("%7C");
         }
         sb.append(namespaces[temp - 1]);
-        
-        // JDK 1.8:
-        // if (namespaces.length == 0)
-        //     return;
-        // StringJoiner sj = new StringJoiner("%7C", "&" + id + "namespace=", "");
-        // for (namespace : namespaces)
-        //     sj.add("" + namespace);
-        // sb.add(sj.toString());
     }
 
     /**
@@ -7435,22 +7432,18 @@ public class Wiki implements Serializable
      */
     protected String[] constructTitleString(String[] titles, boolean limit) throws IOException
     {
-        // remove duplicates, sort and pad
-        // Set<String> set = new TreeSet(Arrays.asList(titles));
-        // String[] temp = set.toArray(new String[set.size()]);
-        // String[] aaa = Arrays.copyOf(temp, titles.length);
-        
-        // Sort per [[mw:API]]. Need to copy the array here to maintain 
-        // order in = order out.
-        String[] temp = Arrays.copyOf(titles, titles.length);
-        Arrays.sort(temp);
+        // sort and remove duplicates per [[mw:API]]
+        Set<String> blah = new TreeSet<>();
+        for (String title : titles)
+            blah.add(normalize(title));
+        String[] temp = blah.toArray(new String[blah.size()]);
 
         // actually construct the string
         ArrayList<String> ret = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < temp.length; i++)
         {
-            buffer.append(normalize(temp[i]));
+            buffer.append(temp[i]);
             if (i == temp.length - 1 || (i % slowmax == slowmax - 1) 
                 || (limit && buffer.length() > URL_LENGTH_LIMIT))
             {

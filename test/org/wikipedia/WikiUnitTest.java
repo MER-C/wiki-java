@@ -252,7 +252,7 @@ public class WikiUnitTest
     @Test
     public void getPageInfo() throws Exception
     {
-        Map<String, Object>[] pageinfo = enWiki.getPageInfo(new String[] { "Main Page", "IPod" });
+        Map<String, Object>[] pageinfo = enWiki.getPageInfo(new String[] { "Main Page", "IPod", "Main_Page" });
         
         // Main Page
         Map<String, Object> protection = (Map<String, Object>)pageinfo[0].get("protection");
@@ -265,6 +265,9 @@ public class WikiUnitTest
         
         // different display title
         assertEquals("getPageInfo: iPod display title", "iPod", pageinfo[1].get("displaytitle"));
+        
+        // Main_Page (duplicate, should be removed)
+        assertEquals("getPageInfo: duplicate", pageinfo[0], pageinfo[2]);
     }
     
     @Test
@@ -446,16 +449,17 @@ public class WikiUnitTest
     public void constructNamespaceString() throws Exception
     {
         StringBuilder temp = new StringBuilder();
-        enWiki.constructNamespaceString(temp, "blah", new int[] { 3, 2, 1 });
+        enWiki.constructNamespaceString(temp, "blah", new int[] { 3, 2, 1, 2 });
         assertEquals("constructNamespaceString", "&blahnamespace=1%7C2%7C3", temp.toString());
     }
     
     @Test
     public void constructTitleString() throws Exception
     {
-        String[] titles = new String[101];
+        String[] titles = new String[102];
         for (int i = 0; i < titles.length; i++)
             titles[i] = "a" + i;
+        titles[101] = "A34"; // should be removed
         String[] expected = new String[]
         {
             // slowmax == 50 for Wikimedia wikis if not logged in
