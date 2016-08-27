@@ -119,6 +119,7 @@ public class XWikiLinksearch extends HttpServlet
         PrintWriter out = response.getWriter();
         StringBuilder buffer = new StringBuilder(10000);
         
+        // TODO: move this and all other inline scripts to a separate JS file
         StringBuilder script = new StringBuilder("<script lang=javascript><!--\n");
         script.append("function disable(a) { \n");
         script.append("  document.getElementById('set').disabled  = (a == 1);\n");
