@@ -76,6 +76,8 @@ public class ImageCCI extends HttpServlet
     {
         if (ServletUtils.checkBlacklist(request, response))
             return;
+        ServletUtils.addSecurityHeaders(response);
+
         String user = request.getParameter("user");
         StringBuilder buffer = new StringBuilder(10000);
         PrintWriter out;

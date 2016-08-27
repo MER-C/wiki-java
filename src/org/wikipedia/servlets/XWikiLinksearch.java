@@ -114,6 +114,7 @@ public class XWikiLinksearch extends HttpServlet
     {
         if (ServletUtils.checkBlacklist(request, response))
             return;
+        ServletUtils.addSecurityHeaders(response);
         response.setContentType("text/html; charset=UTF-8");
         PrintWriter out = response.getWriter();
         StringBuilder buffer = new StringBuilder(10000);
