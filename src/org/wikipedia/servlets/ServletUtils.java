@@ -53,8 +53,11 @@ public class ServletUtils
     {
         // Enable HSTS (force HTTPS)
         response.setHeader("Strict-Transport-Security", "max-age=31536000");
-        // Disable framing
-        response.setHeader("Content-Security-Policy", "frame-ancestors 'none';"); 
+        response.setHeader("Content-Security-Policy", 
+            "frame-ancestors 'none'; " + // disable framing
+            "default-src 'none'; " +     // disable everything by default
+            "script-src 'self'; " +      // allow only scripts from this domain
+            "style-src 'self'");         // allow only stylesheets from this domain
     }
     
     /**

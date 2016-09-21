@@ -150,7 +150,7 @@ public class UserWatchlist extends HttpServlet
         catch (FileNotFoundException ex) 
         {
             // Page does not exist => DONE
-            buffer.append("<span style=\"color: red, size=24pt\">ERROR: page does not exist!</span>");
+            buffer.append("<span class=\"error\">ERROR: page does not exist!</span>");
             buffer.append(ServletUtils.generateFooter("User watchlist"));
             out.write(buffer.toString());
             out.close();

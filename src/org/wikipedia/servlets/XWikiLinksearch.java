@@ -119,12 +119,9 @@ public class XWikiLinksearch extends HttpServlet
         PrintWriter out = response.getWriter();
         StringBuilder buffer = new StringBuilder(10000);
         
-        // TODO: move this and all other inline scripts to a separate JS file
-        StringBuilder script = new StringBuilder("<script lang=javascript><!--\n");
-        script.append("function disable(a) { \n");
-        script.append("  document.getElementById('set').disabled  = (a == 1);\n");
-        script.append("  document.getElementById('wiki').disabled = (a == 0);\n");
-        script.append("}//-->\n</script>\n");
+        // add toggle script
+        StringBuilder script = new StringBuilder("<script type=\"text/javascript\" ");
+        script.append("src=\"XWikiLinksearch.js\"></script>\n");
         
         // header
         buffer.append(ServletUtils.generateHead("Cross-wiki linksearch", script.toString()));
@@ -139,7 +136,7 @@ public class XWikiLinksearch extends HttpServlet
         buffer.append("<form name=\"spamform\" action=\"./linksearch.jsp\" method=GET>\n");
         // wiki set combo box
         buffer.append("<table>");
-        buffer.append("<tr><td><input type=radio name=radio onclick=\"disable(0)\"");
+        buffer.append("<tr><td><input id=\"radio_multi\" type=radio name=radio ");
         if (wikiinput == null)
             buffer.append(" checked");
         buffer.append("><td>Wikis to search:\n<td>");
@@ -149,7 +146,7 @@ public class XWikiLinksearch extends HttpServlet
         options.put("major", "Major Wikimedia projects");
         buffer.append(ServletUtils.generateComboBox("set", options, set, wikiinput != null));
         // wiki
-        buffer.append("<tr><td><input type=radio name=radio onclick=\"disable(1)\"");
+        buffer.append("<tr><td><input id=\"radio_single\" type=radio name=radio ");
         if (wikiinput != null)
             buffer.append(" checked");
         buffer.append("><td>Single wiki:<td><input type=text id=wiki name=wiki");
@@ -210,11 +207,11 @@ public class XWikiLinksearch extends HttpServlet
                 else if (set.equals("major"))
                     linksearch(domain, buffer, importantwikis, https, mailto, ns);
                 else
-                    buffer.append("ERROR: Invalid wiki set.");
+                    buffer.append("<span class=\"error\">ERROR: Invalid wiki set.</span>");
             }
             catch (MalformedURLException ex)
             {
-                buffer.append("<span style=\"color:red\">ERROR: malformed URL!</span>");
+                buffer.append("<span class=\"error\">ERROR: malformed URL!</span>");
             }
             catch (IOException ex)
             {

@@ -4,3 +4,13 @@ ol { margin: 15px }
 
 /* fix input sizes */
 input[type=text] { width: 300px }
+
+/* error messages */
+.error { color: red; size: 24pt }
+
+/* Styles for ParserUtils.revisionsToHTML() */
+ul.htmlrevisions { font-family: monospace; font-size: 120% }
+li.shaded { background-color: #eeeeee }
+span.sizeincreased { color: #009900 }
+span.sizedecreased { color: #990000 }
+a.pagename { color: #0066aa }

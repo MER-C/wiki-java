@@ -103,7 +103,7 @@ public class PrefixContribs extends HttpServlet
         if (prefix != null)
         {
             if (prefix.length() < 4)
-                buffer.append("Error: search key of insufficient length.\n");
+                buffer.append("<span class=\"error\">ERROR: search key of insufficient length.</span>\n");
             else
             {
                 Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));

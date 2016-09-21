@@ -199,13 +199,13 @@ public class ParserUtils
     public static String revisionsToHTML(Wiki wiki, Wiki.Revision[] revisions)
     {
         StringBuilder buffer = new StringBuilder(100000);
-        buffer.append("<ul style=\"font-family: monospace; font-size: 120%\">\n");
+        buffer.append("<ul class=\"htmlrevisions\">\n");
         boolean colored = true;
         for (Wiki.Revision rev : revisions)
         {         
             // alternate background color for readability
             if (colored)
-                buffer.append("<li style=\"background-color: #eeeeee\">(");
+                buffer.append("<li class=\"shaded\">(");
             else
                 buffer.append("<li>(");
             colored = !colored;
@@ -246,7 +246,7 @@ public class ParserUtils
             buffer.append(wiki.getDomain());
             buffer.append("/wiki/");
             buffer.append(page.replace(' ', '_'));
-            buffer.append("\" style=\"color: #0066aa\">");
+            buffer.append("\" class=\"pagename\">");
             buffer.append(page);
             buffer.append("</a> .. ");
             
@@ -279,9 +279,9 @@ public class ParserUtils
             buffer.append(" bytes) (");
             int sizediff = rev.getSizeDiff();
             if (sizediff > 0)
-                buffer.append("<span style=\"color: #009900\">");
+                buffer.append("<span class=\"sizeincreased\">");
             else
-                buffer.append("<span style=\"color: #990000\">");
+                buffer.append("<span class=\"sizedecreased\">");
             buffer.append(rev.getSizeDiff());
             buffer.append("</span>");
             
