@@ -2198,30 +2198,73 @@ public class Wiki implements Serializable
      */
     public String[] getTemplates(String title, int... ns) throws IOException
     {
+        List<String> temp = getTemplates(new String[] { title }, ns)[0];
+        return temp.toArray(new String[temp.size()]);
+    }
+    
+    /**
+     *  Gets the list of templates used on the given pages that are in a
+     *  particular namespace(s). The order of elements in the return array is 
+     *  the same as the order of the list of titles.
+     *
+     *  @param titles a list of pages
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return the list of templates used by those pages page in that namespace
+     *  @throws IOException if a network error occurs
+     *  @since 0.32
+     */
+    public List<String>[] getTemplates(String[] titles, int... ns) throws IOException
+    {
+        List<String>[] ret = new ArrayList[titles.length];
+        String[] titlestrings = constructTitleString(titles, true);
+        
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=templates&tllimit=max&titles=");
-        url.append(encode(title, true));
+        url.append("prop=templates&tllimit=max&");
         constructNamespaceString(url, "tl", ns);
-        String plcontinue = null;
-        List<String> templates = new ArrayList<>(750);
-        do
+        url.append("titles=");
+        
+        for (String temp : titlestrings)
         {
-            String line;
-            if (plcontinue == null)
-                line = fetch(url.toString(), "getTemplates");
-            else
-                line = fetch(url.toString() + "&plcontinue=" + encode(plcontinue, false), "getTemplates");
-
-            // xml form: <tl ns="10" title="Template:POTD" />
-            plcontinue = parseAttribute(line, "plcontinue", 0);
-            for (int a = line.indexOf("<tl "); a > 0; a = line.indexOf("<tl ", ++a))
-                templates.add(parseAttribute(line, "title", a));
+            String tempurl = url.toString() + temp;
+            String tlcontinue = null;
+            
+            do
+            {
+                String line;
+                if (tlcontinue == null)
+                    line = fetch(tempurl, "getTemplates");
+                else
+                    line = fetch(tempurl + "&tlcontinue=" + encode(tlcontinue, false), "getTemplates");
+                tlcontinue = parseAttribute(line, "tlcontinue", 0);
+                
+                // Split the result into individual listings for each article.
+                // Skip first element to remove front crud.
+                String[] x = line.split("<page ");
+                for (int i = 1; i < x.length; i++)
+                {
+                    // Figure out where to put the results in the return array
+                    int index = -1;
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    for (int j = 0; j < titles.length; j++)
+                        if (normalize(titles[j]).equals(parsedtitle))
+                            index = j;
+                    
+                    // Instantiate. Need to keep the list object around, results
+                    // for a given page may be split over API query fetches.
+                    if (ret[index] == null)
+                        ret[index] = new ArrayList<>(750);
+                    
+                    // Actually parse the templates.
+                    // xml form: <tl ns="10" title="Template:POTD" />
+                    for (int a = x[i].indexOf("<tl "); a > 0; a = x[i].indexOf("<tl ", ++a))
+                        ret[index].add(parseAttribute(x[i], "title", a));
+                }
+            }
+            while (tlcontinue != null);
         }
-        while (plcontinue != null);
 
-        int size = templates.size();
-        log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + title + " (" + size + " templates)");
-        return templates.toArray(new String[size]);
+        log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + titles.length + " pages.");
+        return ret;
     }
 
     /**

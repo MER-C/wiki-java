@@ -231,7 +231,7 @@ public class WikiTests
         // all users with right
         for (String oversight : enWiki.allUsersWithRight("hideuser"))
             System.out.println(oversight);
-*/        
+        
         // range contribs
         for (Wiki.Revision rev : enWiki.rangeContribs("127.0.0.0/8"))
             System.out.println(rev);
@@ -239,6 +239,16 @@ public class WikiTests
             System.out.println(rev);
         for (Wiki.Revision rev : enWiki.rangeContribs("::/96"))
             System.out.println(rev);
+                
+        */
+        
+        String[] pages = { "Main Page", "Test", "Wikipedia:Articles for deletion/Log/2016 September 24" };
+        List<String>[] templates = enWiki.getTemplates(pages);
+        for (int i = 0; i < templates.length; i++)
+        {
+            System.out.println(pages[i] + ": ");
+            System.out.println(templates[i]);
+        }
         
     }
 }
