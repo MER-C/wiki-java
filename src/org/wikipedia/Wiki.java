@@ -1730,6 +1730,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws UnsupportedOperationException if you try to edit a Special: or a
      *  Media: page
+     *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @see #getPageText
      */
     public void edit(String title, String text, String summary) throws IOException, LoginException
@@ -1754,6 +1755,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws UnsupportedOperationException if you try to edit a Special: or a
      *  Media: page
+     *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @see #getPageText
      */
     public void edit(String title, String text, String summary, Calendar basetime) throws IOException, LoginException
@@ -1778,6 +1780,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws UnsupportedOperationException if you try to edit a Special: or a
      *  Media: page
+     *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @see #getPageText
      *  @since 0.25
      */
@@ -1805,6 +1808,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws UnsupportedOperationException if you try to edit a Special: or a
      *  Media: page
+     *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @see #getPageText
      *  @since 0.25
      */
@@ -1838,6 +1842,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws UnsupportedOperationException if you try to edit a Special: or
      *  Media: page
+     *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @see #getPageText
      *  @since 0.17
      */
@@ -1898,10 +1903,7 @@ public class Wiki implements Serializable
 
         // done
         if (response.contains("error code=\"editconflict\""))
-        {
-            log(Level.WARNING, "edit", "Edit conflict on " + title);
-            return; // TODO throw an exception!
-        }
+            throw new ConcurrentModificationException("Edit conflict on " + title);
         try
         {
             checkErrorsAndUpdateStatus(response, "edit");
@@ -3450,6 +3452,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws IllegalArgumentException if the revisions are not on the same
      *  page.
+     *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @since 0.20
      */
     public synchronized void undo(Revision rev, Revision to, String reason, boolean minor,
@@ -3495,6 +3498,8 @@ public class Wiki implements Serializable
         String response = post(apiUrl + "action=edit", buffer.toString(), "undo");
 
         // done
+        if (response.contains("error code=\"editconflict\""))
+            throw new ConcurrentModificationException("Edit conflict on " + rev.getPage());
         try
         {
             checkErrorsAndUpdateStatus(response, "undo");
