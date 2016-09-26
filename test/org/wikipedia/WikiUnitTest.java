@@ -424,13 +424,20 @@ public class WikiUnitTest
     @Test
     public void getPageText() throws Exception
     {
-        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-        String text = testWiki.getPageText("User:MER-C/UnitTests/Delete");
-        assertEquals("getPageText", text, "This revision is not deleted!\n");
-        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
-        text = testWiki.getPageText("User:MER-C/UnitTests/pagetext");
-        assertEquals("page text: decoding", text, "&#039;&#039;italic&#039;&#039;" +
-            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n");
+        String[] text = testWiki.getPageText(new String[]
+        {
+            // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+            "User:MER-C/UnitTests/Delete", 
+            // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
+            "User:MER-C/UnitTests/pagetext",
+            // non-existent -- https://test.wikipedia.org/wiki/Gsgdksgjdsg
+            "Gsgdksgjdsg"
+        });
+        // API result does not include the terminating new line
+        assertEquals("getPageText", text[0], "This revision is not deleted!");
+        assertEquals("page text: decoding", text[1], "&#039;&#039;italic&#039;&#039;" +
+            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;");
+        assertNull("getPageText: non-existent page", text[2]);
     }
     
     @Test

@@ -1599,24 +1599,68 @@ public class Wiki implements Serializable
      *  fetch an image.
      *
      *  @param title the title of the page.
-     *  @return the raw wikicode of a page.
-     *  @throws UnsupportedOperationException if you try to retrieve the text of a
-     *  Special: or Media: page
-     *  @throws FileNotFoundException if the page does not exist
+     *  @return the raw wikicode of a page, or null if the page doesn't exist
+     *  @throws UnsupportedOperationException if you try to retrieve the text of
+     *  a Special: or Media: page
      *  @throws IOException if a network error occurs
      *  @see #edit
      */
     public String getPageText(String title) throws IOException
     {
-        // pitfall check
-        if (namespace(title) < 0)
-            throw new UnsupportedOperationException("Cannot retrieve Special: or Media: pages!");
+        return getPageText(new String[] { title })[0];
+    }
+    
+    /**
+     *  Gets the raw wikicode for a set of pages. WARNING: does not support 
+     *  special pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
+     *  for fetching the contents of special pages. Use <tt>getImage()</tt> to
+     *  fetch an image. If a page doesn't exist, the corresponding return value
+     *  is null.
+     *
+     *  @param titles a list of titles
+     *  @return the raw wikicode of those titles, in the same order as the input
+     *  array
+     *  @throws UnsupportedOperationException if you try to retrieve the text of
+     *  a Special: or Media: page
+     *  @throws IOException if a network error occurs
+     *  @since 0.32
+     *  @see #edit
+     */
+    public String[] getPageText(String[] titles) throws IOException
+    {
+        // setup
+        for (String title : titles)
+            if (namespace(title) < 0)
+                throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
+        String[] ret = new String[titles.length];
+        String url = query + "prop=revisions&rvprop=content&titles=";
+        
+        for (String chunk : constructTitleString(titles, true))
+        {
+            String[] results = fetch(url + chunk, "getPageText").split("<page ");
 
-        // go for it
-        String url = base + encode(title, true) + "&action=raw";
-        String temp = fetch(url, "getPageText");
-        log(Level.INFO, "getPageText", "Successfully retrieved text of " + title);
-        return temp;
+            // skip first element to remove front crud
+            for (int i = 1; i < results.length; i++)
+            {
+                // determine existance, then locate and extract content
+                String parsedtitle = parseAttribute(results[i], "title", 0);
+                String text = null;
+                if (!results[i].contains("missing=\"\""))
+                {
+                    int x = results[i].indexOf("<rev ", i);
+                    int y = results[i].indexOf(">", x) + 1;
+                    int z = results[i].indexOf("</rev>", y);
+                    text = decode(results[i].substring(y, z));
+                }
+                
+                // place the result into the return array
+                for (int j = 0; j < titles.length; j++)
+                    if (normalize(titles[j]).equals(parsedtitle))
+                        ret[j] = text;
+            }
+        }
+        log(Level.INFO, "getPageText", "Successfully retrieved text of " + titles.length + " pages.");
+        return ret;
     }
 
     /**
