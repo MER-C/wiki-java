@@ -247,6 +247,14 @@ public class WikiUnitTest
         // Patrol log
         assertEquals("getLogEntries/patrol: log", Wiki.PATROL_LOG, le[1].getType());
         assertEquals("getLogEntries/patrol: action", "autopatrol", le[1].getAction());
+        
+        // RevisionDeleted log entries, no access
+        // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&letitle=User%3AMER-C%2FTest
+        le = testWiki.getLogEntries("User:MER-C/Test");
+        assertNull("getLogEntries: reason hidden", le[0].getReason());
+        assertTrue("getLogEntries: reason hidden", le[0].isReasonDeleted());
+        assertNull("getLogEntries: user hidden", le[0].getUser());
+        assertTrue("getLogEntries: user hidden", le[0].isUserDeleted());
     }
     
     @Test

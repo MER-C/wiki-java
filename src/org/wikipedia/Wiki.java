@@ -2122,8 +2122,7 @@ public class Wiki implements Serializable
         url.append("action=purge");
         if (links)
             url.append("&forcelinkupdate");
-        String[] temp = constructTitleString(titles, false);
-        for (String x : temp)
+        for (String x : constructTitleString(titles, false))
             post(url.toString(), "titles=" + x, "purge");
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
@@ -5516,10 +5515,9 @@ public class Wiki implements Serializable
         }
 
         // reason
-        String reason;
-        if (xml.contains("commenthidden=\""))
-            reason = null;
-        else if (type.equals(USER_CREATION_LOG)) // there is no reason for creating a user
+        String reason = null;
+        boolean reasonhidden = xml.contains("commenthidden=\"");
+        if (type.equals(USER_CREATION_LOG)) // there is no reason for creating a user
             reason = "";
         else if (xml.contains("reason=\""))
             reason = parseAttribute(xml, "reason", 0);
@@ -5527,6 +5525,7 @@ public class Wiki implements Serializable
             reason = parseAttribute(xml, "comment", 0);
 
         // generic performer name (won't work for ipblocklist, overridden there)
+        boolean userhidden = xml.contains("userhidden=\"\"");
         User performer = null;
         if (xml.contains("user=\""))
             performer = new User(parseAttribute(xml, "user", 0));
@@ -5592,7 +5591,10 @@ public class Wiki implements Serializable
             details = temp.toArray(new String[temp.size()]);
         }
 
-        return new LogEntry(type, action, reason, performer, target, timestamp, details);
+        LogEntry le = new LogEntry(type, action, reason, performer, target, timestamp, details);
+        le.userDeleted = userhidden;
+        le.reasonDeleted = reasonhidden;
+        return le;
     }
 
     /**
@@ -6399,6 +6401,7 @@ public class Wiki implements Serializable
         private String target;
         private Calendar timestamp;
         private Object details;
+        private boolean reasonDeleted = false, userDeleted = false;
 
         /**
          *  Creates a new log entry. WARNING: does not perform the action
@@ -6453,7 +6456,7 @@ public class Wiki implements Serializable
         /**
          *  Gets the reason supplied by the perfoming user when the action
          *  was performed. WARNING: returns null if the reason was
-         *  RevisionDeleted.
+         *  RevisionDeleted and one does not have access to the content.
          *  @return the reason the action was performed
          *  @since 0.08
          */
@@ -6461,10 +6464,21 @@ public class Wiki implements Serializable
         {
             return reason;
         }
+        
+        /**
+         *  Returns true if the reason is RevisionDeleted.
+         *  @return (see above)
+         *  @since 0.32
+         */
+        public boolean isReasonDeleted()
+        {
+            return reasonDeleted;
+        }
 
         /**
          *  Gets the user object representing who performed the action.
-         *  WARNING: returns null if the user was RevisionDeleted.
+         *  WARNING: returns null if the user was RevisionDeleted and one does
+         *  not have access to the content.
          *  @return the user who performed the action.
          *  @since 0.08
          */
@@ -6472,10 +6486,22 @@ public class Wiki implements Serializable
         {
             return user;
         }
+        
+        /**
+         *  Returns true if the user who performed this LogEntry is
+         *  RevisionDeleted.
+         *  @return (see above)
+         *  @since 0.32
+         */
+        public boolean isUserDeleted()
+        {
+            return userDeleted;
+        }
 
         /**
          *  Gets the target of the action represented by this log entry. WARNING:
-         *  returns null if the content was RevisionDeleted.
+         *  returns null if the content was RevisionDeleted and one does not
+         *  have access to the content.
          *  @return the target of this log entry
          *  @since 0.08
          */

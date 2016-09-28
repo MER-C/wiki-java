@@ -42,6 +42,20 @@ public class AdminUnitTest
         testWiki.setMaxLag(-1);
     }
     
+    /**
+     *  See https://test.wikipedia.org/w/index.php?title=Special%3ALog&page=User%3AMER-C%2FTest.
+     *  @throws Exception if something goes wrong
+     */
+    @Test
+    public void getLogEntries() throws Exception
+    {
+        Wiki.LogEntry[] le = testWiki.getLogEntries("User:MER-C/Test");
+        assertEquals("getLogEntries: RevisionDeleted reason, can access", 
+            "create a log entry for testing RevisionDelete on", le[0].getReason());
+        assertEquals("getLogEntries: RevisionDeleted user, can access", "MER-C", 
+            le[0].getUser().getUsername());
+    }
+    
 
     /**
      *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
@@ -62,6 +76,7 @@ public class AdminUnitTest
     @Test
     public void RevisionGetText() throws Exception
     {
+        // FIXME: broken
         Wiki.Revision deleted = testWiki.getRevision(217078L);
         assertEquals(deleted.getText(), "This revision is deleted!");
     }
