@@ -374,6 +374,20 @@ public class WikiUnitTest
     }
     
     @Test
+    public void pageHasTemplate() throws Exception
+    {
+        boolean[] b = enWiki.pageHasTemplate(new String[]
+        {
+            "Wikipedia:Articles for deletion/Log/2016 September 20",
+            "Main Page",
+            "dsigusodgusdigusd" // non-existent, should be false
+        }, "Wikipedia:Articles for deletion/FMJAM");
+        assertTrue("pageHasTemplate: true", b[0]);
+        assertFalse("pageHasTemplate: false", b[1]);
+        assertFalse("pageHasTemplate: non-existent", b[2]);
+    }
+    
+    @Test
     public void getRevision() throws Exception
     {
         // https://en.wikipedia.org/w/index.php?title=Wikipedia_talk%3AWikiProject_Spam&diff=597454682&oldid=597399794

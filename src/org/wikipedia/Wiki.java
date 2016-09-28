@@ -2260,13 +2260,56 @@ public class Wiki implements Serializable
      */
     public List<String>[] getTemplates(String[] titles, int... ns) throws IOException
     {
+        return getTemplates(titles, null, ns);
+    }
+    
+    /**
+     *  Determine whether a list of pages contains the given template. The order 
+     *  of elements in the return array is the same as the order of the list of 
+     *  titles.
+     * 
+     *  @param pages a list of pages
+     *  @param template the template to check for
+     *  @return whether the given pages contain said template
+     *  @throws IOException if a network error occurs
+     *  @since 0.32
+     */
+    public boolean[] pageHasTemplate(String[] pages, String template) throws IOException
+    {
+        boolean[] ret = new boolean[pages.length];
+        List<String>[] result = getTemplates(pages, template);
+        for (int i = 0; i < result.length; i++)
+            ret[i] = !(result[i].isEmpty());
+        return ret;
+    }
+
+    /**
+     *  Gets the list of templates used on the given pages that are in a
+     *  particular namespace(s). The order of elements in the return array is 
+     *  the same as the order of the list of titles.
+     *
+     *  @param titles a list of pages
+     *  @param template restrict results to the supplied page. Useful for checking
+     *  whether a list of pages contains a given template.
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return the list of templates used by those pages page in that namespace
+     *  @throws IOException if a network error occurs
+     *  @since 0.32
+     */
+    protected List<String>[] getTemplates(String[] titles, String template, int... ns) throws IOException
+    {
         List<String>[] ret = new ArrayList[titles.length];
         String[] titlestrings = constructTitleString(titles, true);
         
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=templates&tllimit=max&");
+        url.append("prop=templates&tllimit=max");
         constructNamespaceString(url, "tl", ns);
-        url.append("titles=");
+        if (template != null)
+        {
+            url.append("&tltemplates=");
+            url.append(encode(template, false));
+        }
+        url.append("&titles=");
         
         for (String temp : titlestrings)
         {
