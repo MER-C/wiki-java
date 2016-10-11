@@ -580,7 +580,8 @@ public class WikiUnitTest
         String[] titleStrings = enWiki.constructTitleString(titles, false);
         for (String ts : titleStrings)
         {
-            assertTrue("constructTitleStringUrlLimit", ts.length() < enWiki.URL_LENGTH_LIMIT);
+            // Assume the base url is of length 400
+            assertTrue("constructTitleStringUrlLimit", ts.length() < enWiki.URL_LENGTH_LIMIT - 400);
         }
     }
 

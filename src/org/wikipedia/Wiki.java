@@ -460,7 +460,7 @@ public class Wiki implements Serializable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
     private static final int LOG2_CHUNK_SIZE = 22;
     // maximum URL length in bytes
-    protected static final int URL_LENGTH_LIMIT = 7500;
+    protected static final int URL_LENGTH_LIMIT = 8192;
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -7594,33 +7594,34 @@ public class Wiki implements Serializable
     protected String[] constructTitleString(String[] titles, boolean limit) throws IOException
     {
         // sort and remove duplicates per [[mw:API]]
-        Set<String> blah = new TreeSet<>();
+        Set<String> set = new TreeSet<>();
         for (String title : titles)
-            blah.add(normalize(title));
-        String[] temp = blah.toArray(new String[blah.size()]);
+            set.add(encode(title, true));
+        String[] titlesEnc = set.toArray(new String[set.size()]);
 
         // actually construct the string
+        String titleStringToken = encode("|", false);
         ArrayList<String> ret = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < temp.length; i++)
+        buffer.append(titlesEnc[0]);
+        int num = 1;
+        for (int i = num; i < titlesEnc.length; i++)
         {
-            buffer.append(temp[i]);
-            if (i == temp.length - 1 || (i % slowmax == slowmax - 1) 
-                || (limit && buffer.length() > URL_LENGTH_LIMIT))
+            if (num < slowmax && // Assume the base url takes 400 bytes
+                buffer.length() + titleStringToken.length() + titlesEnc[i].length() < URL_LENGTH_LIMIT - 400)
             {
-                ret.add(encode(buffer.toString(), false));
-                buffer.setLength(0);
+                buffer.append(titleStringToken);
             }
             else
-                buffer.append("|");
+            {
+                ret.add(buffer.toString());
+                buffer.setLength(0);
+                num = 0;
+            }
+            buffer.append(titlesEnc[i]);
+            ++num;
         }
-        // JDK 1.8:
-        // StringJoiner sj = new StringJoiner("|");
-        // for (int i = 0; i < temp.length; i++)
-        // {
-        //     sj.add(normalize(temp[i]));
-        //     statement of if above, removing else
-        // }
+        ret.add(buffer.toString());
         return ret.toArray(new String[ret.size()]);
     }
 
