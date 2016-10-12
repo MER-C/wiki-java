@@ -1632,7 +1632,7 @@ public class Wiki implements Serializable
         for (String title : titles)
             if (namespace(title) < 0)
                 throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
-        String[] ret = new String[titles.length];
+        HashMap<String, String> pageTexts = new HashMap<String, String>(2 * titles.length);
         String url = query + "prop=revisions&rvprop=content&titles=";
         
         for (String chunk : constructTitleString(titles, true))
@@ -1653,12 +1653,16 @@ public class Wiki implements Serializable
                     text = decode(results[i].substring(y, z));
                 }
                 
-                // place the result into the return array
-                for (int j = 0; j < titles.length; j++)
-                    if (normalize(titles[j]).equals(parsedtitle))
-                        ret[j] = text;
+                // store result for later
+                pageTexts.put(parsedtitle, text);
             }
         }
+
+        String[] ret = new String[titles.length];
+        // returned array is in the same order as input array
+        for (int j = 0; j < titles.length; j++)
+            ret[j] = pageTexts.remove(normalize(titles[j]));
+
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + titles.length + " pages.");
         return ret;
     }
