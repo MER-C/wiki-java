@@ -456,6 +456,8 @@ public class Wiki implements Serializable
     // time for the read to take place. (needs to be longer, some connections are slow
     // and the data volume is large!)
     private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
+    // number of retries when using fetch()
+    private static final int FETCH_ATTEMPTS = 2;
     // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
     private static final int LOG2_CHUNK_SIZE = 22;
@@ -1378,7 +1380,7 @@ public class Wiki implements Serializable
         url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
         for (String temp : constructTitleString(pages, true))
         {
-            String line = fetch(url.toString() + temp, "getPageInfo");
+            String line = fetch(url.toString() + temp, "getPageInfo", FETCH_ATTEMPTS);
 
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
@@ -1637,7 +1639,7 @@ public class Wiki implements Serializable
         
         for (String chunk : constructTitleString(titles, true))
         {
-            String[] results = fetch(url + chunk, "getPageText").split("<page ");
+            String[] results = fetch(url + chunk, "getPageText", FETCH_ATTEMPTS).split("<page ");
 
             // skip first element to remove front crud
             for (int i = 1; i < results.length; i++)
@@ -2320,9 +2322,9 @@ public class Wiki implements Serializable
             {
                 String line;
                 if (tlcontinue == null)
-                    line = fetch(tempurl, "getTemplates");
+                    line = fetch(tempurl, "getTemplates", FETCH_ATTEMPTS);
                 else
-                    line = fetch(tempurl + "&tlcontinue=" + encode(tlcontinue, false), "getTemplates");
+                    line = fetch(tempurl + "&tlcontinue=" + encode(tlcontinue, false), "getTemplates", FETCH_ATTEMPTS);
                 tlcontinue = parseAttribute(line, "tlcontinue", 0);
                 
                 // Split the result into individual listings for each article.
@@ -7273,6 +7275,50 @@ public class Wiki implements Serializable
                 throw new UnknownError("MW API error. Server response was: " + temp);
         }
         return temp;
+    }
+
+    /**
+     *  A generic URL content fetcher. This is only useful for GET requests,
+     *  which is almost everything that doesn't modify the wiki. Might be
+     *  useful for subclasses.
+     *
+     *  Here we also check the database lag and wait if it exceeds
+     *  <tt>maxlag</tt>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  here</a> for how this works.
+     *
+     *  @param url the url to fetch
+     *  @param caller the caller of this method
+     *  @param attempts How often to try before the IOException is thrown
+     *  @return the content of the fetched URL
+     *  @throws IOException if a network error occurs
+     *  @throws AssertionError if assert=user|bot fails
+     *  @since 0.32
+     */
+    protected String fetch(String url, String caller, int attempts) throws IOException
+    {
+        --attempts;
+        try
+        {
+            return fetch(url, caller);
+        }
+        catch (IOException e)
+        {
+            if (attempts <= 0)
+            {
+                throw e;
+            }
+            else
+            {
+                try
+                {
+                    Thread.sleep(10 * 1000L);
+                }
+                catch (InterruptedException ignore)
+                {
+                }
+                return fetch(url, caller, attempts);
+            }
+        }
     }
 
     /**
