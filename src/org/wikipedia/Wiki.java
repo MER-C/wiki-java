@@ -1661,7 +1661,7 @@ public class Wiki implements Serializable
         String[] ret = new String[titles.length];
         // returned array is in the same order as input array
         for (int j = 0; j < titles.length; j++)
-            ret[j] = pageTexts.remove(normalize(titles[j]));
+            ret[j] = pageTexts.get(normalize(titles[j]));
 
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + titles.length + " pages.");
         return ret;
