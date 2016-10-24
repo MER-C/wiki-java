@@ -1,6 +1,6 @@
 /**
  *  @(#)XWikiLinksearch.java 0.02 01/10/2012
- *  Copyright (C) 2011 - 2014 MER-C
+ *  Copyright (C) 2011 - 2016 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -170,7 +170,7 @@ public class XWikiLinksearch extends HttpServlet
         // https checkbox
         boolean https = (request.getParameter("https") != null);
         buffer.append("<td><input type=checkbox name=https value=1");
-        if (https)
+        if (https || domain == null)
             buffer.append(" checked");
         buffer.append(">HTTPS\n");
         // mailto checkbox
