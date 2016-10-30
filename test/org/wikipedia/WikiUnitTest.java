@@ -255,6 +255,15 @@ public class WikiUnitTest
         assertTrue("getLogEntries: reason hidden", le[0].isReasonDeleted());
         assertNull("getLogEntries: user hidden", le[0].getUser());
         assertTrue("getLogEntries: user hidden", le[0].isUserDeleted());
+        // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&leuser=MER-C
+        //     &lestart=20161002050030&leend=20161002050000&letype=delete
+        le = testWiki.getLogEntries(
+            testWiki.timestampToCalendar("20161002050030", false),
+            testWiki.timestampToCalendar("20161002050000", false), 
+            Integer.MAX_VALUE, Wiki.DELETION_LOG, "", testWiki.getUser("MER-C"), 
+            "", Wiki.ALL_NAMESPACES);
+        assertNull("getLogEntries: action hidden", le[0].getTarget());
+        assertTrue("getLogEntries: action hidden", le[0].isTargetDeleted());
     }
     
     @Test
