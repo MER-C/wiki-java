@@ -1632,7 +1632,7 @@ public class Wiki implements Serializable
         for (String title : titles)
             if (namespace(title) < 0)
                 throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
-        HashMap<String, String> pageTexts = new HashMap<String, String>(2 * titles.length);
+        HashMap<String, String> pageTexts = new HashMap<>(2 * titles.length);
         String url = query + "prop=revisions&rvprop=content&titles=";
         
         for (String chunk : constructTitleString(titles, true))
@@ -3217,23 +3217,10 @@ public class Wiki implements Serializable
         // build url and connect
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize%7Csha1&revids=");
-        // chunkify oldids
-        String[] chunks = new String[oldids.length / slowmax + 1];
-        StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < oldids.length; i++)
-        {
-            buffer.append(oldids[i]);
-            if (i == oldids.length - 1 || i == slowmax - 1)
-            {
-                chunks[i / slowmax] = buffer.toString();
-                buffer = new StringBuilder();
-            }
-            else
-                buffer.append("%7C");
-        }
         Revision[] revisions = new Revision[oldids.length];
+        
         // fetch and parse
-        for (String chunk : chunks)
+        for (String chunk : constructRevisionString(oldids))
         {
             String line = fetch(url.toString() + chunk, "getRevision");
 
@@ -7422,14 +7409,14 @@ public class Wiki implements Serializable
     protected synchronized boolean checkLag(URLConnection connection)
     {
         int lag = connection.getHeaderFieldInt("X-Database-Lag", -5);
-        // X-Database-Lag is integer, so a lag of 1.972 gives X-Database-Lag == 1
-        // Thus, we need to retry in case of equality:
+        // X-Database-Lag is the current lag rounded down to the nearest integer.
+        // Thus, we need to retry in case of equality.
         if (lag >= maxlag)
         {
             try
             {
                 int time = connection.getHeaderFieldInt("Retry-After", 10);
-                logger.log(Level.WARNING, "Current database lag {0} s violates maxlag of {1} s, waiting {2} s.", new Object[] { lag, maxlag, time });
+                logger.log(Level.WARNING, "Current database lag {0} s exceeds maxlag of {1} s, waiting {2} s.", new Object[] { lag, maxlag, time });
                 Thread.sleep(time * 1000);
             }
             catch (InterruptedException ex)
@@ -7596,6 +7583,36 @@ public class Wiki implements Serializable
             sb.append("%7C");
         }
         sb.append(namespaces[temp - 1]);
+    }
+    
+    /**
+     *  Cuts up a list of revisions into batches for prop=X&ids=Y type queries.
+     *  @param ids a list of revision IDs
+     *  @return the revisions ready for insertion into a URL
+     *  @since 0.32
+     */
+    protected String[] constructRevisionString(long[] ids)
+    {
+        // copy ids to preserve order 
+        long[] sortedids = Arrays.copyOf(ids, ids.length);
+        long previous = -1;
+        
+        StringBuilder buffer = new StringBuilder();
+        ArrayList<String> chunks = new ArrayList<>();
+        for (int i = 0; i < sortedids.length; i++)
+        {
+            // remove duplicates
+            if (sortedids[i] != previous)
+                buffer.append(sortedids[i]);
+            if (i == ids.length - 1 || i == slowmax - 1)
+            {
+                chunks.add(buffer.toString());
+                buffer.setLength(0);
+            }
+            else
+                buffer.append("%7C");
+        }
+        return chunks.toArray(new String[chunks.size()]);
     }
 
     /**
