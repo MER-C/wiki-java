@@ -23,7 +23,7 @@ package org.wikipedia;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
-import java.nio.file.Files;
+import java.nio.file.*;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.logging.*;
@@ -1533,7 +1533,7 @@ public class Wiki implements Serializable
         for (Map.Entry<String, Integer> entry : namespaces.entrySet())
             if (entry.getValue().equals(namespace))
                 return entry.getKey();
-        return ""; // never reached...
+        throw new AssertionError("Unreachable.");
     }
 
     /**
@@ -3989,6 +3989,84 @@ public class Wiki implements Serializable
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
     }
     
+    /**
+     *  Uploads an image by copying it from the given URL. Equivalent to 
+     *  [[Special:Upload]]. Supported extensions are (case-insensitive) "png", 
+     *  "jpg", "gif" and "svg". You need to be logged on to do this. This method 
+     *  is thread safe and subject to the throttle.
+     *
+     *  @param url the URL of the image to fetch
+     *  @param filename the target file name (may contain File)
+     *  @param contents the contents of the image description page, set to ""
+     *  if overwriting an existing file
+     *  @param reason an upload summary (defaults to <tt>contents</tt>, use ""
+     *  to not specify one)
+     *  @throws CredentialNotFoundException if not logged in
+     *  @throws CredentialException if (page is protected OR file is on a central
+     *  repository) and we can't upload
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws IOException if a network/local filesystem error occurs
+     *  @throws AccountLockedException if user is blocked
+     *  @throws AccessDeniedException if the wiki does not permit us to upload
+     *  from this URL
+     *  @since 0.32
+     */
+    public synchronized void upload(URL url, String filename, String contents, String reason) throws IOException, LoginException
+    {
+        throttle();
+
+        // check for log in
+        if (user == null || !user.isAllowedTo("upload_by_url"))
+        {
+            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot upload files via URL.");
+            log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
+            throw ex;
+        }
+        filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+
+        // protection
+        Map info = getPageInfo("File:" + filename);
+        if (!checkRights(info, "upload"))
+        {
+            CredentialException ex = new CredentialException("Permission denied: page is protected.");
+            log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
+            throw ex;
+        }
+        
+        // send and build request
+        StringBuilder postData = new StringBuilder("ignorewarnings=1&token=");
+        postData.append(encode(getToken("csrf"), false));
+        postData.append("&filename=");
+        postData.append(filename);
+        postData.append("&text=");
+        postData.append(encode(contents, false));
+        postData.append("&comment=");
+        postData.append(encode(reason, false));
+        postData.append("&url=");
+        postData.append(encode(url.toExternalForm(), false));
+        String response = post(apiUrl + "action=upload", postData.toString(), "upload");
+        
+        if (response.contains("error code=\"fileexists-shared-forbidden\""))
+        {
+            CredentialException ex = new CredentialException("Cannot overwrite file hosted on central repository.");
+            log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
+            throw ex;
+        }
+        if (response.contains("error code=\"copyuploadbaddomain\""))
+        {
+            AccessDeniedException ex = new AccessDeniedException("Uploads by URL are not allowed from " + url.getHost());
+            log(Level.WARNING, "upload", "Cannot upload from given URL");
+            throw ex;
+        }
+        if (response.contains("error code=\"http-bad-status\""))
+        {
+            log(Level.WARNING, "upload", "Server-side network error when fetching image.");
+            throw new IOException("Server-side network error when fetching image: " + response);
+        }
+        checkErrorsAndUpdateStatus(response, "upload");
+        log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
+    }
+    
     // USER METHODS
 
     /**
@@ -6165,10 +6243,11 @@ public class Wiki implements Serializable
         /**
          *  Copies this user object.
          *  @return the copy
+         *  @throws CloneNotSupportedException if the clone fails
          *  @since 0.08
          */
         @Override
-        public User clone()
+        public User clone() throws CloneNotSupportedException
         {
             try
             {
