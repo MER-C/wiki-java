@@ -58,6 +58,8 @@ public class ServletUtils
             "default-src 'none'; " +     // disable everything by default
             "script-src 'self'; " +      // allow only scripts from this domain
             "style-src 'self'");         // allow only stylesheets from this domain
+        // disable the Referer header
+        response.setHeader("Referrer-Policy", "no-referrer");
     }
     
     /**
