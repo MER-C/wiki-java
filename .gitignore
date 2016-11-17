@@ -26,6 +26,10 @@ nbactions.xml
 .classpath
 .settings
 
+### IntelliJ IDEA ###
+*.iml
+.idea/
+
 ### OS Generated files ###
 .DS_Store
 .DS_Store?
