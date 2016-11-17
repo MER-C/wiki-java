@@ -1,0 +1,11 @@
+# use Docker-based container (instead of OpenVZ)
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.m2/repository
+
+language: java
+
+jdk:
+  - oraclejdk8
