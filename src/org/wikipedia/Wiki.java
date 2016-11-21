@@ -460,7 +460,7 @@ public class Wiki implements Serializable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
     private static final int LOG2_CHUNK_SIZE = 22;
     // maximum URL length in bytes
-    private static final int URL_LENGTH_LIMIT = 7500;
+    protected static final int URL_LENGTH_LIMIT = 7500;
 
     // CONSTRUCTORS AND CONFIGURATION
 
