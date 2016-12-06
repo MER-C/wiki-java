@@ -511,7 +511,7 @@ public class WikiUnitTest
                 "A91|A92|A93|A94|A95|A96|A97|A98", "UTF-8"),
             URLEncoder.encode("A99", "UTF-8")
         };
-        String[] actual = enWiki.constructTitleString(titles, false);
+        String[] actual = enWiki.constructTitleString(0, titles, false);
         assertArrayEquals("constructTitleString", expected, actual);
     }
     
@@ -577,10 +577,11 @@ public class WikiUnitTest
             "File:พระบามสมเด็จพระเจ้าอยู่หัวเปิดศาลาเหรียญ.jpg",
             "File:พระบาทสมเด็จพระเจ้าอยู่หัวเปิดศาลาเครื่องราช.jpg"
         };
-        String[] titleStrings = enWiki.constructTitleString(titles, false);
+        int lengthBaseUrl = (int)(Math.random() * 400);
+        String[] titleStrings = enWiki.constructTitleString(lengthBaseUrl, titles, false);
         for (String ts : titleStrings)
         {
-            assertTrue("constructTitleStringUrlLimit", ts.length() < enWiki.URL_LENGTH_LIMIT);
+            assertTrue("constructTitleStringUrlLimit", ts.length() <= enWiki.URL_LENGTH_LIMIT - lengthBaseUrl);
         }
     }
 

@@ -460,7 +460,7 @@ public class Wiki implements Serializable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
     private static final int LOG2_CHUNK_SIZE = 22;
     // maximum URL length in bytes
-    protected static final int URL_LENGTH_LIMIT = 7500;
+    protected static final int URL_LENGTH_LIMIT = 8192;
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -1376,7 +1376,7 @@ public class Wiki implements Serializable
         Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
         url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
-        for (String temp : constructTitleString(pages, true))
+        for (String temp : constructTitleString(url.length(), pages, true))
         {
             String line = fetch(url.toString() + temp, "getPageInfo");
 
@@ -1635,7 +1635,7 @@ public class Wiki implements Serializable
         HashMap<String, String> pageTexts = new HashMap<>(2 * titles.length);
         String url = query + "prop=revisions&rvprop=content&titles=";
         
-        for (String chunk : constructTitleString(titles, true))
+        for (String chunk : constructTitleString(url.length(), titles, true))
         {
             String[] results = fetch(url + chunk, "getPageText").split("<page ");
 
@@ -2063,7 +2063,7 @@ public class Wiki implements Serializable
         url.append("action=purge");
         if (links)
             url.append("&forcelinkupdate");
-        for (String x : constructTitleString(titles, false))
+        for (String x : constructTitleString(0, titles, false))
             post(url.toString(), "titles=" + x, "purge");
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
@@ -2240,7 +2240,6 @@ public class Wiki implements Serializable
     protected List<String>[] getTemplates(String[] titles, String template, int... ns) throws IOException
     {
         List<String>[] ret = new ArrayList[titles.length];
-        String[] titlestrings = constructTitleString(titles, true);
         
         StringBuilder url = new StringBuilder(query);
         url.append("prop=templates&tllimit=max");
@@ -2251,7 +2250,9 @@ public class Wiki implements Serializable
             url.append(encode(template, false));
         }
         url.append("&titles=");
-        
+
+        // Also account for unknown lenght of tlcontinue's value
+        String[] titlestrings = constructTitleString(url.length() + "&tlcontinue=".length() + 1000, titles, true);
         for (String temp : titlestrings)
         {
             String tempurl = url.toString() + temp;
@@ -2517,7 +2518,7 @@ public class Wiki implements Serializable
             url.append("redirects");
         url.append("&titles=");
         String[] ret = new String[titles.length];
-        for (String blah : constructTitleString(titles, true))
+        for (String blah : constructTitleString(url.length(), titles, true))
         {
             String line = fetch(url.toString() + blah, "resolveRedirects");
             // expected form: <redirects><r from="Main page" to="Main Page"/>
@@ -4534,7 +4535,7 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
-        for (String titlestring : constructTitleString(titles, false))
+        for (String titlestring : constructTitleString(0, titles, false))
         {
             StringBuilder request = new StringBuilder("titles=");
             request.append(titlestring);
@@ -7585,42 +7586,44 @@ public class Wiki implements Serializable
 
     /**
      *  Cuts up a list of titles into batches for prop=X&amp;titles=Y type queries.
+     *  @param lengthBaseUrl the length of the url when no titles are present
      *  @param titles a list of titles.
      *  @param limit whether to apply the maximum URL size
      *  @return the titles ready for insertion into a URL
      *  @throws IOException if a network error occurs
      *  @since 0.29
      */
-    protected String[] constructTitleString(String[] titles, boolean limit) throws IOException
+    protected String[] constructTitleString(int lengthBaseUrl, String[] titles, boolean limit) throws IOException
     {
         // sort and remove duplicates per [[mw:API]]
-        Set<String> blah = new TreeSet<>();
+        Set<String> set = new TreeSet<>();
         for (String title : titles)
-            blah.add(normalize(title));
-        String[] temp = blah.toArray(new String[blah.size()]);
+            set.add(encode(title, true));
+        String[] titlesEnc = set.toArray(new String[set.size()]);
 
         // actually construct the string
+        String titleStringToken = encode("|", false);
         ArrayList<String> ret = new ArrayList<>();
         StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < temp.length; i++)
+        buffer.append(titlesEnc[0]);
+        int num = 1;
+        for (int i = num; i < titlesEnc.length; i++)
         {
-            buffer.append(temp[i]);
-            if (i == temp.length - 1 || (i % slowmax == slowmax - 1) 
-                || (limit && buffer.length() > URL_LENGTH_LIMIT))
+            if (num < slowmax &&
+                buffer.length() + titleStringToken.length() + titlesEnc[i].length() < URL_LENGTH_LIMIT - lengthBaseUrl)
             {
-                ret.add(encode(buffer.toString(), false));
-                buffer.setLength(0);
+                buffer.append(titleStringToken);
             }
             else
-                buffer.append("|");
+            {
+                ret.add(buffer.toString());
+                buffer.setLength(0);
+                num = 0;
+            }
+            buffer.append(titlesEnc[i]);
+            ++num;
         }
-        // JDK 1.8:
-        // StringJoiner sj = new StringJoiner("|");
-        // for (int i = 0; i < temp.length; i++)
-        // {
-        //     sj.add(normalize(temp[i]));
-        //     statement of if above, removing else
-        // }
+        ret.add(buffer.toString());
         return ret.toArray(new String[ret.size()]);
     }
 
