@@ -2251,7 +2251,8 @@ public class Wiki implements Serializable
         }
         url.append("&titles=");
 
-        String[] titlestrings = constructTitleString(url.length() + "&tlcontinue=".length(), titles, true);
+        // Also account for unknown lenght of tlcontinue's value
+        String[] titlestrings = constructTitleString(url.length() + "&tlcontinue=".length() + 1000, titles, true);
         for (String temp : titlestrings)
         {
             String tempurl = url.toString() + temp;
