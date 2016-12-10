@@ -1446,7 +1446,7 @@ public class Wiki implements Serializable
                 // watchlist token
                 if (user != null)
                 {
-                    tempmap.put("watchtoken", parseAttribute(item, "watchtoken", 0));
+                    tempmap.put("watchtoken", parseAttribute(item, "csrftoken", 0));
                     logger.log(Level.WARNING, "getPageInfo: watchtoken and editoken are deprecated and will be removed shortly.");
                 }
 
