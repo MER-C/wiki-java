@@ -470,6 +470,13 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getUser() throws Exception
+    {
+        assertNull("getUser: IPv4 address", testWiki.getUser("127.0.0.1"));
+        assertNull("getUser: IP address range", testWiki.getUser("127.0.0.0/24"));
+    }
+    
+    @Test
     public void getPageText() throws Exception
     {
         String[] text = testWiki.getPageText(new String[]

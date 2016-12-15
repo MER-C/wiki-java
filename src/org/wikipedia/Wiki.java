@@ -6113,6 +6113,7 @@ public class Wiki implements Serializable
          */
         public Map<String, Object> getUserInfo() throws IOException
         {
+            // TODO: move to main class, vectorize and fold userExists into this
             String info = fetch(query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers="
                 + encode(username, false), "getUserInfo");
             Map<String, Object> ret = new HashMap<>(10);
