@@ -21,7 +21,10 @@
 package org.wikipedia;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.security.MessageDigest;
 import java.util.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,6 +37,7 @@ import static org.junit.Assert.*;
 public class WikiUnitTest
 {
     private static Wiki enWiki, deWiki, arWiki, testWiki, enWikt;
+    private static MessageDigest sha256;
     
     public WikiUnitTest()
     {
@@ -57,6 +61,8 @@ public class WikiUnitTest
         enWikt = new Wiki("en.wiktionary.org");
         enWikt.setMaxLag(-1);
         enWikt.getSiteInfo();
+        
+        sha256 = MessageDigest.getInstance("SHA-256");
     }
     
     @Test
@@ -162,6 +168,14 @@ public class WikiUnitTest
         File tempfile = File.createTempFile("wiki-java_getImage", null);
         tempfile.deleteOnExit();
         assertFalse("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah", tempfile));
+        
+        // non-thumbnailed Commons file
+        // https://commons.wikimedia.org/wiki/File:Portrait_of_Jupiter_from_Cassini.jpg
+        enWiki.getImage("File:Portrait of Jupiter from Cassini.jpg", tempfile);
+        byte[] imageData = Files.readAllBytes(tempfile.toPath());
+        byte[] hash = sha256.digest(imageData);
+        assertEquals("getImage", "fc63c250bfce3f3511ccd144ca99b451111920c100ac55aaf3381aec98582035",
+            String.format("%064x", new BigInteger(1, hash)));
     }
     
     @Test
