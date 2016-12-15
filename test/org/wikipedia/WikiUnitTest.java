@@ -306,12 +306,15 @@ public class WikiUnitTest
     {
         assertNull("getFileMetadata: non-existent file", enWiki.getFileMetadata("File:Lweo&pafd.blah"));
         assertNull("getFileMetadata: commons image", enWiki.getFileMetadata("File:WikipediaSignpostIcon.svg"));
+        
+        // further tests blocked on MediaWiki API rewrite
+        // see https://phabricator.wikimedia.org/T89971
     }
     
     @Test
     public void getDuplicates() throws Exception
     {
-        assertArrayEquals("getDuplicates: non-existent file", new String[0], enWiki.getImageHistory("File:Sdfj&ghsld.jpg"));
+        assertArrayEquals("getDuplicates: non-existent file", new String[0], enWiki.getDuplicates("File:Sdfj&ghsld.jpg"));
     }
     
     @Test

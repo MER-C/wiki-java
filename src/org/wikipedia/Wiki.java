@@ -3485,7 +3485,8 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches an image file and returns the image data in a <tt>byte[]</tt>.
-     *  Works for external repositories.
+     *  Works for files originating from external repositories (e.g. Wikimedia 
+     *  Commons).
      *
      *  @param title the title of the image (may contain "File")
      *  @return the image data or null if the image doesn't exist
@@ -3500,13 +3501,15 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches an image and saves it in the given file. Warning: This does overwrite any file content!
-     *  Works for external repositories.
+     *  Fetches an image and saves it in the given file. Warning: the specified
+     *  file is overwritten! Works for files originating from external 
+     *  repositories (e.g. Wikimedia Commons).
      *
      *  @param title the title of the image (may contain "File")
      *  @param file the file to save the image to.
      *  @return true or false if the image doesn't exist
-     *  @throws FileNotFoundException if the file is a directory, cannot be created or opened
+     *  @throws FileNotFoundException if the file is a directory, cannot be 
+     *  created or opened
      *  @throws IOException if a network error occurs
      *  @since 0.30
      */
@@ -3516,8 +3519,9 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches a thumbnail of an image file and returns the image data
-     *  in a <tt>byte[]</tt>. Works for external repositories.
+     *  Fetches a thumbnail of an image file and returns the image data in a 
+     *  <tt>byte[]</tt>. Works for files originating from external repositories
+     *  (e.g. Wikimedia Commons).
      *
      *  @param title the title of the image (may contain "File")
      *  @param width the width of the thumbnail (use -1 for actual width)
@@ -3541,16 +3545,17 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches a thumbnail of an image file and saves the image data
-     *  into the given file. Warning: This does overwrite any file content!
-     *  Works for external repositories.
+     *  Fetches a thumbnail of an image file and saves the image data into the
+     *  given file. Warning: the specified file is overwritten! Works for files
+     *  originating from external repositories (e.g. Wikimedia Commons).
      *
      *  @param title the title of the image (may contain "File")
      *  @param width the width of the thumbnail (use -1 for actual width)
      *  @param height the height of the thumbnail (use -1 for actual height)
      *  @param file a write-able file to save the data to.
      *  @return true or false if the image doesn't exist
-     *  @throws FileNotFoundException if the file is a directory, cannot be created or opened
+     *  @throws FileNotFoundException if the file is a directory, cannot be 
+     *  created or opened
      *  @throws IOException if a network error occurs
      *  @since 0.30
      */
@@ -3594,9 +3599,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the file metadata for a file. Note that <tt>getImage()</tt>
-     *  reads directly into a <tt>BufferedImage</tt> object, so you won't be
-     *  able to get all metadata that way. The keys are:
+     *  Gets the file metadata for a file. The keys are:
      *
      *  * size (file size, Integer)
      *  * width (Integer)
@@ -3613,7 +3616,7 @@ public class Wiki implements Serializable
     public Map<String, Object> getFileMetadata(String file) throws IOException
     {
         // This seems a good candidate for bulk queries.
-        // TODO: support prop=videoinfo
+        // Support for videos is blocked on https://phabricator.wikimedia.org/T89971
         // fetch
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=imageinfo&iiprop=size%7Csha1%7Cmime%7Cmetadata&titles="
@@ -3647,7 +3650,8 @@ public class Wiki implements Serializable
     /**
      *  Gets duplicates of this file. Capped at <tt>max</tt> number of
      *  duplicates, there's no good reason why there should be more than that.
-     *  Equivalent to [[Special:FileDuplicateSearch]].
+     *  Equivalent to [[Special:FileDuplicateSearch]]. Works for, and returns
+     *  files from external repositories (e.g. Wikimedia Commons).
      *
      *  @param file the file for checking duplicates (may contain "File")
      *  @return the duplicates of that file
