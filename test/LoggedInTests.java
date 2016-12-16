@@ -63,11 +63,7 @@ public class LoggedInTests
         
         // upload
         wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test4.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]]. ∑∑ƒ∂ß", "hello ∑∑ƒ∂ß");
-*/
-        wiki.upload(new URL("https://upload.wikimedia.org/wikipedia/commons/b/bc/%28Tsander%29_Large_Impact_Crater%2C_Lunar_Surface.jpg"), 
-            "Wiki.java test5.jpg", "Test image. Source (PD-NASA): https://upload.wikimedia.org/wikipedia/commons/b/bc/%28Tsander%29_Large_Impact_Crater%2C_Lunar_Surface.jpg", "Blah");
-        
-/*        
+     
         ///////////////////////
         // ADMIN STUFF
         ///////////////////////
