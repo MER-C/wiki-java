@@ -443,6 +443,10 @@ public class WikiUnitTest
         assertTrue("getRevision: user revdeled", rev.isUserDeleted());
         assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
         assertTrue("getRevision: content revdeled", rev.isContentDeleted());
+        
+        // Revision has been deleted (not RevisionDeleted)
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+        assertNull("getRevision: page deleted", testWiki.getRevision(217078L));
     }
     
     @Test
@@ -615,7 +619,7 @@ public class WikiUnitTest
     public void revisionGetText() throws Exception
     {
         // https://test.wikipedia.org/w/index.php?oldid=230472
-        Wiki.Revision rev = testWiki.getRevision(230472);
+        Wiki.Revision rev = testWiki.getRevision(230472L);
         String text = rev.getText();
         assertEquals("revision text: decoding", "&#039;&#039;italic&#039;&#039;" +
             "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n", text);
