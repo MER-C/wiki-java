@@ -11,8 +11,8 @@ is available in [org/wikipedia/WMFWiki.java](src/org/wikipedia/WMFWiki.java).
 This project also contains the source code to the tools hosted at 
 https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces. Requires JDK >= 1.8.
 
-Latest stable version: [0.31](https://github.com/MER-C/wiki-java/releases/tag/0.31) -- 
-MediaWiki versions 1.23+
+Latest stable version: [0.32](https://github.com/MER-C/wiki-java/releases/tag/0.32) -- 
+MediaWiki versions 1.28+
 
 ## Bug reports
 

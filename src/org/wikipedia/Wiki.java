@@ -1,6 +1,6 @@
 /**
- *  @(#)Wiki.java 0.31 29/08/2015
- *  Copyright (C) 2007 - 2016 MER-C and contributors
+ *  @(#)Wiki.java 0.32 18/12/2016
+ *  Copyright (C) 2007 - 2017 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@ import javax.security.auth.login.*;
  *  Requires JDK 1.8 or greater. Uses the <a
  *  href="//www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.23), otherwise some functions may not work.
+ *  of MediaWiki (1.28), otherwise some functions may not work.
  *  <p>
  *  Extended documentation is available
  *  <a href="//github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>.
@@ -47,7 +47,7 @@ import javax.security.auth.login.*;
  *  or at the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
  *
  *  @author MER-C and contributors
- *  @version 0.31
+ *  @version 0.32
  */
 public class Wiki implements Serializable
 {
@@ -407,7 +407,7 @@ public class Wiki implements Serializable
         unknown;
     }
 
-    private static final String version = "0.31";
+    private static final String version = "0.32";
 
     // the domain of the wiki
     private String domain;
