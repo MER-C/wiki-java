@@ -1348,8 +1348,6 @@ public class Wiki implements Serializable
      *  <li><b>protection</b>: (Map) the {@link #protect(java.lang.String,
      *    java.util.Map, java.lang.String) protection state} of the page. Does
      *    not cover implied protection levels (e.g. MediaWiki namespace).
-     *  <li><b>token</b>: (String) an edit token for the page, must be logged in
-     *    to be non-trivial. <b>DEPRECATED</b>: use getToken() instead.
      *  <li><b>exists</b>: (Boolean) whether the page exists
      *  <li><b>lastpurged</b>: (Calendar) when the page was last purged or null
      *    if the page does not exist
@@ -1360,8 +1358,6 @@ public class Wiki implements Serializable
      *  <li><b>pageid</b>: (Long) the id of the page or -1 if the page does not
      *    exist
      *  <li><b>timestamp</b>: (Calendar) when this method was called
-     *  <li><b>watchtoken</b>: (String) watchlist token or null if logged out.
-     *  <b>DEPRECATED</b>: use getToken() instead.
      *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
      *  </ul>
      *
@@ -1440,15 +1436,6 @@ public class Wiki implements Serializable
 
                 tempmap.put("displaytitle", parseAttribute(item, "displaytitle", 0));
                 tempmap.put("timestamp", makeCalendar());
-
-                // DEPRECATED, will be removed shortly
-                tempmap.put("token", parseAttribute(item, "edittoken", 0)); 
-                // watchlist token
-                if (user != null)
-                {
-                    tempmap.put("watchtoken", parseAttribute(item, "watchtoken", 0));
-                    logger.log(Level.WARNING, "getPageInfo: watchtoken and editoken are deprecated and will be removed shortly.");
-                }
 
                 // number of watchers
                 if (item.contains("watchers=\""))
