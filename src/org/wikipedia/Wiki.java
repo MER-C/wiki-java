@@ -1375,7 +1375,7 @@ public class Wiki implements Serializable
     {
         Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
+        url.append("prop=info&meta=tokens&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
         for (String temp : constructTitleString(url.length(), pages, true))
         {
             String line = fetch(url.toString() + temp, "getPageInfo");
@@ -1446,7 +1446,7 @@ public class Wiki implements Serializable
                 // watchlist token
                 if (user != null)
                 {
-                    tempmap.put("watchtoken", parseAttribute(item, "watchtoken", 0));
+                    tempmap.put("watchtoken", parseAttribute(item, "csrftoken", 0));
                     logger.log(Level.WARNING, "getPageInfo: watchtoken and editoken are deprecated and will be removed shortly.");
                 }
 
