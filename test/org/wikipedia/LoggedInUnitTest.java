@@ -55,4 +55,15 @@ public class LoggedInUnitTest
         assertEquals("upload via url: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getSummary());
         // WARNING: delete the image afterwards or supply a new target
     }
+    
+    @Test
+    public void edit() throws Exception
+    {
+        String text = "Testing " + Math.random();
+        String page = "User:MER-C/BotSandbox";
+        String summary = "Test edit " + Math.random();
+        testWiki.edit(page, text, summary);
+        assertEquals("edit: page text", text, testWiki.getPageText(page));
+        assertEquals("edit: summary", summary, testWiki.getTopRevision(page).getSummary());
+    }
 }

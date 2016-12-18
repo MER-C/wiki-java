@@ -49,10 +49,6 @@ public class LoggedInTests
         // email
         //wiki.emailUser(wiki.getCurrentUser(), "Testing", "Blah", false);
 
-        // edit
-        wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
-        wiki.edit("User:MER-C/BotSandbox", "Testing " + Math.random(), "test");
-
         // watch
         wiki.watch("Main Page", "Blah");
         wiki.unwatch("Main Page", "Blah");
