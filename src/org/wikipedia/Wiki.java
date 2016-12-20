@@ -7654,6 +7654,8 @@ public class Wiki implements Serializable
             s = s.substring(1);
         if (s.isEmpty())
             return s;
+        if (wgCapitalLinks)
+            s = s.substring(0, 1).toUpperCase() + s.substring(1);
 
         int ns = namespace(s);
         // localize namespace names
