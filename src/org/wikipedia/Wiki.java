@@ -4245,6 +4245,23 @@ public class Wiki implements Serializable
     {
         return userExists(username) ? new User(normalize(username)) : null;
     }
+    
+    /**
+     *  Gets the users with the given usernames. Returns null if it doesn't
+     *  exist. Output array is in the same order as the input array.
+     *  @param usernames a list of usernames
+     *  @return the users with those usernames
+     *  @since 0.33
+     *  @throws IOException if a network error occurs
+     */
+    public User[] getUsers(String[] usernames) throws IOException
+    {
+        User[] ret = new User[usernames.length];
+        boolean[] exists = userExists(usernames);
+        for (int i = 0; i < usernames.length; i++)
+            ret[i] = exists[i] ? new User(normalize(usernames[i])) : null;
+        return ret;
+    }
 
     /**
      *  Gets information about the given users. For each username, this returns
