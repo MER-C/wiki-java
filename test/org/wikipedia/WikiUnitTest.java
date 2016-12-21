@@ -95,6 +95,10 @@ public class WikiUnitTest
     {
         assertTrue("I should exist!", enWiki.userExists("MER-C"));
         assertFalse("Anon should not exist", enWiki.userExists("127.0.0.1"));
+        boolean[] temp = testWiki.userExists(new String[] { "Jimbo Wales", "Djskgh;jgsd", "::/1" });
+        assertTrue("user exists: Jimbo", temp[0]);
+        assertFalse("user exists: nonsense", temp[1]);
+        assertFalse("user exists: IPv6 range", temp[2]);
     }
     
     @Test

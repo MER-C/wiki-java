@@ -4072,8 +4072,25 @@ public class Wiki implements Serializable
      */
     public boolean userExists(String username) throws IOException
     {
-        username = encode(username, true);
-        return fetch(query + "list=users&ususers=" + username, "userExists").contains("userid=\"");
+        return getUserInfo(new String[] { username })[0] != null;
+    }
+    
+    /**
+     *  Determines whether the specified users exist. Should evaluate to false
+     *  for anons. Output array is in the same order as the input usernames.
+     *
+     *  @param usernames an array of usernames
+     *  @return whether these users exist
+     *  @throws IOException if a network error occurs
+     *  @since 0.33
+     */
+    public boolean[] userExists(String[] usernames) throws IOException
+    {
+        boolean[] ret = new boolean[usernames.length];
+        Map[] info = getUserInfo(usernames);
+        for (int i = 0; i < usernames.length; i++)
+            ret[i] = (info[i] != null);
+        return ret;
     }
 
     /**
