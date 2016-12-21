@@ -4230,6 +4230,87 @@ public class Wiki implements Serializable
     }
 
     /**
+     *  Gets information about the given users. For each username, this returns
+     *  either null if the user doesn't exist, or:
+     *  <ul>
+     *  <li><b>editcount</b>: (int) {@link #User.countEdits()} the user's edit
+     *    count
+     *  <li><b>groups</b>: (String[]) the groups the user is in (see
+     *    [[Special:Listgrouprights]])
+     *  <li><b>rights</b>: (String[]) the stuff the user can do
+     *  <li><b>emailable</b>: (Boolean) whether the user can be emailed
+     *    through [[Special:Emailuser]] or emailUser()
+     *  <li><b>blocked</b>: (Boolean) whether the user is blocked
+     *  <li><b>gender</b>: (Wiki.Gender) the user's gender
+     *  <li><b>created</b>: (Calendar) when the user account was created
+     *  </ul>
+     *
+     *  @param usernames the list of usernames to get information for
+     *  @return (see above). The Maps will come out in the same order as the
+     *  processed array. 
+     *  @throws IOException if a network error occurs
+     *  @since 0.33
+     */
+    public Map<String, Object>[] getUserInfo(String... usernames) throws IOException
+    {
+        Map[] info = new HashMap[usernames.length];
+        String url = query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers=";
+        for (String fragment : constructTitleString(url.length(), usernames, true))
+        {
+            String line = fetch(url + fragment, "getUserInfo");
+            String[] results = line.split("<user ");
+            for (int i = 1; i < results.length; i++)
+            {
+                // skip non-existent and IP addresses
+                String result = results[i];
+                if (result.contains("missing=\"\"") || result.contains("invalid=\"\""))
+                    continue;
+                
+                Map<String, Object> ret = new HashMap<>(10);
+                String parsedname = parseAttribute(result, "name", 0);
+
+                ret.put("blocked", result.contains("blockedby=\""));
+                ret.put("emailable", result.contains("emailable=\""));
+                ret.put("editcount", Integer.parseInt(parseAttribute(result, "editcount", 0)));
+                ret.put("gender", Gender.valueOf(parseAttribute(result, "gender", 0)));
+
+                String registrationdate = parseAttribute(result, "registration", 0);
+                // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
+                if (registrationdate != null && !registrationdate.isEmpty())
+                    ret.put("created", timestampToCalendar(registrationdate, true));
+
+                // groups
+                List<String> temp = new ArrayList<>();
+                for (int x = result.indexOf("<g>"); x > 0; x = result.indexOf("<g>", ++x))
+                {
+                    int y = result.indexOf("</g>", x);
+                    temp.add(result.substring(x + 3, y));
+                }
+                String[] groups = temp.toArray(new String[temp.size()]);
+                ret.put("groups", groups);
+
+                // rights
+                temp.clear();
+                for (int x = result.indexOf("<r>"); x > 0; x = result.indexOf("<r>", ++x))
+                {
+                    int y = result.indexOf("</r>", x);
+                    temp.add(result.substring(x + 3, y));
+                }
+                String[] rights = temp.toArray(new String[temp.size()]);
+                ret.put("rights", rights);
+
+                // place the result into the return array
+                for (int j = 0; j < usernames.length; j++)
+                    if (normalize(usernames[j]).equals(parsedname))
+                        info[j] = ret;
+            }
+        }
+
+        log(Level.INFO, "getUserInfo", "Successfully retrieved user info for " + Arrays.toString(usernames));
+        return info;
+    }
+
+    /**
      *  Gets the user we are currently logged in as. If not logged in, returns
      *  null.
      *  @return the current logged in user
@@ -6079,8 +6160,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Gets various properties of this user. Groups and rights are cached
-         *  for the current logged in user. Returns:
+         *  Gets various properties of this user. Returns:
          *  <ul>
          *  <li><b>editcount</b>: (int) {@link #countEdits()} the user's edit
          *    count
@@ -6100,47 +6180,7 @@ public class Wiki implements Serializable
          */
         public Map<String, Object> getUserInfo() throws IOException
         {
-            // TODO: move to main class, vectorize and fold userExists into this
-            String info = fetch(query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers="
-                + encode(username, false), "getUserInfo");
-            Map<String, Object> ret = new HashMap<>(10);
-
-            ret.put("blocked", info.contains("blockedby=\""));
-            ret.put("emailable", info.contains("emailable=\""));
-            ret.put("editcount", Integer.parseInt(parseAttribute(info, "editcount", 0)));
-            ret.put("gender", Gender.valueOf(parseAttribute(info, "gender", 0)));
-
-            String registrationdate = parseAttribute(info, "registration", 0);
-            // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
-            if (registrationdate != null && !registrationdate.isEmpty())
-                ret.put("created", timestampToCalendar(registrationdate, true));
-
-            // groups
-            List<String> temp = new ArrayList<>();
-            for (int x = info.indexOf("<g>"); x > 0; x = info.indexOf("<g>", ++x))
-            {
-                int y = info.indexOf("</g>", x);
-                temp.add(info.substring(x + 3, y));
-            }
-            String[] temp2 = temp.toArray(new String[temp.size()]);
-            // cache
-            if (this.equals(getCurrentUser()))
-                groups = temp2;
-            ret.put("groups", temp2);
-
-            // rights
-            temp.clear();
-            for (int x = info.indexOf("<r>"); x > 0; x = info.indexOf("<r>", ++x))
-            {
-                int y = info.indexOf("</r>", x);
-                temp.add(info.substring(x + 3, y));
-            }
-            temp2 = temp.toArray(new String[temp.size()]);
-            // cache
-            if (this.equals(getCurrentUser()))
-                rights = temp2;
-            ret.put("rights", temp2);
-            return ret;
+            return Wiki.this.getUserInfo(new String[] { username })[0];
         }
 
         /**

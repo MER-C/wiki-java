@@ -479,6 +479,38 @@ public class WikiUnitTest
         assertNull("getUser: IPv4 address", testWiki.getUser("127.0.0.1"));
         assertNull("getUser: IP address range", testWiki.getUser("127.0.0.0/24"));
     }
+
+    @Test
+    public void getUserInfo() throws Exception
+    {
+        Map<String, Object>[] info = testWiki.getUserInfo(new String[]
+        {
+            "127.0.0.1", // IP address
+            "MER-C", 
+            "DKdsf;lksd" // should be non-existent...
+        });
+        assertNull("getUserInfo: IP address", info[0]);
+        assertNull("getUserInfo: non-existent user", info[2]);
+        
+        // editcount omitted because it is dynamic
+        assertFalse("getUserInfo: blocked", (Boolean)info[1].get("blocked"));
+        assertEquals("getUserInfo: gender", Wiki.Gender.unknown, (Wiki.Gender)info[1].get("gender"));
+        assertEquals("getUserInfo: registration", "20070214113837", 
+            testWiki.calendarToTimestamp((Calendar)info[1].get("created")));
+        assertTrue("getUserInfo: email", (Boolean)info[1].get("emailable"));
+        
+        // check groups
+        String[] temp = (String[])info[1].get("groups");
+        List<String> groups = Arrays.asList(temp);
+        temp = new String[] { "*", "autoconfirmed", "user", "sysop" };
+        assertTrue("getUserInfo: groups", groups.containsAll(Arrays.asList(temp)));
+        
+        // check (subset of) rights
+        temp = (String[])info[1].get("rights");
+        List<String> rights = Arrays.asList(temp);
+        temp = new String[] { "apihighlimits", "delete", "block", "editinterface", "writeapi" };
+        assertTrue("getUserInfo: groups", rights.containsAll(Arrays.asList(temp)));
+    }
     
     @Test
     public void getPageText() throws Exception
