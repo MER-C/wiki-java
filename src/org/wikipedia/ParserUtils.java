@@ -1,6 +1,6 @@
 /**
- *  @(#)ParserUtils.java 0.01 16/10/2012
- *  Copyright (C) 2012-2015 MER-C
+ *  @(#)ParserUtils.java 0.02 23/12/2016
+ *  Copyright (C) 2012-2017 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -294,6 +294,69 @@ public class ParserUtils
             buffer.append(")\n");
         }
         buffer.append("</ul>\n");
+        return buffer.toString();
+    }
+    
+    /**
+     *  Renders output of {@link Wiki#linksearch} in wikitext.
+     *  @param results the results to render
+     *  @param domain the domain that was searched
+     *  @return 
+     *  @since 0.02
+     */
+    public static String linksearchResultsToWikitext(List[] results, String domain)
+    {
+        StringBuilder builder = new StringBuilder(100);
+        int linknumber = results[0].size();
+        for (int i = 0; i < linknumber; i++)
+        {
+            builder.append("# [[");
+            builder.append((String)results[0].get(i));
+            builder.append("]] uses link [");
+            builder.append(results[1].get(i));
+            builder.append("]\n");
+        }
+        builder.append(linknumber);
+        builder.append(" links found. ([[Special:Linksearch/*.");
+        builder.append(domain);
+        builder.append("|Linksearch]])");
+        return builder.toString();
+    }
+    
+    /**
+     *  Renders output of {@link Wiki#linksearch} in HTML.
+     *  @param results the results to render
+     *  @param domain the domain that was searched (should already be sanitized
+     *  for XSS)
+     *  @param wiki the wiki that was searched
+     *  @return the rendered HTML
+     *  @since 0.02
+     */
+    public static String linksearchResultsToHTML(List[] results, Wiki wiki, String domain)
+    {
+        StringBuilder buffer = new StringBuilder(1000);
+        buffer.append("<p>\n<ol>\n");
+        for (int j = 0; j < results[0].size(); j++)
+        {
+            buffer.append("\t<li><a href=\"//");
+            buffer.append(wiki.getDomain());
+            buffer.append("/wiki/");
+            buffer.append((String)results[0].get(j));
+            buffer.append("\">");
+            buffer.append((String)results[0].get(j));
+            buffer.append("</a> uses link <a href=\"");
+            buffer.append(results[1].get(j).toString());
+            buffer.append("\">");
+            buffer.append(results[1].get(j).toString());
+            buffer.append("</a>\n");
+        }
+        buffer.append("</ol>\n<p>");
+        buffer.append(results[0].size());
+        buffer.append(" links found. (<a href=\"//");
+        buffer.append(wiki.getDomain());
+        buffer.append("/wiki/Special:Linksearch/*.");
+        buffer.append(domain);
+        buffer.append("\">Linksearch</a>)\n");
         return buffer.toString();
     }
     

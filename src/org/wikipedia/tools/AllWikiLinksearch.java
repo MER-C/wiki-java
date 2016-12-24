@@ -76,26 +76,7 @@ public class AllWikiLinksearch
                     List[] links = wiki.linksearch("*." + domain);
                     linknumber = links[0].size();
                     if (linknumber != 0)
-                    {
-                        for (int i = 0; i < linknumber; i++)
-                        {
-                            builder.append("# [http://");
-                            builder.append(wiki.getDomain());
-                            builder.append("/wiki/");
-                            builder.append(((String)links[0].get(i)).replace(' ', '_'));
-                            builder.append(" ");
-                            builder.append(links[0].get(i));
-                            builder.append("] uses link <nowiki>");
-                            builder.append(links[1].get(i));
-                            builder.append("</nowiki>\n");
-                        }
-                        builder.append(linknumber);
-                        builder.append(" links found. ([http://");
-                        builder.append(wiki.getDomain());
-                        builder.append("/wiki/Special:Linksearch/*.");
-                        builder.append(domain);
-                        builder.append(" Linksearch])");
-                    }
+                        builder.append(ParserUtils.linksearchResultsToWikitext(links, domain));
                 }
                 catch (IOException ex)
                 {
