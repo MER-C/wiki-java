@@ -49,10 +49,12 @@ public class AllWikiLinksearch
     private static class LinksearchThread extends Thread
     {
         private final String domain;
+        private final boolean httponly;
 
-        public LinksearchThread(String domain)
+        public LinksearchThread(String domain, boolean httponly)
         {
             this.domain = domain;
+            this.httponly = httponly;
         }
 
         /**
@@ -75,6 +77,12 @@ public class AllWikiLinksearch
                     builder.append(wiki.getDomain());
                     builder.append(" ===\n");
                     List[] links = wiki.linksearch("*." + domain);
+                    if (!httponly)
+                    {
+                        List[] temp = wiki.linksearch("https://*." + domain);
+                        links[0].addAll(temp[0]);
+                        links[1].addAll(temp[1]);
+                    }
                     linknumber = links[0].size();
                     if (linknumber != 0)
                         builder.append(ParserUtils.linksearchResultsToWikitext(links, domain));
@@ -98,6 +106,18 @@ public class AllWikiLinksearch
 
     public static void main(String[] args) throws IOException
     {
+        // parse command line options
+        boolean httponly = false;
+        for (int i = 0; i < args.length; i++)
+        {
+            switch (args[i])
+            {
+                case "--httponly":
+                    httponly = true;
+                    break;
+            }
+        }
+        
         // retrieve site matrix
         ArrayList<Wiki> temp = new ArrayList<>(Arrays.asList(WMFWiki.getSiteMatrix()));
         for (Wiki wiki : temp)
@@ -119,7 +139,7 @@ public class AllWikiLinksearch
             + new Date().toString() + ".\n\n");
         // TODO: perhaps make number of threads configurable
         for (int i = 0; i < 3; i++)
-            new LinksearchThread(domain).start();
+            new LinksearchThread(domain, httponly).start();
     }
 
     /**
