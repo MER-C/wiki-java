@@ -26,14 +26,15 @@ import java.util.*;
  *  Various parsing methods that e.g. turning Wiki.java objects into wikitext 
  *  and HTML and vice versa.
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
 public class ParserUtils
 {
     /**
-     *  Standard markup for RevDeleted stuff.
+     *  Standard markup for RevDeleted stuff. (The class name, <tt>history-deleted</tt>
+     *  comes from MediaWiki.)
      */
-    private static final String DELETED = "<span style=\"color: #aaaaaa, text-decoration: strike\">deleted</span>";
+    private static final String DELETED = "<span class=\"history-deleted\">deleted</span>";
     
     /**
      *   Parses a list of links into its individual elements. Such a list
