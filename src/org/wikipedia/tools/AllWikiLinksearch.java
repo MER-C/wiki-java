@@ -1,6 +1,6 @@
 /**
  *  @(#)AllWikiLinksearch.java 0.01 29/03/2011
- *  Copyright (C) 2011 MER-C
+ *  Copyright (C) 2011 - 2017 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -41,14 +41,14 @@ import org.wikipedia.*;
  */
 public class AllWikiLinksearch
 {
-    private static Queue<Wiki> queue = new ConcurrentLinkedQueue();
+    private static final Queue<Wiki> queue = new ConcurrentLinkedQueue();
     private static FileWriter out = null;
     private static ProgressMonitor monitor;
     private static int progress = 0;
 
     private static class LinksearchThread extends Thread
     {
-        private String domain;
+        private final String domain;
 
         public LinksearchThread(String domain)
         {
@@ -58,6 +58,7 @@ public class AllWikiLinksearch
         /**
          *  The real meat of this program.
          */
+        @Override
         public void run()
         {
             while(!queue.isEmpty())
@@ -92,23 +93,13 @@ public class AllWikiLinksearch
                     updateProgress();
                 }
             }
-            try
-            {
-                // flush so output is not truncated
-                out.flush();
-                sleep(5000);
-            }
-            catch (Exception ex)
-            {
-                // bleh
-            }
         }
     }
 
     public static void main(String[] args) throws IOException
     {
         // retrieve site matrix
-        ArrayList<Wiki> temp = new ArrayList<Wiki>(Arrays.asList(WMFWiki.getSiteMatrix()));
+        ArrayList<Wiki> temp = new ArrayList<>(Arrays.asList(WMFWiki.getSiteMatrix()));
         for (Wiki wiki : temp)
         {
             String domain = wiki.getDomain();
@@ -140,6 +131,7 @@ public class AllWikiLinksearch
         try
         {
             out.write(output);
+            out.flush();
         }
         catch (IOException ex)
         {
