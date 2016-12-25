@@ -107,6 +107,7 @@ public class AllWikiLinksearch
     public static void main(String[] args) throws IOException
     {
         // parse command line options
+        String domain = null;
         boolean httponly = false;
         for (int i = 0; i < args.length; i++)
         {
@@ -115,6 +116,9 @@ public class AllWikiLinksearch
                 case "--httponly":
                     httponly = true;
                     break;
+                default:
+                    domain = args[i];
+                    break;
             }
         }
         
@@ -122,14 +126,15 @@ public class AllWikiLinksearch
         ArrayList<Wiki> temp = new ArrayList<>(Arrays.asList(WMFWiki.getSiteMatrix()));
         for (Wiki wiki : temp)
         {
-            String domain = wiki.getDomain();
+            String wikidomain = wiki.getDomain();
             // bad wikis: everything containing wikimania
-            if (!domain.contains("wikimania"))
+            if (!wikidomain.contains("wikimania"))
                 queue.add(wiki);
         }
 
         // initialize progress monitor
-        String domain = JOptionPane.showInputDialog(null, "Enter domain to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
+        if (domain != null)
+            domain = JOptionPane.showInputDialog(null, "Enter domain to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
         monitor = new ProgressMonitor(null, "Searching for links to " + domain, null, 0, queue.size());
         monitor.setMillisToPopup(0);
 
