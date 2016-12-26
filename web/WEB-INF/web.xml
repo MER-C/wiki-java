@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
     <description>Blah</description>
     <display-name>Some Wikipedia related tools</display-name>
     <servlet>
-        <servlet-name>Linksearch</servlet-name>
+        <servlet-name>Cross-wiki linksearch</servlet-name>
         <servlet-class>org.wikipedia.servlets.XWikiLinksearch</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>Mass linksearch</servlet-name>
+        <servlet-class>org.wikipedia.servlets.MassLinksearch</servlet-class>
     </servlet>
     <servlet>
         <description>Image contribution surveyor</description>
@@ -25,8 +30,12 @@
     </servlet>
     
     <servlet-mapping>
-        <servlet-name>Linksearch</servlet-name>
+        <servlet-name>Cross-wiki linksearch</servlet-name>
         <url-pattern>/linksearch.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Mass linksearch</servlet-name>
+        <url-pattern>/masslinksearch.jsp</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>ImageCCI</servlet-name>

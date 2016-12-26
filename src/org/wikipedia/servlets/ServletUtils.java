@@ -1,6 +1,6 @@
 /**
  *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2016 MER-C
+ *  Copyright (C) 2011 - 2017 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -109,8 +109,8 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder(500);
         sb.append("<hr>\n<p>");
         sb.append(toolname);
-        sb.append(": Copyright (C) MER-C 2007-2016. This tool is free software:    ");
-        sb.append("you can redistribute it and/or modify it\nunder the terms of    ");
+        sb.append(": Copyright (C) MER-C 2007-2017. This tool is free software: ");
+        sb.append("you can redistribute it and/or modify it\nunder the terms of ");
         sb.append("the <a href=\"//gnu.org/licenses/agpl.html\">Affero GNU General ");
         sb.append("Public License</a> as published by the Free Software Foundation, ");
         sb.append("either version 3 of the License, or (at your\noption) any later ");
@@ -121,6 +121,7 @@ public class ServletUtils
         
         sb.append("\n\n<p><b>Tools:</b>\n");
         sb.append("  <a href=\"./linksearch.jsp\">Cross-wiki linksearch</a> | \n");
+        sb.append("  <a href=\"./masslinksearch.jsp\">Mass linksearch</a> | \n");
         sb.append("  <a href=\"./imagecci.jsp\">Image contribution surveyor</a> |\n");
         sb.append("  <a href=\"./spamarchivesearch.jsp\">Spam blacklist archive search</a> | \n");
         sb.append("  <a href=\"./prefixcontribs.jsp\">Prefix contributions</a> \n");
