@@ -1,5 +1,5 @@
 /**
- *  @(#)AllWikiLinksearch.java 0.01 29/03/2011
+ *  @(#)AllWikiLinksearch.java 0.02 26/12/2016
  *  Copyright (C) 2011 - 2017 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -37,7 +37,7 @@ import org.wikipedia.*;
  *  before running this program. This will never be a servlet, as it takes about
  *  6 minutes to run.
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
 public class AllWikiLinksearch
 {
@@ -109,12 +109,16 @@ public class AllWikiLinksearch
         // parse command line options
         String domain = null;
         boolean httponly = false;
+        int threads = 3;
         for (int i = 0; i < args.length; i++)
         {
             switch (args[i])
             {
                 case "--httponly":
                     httponly = true;
+                    break;
+                case "--numthreads":
+                    threads = Integer.parseInt(args[++i]);
                     break;
                 default:
                     domain = args[i];
@@ -123,7 +127,7 @@ public class AllWikiLinksearch
         }
         
         // retrieve site matrix
-        ArrayList<Wiki> temp = new ArrayList<>(Arrays.asList(WMFWiki.getSiteMatrix()));
+        ArrayList<WMFWiki> temp = new ArrayList<>(Arrays.asList(WMFWiki.getSiteMatrix()));
         for (Wiki wiki : temp)
         {
             String wikidomain = wiki.getDomain();
@@ -142,8 +146,7 @@ public class AllWikiLinksearch
         out = new FileWriter(domain + ".wiki");
         writeOutput("*{{LinkSummary|" + domain + "}}\nSearching " + queue.size() + " wikis at "
             + new Date().toString() + ".\n\n");
-        // TODO: perhaps make number of threads configurable
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < threads; i++)
             new LinksearchThread(domain, httponly).start();
     }
 
