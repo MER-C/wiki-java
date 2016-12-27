@@ -302,7 +302,7 @@ public class ParserUtils
      *  Renders output of {@link Wiki#linksearch} in wikitext.
      *  @param results the results to render
      *  @param domain the domain that was searched
-     *  @return 
+     *  @return the rendered wikitext
      *  @since 0.02
      */
     public static String linksearchResultsToWikitext(List[] results, String domain)

@@ -4267,7 +4267,7 @@ public class Wiki implements Serializable
      *  Gets information about the given users. For each username, this returns
      *  either null if the user doesn't exist, or:
      *  <ul>
-     *  <li><b>editcount</b>: (int) {@link #User.countEdits()} the user's edit
+     *  <li><b>editcount</b>: (int) {@link User#countEdits()} the user's edit
      *    count
      *  <li><b>groups</b>: (String[]) the groups the user is in (see
      *    [[Special:Listgrouprights]])
@@ -7621,7 +7621,7 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Cuts up a list of revisions into batches for prop=X&ids=Y type queries.
+     *  Cuts up a list of revisions into batches for prop=X&amp;ids=Y type queries.
      *  @param ids a list of revision IDs
      *  @return the revisions ready for insertion into a URL
      *  @since 0.32
