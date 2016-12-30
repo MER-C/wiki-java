@@ -92,7 +92,7 @@ public class SpamArchiveSearch extends HttpServlet
         // form for input
         String query = request.getParameter("query");
         buffer.append("<form action=\"./spamarchivesearch.jsp\" method=GET>\n<p>Search string: ");
-        buffer.append("<input type=text name=query");
+        buffer.append("<input type=text name=query required");
         if (query != null)
         {
             buffer.append(" value=\"");

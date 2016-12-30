@@ -77,7 +77,7 @@ public class PrefixContribs extends HttpServlet
         
         // form
         buffer.append("<form action=\"./prefixcontribs.jsp\" method=GET>\n<p>Search string: ");
-        buffer.append("<input type=text name=prefix");
+        buffer.append("<input type=text name=prefix required");
         String prefix = request.getParameter("prefix");
         if (prefix != null)
         {

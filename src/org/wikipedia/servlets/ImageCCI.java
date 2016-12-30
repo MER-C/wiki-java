@@ -107,7 +107,7 @@ public class ImageCCI extends HttpServlet
             buffer.append("investigations.</a>\n");
             // build HTML form
             buffer.append("<form action=\"./imagecci.jsp\" method=GET>\n<p>User to survey: ");
-            buffer.append("<input type=text name=user>\n<input type=submit value=\"Survey user\">\n</form>\n");
+            buffer.append("<input type=text name=user required>\n<input type=submit value=\"Survey user\">\n</form>\n");
             // footer
             buffer.append(ServletUtils.generateFooter("Image contribution surveyor"));
         }

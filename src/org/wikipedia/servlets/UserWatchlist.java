@@ -75,7 +75,7 @@ public class UserWatchlist extends HttpServlet
         // page input
         buffer.append("<form action=\"./userwatchlist.jsp\" method=GET>\n");
         buffer.append("<table>\n");
-        buffer.append("<tr><td>Input page:<td><input type=text size=30 name=page");
+        buffer.append("<tr><td>Input page:<td><input type=text size=30 name=page required");
         String page = request.getParameter("page");
         if (page == null)
             buffer.append(">\n");

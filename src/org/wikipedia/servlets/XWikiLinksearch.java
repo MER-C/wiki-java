@@ -160,7 +160,7 @@ public class XWikiLinksearch extends HttpServlet
         else
             buffer.append(" disabled");
         // domain name text box
-        buffer.append(">\n<tr><td colspan=2>Domain to search: <td><input type=text name=link");
+        buffer.append(">\n<tr><td colspan=2>Domain to search: <td><input type=text name=link required");
         if (domain != null)
         {
             buffer.append(" value=\"");
