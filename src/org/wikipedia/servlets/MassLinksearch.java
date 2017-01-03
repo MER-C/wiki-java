@@ -92,6 +92,7 @@ public class MassLinksearch extends HttpServlet
         
         String wiki = request.getParameter("wiki");
         String inputdomains = request.getParameter("domains");
+        boolean https = (request.getParameter("https") != null);
         
         buffer.append("<p><form action=\"./masslinksearch.jsp\" method=POST>\n");
         buffer.append("<table>\n");
@@ -111,17 +112,26 @@ public class MassLinksearch extends HttpServlet
         buffer.append("<td valign=top>Domains:\n");
         buffer.append("<td><textarea name=domains rows=10 required>\n");
         if (inputdomains != null)
+        {
+            inputdomains = inputdomains.trim().toLowerCase();
             buffer.append(inputdomains);
+        }
         buffer.append("\n</textarea>\n");
+        // https checkbox
+        buffer.append("<tr>\n");
+        buffer.append("<td>Additional protocols:\n");
+        buffer.append("<td><input type=checkbox name=https value=1");
+        if (https || inputdomains == null)
+            buffer.append(" checked");
+        buffer.append(">HTTPS\n");
         buffer.append("</table>\n");
         // submit
         buffer.append("<br>\n<input type=submit value=Search>\n</form>\n");
         
         if (inputdomains != null && wiki != null)
         {
-            inputdomains = inputdomains.toLowerCase()
             // \\bexample\\.com\\b to example.com
-                .replace("\\b", "").replace("\\.", ".")
+            inputdomains = inputdomains.replace("\\b", "").replace("\\.", ".")
             // *{{LinkSummary|example.com}} to example.com
                 .replaceAll("\\*\\s*?\\{\\{(link\\s?summary(live)?|spamlink)\\|", "")
                 .replace("}}", "");
