@@ -2713,7 +2713,7 @@ public class Wiki implements Serializable
      */
     public Revision[] deletedContribs(String u) throws IOException, CredentialNotFoundException
     {
-        return deletedContribs(u, null, null, false, ALL_NAMESPACES);
+        return deletedContribs(u, null, null, false);
     }
 
     /**
