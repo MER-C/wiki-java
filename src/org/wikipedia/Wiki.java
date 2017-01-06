@@ -2093,8 +2093,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the list of categories a particular page is in. Includes hidden
-     *  categories. Capped at <tt>max</tt> number of categories, there's no
-     *  reason why there should be more than that.
+     *  categories. 
      *
      *  @param title a page
      *  @return the list of categories that page is in
@@ -3103,7 +3102,7 @@ public class Wiki implements Serializable
         // build url and connect
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize%7Csha1&revids=");
-        Revision[] revisions = new Revision[oldids.length];
+        HashMap<Long, Revision> revs = new HashMap<>(2 * oldids.length);
         
         // fetch and parse
         for (String chunk : constructRevisionString(oldids))
@@ -3119,13 +3118,16 @@ public class Wiki implements Serializable
                     int y = line.indexOf("/>", j);
                     String blah = line.substring(j, y);
                     Revision rev = parseRevision(blah, title);
-                    long oldid = rev.getRevid();
-                    for (int k = 0; k < oldids.length; k++)
-                        if (oldids[k] == oldid)
-                            revisions[k] = rev;
+                    revs.put(rev.getRevid(), rev);
                 }
             }
         }
+        
+        // reorder 
+        Revision[] revisions = new Revision[oldids.length];
+        for (int i = 0; i < oldids.length; i++)
+            revisions[i] = revs.get(oldids[i]);
+        log(Level.INFO, "getRevisions", "Successfully retrieved " + oldids.length + " revisions.");
         return revisions;
     }
 
