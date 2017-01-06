@@ -3570,19 +3570,11 @@ public class Wiki implements Serializable
         setCookies(connection);
         connection.connect();
 
-        // there should be a better way to do this
+        // download image to the file
         InputStream input = connection.getInputStream();
         if ("gzip".equals(connection.getContentEncoding()))
             input = new GZIPInputStream(input);
-
-        try (BufferedInputStream in = new BufferedInputStream(input);
-            BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
-        {
-            int c;
-            while ((c = in.read()) != -1)
-                outStream.write(c);
-            outStream.flush();
-        }
+        Files.copy(input, file.toPath());
         log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
         return true;
     }
@@ -3743,26 +3735,17 @@ public class Wiki implements Serializable
                 setCookies(connection);
                 connection.connect();
 
-                // there should be a better way to do this
+                // download image to file
                 InputStream input = connection.getInputStream();
                 if ("gzip".equals(connection.getContentEncoding()))
                     input = new GZIPInputStream(input);
-
-                try (BufferedInputStream in = new BufferedInputStream(input);
-                    BufferedOutputStream outStream = new BufferedOutputStream(new FileOutputStream(file)))
-                {
-                    int c;
-                    while ((c = in.read()) != -1)
-                        outStream.write(c);
-                    outStream.flush();
-
-                    // scrape archive name for logging purposes
-                    String archive = parseAttribute(line, "archivename", 0);
-                    if (archive == null)
-                        archive = title;
-                    log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
-                    return true;
-                }
+                Files.copy(input, file.toPath());
+                // scrape archive name for logging purposes
+                String archive = parseAttribute(line, "archivename", 0);
+                if (archive == null)
+                    archive = title;
+                log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
+                return true;
             }
         }
         return false;
