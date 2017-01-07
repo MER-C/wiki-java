@@ -5371,7 +5371,7 @@ public class Wiki implements Serializable
      *  <tt>type.equals(UPLOAD_LOG)</tt>.
      *
      *  @param amount the number of entries to get
-     *  @param type what log to get (e.g. DELETION_LOG)
+     *  @param type what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use "" to
      *  not specify one
      *  @throws IOException if a network error occurs
@@ -5394,14 +5394,14 @@ public class Wiki implements Serializable
      *  @param amount the amount of log entries to get. If both start and
      *  end are defined, this is ignored. Use Integer.MAX_VALUE to not
      *  specify one.
-     *  @param log what log to get (e.g. DELETION_LOG)
+     *  @param log what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use "" to
      *  not specify one
      *  @param user the user performing the action. Use null not to specify
      *  one.
      *  @param target the target of the action. Use "" not to specify one.
      *  @param namespace filters by namespace. Returns empty if namespace
-     *  doesn't exist. Use ALL_NAMESPACES to not specify one.
+     *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if start &lt; end or amount &lt; 1
      *  @return the specified log entries
@@ -6249,7 +6249,7 @@ public class Wiki implements Serializable
          */
         public LogEntry[] blockLog() throws IOException
         {
-            return getLogEntries(null, null, Integer.MAX_VALUE, BLOCK_LOG, "", null, "User:" + username, USER_NAMESPACE);
+            return Wiki.this.getLogEntries(null, null, Integer.MAX_VALUE, BLOCK_LOG, "", null, "User:" + username, USER_NAMESPACE);
         }
 
         /**
@@ -6290,6 +6290,20 @@ public class Wiki implements Serializable
         public Revision[] contribs(int... ns) throws IOException
         {
             return Wiki.this.contribs(username, ns);
+        }
+        
+        /**
+         *  Returns the list of logged actions performed by this user.
+         *  @param logtype what log to get ({@link Wiki#DELETION_LOG} etc.)
+         *  @param action what action to get (e.g. delete, undelete), use 
+         *  "" to not specify one
+         *  @return (see above)
+         *  @throws IOException if a network error occurs
+         *  @since 0.33
+         */
+        public LogEntry[] getLogEntries(String logtype, String action) throws IOException
+        {
+            return Wiki.this.getLogEntries(null, null, Integer.MAX_VALUE, logtype, action, this, "", ALL_NAMESPACES);
         }
 
         /**
