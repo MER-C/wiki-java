@@ -94,6 +94,17 @@ public class MassLinksearch extends HttpServlet
         String inputdomains = request.getParameter("domains");
         boolean https = (request.getParameter("https") != null);
         
+        // parse inputdomains to pure list of domains
+        if (inputdomains != null)
+        {
+            inputdomains = ServletUtils.sanitize(inputdomains).trim().toLowerCase()
+            // \\bexample\\.com\\b to example.com
+                .replace("\\b", "").replace("\\.", ".")
+            // *{{LinkSummary|example.com}} to example.com
+                .replaceAll("\\*\\s*?\\{\\{(link\\s?summary(live)?|spamlink)\\|", "")
+                .replace("}}", "");
+        }
+        
         buffer.append("<p><form action=\"./masslinksearch.jsp\" method=POST>\n");
         buffer.append("<table>\n");
         // wiki textfield
@@ -102,7 +113,7 @@ public class MassLinksearch extends HttpServlet
         if (wiki != null)
         {
             buffer.append(" value=\"");
-            buffer.append(wiki);
+            buffer.append(ServletUtils.sanitize(wiki));
             buffer.append("\">\n");
         }
         else
@@ -112,10 +123,7 @@ public class MassLinksearch extends HttpServlet
         buffer.append("<td valign=top>Domains:\n");
         buffer.append("<td><textarea name=domains rows=10 required>\n");
         if (inputdomains != null)
-        {
-            inputdomains = inputdomains.trim().toLowerCase();
             buffer.append(inputdomains);
-        }
         buffer.append("\n</textarea>\n");
         // https checkbox
         buffer.append("<tr>\n");
@@ -130,17 +138,33 @@ public class MassLinksearch extends HttpServlet
         
         if (inputdomains != null && wiki != null)
         {
-            // \\bexample\\.com\\b to example.com
-            inputdomains = inputdomains.replace("\\b", "").replace("\\.", ".")
-            // *{{LinkSummary|example.com}} to example.com
-                .replaceAll("\\*\\s*?\\{\\{(link\\s?summary(live)?|spamlink)\\|", "")
-                .replace("}}", "");
-
             try
             {
+                String[] domains = inputdomains.split("\r\n");
                 Wiki w = new Wiki(wiki);
                 w.setMaxLag(5);
-                massLinksearch(w, inputdomains.split("\n"), buffer, true);
+                massLinksearch(w, domains, buffer, true);
+                
+                // reformat domain list to regex and linksummary
+                StringBuilder regex = new StringBuilder();
+                StringBuilder linksummary = new StringBuilder();
+                for (String domain : domains)
+                {
+                    regex.append("\\b");
+                    regex.append(domain.replace(".", "\\."));
+                    regex.append("\\b\n");
+                    linksummary.append("*{{LinkSummary|");
+                    linksummary.append(domain);
+                    linksummary.append("}}\n");
+                }
+                buffer.append("<hr>\n");
+                buffer.append("<h3>Reformatted domain lists</h3>\n");
+                buffer.append("<textarea readonly rows=10>\n");
+                buffer.append(regex.toString());
+                buffer.append("</textarea>\n");
+                buffer.append("<textarea readonly rows=10>\n");
+                buffer.append(linksummary.toString());
+                buffer.append("</textarea>\n");
             }
             catch (MalformedURLException ex)
             {
