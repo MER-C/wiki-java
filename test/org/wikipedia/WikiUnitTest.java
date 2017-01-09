@@ -232,8 +232,8 @@ public class WikiUnitTest
         
         // Block log
         Calendar c = new GregorianCalendar(2016, Calendar.JUNE, 30);
-        Wiki.LogEntry[] le = enWiki.getLogEntries(c, null, 5, Wiki.ALL_LOGS, "",
-            null, "User:Nimimaan", Wiki.ALL_NAMESPACES);
+        Wiki.LogEntry[] le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:Nimimaan", c, 
+            null, 5, Wiki.ALL_NAMESPACES);
         assertEquals("getLogEntries: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
         assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser().getUsername());
         assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
@@ -256,8 +256,8 @@ public class WikiUnitTest
         // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp&format=xmlfm
         
         // Move log
-        le = enWiki.getLogEntries(c, null, 5, Wiki.ALL_LOGS, "", null, 
-            "Talk:96th Test Wing/Temp", Wiki.ALL_NAMESPACES);
+        le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "Talk:96th Test Wing/Temp",
+            c, null, 5, Wiki.ALL_NAMESPACES);
         assertEquals("getLogEntries/move: log", Wiki.MOVE_LOG, le[0].getType());
         assertEquals("getLogEntries/move: action", "move", le[0].getAction());
         // TODO: test for new title, redirect suppression
@@ -268,18 +268,17 @@ public class WikiUnitTest
         
         // RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&letitle=User%3AMER-C%2FTest
-        le = testWiki.getLogEntries("User:MER-C/Test");
+        le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:MER-C/Test");
         assertNull("getLogEntries: reason hidden", le[0].getReason());
         assertTrue("getLogEntries: reason hidden", le[0].isReasonDeleted());
         assertNull("getLogEntries: user hidden", le[0].getUser());
         assertTrue("getLogEntries: user hidden", le[0].isUserDeleted());
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&leuser=MER-C
         //     &lestart=20161002050030&leend=20161002050000&letype=delete
-        le = testWiki.getLogEntries(
+        le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, "MER-C", null,
             testWiki.timestampToCalendar("20161002050030", false),
             testWiki.timestampToCalendar("20161002050000", false), 
-            Integer.MAX_VALUE, Wiki.DELETION_LOG, "", testWiki.getUser("MER-C"), 
-            "", Wiki.ALL_NAMESPACES);
+            Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
         assertNull("getLogEntries: action hidden", le[0].getTarget());
         assertTrue("getLogEntries: action hidden", le[0].isTargetDeleted());
     }

@@ -49,7 +49,7 @@ public class AdminUnitTest
     @Test
     public void getLogEntries() throws Exception
     {
-        Wiki.LogEntry[] le = testWiki.getLogEntries("User:MER-C/Test");
+        Wiki.LogEntry[] le = testWiki.getLogEntries(null, null, null, "User:MER-C/Test");
         assertEquals("getLogEntries: RevisionDeleted reason, can access", 
             "create a log entry for testing RevisionDelete on", le[0].getReason());
         assertEquals("getLogEntries: RevisionDeleted user, can access", "MER-C", 

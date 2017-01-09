@@ -5307,62 +5307,21 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the most recent set of log entries up to the given amount.
-     *  Equivalent to [[Special:Log]].
-     *
-     *  @param amount the amount of log entries to get
-     *  @return the most recent set of log entries
-     *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if amount &lt; 1
-     *  @since 0.08
-     */
-    public LogEntry[] getLogEntries(int amount) throws IOException
-    {
-        return getLogEntries(null, null, amount, ALL_LOGS, "", null, "", ALL_NAMESPACES);
-    }
-
-    /**
-     *  Gets log entries for a specific user. Equivalent to [[Special:Log]].
-     *  @param user the user to get log entries for
-     *  @throws IOException if a network error occurs
-     *  @return the set of log entries created by that user
-     *  @since 0.08
-     */
-    public LogEntry[] getLogEntries(User user) throws IOException
-    {
-        return getLogEntries(null, null, Integer.MAX_VALUE, ALL_LOGS, "", user, "", ALL_NAMESPACES);
-    }
-
-    /**
      *  Gets the log entries representing actions that were performed on a
      *  specific target. Equivalent to [[Special:Log]].
-     *
+     *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
+     *  @param action what action to get (e.g. delete, undelete, etc.), use
+     *  null to not specify one
+     *  @param user the user performing the action. Use null not to specify
+     *  one.
      *  @param target the target of the action(s).
      *  @throws IOException if a network error occurs
      *  @return the specified log entries
      *  @since 0.08
      */
-    public LogEntry[] getLogEntries(String target) throws IOException
+    public LogEntry[] getLogEntries(String logtype, String action, String user, String target) throws IOException
     {
-        return getLogEntries(null, null, Integer.MAX_VALUE, ALL_LOGS, "", null, target, ALL_NAMESPACES);
-    }
-
-    /**
-     *  Gets all log entries that occurred between the specified dates.
-     *  WARNING: the start date is the most recent of the dates given, and
-     *  the order of enumeration is from newest to oldest. Equivalent to
-     *  [[Special:Log]].
-     *
-     *  @param start what timestamp to start. Use null to not specify one.
-     *  @param end what timestamp to end. Use null to not specify one.
-     *  @throws IOException if something goes wrong
-     *  @throws IllegalArgumentException if start &lt; end
-     *  @return the specified log entries
-     *  @since 0.08
-     */
-    public LogEntry[] getLogEntries(Calendar start, Calendar end) throws IOException
-    {
-        return getLogEntries(start, end, Integer.MAX_VALUE, ALL_LOGS, "", null, "", ALL_NAMESPACES);
+        return getLogEntries(logtype, action, user, target, null, null, Integer.MAX_VALUE, ALL_NAMESPACES);
     }
 
     /**
@@ -5370,17 +5329,17 @@ public class Wiki implements Serializable
      *  to [[Special:Log]] and [[Special:Newimages]] when
      *  <tt>type.equals(UPLOAD_LOG)</tt>.
      *
+     *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
+     *  @param action what action to get (e.g. delete, undelete, etc.), use 
+     *  null to not specify one
      *  @param amount the number of entries to get
-     *  @param type what log to get (e.g. {@link #DELETION_LOG})
-     *  @param action what action to get (e.g. delete, undelete, etc.), use "" to
-     *  not specify one
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the log type doesn't exist
      *  @return the specified log entries
      */
-    public LogEntry[] getLogEntries(int amount, String type, String action) throws IOException
+    public LogEntry[] getLogEntries(String logtype, String action, int amount) throws IOException
     {
-        return getLogEntries(null, null, amount, type, action, null, "", ALL_NAMESPACES);
+        return getLogEntries(logtype, action, null, null, null, null, amount, ALL_NAMESPACES);
     }
 
     /**
@@ -5389,17 +5348,17 @@ public class Wiki implements Serializable
      *  WARNING: the start date is the most recent of the dates given, and
      *  the order of enumeration is from newest to oldest.
      *
+     *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
+     *  @param action what action to get (e.g. delete, undelete, etc.), use 
+     *  null to not specify one
+     *  @param user the user performing the action. Use null not to specify
+     *  one.
+     *  @param target the target of the action. Use null not to specify one.
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
      *  @param amount the amount of log entries to get. If both start and
      *  end are defined, this is ignored. Use Integer.MAX_VALUE to not
      *  specify one.
-     *  @param log what log to get (e.g. {@link #DELETION_LOG})
-     *  @param action what action to get (e.g. delete, undelete, etc.), use "" to
-     *  not specify one
-     *  @param user the user performing the action. Use null not to specify
-     *  one.
-     *  @param target the target of the action. Use "" not to specify one.
      *  @param namespace filters by namespace. Returns empty if namespace
      *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
      *  @throws IOException if a network error occurs
@@ -5407,8 +5366,8 @@ public class Wiki implements Serializable
      *  @return the specified log entries
      *  @since 0.08
      */
-    public LogEntry[] getLogEntries(Calendar start, Calendar end, int amount, String log, String action,
-        User user, String target, int namespace) throws IOException
+    public LogEntry[] getLogEntries(String logtype, String action, String user, String target, 
+        Calendar start, Calendar end, int amount, int namespace) throws IOException
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
@@ -5419,23 +5378,21 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Tried to retrieve less than one log entry!");
         url.append(amount > max ? max : amount);
 
-        // log type
-        if (!log.equals(ALL_LOGS))
+        if (!logtype.equals(ALL_LOGS))
         {
-            if (action.isEmpty())
+            if (action == null)
             {
                 url.append("&letype=");
-                url.append(log);
+                url.append(logtype);
             }
             else
             {
                 url.append("&leaction=");
-                url.append(log);
+                url.append(logtype);
                 url.append("/");
                 url.append(action);
             }
         }
-
         if (namespace != ALL_NAMESPACES)
         {
             url.append("&lenamespace=");
@@ -5444,16 +5401,13 @@ public class Wiki implements Serializable
         if (user != null)
         {
             url.append("&leuser=");
-            // should already be normalized since we have a User object
-            url.append(encode(user.getUsername(), false));
+            url.append(encode(user, true));
         }
-        if (!target.isEmpty())
+        if (target != null)
         {
             url.append("&letitle=");
             url.append(encode(target, true));
         }
-
-        // check for start/end dates
         if (start != null)
         {
             if (end != null && start.before(end)) //aargh
@@ -5488,7 +5442,7 @@ public class Wiki implements Serializable
 
         // log the success
         StringBuilder console = new StringBuilder("Successfully retrieved log (type=");
-        console.append(log);
+        console.append(logtype);
         int size = entries.size();
         console.append(", ");
         console.append(size);
@@ -6249,7 +6203,7 @@ public class Wiki implements Serializable
          */
         public LogEntry[] blockLog() throws IOException
         {
-            return Wiki.this.getLogEntries(null, null, Integer.MAX_VALUE, BLOCK_LOG, "", null, "User:" + username, USER_NAMESPACE);
+            return Wiki.this.getLogEntries(Wiki.BLOCK_LOG, null, null, "User:" + username);
         }
 
         /**
@@ -6303,7 +6257,7 @@ public class Wiki implements Serializable
          */
         public LogEntry[] getLogEntries(String logtype, String action) throws IOException
         {
-            return Wiki.this.getLogEntries(null, null, Integer.MAX_VALUE, logtype, action, this, "", ALL_NAMESPACES);
+            return Wiki.this.getLogEntries(logtype, action, username, null);
         }
 
         /**
