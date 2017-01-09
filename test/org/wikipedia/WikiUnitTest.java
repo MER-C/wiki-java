@@ -170,7 +170,6 @@ public class WikiUnitTest
     public void getImage() throws Exception
     {
         File tempfile = File.createTempFile("wiki-java_getImage", null);
-        tempfile.deleteOnExit();
         assertFalse("getImage: non-existent file", enWiki.getImage("File:Sdkjf&sdlf.blah", tempfile));
         
         // non-thumbnailed Commons file
@@ -180,6 +179,7 @@ public class WikiUnitTest
         byte[] hash = sha256.digest(imageData);
         assertEquals("getImage", "fc63c250bfce3f3511ccd144ca99b451111920c100ac55aaf3381aec98582035",
             String.format("%064x", new BigInteger(1, hash)));
+        tempfile.delete();
     }
     
     @Test

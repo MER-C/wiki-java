@@ -3574,7 +3574,7 @@ public class Wiki implements Serializable
         InputStream input = connection.getInputStream();
         if ("gzip".equals(connection.getContentEncoding()))
             input = new GZIPInputStream(input);
-        Files.copy(input, file.toPath());
+        Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
         log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
         return true;
     }
@@ -3739,7 +3739,7 @@ public class Wiki implements Serializable
                 InputStream input = connection.getInputStream();
                 if ("gzip".equals(connection.getContentEncoding()))
                     input = new GZIPInputStream(input);
-                Files.copy(input, file.toPath());
+                Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 // scrape archive name for logging purposes
                 String archive = parseAttribute(line, "archivename", 0);
                 if (archive == null)
