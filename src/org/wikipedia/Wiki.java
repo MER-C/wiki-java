@@ -6566,6 +6566,23 @@ public class Wiki implements Serializable
                 return 0; // might not happen, but
             return timestamp.after(other.timestamp) ? 1 : -1;
         }
+        
+        /**
+         *  Determines whether two LogEntries refer to the same event.
+         *  @param other some object to compare to
+         *  @return (see above)
+         *  @since 0.33
+         */
+        @Override
+        public boolean equals(Object other)
+        {
+            if (!(other instanceof LogEntry))
+                return false;
+            LogEntry le = (LogEntry)other;
+            return type.equals(le.type) && action.equals(le.action) && 
+                user.equals(le.user) && target.equals(le.target) && 
+                reason.equals(le.reason) && timestamp.equals(le.timestamp);
+        }
     }
 
     /**
