@@ -5371,7 +5371,7 @@ public class Wiki implements Serializable
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
-        url.append("list=logevents&leprop=title%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails&lelimit=");
+        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails&lelimit=");
 
         // check for amount
         if (amount < 1)
@@ -5436,7 +5436,11 @@ public class Wiki implements Serializable
             // parse xml. We need to repeat the test because the XML may contain more than the required amount.
             String[] items = line.split("<item ");
             for (int i = 1; i < items.length && entries.size() < amount; i++)
-                entries.add(parseLogEntry(items[i]));
+            {
+                LogEntry le = parseLogEntry(items[i]);
+                le.logid = Long.parseLong(parseAttribute(items[i], "logid", 0));
+                entries.add(le);
+            }
         }
         while (entries.size() < amount && lecontinue != null);
 
@@ -5728,10 +5732,11 @@ public class Wiki implements Serializable
             url.append("&apmaxsize=");
             url.append(maximum);
         }
-        if (redirects == Boolean.TRUE)
-            url.append("&apfilterredir=redirects");
-        else if (redirects == Boolean.FALSE)
-            url.append("&apfilterredir=nonredirects");
+        if (redirects != null)
+        {
+            url.append("&apfilterredir=");
+            url.append(redirects ? "redirects" : "nonredirects");
+        }
 
         // parse
         List<String> pages = new ArrayList<>(6667);
@@ -6329,6 +6334,7 @@ public class Wiki implements Serializable
     public class LogEntry implements Comparable<LogEntry>
     {
         // internal data storage
+        private long logid = -1;
         private String type;
         private String action;
         private String reason;
@@ -6356,7 +6362,8 @@ public class Wiki implements Serializable
          *  the page after a move was performed).
          *  @since 0.08
          */
-        protected LogEntry(String type, String action, String reason, User user, String target, String timestamp, Object details)
+        protected LogEntry(String type, String action, String reason, User user, 
+            String target, String timestamp, Object details)
         {
             this.type = type;
             this.action = action;
@@ -6366,10 +6373,21 @@ public class Wiki implements Serializable
             this.timestamp = timestampToCalendar(timestamp, false);
             this.details = details;
         }
+        
+        /**
+         *  Gets the ID of this log entry. Only available if retrieved by
+         *  {@link Wiki#getLogEntries}, otherwise returns -1.
+         *  @return (see above)
+         *  @since 0.33
+         */
+        public long getLogID()
+        {
+            return logid;
+        }
 
         /**
          *  Gets the type of log that this entry is in.
-         *  @return one of DELETION_LOG, USER_CREATION_LOG, BLOCK_LOG, etc.
+         *  @return one of {@link Wiki#DELETION_LOG}, {@link Wiki#BLOCK_LOG}, etc.
          *  @since 0.08
          */
         public String getType()
@@ -6511,8 +6529,9 @@ public class Wiki implements Serializable
         @Override
         public String toString()
         {
-            // @revised 0.17 to a more traditional Java approach
-            StringBuilder s = new StringBuilder("LogEntry[type=");
+            StringBuilder s = new StringBuilder("LogEntry[logid=");
+            s.append(logid);
+            s.append(",type=");
             s.append(type);
             s.append(",action=");
             s.append(action == null ? "[hidden]" : action);

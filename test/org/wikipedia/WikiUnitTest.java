@@ -208,6 +208,7 @@ public class WikiUnitTest
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
         // see also getLogEntries() below
         Wiki.LogEntry[] le = enWiki.getIPBlockList("Nimimaan");
+        assertEquals("getIPBlockList: ID not available", -1, le[0].getLogID());
         assertEquals("getIPBlockList: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
         assertEquals("getIPBlockList: user", "MER-C", le[0].getUser().getUsername());
         assertEquals("getIPBlockList: log", Wiki.BLOCK_LOG, le[0].getType());
@@ -234,6 +235,7 @@ public class WikiUnitTest
         Calendar c = new GregorianCalendar(2016, Calendar.JUNE, 30);
         Wiki.LogEntry[] le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:Nimimaan", c, 
             null, 5, Wiki.ALL_NAMESPACES);
+        assertEquals("getLogEntries: ID", 75695806L, le[0].getLogID());
         assertEquals("getLogEntries: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
         assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser().getUsername());
         assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
