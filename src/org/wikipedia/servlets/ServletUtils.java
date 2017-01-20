@@ -26,24 +26,33 @@ import java.util.*;
  */
 public class ServletUtils
 {
-   
     /**
-     *  Strips &lt; &gt; and other unwanted stuff that leads to XSS attacks.
-     *  Borrowed from http://greatwebguy.com/programming/java/simple-cross-site-scripting-xss-servlet-filter
+     *  Sanitizes untrusted input for XSS destined for inclusion in the HTML
+     *  body.
      *  @param input an input string
+     *  @see https://www.owasp.org/index.php/XSS_Prevention Rule 1
      *  @return <tt>input</tt>, sanitized
      */
-    public static String sanitize(String input)
+    public static String sanitizeForHTML(String input)
     {
-        input = input.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-        input = input.replaceAll("\\(", "&#40;").replaceAll("\\)", "&#41;");
-        input = input.replaceAll("'", "&#39;");
-        input = input.replaceAll("eval\\((.*)\\)", "");
-        input = input.replaceAll("[\\\"\\\'][\\s]*javascript:(.*)[\\\"\\\']", "\"\"");
-        input = input.replaceAll("script", "");
-        return input;
+        return input.replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+            .replaceAll("'", "&#x27;").replaceAll("\"", "&quot;")
+            .replaceAll("/", "&#x2F;");
     }
     
+    /**
+     *  Sanitizes untrusted input for XSS destined for inclusion in boring
+     *  HTML attributes.
+     *  @param input the input to be sanitized
+     *  @see https://www.owasp.org/index.php/XSS_Prevention Rule 2
+     *  @return the sanitized input
+     */
+    public static String sanitizeForAttribute(String input)
+    {
+        return input.replaceAll("\"", "&quot;");
+    }
+
     /**
      *  Generates a HTML combo box.
      *  @param param the form parameter for the combo box
