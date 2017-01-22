@@ -82,7 +82,7 @@ public class PrefixContribs extends HttpServlet
         if (prefix != null)
         {
             buffer.append(" value=\"");
-            buffer.append(ServletUtils.sanitize(prefix));
+            buffer.append(ServletUtils.sanitizeForHTML(prefix));
             buffer.append("\">\n");
         }
         else

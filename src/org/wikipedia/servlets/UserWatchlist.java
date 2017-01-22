@@ -179,11 +179,11 @@ public class UserWatchlist extends HttpServlet
             String user;
             String reason = "";
             if (split < 0)
-                user = ServletUtils.sanitize(token);
+                user = ServletUtils.sanitizeForHTML(token);
             else
             {
-                user = ServletUtils.sanitize(token.substring(0, split - 1)).trim();
-                reason = ServletUtils.sanitize(token.substring(split + 1)).trim();
+                user = ServletUtils.sanitizeForHTML(token.substring(0, split - 1)).trim();
+                reason = ServletUtils.sanitizeForHTML(token.substring(split + 1)).trim();
             }
 
             // user summary links and reason

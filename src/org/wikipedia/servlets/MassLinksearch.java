@@ -97,7 +97,7 @@ public class MassLinksearch extends HttpServlet
         // parse inputdomains to pure list of domains
         if (inputdomains != null)
         {
-            inputdomains = ServletUtils.sanitize(inputdomains).trim().toLowerCase()
+            inputdomains = ServletUtils.sanitizeForHTML(inputdomains).trim().toLowerCase()
             // \\bexample\\.com\\b to example.com
                 .replace("\\b", "").replace("\\.", ".")
             // *{{LinkSummary|example.com}} to example.com
@@ -113,7 +113,7 @@ public class MassLinksearch extends HttpServlet
         if (wiki != null)
         {
             buffer.append(" value=\"");
-            buffer.append(ServletUtils.sanitize(wiki));
+            buffer.append(ServletUtils.sanitizeForHTML(wiki));
             buffer.append("\">\n");
         }
         else
@@ -189,7 +189,7 @@ public class MassLinksearch extends HttpServlet
         buffer.append("<hr>");
         for (String domain : domains)
         {
-            String sanitizedDomain = ServletUtils.sanitize(domain).trim();
+            String sanitizedDomain = ServletUtils.sanitizeForHTML(domain).trim();
             buffer.append("<h3>Results for ");
             buffer.append(sanitizedDomain);
             buffer.append("</h3>\n");

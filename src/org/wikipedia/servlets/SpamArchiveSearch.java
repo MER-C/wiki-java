@@ -96,7 +96,7 @@ public class SpamArchiveSearch extends HttpServlet
         if (query != null)
         {
             buffer.append(" value=\"");
-            buffer.append(ServletUtils.sanitize(query));
+            buffer.append(ServletUtils.sanitizeForHTML(query));
             buffer.append("\"");
         }
         buffer.append(">\n<input type=submit value=\"Search\">\n</form>\n");
@@ -121,7 +121,7 @@ public class SpamArchiveSearch extends HttpServlet
     public static void archivesearch(String query, StringBuilder buffer) throws IOException
     {
         buffer.append("<hr>\n<h2>Searching for \"");
-        buffer.append(ServletUtils.sanitize(query));
+        buffer.append(ServletUtils.sanitizeForHTML(query));
         buffer.append("\".</h2>\n");
 
         // search

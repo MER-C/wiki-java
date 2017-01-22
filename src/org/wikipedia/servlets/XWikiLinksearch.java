@@ -154,7 +154,7 @@ public class XWikiLinksearch extends HttpServlet
         if (wikiinput != null)
         {
             buffer.append(" value=\"");
-            buffer.append(ServletUtils.sanitize(wikiinput));
+            buffer.append(ServletUtils.sanitizeForHTML(wikiinput));
             buffer.append("\"");
         }
         else
@@ -164,7 +164,7 @@ public class XWikiLinksearch extends HttpServlet
         if (domain != null)
         {
             buffer.append(" value=\"");
-            buffer.append(ServletUtils.sanitize(domain));
+            buffer.append(ServletUtils.sanitizeForHTML(domain));
             buffer.append("\"");
         }
         buffer.append(">\n<tr><td colspan=2>Additional protocols: ");
@@ -230,7 +230,7 @@ public class XWikiLinksearch extends HttpServlet
     public static void linksearch(String domain, StringBuilder buffer, Wiki[] wikis, boolean https, boolean mailto,
         int... ns) throws IOException
     {
-        String sanitizedDomain = ServletUtils.sanitize(domain);
+        String sanitizedDomain = ServletUtils.sanitizeForHTML(domain);
         buffer.append("<hr>\n<h2>Searching for links to ");
         buffer.append(sanitizedDomain);
         buffer.append("</h2>\n");
