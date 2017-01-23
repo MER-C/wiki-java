@@ -1,5 +1,5 @@
-<!--
-    @(#)common.jsp 0.01 20/01/2017
+<%--
+    @(#)header.jsp 0.01 20/01/2017
     Copyright (C) 2011 - 2017 MER-C
   
     This program is free software: you can redistribute it and/or modify
@@ -14,10 +14,11 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- -->
+ --%>
 
 <jsp:directive.page import="java.util.*" />
 <jsp:directive.page import="org.wikipedia.*" />
+<jsp:directive.page import="org.wikipedia.servlets.*" />
 
 <jsp:scriptlet>
 

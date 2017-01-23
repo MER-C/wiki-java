@@ -1,4 +1,4 @@
-<!--
+<%--
     @(#)footer.jsp 0.01 20/01/2017
     Copyright (C) 2011 - 2017 MER-C
   
@@ -14,9 +14,11 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- -->
+ --%>
+ 
+<jsp:directive.page import="java.util.*" />
 
-Copyright (C) MER-C 2007-<jsp:expression>new GregorianCalendar().getYear()</jsp:expression>.
+Copyright &copy; MER-C 2007-<jsp:expression>new GregorianCalendar().get(Calendar.YEAR)</jsp:expression>.
 This tool is free software: you can redistribute it and/or modify it under the 
 terms of the <a href="//gnu.org/licenses/agpl.html">Affero GNU General Public 
 License</a> as published by the Free Software Foundation, either version 3 of 

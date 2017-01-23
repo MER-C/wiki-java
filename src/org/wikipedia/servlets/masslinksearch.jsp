@@ -17,9 +17,10 @@
 -->
 
 <jsp:directive.include file="header.jsp" />
-<jsp:directive.page contentType="text/html" pageEncoding="UTF-8" />
+<jsp:directive.page contentType="text/html" pageEncoding="UTF-8" 
+    trimDirectiveWhitespaces="true"/>
 
-<jsp:declaration>
+<jsp:scriptlet>
     boolean https = (request.getParameter("https") != null);
 
     String wiki = request.getParameter("wiki");
@@ -37,7 +38,7 @@
             .replaceAll("\\*\\s*?\\{\\{(link\\s?summary(live)?|spamlink)\\|", "")
             .replace("}}", "");
     }
-</jsp:declaration>
+</jsp:scriptlet>
 
 <!doctype html>
 <html>
@@ -54,27 +55,25 @@ are all acceptable) below, one per line. A timeout is more likely when searching
 for more domains.
 
 <p>
-<form action=\"./masslinksearch.jsp\" method=POST>
+<form action="./masslinksearch.jsp" method=POST>
 <table>
 <tr>
     <td>Wiki:
-    <td><input type=text name=wiki required value="${wiki}">
+    <td><input type=text name=wiki required value="<jsp:expression>wiki</jsp:expression>">
 <tr>
     <td valign=top>Domains:
     <td>
         <textarea name=domains rows=10 required>
-        ${inputdomains}
+<jsp:expression>inputdomains</jsp:expression>
         </textarea>
 <tr>
     <td>Additional protocols:
-    <td>
-        <input type=checkbox name=https value=1 
-            <jsp:scriptlet>
-            if (https || inputdomains == null) {
-            </jsp:scriptlet>
-            checked
-            <jsp:scriptlet>}</jsp:scriptlet>
-        >HTTPS
+    <td><input type=checkbox name=https value=1<jsp:scriptlet>
+        if (https || inputdomains == null)
+        {
+        </jsp:scriptlet> checked<jsp:scriptlet>
+        }
+        </jsp:scriptlet>>HTTPS
 </table>
 <br>
 <input type=submit value=Search>
@@ -98,10 +97,10 @@ for more domains.
             domain = domain.trim();
             
             // compute results
-            List[] temp = wiki.linksearch("*." + domain, "http", ns);
+            List[] temp = w.linksearch("*." + domain, "http");
             if (https)
             {
-                List[] temp2 = wiki.linksearch("*." + domain, "https", ns);
+                List[] temp2 = w.linksearch("*." + domain, "https");
                 temp[0].addAll(temp2[0]);
                 temp[1].addAll(temp2[1]);
             }
@@ -115,19 +114,20 @@ for more domains.
             linksummary.append("}}\n");
             </jsp:scriptlet>
         
-            <h3>Results for ${domain}</h3>
-            <jsp:expression>ParserUtils.linksearchResultsToHTML(temp, wiki, domain)</jsp:expression>
+            <h3>Results for <jsp:expression>domain</jsp:expression></h3>
+            <jsp:expression>ParserUtils.linksearchResultsToHTML(temp, w, domain)</jsp:expression>
             <jsp:scriptlet>
         }
         </jsp:scriptlet>
         <hr>
         <h3>Reformatted domain lists</h3>
         <textarea readonly rows=10>
-        <jsp:expression>regex.toString()</jsp:expression>
+<jsp:expression>regex</jsp:expression>
         </textarea>
         <textarea readonly rows=10>
-        <jsp:expression>linksummary.toString()</jsp:expression>
+<jsp:expression>linksummary</jsp:expression>
         </textarea>
+        <jsp:scriptlet>
     }
 </jsp:scriptlet>
         

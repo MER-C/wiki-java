@@ -31,7 +31,8 @@ public class ServletUtils
      *  Sanitizes untrusted input for XSS destined for inclusion in the HTML
      *  body.
      *  @param input an input string
-     *  @see https://www.owasp.org/index.php/XSS_Prevention Rule 1
+     *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention">OWASP XSS 
+     *  Prevention Cheat Sheet Rule 1</a>
      *  @return <tt>input</tt>, sanitized
      */
     public static String sanitizeForHTML(String input)
@@ -46,7 +47,8 @@ public class ServletUtils
      *  Sanitizes untrusted input for XSS destined for inclusion in boring
      *  HTML attributes.
      *  @param input the input to be sanitized
-     *  @see https://www.owasp.org/index.php/XSS_Prevention Rule 2
+     *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention"> OWASP XSS
+     *  Prevention Cheat Sheet Rule 2</a>
      *  @return the sanitized input
      */
     public static String sanitizeForAttribute(String input)
