@@ -18,6 +18,8 @@
 
 package org.wikipedia.servlets;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.*;
 import javax.servlet.http.*;
 
@@ -54,6 +56,27 @@ public class ServletUtils
     public static String sanitizeForAttribute(String input)
     {
         return input.replaceAll("\"", "&quot;");
+    }
+    
+    /**
+     *  Sanitizes untrusted input for XSS destined for inclusion in URLs. (Note
+     *  that most Wiki.java methods should handle this.)
+     *  @param input the input to be sanitized
+     *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention"> OWASP XSS
+     *  Prevention Cheat Sheet Rule 5</a>
+     *  @return the sanitized input
+     */
+    public static String sanitizeForURL(String input)
+    {
+        try
+        {
+            return URLEncoder.encode(input, "UTF-8");
+        }
+        catch (UnsupportedEncodingException ex)
+        {
+            // should never happen
+            return "";
+        }
     }
 
     /**
