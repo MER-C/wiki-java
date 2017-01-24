@@ -9,7 +9,7 @@
     </servlet>
     <servlet>
         <servlet-name>Mass linksearch</servlet-name>
-        <servlet-class>org.wikipedia.servlets.MassLinksearch</servlet-class>
+        <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/masslinksearch.jsp</jsp-file>
     </servlet>
     <servlet>
         <description>Image contribution surveyor</description>
@@ -22,7 +22,7 @@
     </servlet>
     <servlet>
         <servlet-name>PrefixContribs</servlet-name>
-        <servlet-class>org.wikipedia.servlets.PrefixContribs</servlet-class>
+        <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/prefixcontribs.jsp</jsp-file>
     </servlet>
     <servlet>
         <servlet-name>UserWatchlist</servlet-name>
