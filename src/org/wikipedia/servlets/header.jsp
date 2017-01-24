@@ -20,6 +20,7 @@
 <%@ page import="java.util.*" %>
 <%@ page import="org.wikipedia.*" %>
 <%@ page import="org.wikipedia.servlets.*" %>
+<%@ page import="org.wikipedia.tools.*" %>
 
 <%
 // Set security headers
