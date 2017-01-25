@@ -16,12 +16,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  --%>
 
-<jsp:directive.page import="java.util.*" />
-<jsp:directive.page import="org.wikipedia.*" />
-<jsp:directive.page import="org.wikipedia.servlets.*" />
+<%@ page import="java.io.*" %>
+<%@ page import="java.util.*" %>
+<%@ page import="org.wikipedia.*" %>
+<%@ page import="org.wikipedia.servlets.*" %>
 
-<jsp:scriptlet>
-
+<%
 // Set security headers
 
     // Enable HSTS (force HTTPS)
@@ -42,5 +42,4 @@
         response.sendError(403, "robots.txt exists for a reason. Follow it!");
         return;
     }
-
-</jsp:scriptlet>
+%>

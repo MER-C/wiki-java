@@ -16,15 +16,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-<jsp:directive.include file="header.jsp" />
-<jsp:directive.page contentType="text/html" pageEncoding="UTF-8" 
-    trimDirectiveWhitespaces="true"/>
+<%@ include file="header.jsp" %>
+<%@ page contentType="text/html" pageEncoding="UTF-8" 
+    trimDirectiveWhitespaces="true"%>
 
-<jsp:scriptlet>
+<%
     boolean https = (request.getParameter("https") != null);
 
     String wiki = request.getParameter("wiki");
-    if (wiki != null)
+    if (wiki == null)
+        wiki = "";
+    else
         wiki = ServletUtils.sanitizeForAttribute(wiki);
 
     // parse inputdomains to pure list of domains
@@ -38,7 +40,9 @@
             .replaceAll("\\*\\s*?\\{\\{(link\\s?summary(live)?|spamlink)\\|", "")
             .replace("}}", "");
     }
-</jsp:scriptlet>
+    else
+        inputdomains = "";
+%>
 
 <!doctype html>
 <html>
@@ -59,35 +63,35 @@ for more domains.
 <table>
 <tr>
     <td>Wiki:
-    <td><input type=text name=wiki required value="<jsp:expression>wiki</jsp:expression>">
+    <td><input type=text name=wiki required value="<%= wiki %>">
 <tr>
     <td valign=top>Domains:
     <td>
         <textarea name=domains rows=10 required>
-<jsp:expression>inputdomains</jsp:expression>
+<%= inputdomains %>
         </textarea>
 <tr>
     <td>Additional protocols:
-    <td><input type=checkbox name=https value=1<jsp:scriptlet>
-        if (https || inputdomains == null)
+    <td><input type=checkbox name=https value=1<%
+        if (https || inputdomains.isEmpty())
         {
-        </jsp:scriptlet> checked<jsp:scriptlet>
+        %> checked<%
         }
-        </jsp:scriptlet>>HTTPS
+        %>>HTTPS
 </table>
 <br>
 <input type=submit value=Search>
 </form>
 
-<jsp:scriptlet>
-    if (inputdomains != null && wiki != null)
+<%
+    if (!inputdomains.isEmpty() && !wiki.isEmpty())
     {
-        </jsp:scriptlet>
-        <hr>
-        <jsp:scriptlet>
+%>
+<hr>
+<%
         String[] domains = inputdomains.split("\r\n");
         Wiki w = new Wiki(wiki);
-        w.setMaxLag(5);
+        w.setMaxLag(-1);
 
         StringBuilder regex = new StringBuilder();
         StringBuilder linksummary = new StringBuilder();
@@ -112,26 +116,26 @@ for more domains.
             linksummary.append("*{{LinkSummary|");
             linksummary.append(domain);
             linksummary.append("}}\n");
-            </jsp:scriptlet>
+%>
         
-            <h3>Results for <jsp:expression>domain</jsp:expression></h3>
-            <jsp:expression>ParserUtils.linksearchResultsToHTML(temp, w, domain)</jsp:expression>
-            <jsp:scriptlet>
+<h3>Results for <%= domain %></h3>
+<%= ParserUtils.linksearchResultsToHTML(temp, w, domain) %>
+<%
         }
-        </jsp:scriptlet>
-        <hr>
-        <h3>Reformatted domain lists</h3>
-        <textarea readonly rows=10>
-<jsp:expression>regex</jsp:expression>
-        </textarea>
-        <textarea readonly rows=10>
-<jsp:expression>linksummary</jsp:expression>
-        </textarea>
-        <jsp:scriptlet>
+%>
+<hr>
+<h3>Reformatted domain lists</h3>
+<textarea readonly rows=10>
+<%= regex %>
+</textarea>
+<textarea readonly rows=10>
+<%= linksummary %>
+</textarea>
+<%
     }
-</jsp:scriptlet>
+%>
         
 <br>
 <br>
 <hr>
-<p>Mass linksearch tool: <jsp:directive.include file="footer.jsp" />
+<p>Mass linksearch tool: <%@ include file="footer.jsp" %>

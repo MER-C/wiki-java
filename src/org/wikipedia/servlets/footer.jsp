@@ -16,9 +16,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  --%>
  
-<jsp:directive.page import="java.util.*" />
+<%@ page import="java.util.*" %>
 
-Copyright &copy; MER-C 2007-<jsp:expression>new GregorianCalendar().get(Calendar.YEAR)</jsp:expression>.
+Copyright &copy; MER-C 2007-<%= new GregorianCalendar().get(Calendar.YEAR) %>.
 This tool is free software: you can redistribute it and/or modify it under the 
 terms of the <a href="//gnu.org/licenses/agpl.html">Affero GNU General Public 
 License</a> as published by the Free Software Foundation, either version 3 of 
