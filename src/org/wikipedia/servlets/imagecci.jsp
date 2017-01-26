@@ -42,7 +42,7 @@
             if (i % 20 == 1)
             {
 %>
-==== Local files <%= i %> to <%= i + 19 %> ====
+==== Local files <%= i %> to <%= Math.min(i + 19, survey[0].length) %> ====
 <%
             }
 %>*[[:<%= entry %>]]
@@ -58,7 +58,7 @@
             if (i % 20 == 1)
             {
 %>
-==== Commons files <%= i %> to <%= i + 19 %> ====
+==== Commons files <%= i %> to <%= Math.min(i + 19, survey[1].length) %> ====
 <%
             }
 %>*[[:<%= entry %>]]
@@ -76,7 +76,7 @@ WARNING: may be inaccurate, depending on username.
             if (i % 20 == 1)
             {
 %>
-==== Transferred files <%= i %> to <%= i + 19 %> ====
+==== Transferred files <%= i %> to <%= Math.min(i + 19, survey[2].length) %> ====
 <%
             }
 %>*[[:<%= entry %>]]
