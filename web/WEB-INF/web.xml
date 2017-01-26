@@ -14,7 +14,7 @@
     <servlet>
         <description>Image contribution surveyor</description>
         <servlet-name>ImageCCI</servlet-name>
-        <servlet-class>org.wikipedia.servlets.ImageCCI</servlet-class>
+        <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/imagecci.jsp</jsp-file>
     </servlet>
     <servlet>
         <servlet-name>SpamArchiveSearch</servlet-name>
