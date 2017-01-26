@@ -22,6 +22,12 @@
 
 <%
     String user = request.getParameter("user");
+    String homewiki = request.getParameter("wiki");
+    if (homewiki == null)
+        homewiki = "en.wikipedia.org";
+    else
+        homewiki = ServletUtils.sanitizeForAttribute(homewiki);
+
     if (user != null)
     {
         // create download prompt
@@ -29,7 +35,7 @@
         response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
 
         // get results
-        Wiki wiki = new Wiki("en.wikipedia.org");
+        Wiki wiki = new Wiki(homewiki);
         Wiki.User wpuser = wiki.getUser(user);
         String[][] survey = ContributionSurveyor.imageContributionSurvey(wiki, wpuser);
 
@@ -102,9 +108,14 @@ copyright investigations.</a>
 
 <p>
 <form action="./imagecci.jsp" method=GET>
-    
-<p>User to survey: 
-<input type=text name=user required>
+<table>
+<tr>
+    <td>User to survey:
+    <td><input type=text name=user required>
+<tr>
+    <td>Home wiki:
+    <td><input type=text name="wiki" value="<%= homewiki %>" required>
+</table>
 <input type=submit value="Survey user">
 </form>
 
