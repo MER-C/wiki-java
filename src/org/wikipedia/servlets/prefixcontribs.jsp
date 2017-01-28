@@ -21,6 +21,8 @@
     trimDirectiveWhitespaces="true" %>
 
 <%
+    request.setAttribute("toolname", "Prefix contributions");
+
     String prefix = request.getParameter("prefix");
     if (prefix == null)
         prefix = "";
@@ -36,7 +38,7 @@
 <html>
 <head>
 <link rel=stylesheet href="styles.css">
-<title>Prefix contributions</title>
+<title><%= request.getAttribute("toolname") %></title>
 </head>
 
 <body>
@@ -62,15 +64,9 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
 <%
     if (!prefix.isEmpty())
     {
-%>
-<hr>
-<%
+        out.println("<hr>");
         if (prefix.length() < 4)
-        {
-%>
-<span class="error">ERROR: search key of insufficient length.</span>
-<%
-        }
+            out.println("<span class=\"error\">ERROR: search key of insufficient length.</span>");
         else
         {
             Wiki enWiki = new Wiki("en.wikipedia.org");
@@ -79,23 +75,10 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
             cutoff.add(Calendar.DAY_OF_MONTH, -1 * time);
             Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
             if (revisions.length == 0)
-            {
-%>
-<p>
-No contributions found.
-<%
-            }
+                out.println("<p>\nNo contributions found.");
             else
-            {
-%>
-<%= ParserUtils.revisionsToHTML(enWiki, revisions) %>
-<%
-            }
+                out.println(ParserUtils.revisionsToHTML(enWiki, revisions));
         }
     }
 %>
-
-<br>
-<br>
-<hr>
-<p>Prefix contributions: <%@ include file="footer.jsp" %>
+<%@ include file="footer.jsp" %>

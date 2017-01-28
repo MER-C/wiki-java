@@ -21,6 +21,8 @@
 <%@ page import="java.net.URLEncoder" %>
 
 <%
+    request.setAttribute("toolname", "Image contribution surveyor");
+
     String user = request.getParameter("user");
     String homewiki = request.getParameter("wiki");
     if (homewiki == null)
@@ -46,29 +48,18 @@
         {
             i++;
             if (i % 20 == 1)
-            {
-%>
-==== Local files <%= i %> to <%= Math.min(i + 19, survey[0].length) %> ====
-<%
-            }
-%>*[[:<%= entry %>]]
-<%
+                out.println("==== Local files " + i + " to " + Math.min(i + 19, survey[0].length) + " ====");
+            out.println("*[[:" + entry + "]]");
         }
-%>
-=== Uploads to commons.wikimedia.org ===
-<%
+
+        out.println("=== Uploads to commons.wikimedia.org ===");
         i = 0;
         for (String entry : survey[1])
         {
             i++;
             if (i % 20 == 1)
-            {
-%>
-==== Commons files <%= i %> to <%= Math.min(i + 19, survey[1].length) %> ====
-<%
-            }
-%>*[[:<%= entry %>]]
-<%
+                out.println("==== Commons files " + i + " to " + Math.min(i + 19, survey[1].length) + " ====");
+            out.println("*[[:" + entry + "]]");
         }
 %>
 === Transferred files on commons.wikimedia.org ===
@@ -80,13 +71,8 @@ WARNING: may be inaccurate, depending on username.
         {
             i++;
             if (i % 20 == 1)
-            {
-%>
-==== Transferred files <%= i %> to <%= Math.min(i + 19, survey[2].length) %> ====
-<%
-            }
-%>*[[:<%= entry %>]]
-<%
+                out.println("==== Transferred files " + i + " to " + Math.min(i + 19, survey[2].length) + " ====");
+            out.println("*[[:" + entry + "]]");
         }
     }
     else
@@ -97,7 +83,7 @@ WARNING: may be inaccurate, depending on username.
 <html>
 <head>
 <link rel=stylesheet href="styles.css">
-<title>Image contribution surveyor</title>
+<title><%= request.getAttribute("toolname") %></title>
 </head>
 
 <body>
@@ -119,11 +105,7 @@ copyright investigations.</a>
 <input type=submit value="Survey user">
 </form>
 
-<br>
-<br>
-<hr>
-<p>Image contribution surveyor: <%@ include file="footer.jsp" %>
-    
+<%@ include file="footer.jsp" %>
 <%
     }
 %>

@@ -21,6 +21,7 @@
     trimDirectiveWhitespaces="true" %>
 
 <%
+    request.setAttribute("toolname", "Spam archive search");
     String query = request.getParameter("query");
 %>
 
@@ -28,7 +29,7 @@
 <html>
 <head>
 <link rel=stylesheet href="styles.css">
-<title>Spam archive search</title>
+<title><%= request.getAttribute("toolname") %></title>
 </head>
 
 <body>
@@ -68,8 +69,4 @@ If you want to search a domain name, please enclose it in quotation marks.
 <%
     }
 %>
-
-<br>
-<br>
-<hr>
-<p>Spam archive search: <%@ include file="footer.jsp" %>
+<%@ include file="footer.jsp" %>

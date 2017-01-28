@@ -21,6 +21,8 @@
     trimDirectiveWhitespaces="true"%>
 
 <%
+    request.setAttribute("toolname", "Mass linksearch");
+
     boolean https = (request.getParameter("https") != null);
 
     String wiki = request.getParameter("wiki");
@@ -48,7 +50,7 @@
 <html>
 <head>
 <link rel=stylesheet href="styles.css">
-<title>Mass Linksearch</title>
+<title><%= request.getAttribute("toolname") %></title>
 </head>
 
 <body>
@@ -86,9 +88,7 @@ for more domains.
 <%
     if (!inputdomains.isEmpty() && !wiki.isEmpty())
     {
-%>
-<hr>
-<%
+        out.println("<hr>");
         String[] domains = inputdomains.split("\r\n");
         Wiki w = new Wiki(wiki);
         w.setMaxLag(-1);
@@ -134,8 +134,4 @@ for more domains.
 <%
     }
 %>
-        
-<br>
-<br>
-<hr>
-<p>Mass linksearch tool: <%@ include file="footer.jsp" %>
+<%@ include file="footer.jsp" %>
