@@ -74,12 +74,8 @@ for more domains.
         </textarea>
 <tr>
     <td>Additional protocols:
-    <td><input type=checkbox name=https value=1<%
-        if (https || inputdomains.isEmpty())
-        {
-        %> checked<%
-        }
-        %>>HTTPS
+    <td><input type=checkbox name=https value=1<%= (inputdomains.isEmpty() ||
+         https) ? " checked" : "" %>>HTTPS
 </table>
 <br>
 <input type=submit value=Search>
@@ -116,11 +112,9 @@ for more domains.
             linksummary.append("*{{LinkSummary|");
             linksummary.append(domain);
             linksummary.append("}}\n");
-%>
-        
-<h3>Results for <%= domain %></h3>
-<%= ParserUtils.linksearchResultsToHTML(temp, w, domain) %>
-<%
+
+            out.println("<h3>Results for " + domain + "</h3>");
+            out.println(ParserUtils.linksearchResultsToHTML(temp, w, domain));
         }
 %>
 <hr>

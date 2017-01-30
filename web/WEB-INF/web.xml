@@ -5,7 +5,7 @@
     <display-name>Some Wikipedia related tools</display-name>
     <servlet>
         <servlet-name>Cross-wiki linksearch</servlet-name>
-        <servlet-class>org.wikipedia.servlets.XWikiLinksearch</servlet-class>
+        <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/xwikilinksearch.jsp</jsp-file>
     </servlet>
     <servlet>
         <servlet-name>Mass linksearch</servlet-name>

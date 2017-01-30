@@ -45,6 +45,66 @@ public class AllWikiLinksearch
     private static FileWriter out = null;
     private static ProgressMonitor monitor;
     private static int progress = 0;
+    
+    // predefined wiki sets
+    
+    /**
+     *  The top 20 Wikimedia projects, namely { "en", "de", "fr", "nl", "it", 
+     *  "pl", "es", "ru", "ja", "pt", "zh", "sv", "vi", "uk", "ca", "no", "fi", 
+     *  "cs", "hu", "fa" }.wikipedia.org.
+     */
+    public static final Wiki[] TOP20 = new Wiki[20];
+    
+    /**
+     *  The top 40 Wikimedia projects, namely everything in {@link #TOP20}, plus
+     *  { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk", "lt", 
+     *  "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" }.wikipedia.org.
+     */
+    public static final Wiki[] TOP40 = new Wiki[40];
+    
+    /**
+     *  Major Wikimedia projects prone to spam, namely { "en", "de", "fr" }.
+     *  { "wikipedia", "wiktionary", "wikibooks", "wikiquote", "wikivoyage" }
+     *  .org, plus Wikimedia Commons, Meta, mediawiki.org and WikiData.
+     */
+    public static final Wiki[] MAJOR_WIKIS = new Wiki[19];
+    
+    /**
+     *  Initializes wiki groups.
+     */
+    static
+    {
+        String[] temp = { 
+            // top 20 Wikipedias
+            "en", "de", "fr", "nl", "it", "pl", "es", "ru", "ja",  "pt",
+            "zh", "sv", "vi", "uk", "ca", "no", "fi", "cs", "hu",  "fa",
+            // 20-40
+            "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr",  "kk",
+            "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
+        for (int i = 0; i < temp.length; i++)
+        {
+            TOP40[i] = new Wiki(temp[i] + ".wikipedia.org");
+            TOP40[i].setMaxLag(-1);
+        }
+        System.arraycopy(TOP40, 0, TOP20, 0, 20);
+        
+        temp = new String[] { "en", "de", "fr" };
+        for (int i = 0; i < temp.length; i++)
+        {
+            MAJOR_WIKIS[5 * i    ] = new Wiki(temp[i] + ".wikipedia.org");
+            MAJOR_WIKIS[5 * i + 1] = new Wiki(temp[i] + ".wiktionary.org");
+            MAJOR_WIKIS[5 * i + 2] = new Wiki(temp[i] + ".wikibooks.org");
+            MAJOR_WIKIS[5 * i + 3] = new Wiki(temp[i] + ".wikiquote.org");
+            MAJOR_WIKIS[5 * i + 4] = new Wiki(temp[i] + ".wikivoyage.org");
+        }
+        MAJOR_WIKIS[15] = new Wiki("meta.wikimedia.org");
+        MAJOR_WIKIS[16] = new Wiki("commons.wikimedia.org");
+        MAJOR_WIKIS[17] = new Wiki("mediawiki.org");
+        MAJOR_WIKIS[18] = new Wiki("wikidata.org");
+        for (Wiki tempwiki : MAJOR_WIKIS)
+            tempwiki.setMaxLag(-1);
+    }
+    
 
     private static class LinksearchThread extends Thread
     {
@@ -76,13 +136,7 @@ public class AllWikiLinksearch
                     builder.append("=== Results for ");
                     builder.append(wiki.getDomain());
                     builder.append(" ===\n");
-                    List[] links = wiki.linksearch("*." + domain);
-                    if (!httponly)
-                    {
-                        List[] temp = wiki.linksearch("https://*." + domain);
-                        links[0].addAll(temp[0]);
-                        links[1].addAll(temp[1]);
-                    }
+                    List[] links = crossWikiLinksearch(domain, new Wiki[] { wiki }, !httponly, false).get(wiki);
                     linknumber = links[0].size();
                     if (linknumber != 0)
                         builder.append(ParserUtils.linksearchResultsToWikitext(links, domain));
@@ -175,5 +229,42 @@ public class AllWikiLinksearch
     {
         progress++;
         monitor.setProgress(progress);
+    }
+    
+    /**
+     *  Performs a cross-wiki linksearch (see xwikilinksearch.jsp).
+     *  @param domain the domain to search
+     *  @param wikis the wikis to search
+     *  @param https include HTTPS links?
+     *  @param mailto include mailto links?
+     *  @param ns restrict to the given namespaces
+     *  @return the linksearch results, as in wiki => results
+     *  @throws IOException if a network error occurs
+     */
+    public static Map<Wiki, List[]> crossWikiLinksearch(String domain, Wiki[] 
+        wikis, boolean https, boolean mailto, int... ns) throws IOException
+    {
+        // TODO: integrate this with the above
+        
+        Map<Wiki, List[]> ret = new LinkedHashMap<>();
+        for (Wiki wiki : wikis)
+        {
+            List[] temp = wiki.linksearch("*." + domain, "http", ns);
+            // silly api designs aplenty here!
+            if (https)
+            {
+                List[] temp2 = wiki.linksearch("*." + domain, "https", ns);
+                temp[0].addAll(temp2[0]);
+                temp[1].addAll(temp2[1]);
+            }
+            if (mailto)
+            {
+                List[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
+                temp[0].addAll(temp2[0]);
+                temp[1].addAll(temp2[1]);
+            }
+            ret.put(wiki, temp);
+        }
+        return ret;
     }
 }
