@@ -91,6 +91,22 @@ public class WikiUnitTest
     }
     
     @Test
+    public void supportsSubpages() throws Exception
+    {
+        assertFalse("supportsSubpages: main", enWiki.supportsSubpages(Wiki.MAIN_NAMESPACE));
+        assertTrue("supportsSubpages: talk", enWiki.supportsSubpages(Wiki.TALK_NAMESPACE));
+        try
+        {
+            enWiki.supportsSubpages(-4444);
+            fail("supportsSubpages: obviously invalid namespace");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            // test passed
+        }
+    }
+    
+    @Test
     public void userExists() throws Exception
     {
         assertTrue("I should exist!", enWiki.userExists("MER-C"));
@@ -352,11 +368,6 @@ public class WikiUnitTest
         {
             // the expected result. This is currently broken because fetch
             // intercepts the API error.
-        }
-        catch (Throwable ex)
-        {
-            ex.printStackTrace();
-            fail("getSectionText: should throw IllegalArgumentException");
         }
         */
     }
