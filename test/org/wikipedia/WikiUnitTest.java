@@ -107,6 +107,39 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getTalkPage() throws Exception
+    {
+        assertEquals("getTalkPage: main", "Talk:Hello", enWiki.getTalkPage("Hello"));
+        try
+        {
+            enWiki.getTalkPage("Talk:Hello");
+            fail("getTalkPage: tried to get talk page of a talk page");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            // test passed
+        }
+        try
+        {
+            enWiki.getTalkPage("Special:Newpages");
+            fail("getTalkPage: tried to get talk page of a special page");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            // test passed
+        }
+        try
+        {
+            enWiki.getTalkPage("Media:Wiki.png");
+            fail("getTalkPage: tried to get talk page of a media page");
+        }
+        catch (IllegalArgumentException ex)
+        {
+            // test passed
+        }
+    }
+    
+    @Test
     public void userExists() throws Exception
     {
         assertTrue("I should exist!", enWiki.userExists("MER-C"));
