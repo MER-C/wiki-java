@@ -140,6 +140,24 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getRootPage() throws Exception
+    {
+        assertEquals("getRootPage: main ns", "Aaa/Bbb/Ccc", enWiki.getRootPage("Aaa/Bbb/Ccc"));
+        assertEquals("getRootPage: talk ns", "Talk:Aaa", enWiki.getRootPage("Talk:Aaa/Bbb/Ccc"));
+        assertEquals("getRootPage: rtl", "ويكيبيديا:نقاش الحذف",
+            arWiki.getRootPage("ويكيبيديا:نقاش الحذف/كأس الخليج العربي لكرة القدم 2014 المجموعة ب"));
+    }
+    
+    @Test
+    public void getParentPage() throws Exception
+    {
+        assertEquals("getParentPage: main ns", "Aaa/Bbb/Ccc", enWiki.getParentPage("Aaa/Bbb/Ccc"));
+        assertEquals("getParentPage: talk ns", "Talk:Aaa/Bbb", enWiki.getParentPage("Talk:Aaa/Bbb/Ccc"));
+        assertEquals("getParentPage: rtl", "ويكيبيديا:نقاش الحذف",
+            arWiki.getParentPage("ويكيبيديا:نقاش الحذف/كأس الخليج العربي لكرة القدم 2014 المجموعة ب"));
+    }
+    
+    @Test
     public void userExists() throws Exception
     {
         assertTrue("I should exist!", enWiki.userExists("MER-C"));

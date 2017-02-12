@@ -1328,6 +1328,46 @@ public class Wiki implements Serializable
             title = title.substring(title.indexOf(':') + 1);
         return namespaceIdentifier(namespace + 1) + ":" + title;
     }
+    
+    /**
+     *  If a namespace supports subpages, return the top-most page -- e.g. 
+     *  <tt>getRootPage("Talk:Aaa/Bbb/Ccc")</tt> returns "Talk:Aaa" if the talk
+     *  namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See also
+     *  the parser function {{ROOTPAGENAME}}, though that removes the namespace
+     *  prefix.
+     * 
+     *  @param page a page
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.33
+     */
+    public String getRootPage(String page) throws IOException
+    {
+        if (supportsSubpages(namespace(page)))
+            return page.substring(0, page.indexOf("/"));
+        else
+            return page;
+    }
+    
+    /**
+     *  If a namespace supports subpages, return the top-most page -- e.g. 
+     *  <tt>getRootPage("Talk:Aaa/Bbb/Ccc")</tt> returns "Talk:Aaa/Bbb" if the 
+     *  talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See
+     *  also the parser function {{BASEPAGENAME}}, though that removes the
+     *  namespace prefix.
+     * 
+     *  @param page a page
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since 0.33
+     */
+    public String getParentPage(String page) throws IOException
+    {
+        if (supportsSubpages(namespace(page)))
+            return page.substring(0, page.lastIndexOf("/"));
+        else
+            return page;
+    }
 
     /**
      *  Gets miscellaneous page info.
