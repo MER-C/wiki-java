@@ -4159,7 +4159,7 @@ public class Wiki implements Serializable
      */
     public String[] allUsers(String start, int number) throws IOException
     {
-        return allUsers(start, number, "", "", "", "");
+        return allUsers(start, number, "", "", "", "", false, false);
     }
 
     /**
@@ -4171,7 +4171,7 @@ public class Wiki implements Serializable
      */
     public String[] allUsersInGroup(String group) throws IOException
     {
-        return allUsers("", -1, "", group, "", "");
+        return allUsers("", -1, "", group, "", "", false, false);
     }
      
     /**
@@ -4183,7 +4183,7 @@ public class Wiki implements Serializable
      */
     public String[] allUsersNotInGroup(String excludegroup) throws IOException
     {
-        return allUsers("", -1, "", "", excludegroup, "");
+        return allUsers("", -1, "", "", excludegroup, "", false, false);
     }
     
     /**
@@ -4195,7 +4195,7 @@ public class Wiki implements Serializable
      */
     public String[] allUsersWithRight(String rights) throws IOException
     {
-        return allUsers("", -1, "", "", "", rights);
+        return allUsers("", -1, "", "", "", rights, false, false);
     }
     
     /**
@@ -4207,7 +4207,7 @@ public class Wiki implements Serializable
      */
     public String[] allUsersWithPrefix(String prefix) throws IOException
     {
-        return allUsers("", -1, prefix, "", "", "");
+        return allUsers("", -1, prefix, "", "", "", false, false);
     }
     
     /**
@@ -4216,16 +4216,22 @@ public class Wiki implements Serializable
      *
      *  @param start the string to start enumeration
      *  @param number the number of users to return
-     *  @param prefix list all users with this prefix (overrides start and amount),
-     *  use "" to not not specify one
-     *  @param group list all users in this group(s). Use pipe-char "|" to separate group names.
-     *  @param excludegroup list all users who are not in this group(s). Use pipe-char "|" to separate group names.
-     *  @param rights list all users with this right(s). Use pipe-char "|" to separate right names.
+     *  @param prefix list all users with this prefix (overrides start and 
+     *  amount), use "" to not not specify one
+     *  @param group list all users in this group(s). Use pipe-char "|" to 
+     *  separate group names.
+     *  @param excludegroup list all users who are not in this group(s). Use 
+     *  pipe-char "|" to separate group names.
+     *  @param rights list all users with this right(s). Use pipe-char "|" to 
+     *  separate right names.
+     *  @param activeonly return only users who have edited in the last 30 days
+     *  @param skipzero return only users with edits
      *  @return a String[] containing the usernames
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public String[] allUsers(String start, int number, String prefix, String group, String excludegroup, String rights) throws IOException
+    public String[] allUsers(String start, int number, String prefix, String group, 
+        String excludegroup, String rights, boolean activeonly, boolean skipzero) throws IOException
     {
         // sanitise
         StringBuilder url = new StringBuilder(query);
@@ -4257,6 +4263,10 @@ public class Wiki implements Serializable
             url.append("&aurights=");
             url.append(encode(rights, false));
         }
+        if (activeonly)
+            url.append("&auactiveusers=1");
+        if (skipzero)
+            url.append("&auwitheditsonly=1");
         List<String> members = new ArrayList<>(6667); // enough for most requests
         do
         {
@@ -4321,8 +4331,8 @@ public class Wiki implements Serializable
      *  Gets information about the given users. For each username, this returns
      *  either null if the user doesn't exist, or:
      *  <ul>
-     *  <li><b>editcount</b>: (int) {@link User#countEdits()} the user's edit
-     *    count
+     *  <li><b>editcount</b>: (int) the user's edit count (see {@link 
+     *    User#countEdits()})
      *  <li><b>groups</b>: (String[]) the groups the user is in (see
      *    [[Special:Listgrouprights]])
      *  <li><b>rights</b>: (String[]) the stuff the user can do
