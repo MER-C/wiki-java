@@ -1,6 +1,6 @@
 /**
- *  @(#)ContributionSurveyor.java 0.02 01/03/2011
- *  Copyright (C) 2011-2013 MER-C
+ *  @(#)ContributionSurveyor.java 0.03 11/03/2017
+ *  Copyright (C) 2011-2017 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,7 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.util.*;
 import java.text.SimpleDateFormat;
+import javax.security.auth.login.CredentialNotFoundException;
 import javax.swing.JFileChooser;
 
 import org.wikipedia.*;
@@ -30,7 +31,7 @@ import org.wikipedia.*;
  *  contribution surveyors when possible!
  *
  *  @author MER-C
- *  @version 0.02
+ *  @version 0.03
  */
 public class ContributionSurveyor
 {
@@ -321,5 +322,36 @@ public class ContributionSurveyor
             comuploads.toArray(new String[comuploads.size()]),
             commonsTransfer.toArray(new String[commonsTransfer.size()])
         };
+    }
+    
+    /**
+     *  Performs a survey of a user's deleted contributions. Requires 
+     *  administrator access to the relevant wiki. (Note: due to MediaWiki
+     *  limitations, it is not possible to filter by bytes added or whether an
+     *  edit created a new page.)
+     * 
+     *  @param homewiki the user's home wiki
+     *  @param username the user to survey
+     *  @param ns the namespaces to survey (not specified = all namespaces)
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if one cannot view deleted pages
+     *  @since 0.03
+     */
+    public static LinkedHashMap<String, ArrayList<Wiki.Revision>> deletedContributionSurvey(Wiki homewiki, 
+        String username, int... ns) throws IOException, CredentialNotFoundException
+    {
+        Wiki.Revision[] delcontribs = homewiki.deletedContribs(username, null, 
+            null, false, ns);
+        LinkedHashMap<String, ArrayList<Wiki.Revision>> ret = new LinkedHashMap<>();
+        
+        // group contributions by page
+        for (Wiki.Revision rev : delcontribs)
+        {
+            String page = rev.getPage();
+            if (!ret.containsKey(page))
+                ret.put(page, new ArrayList<Wiki.Revision>());
+            ret.get(page).add(rev);
+        }
+        return ret;
     }
 }
