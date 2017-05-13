@@ -935,32 +935,11 @@ public class Wiki implements Serializable
      *
      *  @param username a username
      *  @param password a password (as a char[] due to JPasswordField)
-     *  @param rateLimit makes this call "blocking", i.e. does obey rate limits
-     *  @throws FailedLoginException if the login failed due to incorrect
-     *  username and/or password and/or rate limits; Refer to the Exception's
-     *  message to get the reason
      *  @throws IOException if a network error occurs
      *  @see #logout
      */
-    public synchronized void login(String username, char[] password, boolean rateLimit) throws IOException, FailedLoginException
+    public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
     {
-        if (rateLimit)
-        {
-            long sleepDuration = nextLoginTime - System.currentTimeMillis();
-            if (sleepDuration > 0)
-            {
-                // TODO log sleepDuration?
-                try
-                {
-                    Thread.sleep(sleepDuration);
-                }
-                catch (InterruptedException ignored)
-                {
-                }
-            }
-        }
-        // post login request
-        username = normalize(username);
         StringBuilder buffer = new StringBuilder(500);
         buffer.append("lgname=");
         buffer.append(encode(username, false));
@@ -983,23 +962,13 @@ public class Wiki implements Serializable
             }
             log(Level.INFO, "login", "Successfully logged in as " + username + ", highLimit = " + apihighlimit);
         }
+        else if (line.contains("result=\"Failed\""))
+            throw new FailedLoginException("Login failed: " + parseAttribute(line, "reason", 0));
+        // interactive login or bot password required
+        else if (line.contains("result=\"Aborted\"")) 
+            throw new FailedLoginException("Login failed: you need to use a bot password, see [[Special:Botpasswords]].");
         else
-        {
-            log(Level.WARNING, "login", "Failed to log in as " + username);
-            // test for some common failure reasons
-            if (line.contains("WrongPass") || line.contains("WrongPluginPass"))
-                throw new FailedLoginException("Login failed: incorrect password.");
-            else if (line.contains("NotExists"))
-                throw new FailedLoginException("Login failed: user does not exist.");
-            else if (line.contains("Throttled"))
-            {
-                int wait = new Integer(parseAttribute(line, "wait", 0));
-                nextLoginTime = System.currentTimeMillis() + 1000 * wait;
-                throw new FailedLoginException("Login failed: throttled (wait: "
-                    + wait + ")");
-            }
-            throw new FailedLoginException("Login failed: unknown reason.");
-        }
+            throw new AssertionError("Unreachable!");
     }
 
     /**
@@ -1009,48 +978,12 @@ public class Wiki implements Serializable
      *
      *  @param username a username
      *  @param password a string with the password
-     *  @param rateLimit makes this call "blocking", i.e. does obey rate limits
-     *  @throws FailedLoginException if the login failed due to incorrect
-     *  username and/or password and/or rate limits; Refer to the Exception's
-     *  message to get the reason
-     *  @throws IOException if a network error occurs
-     *  @see #logout
-     */
-    public synchronized void login(String username, String password, boolean rateLimit) throws IOException, FailedLoginException
-    {
-        login(username, password.toCharArray(), rateLimit);
-    }
-
-    /**
-     *  Logs in to the wiki. This method is thread-safe.
-     *
-     *  @param username a username
-     *  @param password a string with the password
-     *  @throws FailedLoginException if the login failed due to incorrect
-     *  username and/or password and/or rate limits; Refer to the Exception's
-     *  message to get the reason
      *  @throws IOException if a network error occurs
      *  @see #logout
      */
     public synchronized void login(String username, String password) throws IOException, FailedLoginException
     {
-        login(username, password.toCharArray(), true);
-    }
-
-    /**
-     *  Logs in to the wiki. This method is thread-safe.
-     *
-     *  @param username a username
-     *  @param password a password
-     *  @throws FailedLoginException if the login failed due to incorrect
-     *  username and/or password and/or rate limits; Refer to the Exception's
-     *  message to get the reason
-     *  @throws IOException if a network error occurs
-     *  @see #logout
-     */
-    public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
-    {
-        login(username, password, true);
+        login(username, password.toCharArray());
     }
 
     /**
@@ -3094,8 +3027,6 @@ public class Wiki implements Serializable
         temp.delete(temp.length() - 3, temp.length());
         out.append("&expiry=");
         out.append(temp);
-        System.out.println(out); // TODO remove
-
         String response = post(apiUrl + "action=protect", out.toString(), "protect");
 
         // done
@@ -3324,27 +3255,31 @@ public class Wiki implements Serializable
         out.append("&token=");
         out.append(encode(getToken("csrf"), false));
         if (user.isAllowedTo("suppressrevision") && suppress != null)
-        {
-            if (suppress)
-                out.append("&suppress=yes");
-            else
-                out.append("&suppress=no");
-        }
+            out.append(suppress ? "&suppress=yes" : "&suppress=no");
         // this is really stupid... I'm open to suggestions
         out.append("&hide=");
         StringBuilder temp = new StringBuilder("&show=");
-        if (hidecontent == Boolean.TRUE)
-            out.append("content%7C");
-        else if (hidecontent == Boolean.FALSE)
-            temp.append("content%7C");
-        if (hideuser == Boolean.TRUE)
-            out.append("user%7C");
-        else if (hideuser == Boolean.FALSE)
-            temp.append("user%7C");
-        if (hidereason == Boolean.TRUE)
-            out.append("comment");
-        else if (hidereason == Boolean.FALSE)
-            temp.append("comment");
+        if (hidecontent != null)
+        {
+            if (hidecontent)
+                out.append("content%7C");
+            else
+                temp.append("content%7C");
+        }
+        if (hideuser != null)
+        {
+            if (hideuser)
+                out.append("user%7C");
+            else
+                temp.append("user%7C");
+        }
+        if (hidereason != null)
+        {
+            if (hidereason)
+                out.append("comment");
+            else
+                temp.append("comment");
+        }
         if (out.lastIndexOf("%7C") == out.length() - 2)
             out.delete(out.length() - 2, out.length());
         if (temp.lastIndexOf("%7C") == temp.length() - 2)
@@ -6416,10 +6351,10 @@ public class Wiki implements Serializable
         private long logid = -1;
         private String type;
         private String action;
-        private String reason;
+        private final String reason;
         private User user;
         private String target;
-        private Calendar timestamp;
+        private final Calendar timestamp;
         private Object details;
         private boolean reasonDeleted = false, userDeleted = false, 
             targetDeleted = false;
