@@ -929,9 +929,7 @@ public class Wiki implements Serializable
     // META STUFF
 
     /**
-     *  Logs in to the wiki. This method is thread-safe. You can set
-     *  ignoreRateLimit to false (default: true), if you don't want the API
-     *  to take care of throttling due to numerous failed login attempts.
+     *  Logs in to the wiki. This method is thread-safe. 
      *
      *  @param username a username
      *  @param password a password (as a char[] due to JPasswordField)
@@ -972,9 +970,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Logs in to the wiki. This method is thread-safe. You can set
-     *  ignoreRateLimit to false (default: true), if you don't want the API
-     *  to take care of throttling due to numerous failed login attempts.
+     *  Logs in to the wiki. This method is thread-safe. 
      *
      *  @param username a username
      *  @param password a string with the password
