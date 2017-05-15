@@ -951,7 +951,7 @@ public class Wiki implements Serializable
         // check for success
         if (line.contains("result=\"Success\""))
         {
-            user = new User(username);
+            user = new User(parseAttribute(line, "lgusername", 0));
             boolean apihighlimit = user.isAllowedTo("apihighlimits");
             if (apihighlimit)
             {
