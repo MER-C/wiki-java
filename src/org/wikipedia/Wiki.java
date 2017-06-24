@@ -1272,7 +1272,7 @@ public class Wiki implements Serializable
      */
     public String getRootPage(String page) throws IOException
     {
-        if (supportsSubpages(namespace(page)))
+        if (supportsSubpages(namespace(page)) && page.contains("/"))
             return page.substring(0, page.indexOf("/"));
         else
             return page;
@@ -1292,7 +1292,7 @@ public class Wiki implements Serializable
      */
     public String getParentPage(String page) throws IOException
     {
-        if (supportsSubpages(namespace(page)))
+        if (supportsSubpages(namespace(page)) && page.contains("/"))
             return page.substring(0, page.lastIndexOf("/"));
         else
             return page;
