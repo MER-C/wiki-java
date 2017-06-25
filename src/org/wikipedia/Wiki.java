@@ -1635,7 +1635,9 @@ public class Wiki implements Serializable
                     int x = results[i].indexOf("<rev ", i);
                     int y = results[i].indexOf(">", x) + 1;
                     int z = results[i].indexOf("</rev>", y);
-                    text = decode(results[i].substring(y, z));
+                    if (z > y) {
+                        text = decode(results[i].substring(y, z));
+                    }
                 }
                 
                 // store result for later
