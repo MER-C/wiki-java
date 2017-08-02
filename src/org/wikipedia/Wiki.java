@@ -25,6 +25,8 @@ import java.net.*;
 import java.nio.*;
 import java.nio.file.*;
 import java.text.Normalizer;
+import java.time.*;
+import java.time.format.*;
 import java.util.*;
 import java.util.logging.*;
 import java.util.zip.GZIPInputStream;
@@ -414,7 +416,7 @@ public class Wiki implements Serializable
     protected String query, base, apiUrl;
     protected String scriptPath = "/w";
     private boolean wgCapitalLinks = true;
-    private String timezone = "UTC";
+    private ZoneId timezone = ZoneId.of("UTC");
 
     // user management
     private Map<String, String> cookies = new HashMap<>(12);
@@ -659,7 +661,7 @@ public class Wiki implements Serializable
         ret.put("usingcapitallinks", wgCapitalLinks);
         scriptPath = parseAttribute(line, "scriptpath", 0);
         ret.put("scriptpath", scriptPath);
-        timezone = parseAttribute(line, "timezone", 0);
+        timezone = ZoneId.of(parseAttribute(line, "timezone", 0));
         ret.put("timezone", timezone);
         ret.put("version", parseAttribute(line, "generator", 0));
         initVars();
@@ -1319,7 +1321,7 @@ public class Wiki implements Serializable
      *    java.util.Map, java.lang.String) protection state} of the page. Does
      *    not cover implied protection levels (e.g. MediaWiki namespace).
      *  <li><b>exists</b>: (Boolean) whether the page exists
-     *  <li><b>lastpurged</b>: (Calendar) when the page was last purged or null
+     *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or null
      *    if the page does not exist
      *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the
      *    page does not exist
@@ -1327,7 +1329,7 @@ public class Wiki implements Serializable
      *    not exist
      *  <li><b>pageid</b>: (Long) the id of the page or -1 if the page does not
      *    exist
-     *  <li><b>timestamp</b>: (Calendar) when this method was called
+     *  <li><b>timestamp</b>: (OffsetDateTime) when this method was called
      *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
      *  </ul>
      *
@@ -1360,7 +1362,7 @@ public class Wiki implements Serializable
                 tempmap.put("exists", exists);
                 if (exists)
                 {
-                    tempmap.put("lastpurged", timestampToCalendar(parseAttribute(item, "touched", 0), true));
+                    tempmap.put("lastpurged", OffsetDateTime.parse(parseAttribute(item, "touched", 0)));
                     tempmap.put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
                     tempmap.put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
                     tempmap.put("pageid", Long.parseLong(parseAttribute(item, "pageid", 0)));
@@ -1386,7 +1388,7 @@ public class Wiki implements Serializable
                     if (expiry.equals("infinity"))
                         protectionstate.put(type + "expiry", null);
                     else
-                        protectionstate.put(type + "expiry", timestampToCalendar(expiry, true));
+                        protectionstate.put(type + "expiry", OffsetDateTime.parse(expiry));
                     // protected via cascade
                     if (item.contains("source=\""))
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
@@ -1405,7 +1407,7 @@ public class Wiki implements Serializable
                 tempmap.put("protection", protectionstate);
 
                 tempmap.put("displaytitle", parseAttribute(item, "displaytitle", 0));
-                tempmap.put("timestamp", makeCalendar());
+                tempmap.put("timestamp", OffsetDateTime.now(timezone));
 
                 // number of watchers
                 if (item.contains("watchers=\""))
@@ -1748,7 +1750,7 @@ public class Wiki implements Serializable
      *  @throws ConcurrentModificationException if an edit conflict occurs
      *  @see #getPageText
      */
-    public void edit(String title, String text, String summary, Calendar basetime) throws IOException, LoginException
+    public void edit(String title, String text, String summary, OffsetDateTime basetime) throws IOException, LoginException
     {
         edit(title, text, summary, markminor, markbot, -2, basetime);
     }
@@ -1802,7 +1804,7 @@ public class Wiki implements Serializable
      *  @see #getPageText
      *  @since 0.25
      */
-    public void edit(String title, String text, String summary, int section, Calendar basetime)
+    public void edit(String title, String text, String summary, int section, OffsetDateTime basetime)
         throws IOException, LoginException
     {
         edit(title, text, summary, markminor, markbot, section, basetime);
@@ -1837,7 +1839,7 @@ public class Wiki implements Serializable
      *  @since 0.17
      */
     public synchronized void edit(String title, String text, String summary, boolean minor, boolean bot,
-        int section, Calendar basetime) throws IOException, LoginException
+        int section, OffsetDateTime basetime) throws IOException, LoginException
     {
         // @revised 0.16 to use API edit. No more screenscraping - yay!
         // @revised 0.17 section editing
@@ -1870,10 +1872,10 @@ public class Wiki implements Serializable
         if (basetime != null)
         {
             buffer.append("&starttimestamp=");
-            buffer.append(calendarToTimestamp((Calendar)info.get("timestamp")));
+            buffer.append(((OffsetDateTime)info.get("timestamp")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             buffer.append("&basetimestamp=");
             // I wonder if the time getPageText() was called suffices here
-            buffer.append(calendarToTimestamp(basetime));
+            buffer.append(basetime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (minor)
             buffer.append("&minor=1");
@@ -2020,10 +2022,10 @@ public class Wiki implements Serializable
             out.append("&timestamps=");
             for (int i = 0; i < revisions.length - 1; i++)
             {
-                out.append(calendarToTimestamp(revisions[i].getTimestamp()));
+                out.append(revisions[i].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
                 out.append("%7C");
             }
-            out.append(calendarToTimestamp(revisions[revisions.length - 1].getTimestamp()));
+            out.append(revisions[revisions.length - 1].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         String response = post(apiUrl + "action=undelete", out.toString(), "undelete");
 
@@ -2546,7 +2548,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.19
      */
-    public Revision[] getPageHistory(String title, Calendar start, Calendar end, boolean reverse) throws IOException
+    public Revision[] getPageHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse) throws IOException
     {
         // set up the url
         StringBuilder url = new StringBuilder(query);
@@ -2558,12 +2560,12 @@ public class Wiki implements Serializable
         if (start != null)
         {
             url.append(reverse ? "&rvstart=" : "&rvend=");
-            url.append(calendarToTimestamp(start));
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (end != null)
         {
             url.append(reverse ? "&rvend=" : "&rvstart=");
-            url.append(calendarToTimestamp(end));
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         String rvcontinue = null;
         List<Revision> revisions = new ArrayList<>(1500);
@@ -2642,7 +2644,7 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
      *  @since 0.30
      */
-    public Revision[] getDeletedHistory(String title, Calendar start, Calendar end, boolean reverse)
+    public Revision[] getDeletedHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse)
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
@@ -2656,12 +2658,12 @@ public class Wiki implements Serializable
         if (start != null)
         {
             url.append(reverse ? "&drvstart=" : "&drvend=");
-            url.append(calendarToTimestamp(start));
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (end != null)
         {
             url.append(reverse ? "&drvend=" : "&drvstart=");
-            url.append(calendarToTimestamp(end));
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         url.append("&titles=");
         url.append(encode(title, true));
@@ -2729,7 +2731,7 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
      *  @since 0.30
      */
-    public Revision[] deletedContribs(String username, Calendar end, Calendar start, boolean reverse, int... namespace)
+    public Revision[] deletedContribs(String username, OffsetDateTime end, OffsetDateTime start, boolean reverse, int... namespace)
         throws IOException, CredentialNotFoundException
     {
         // admin queries are annoying
@@ -2743,12 +2745,12 @@ public class Wiki implements Serializable
         if (start != null)
         {
             url.append(reverse ? "&adrstart=" : "&adrend=");
-            url.append(calendarToTimestamp(start));
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (end != null)
         {
             url.append(reverse ? "&adrend=" : "&adrstart=");
-            url.append(calendarToTimestamp(end));
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         url.append("&adruser=");
         url.append(encode(username, true));
@@ -2969,7 +2971,7 @@ public class Wiki implements Serializable
      *  <pre>
      *  {
      *     edit: one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
-     *     editexpiry: Calendar, // expiry time for edit protection, null = indefinite
+     *     editexpiry: OffsetDateTime, // expiry time for edit protection, null = indefinite
      *     move, moveexpiry, // as above, prevents page moving
      *     create, createexpiry, // as above, prevents page creation (no effect on existing pages)
      *     upload, uploadexpiry, // as above, prevents uploading of files (FILE_NAMESPACE only)
@@ -3014,8 +3016,8 @@ public class Wiki implements Serializable
                 out.append(key);
                 out.append("=");
                 out.append(entry.getValue());
-                Calendar expiry = (Calendar)protectionstate.get(key + "expiry");
-                temp.append(expiry == null ? "never" : calendarToTimestamp(expiry));
+                OffsetDateTime expiry = (OffsetDateTime)protectionstate.get(key + "expiry");
+                temp.append(expiry == null ? "never" : expiry.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
                 out.append("%7C");
                 temp.append("%7C");
             }
@@ -3406,7 +3408,7 @@ public class Wiki implements Serializable
     protected Revision parseRevision(String xml, String title)
     {
         long oldid = Long.parseLong(parseAttribute(xml, " revid", 0));
-        Calendar timestamp = timestampToCalendar(parseAttribute(xml, "timestamp", 0), true);
+        OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(xml, "timestamp", 0));
 
         // title
         if (title.isEmpty())
@@ -3726,8 +3728,8 @@ public class Wiki implements Serializable
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
         for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
         {
-            String timestamp = convertTimestamp(parseAttribute(line, "timestamp", a));
-            if (timestamp.equals(calendarToTimestamp(entry.getTimestamp())))
+            OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(line, "timestamp", a));
+            if (timestamp.equals(entry.getTimestamp()))
             {
                 // this is it
                 url = parseAttribute(line, "url", a);
@@ -3798,20 +3800,22 @@ public class Wiki implements Serializable
      *  @return a list of all live images the user has uploaded
      *  @throws IOException if a network error occurs
      */
-    public LogEntry[] getUploads(User user, Calendar start, Calendar end) throws IOException
+    public LogEntry[] getUploads(User user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         url.append("list=allimages&ailimit=max&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser=");
         url.append(encode(user.getUsername(), false));
+        if (start != null && end != null && start.isBefore(end))
+            throw new IllegalArgumentException("Specified start date is before specified end date!");
         if (start != null)
         {
             url.append("&aistart=");
-            url.append(calendarToTimestamp(start));
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (end != null)
         {
             url.append("&aiend=");
-            url.append(calendarToTimestamp(end));
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         List<LogEntry> uploads = new ArrayList<>();
         String aicontinue = null;
@@ -4272,10 +4276,11 @@ public class Wiki implements Serializable
      *    through [[Special:Emailuser]] or emailUser()
      *  <li><b>blocked</b>: (Boolean) whether the user is blocked
      *  <li><b>gender</b>: (Wiki.Gender) the user's gender
-     *  <li><b>created</b>: (Calendar) when the user account was created
+     *  <li><b>created</b>: (OffsetDateTime) when the user account was created
      *  </ul>
      *
-     *  @param usernames the list of usernames to get information for
+     *  @param usernames the list of usernames to get information for (without
+     *  the "User:" prefix)
      *  @return (see above). The Maps will come out in the same order as the
      *  processed array. 
      *  @throws IOException if a network error occurs
@@ -4307,7 +4312,7 @@ public class Wiki implements Serializable
                 String registrationdate = parseAttribute(result, "registration", 0);
                 // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
                 if (registrationdate != null && !registrationdate.isEmpty())
-                    ret.put("created", timestampToCalendar(registrationdate, true));
+                    ret.put("created", OffsetDateTime.parse(registrationdate));
 
                 // groups
                 List<String> temp = new ArrayList<>();
@@ -4443,7 +4448,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
-    public Revision[] contribs(String user, String prefix, Calendar end, Calendar start, int... ns) throws IOException
+    public Revision[] contribs(String user, String prefix, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
@@ -4460,17 +4465,19 @@ public class Wiki implements Serializable
         }
         constructNamespaceString(temp, "uc", ns);
         // end refers to the *oldest* allowable edit and vice versa
+        if (start != null && end != null && start.isBefore(end))
+            throw new IllegalArgumentException("Specified start date is before specified end date!");
         if (end != null)
         {
             temp.append("&ucend=");
-            temp.append(calendarToTimestamp(end));
+            temp.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         List<Revision> revisions = new ArrayList<>(7500);
         String uccontinue = "", ucstart = "";
         if (start != null)
         {
             temp.append("&ucstart=");
-            temp.append(calendarToTimestamp(start));
+            temp.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
 
         // fetch data
@@ -5218,7 +5225,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.12
      */
-    public LogEntry[] getIPBlockList(Calendar start, Calendar end) throws IOException
+    public LogEntry[] getIPBlockList(OffsetDateTime start, OffsetDateTime end) throws IOException
     {
         return getIPBlockList("", start, end);
     }
@@ -5239,13 +5246,12 @@ public class Wiki implements Serializable
      *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
-    protected LogEntry[] getIPBlockList(String user, Calendar start, Calendar end) throws IOException
+    protected LogEntry[] getIPBlockList(String user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
         // quick param check
-        if (start != null && end != null)
-            if (start.before(end))
-                throw new IllegalArgumentException("Specified start date is before specified end date!");
-        String bkstart = calendarToTimestamp(start == null ? makeCalendar() : start);
+        if (start != null && end != null && start.isBefore(end))
+            throw new IllegalArgumentException("Specified start date is before specified end date!");
+        String bkstart = (start == null ? OffsetDateTime.now(timezone) : start).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
         // url base
         StringBuilder urlBase = new StringBuilder(query);
@@ -5254,7 +5260,7 @@ public class Wiki implements Serializable
         if (end != null)
         {
             urlBase.append("&bkend=");
-            urlBase.append(calendarToTimestamp(end));
+            urlBase.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (!user.isEmpty())
         {
@@ -5302,12 +5308,12 @@ public class Wiki implements Serializable
         if (start != null)
         {
             logRecord.append(" from ");
-            logRecord.append(start.getTime().toString());
+            logRecord.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (end != null)
         {
             logRecord.append(" to ");
-            logRecord.append(end.getTime().toString());
+            logRecord.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         int size = entries.size();
         logRecord.append(" (");
@@ -5378,7 +5384,7 @@ public class Wiki implements Serializable
      *  @since 0.08
      */
     public LogEntry[] getLogEntries(String logtype, String action, String user, String target, 
-        Calendar start, Calendar end, int amount, int namespace) throws IOException
+        OffsetDateTime start, OffsetDateTime end, int amount, int namespace) throws IOException
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
@@ -5421,15 +5427,15 @@ public class Wiki implements Serializable
         }
         if (start != null)
         {
-            if (end != null && start.before(end)) //aargh
+            if (end != null && start.isBefore(end)) //aargh
                 throw new IllegalArgumentException("Specified start date is before specified end date!");
             url.append("&lestart=");
-            url.append(calendarToTimestamp(start));
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (end != null)
         {
             url.append("&leend=");
-            url.append(calendarToTimestamp(end));
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
 
         // only now we can actually start to retrieve the logs
@@ -5509,7 +5515,7 @@ public class Wiki implements Serializable
         if (xml.contains(" title=\"")) // space is important -- commons.getImageHistory("File:Chief1.gif");
             target = parseAttribute(xml, "title", 0);
 
-        String timestamp = convertTimestamp(parseAttribute(xml, "timestamp", 0));
+        OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(xml, "timestamp", 0));
 
         // details: TODO: make this a HashMap
         Object details = null;
@@ -5986,7 +5992,7 @@ public class Wiki implements Serializable
 
         // fetch, parse
         url.append("&rcstart=");
-        String rcstart = calendarToTimestamp(makeCalendar());
+        String rcstart = OffsetDateTime.now(timezone).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         List<Revision> revisions = new ArrayList<>(750);
         do
         {
@@ -6351,7 +6357,7 @@ public class Wiki implements Serializable
         private final String reason;
         private User user;
         private String target;
-        private final Calendar timestamp;
+        private final OffsetDateTime timestamp;
         private Object details;
         private boolean reasonDeleted = false, userDeleted = false, 
             targetDeleted = false;
@@ -6374,14 +6380,14 @@ public class Wiki implements Serializable
          *  @since 0.08
          */
         protected LogEntry(String type, String action, String reason, User user, 
-            String target, String timestamp, Object details)
+            String target, OffsetDateTime timestamp, Object details)
         {
             this.type = type;
             this.action = action;
             this.reason = reason;
             this.user = user;
             this.target = target;
-            this.timestamp = timestampToCalendar(timestamp, false);
+            this.timestamp = timestamp;
             this.details = details;
         }
         
@@ -6491,7 +6497,7 @@ public class Wiki implements Serializable
          *  @return the timestamp of this log entry
          *  @since 0.08
          */
-        public Calendar getTimestamp()
+        public OffsetDateTime getTimestamp()
         {
             return timestamp;
         }
@@ -6549,7 +6555,7 @@ public class Wiki implements Serializable
             s.append(",user=");
             s.append(user == null ? "[hidden]" : user.getUsername());
             s.append(",timestamp=");
-            s.append(calendarToTimestamp(timestamp));
+            s.append(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             s.append(",target=");
             s.append(target == null ? "[hidden]" : target);
             s.append(",reason=\"");
@@ -6573,9 +6579,7 @@ public class Wiki implements Serializable
         @Override
         public int compareTo(Wiki.LogEntry other)
         {
-            if (timestamp.equals(other.timestamp))
-                return 0; // might not happen, but
-            return timestamp.after(other.timestamp) ? 1 : -1;
+            return timestamp.compareTo(other.timestamp);
         }
         
         /**
@@ -6606,7 +6610,7 @@ public class Wiki implements Serializable
         private String summary;
         private long revid, rcid = -1;
         private long previous = 0, next = 0;
-        private Calendar timestamp;
+        private OffsetDateTime timestamp;
         private String user;
         private String title;
         private String rollbacktoken = null;
@@ -6631,7 +6635,7 @@ public class Wiki implements Serializable
          *  @param size the size of the revision
          *  @since 0.17
          */
-        public Revision(long revid, Calendar timestamp, String title, String summary, String user,
+        public Revision(long revid, OffsetDateTime timestamp, String title, String summary, String user,
             boolean minor, boolean bot, boolean rvnew, int size)
         {
             this.revid = revid;
@@ -6960,7 +6964,7 @@ public class Wiki implements Serializable
          *  @return the timestamp
          *  @since 0.17
          */
-        public Calendar getTimestamp()
+        public OffsetDateTime getTimestamp()
         {
             return timestamp;
         }
@@ -7002,7 +7006,7 @@ public class Wiki implements Serializable
             sb.append(",userdeleted=");
             sb.append(userDeleted);
             sb.append(",timestamp=");
-            sb.append(calendarToTimestamp(timestamp));
+            sb.append(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             sb.append(",summary=\"");
             sb.append(summary == null ? "[hidden]" : summary);
             sb.append("\",summarydeleted=");
@@ -7037,9 +7041,7 @@ public class Wiki implements Serializable
         @Override
         public int compareTo(Wiki.Revision other)
         {
-            if (timestamp.equals(other.timestamp))
-                return 0; // might not happen, but
-            return timestamp.after(other.timestamp) ? 1 : -1;
+            return timestamp.compareTo(timestamp);
         }
 
         /**
@@ -7871,79 +7873,6 @@ public class Wiki implements Serializable
     protected void logurl(String url, String method)
     {
         logger.logp(Level.INFO, "Wiki", method, "Fetching URL {0}", url);
-    }
-
-    // calendar/timestamp methods
-
-    /**
-     *  Creates a Calendar object with the current time. Wikimedia wikis use UTC.
-     *  @return see above
-     *  @since 0.26
-     */
-    public Calendar makeCalendar()
-    {
-        return new GregorianCalendar(TimeZone.getTimeZone(timezone));
-    }
-
-    /**
-     *  Turns a calendar into a timestamp of the format yyyymmddhhmmss. Might
-     *  be useful for subclasses.
-     *  @param c the calendar to convert
-     *  @return the converted calendar
-     *  @see #timestampToCalendar
-     *  @since 0.08
-     */
-    protected String calendarToTimestamp(Calendar c)
-    {
-        return String.format("%04d%02d%02d%02d%02d%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1,
-            c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND));
-    }
-
-    /**
-     *  Turns a timestamp into a Calendar object. Might be useful for subclasses.
-     *
-     *  @param timestamp the timestamp to convert
-     *  @param api whether the timestamp is of the format yyyy-mm-ddThh:mm:ssZ
-     *  as opposed to yyyymmddhhmmss (which is the default)
-     *  @return the converted Calendar
-     *  @see #calendarToTimestamp
-     *  @since 0.08
-     */
-    protected final Calendar timestampToCalendar(String timestamp, boolean api)
-    {
-        // TODO: move to Java 1.8
-        Calendar calendar = makeCalendar();
-        if (api)
-            timestamp = convertTimestamp(timestamp);
-        int year = Integer.parseInt(timestamp.substring(0, 4));
-        int month = Integer.parseInt(timestamp.substring(4, 6)) - 1; // January == 0!
-        int day = Integer.parseInt(timestamp.substring(6, 8));
-        int hour = Integer.parseInt(timestamp.substring(8, 10));
-        int minute = Integer.parseInt(timestamp.substring(10, 12));
-        int second = Integer.parseInt(timestamp.substring(12, 14));
-        calendar.set(year, month, day, hour, minute, second);
-        return calendar;
-    }
-
-    /**
-     *  Converts a timestamp of the form used by the API (yyyy-mm-ddThh:mm:ssZ)
-     *  to the form yyyymmddhhmmss.
-     *
-     *  @param timestamp the timestamp to convert
-     *  @return the converted timestamp
-     *  @see #timestampToCalendar
-     *  @since 0.12
-     */
-    protected String convertTimestamp(String timestamp)
-    {
-        // TODO: remove this once Java 1.8 comes around
-        StringBuilder ts = new StringBuilder(timestamp.substring(0, 4));
-        ts.append(timestamp.substring(5, 7));
-        ts.append(timestamp.substring(8, 10));
-        ts.append(timestamp.substring(11, 13));
-        ts.append(timestamp.substring(14, 16));
-        ts.append(timestamp.substring(17, 19));
-        return ts.toString();
     }
 
     // serialization

@@ -19,7 +19,7 @@
  */
 package org.wikipedia;
 
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
@@ -124,10 +124,8 @@ public class ParserUtils
             buffer.append("*");
             buffer.append("[[Special:Permanentlink/");
             buffer.append(rev.getRevid());
-            Calendar timestamp = rev.getTimestamp();
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             buffer.append("|");
-            buffer.append(format.format(timestamp.getTime()));
+            buffer.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()));
             buffer.append("]] ");
             
             // diff link
@@ -224,9 +222,7 @@ public class ParserUtils
             // date
             buffer.append(temp2);
             buffer.append("\">");
-            Calendar timestamp = rev.getTimestamp();
-            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            buffer.append(format.format(timestamp.getTime()));
+            buffer.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()));
             buffer.append("</a> ");
             
             if (rev.isNew())

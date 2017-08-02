@@ -86,8 +86,7 @@ public class UserspaceAnalyzer
             if (userspace == 0)
                 continue;
             
-            // JDK 1.8 voodoo equivalent to Wiki methods calendarToTimestamp(calendarToTimestamp(x))
-            String lastedit = DateTimeFormatter.ISO_INSTANT.format(contribs[0].getTimestamp().toInstant());
+            String lastedit = contribs[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
             
             System.out.println("|-");
             System.out.printf("| [[User:%s]] ([[Special:Contributions/%s|contribs]]) || %s || %d || %d \n", 

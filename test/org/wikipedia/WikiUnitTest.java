@@ -25,6 +25,8 @@ import java.math.BigInteger;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -278,7 +280,7 @@ public class WikiUnitTest
         // see also getLogEntries() below
         Wiki.LogEntry[] le = enWiki.getIPBlockList("Nimimaan");
         assertEquals("getIPBlockList: ID not available", -1, le[0].getLogID());
-        assertEquals("getIPBlockList: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
+        assertEquals("getIPBlockList: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getIPBlockList: user", "MER-C", le[0].getUser().getUsername());
         assertEquals("getIPBlockList: log", Wiki.BLOCK_LOG, le[0].getType());
         assertEquals("getIPBlockList: action", "block", le[0].getAction());
@@ -301,11 +303,11 @@ public class WikiUnitTest
         // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User:Nimimaan&format=xmlfm
         
         // Block log
-        Calendar c = new GregorianCalendar(2016, Calendar.JUNE, 30);
+        OffsetDateTime c = OffsetDateTime.parse("2016-06-30T23:59:59Z");
         Wiki.LogEntry[] le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:Nimimaan", c, 
             null, 5, Wiki.ALL_NAMESPACES);
         assertEquals("getLogEntries: ID", 75695806L, le[0].getLogID());
-        assertEquals("getLogEntries: timestamp", "20160621131454", enWiki.calendarToTimestamp(le[0].getTimestamp()));
+        assertEquals("getLogEntries: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser().getUsername());
         assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
         assertEquals("getLogEntries/block: action", "block", le[0].getAction());
@@ -347,8 +349,8 @@ public class WikiUnitTest
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&leuser=MER-C
         //     &lestart=20161002050030&leend=20161002050000&letype=delete
         le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, "MER-C", null,
-            testWiki.timestampToCalendar("20161002050030", false),
-            testWiki.timestampToCalendar("20161002050000", false), 
+            OffsetDateTime.parse("2016-10-02T05:00:30Z"),
+            OffsetDateTime.parse("2016-10-02T05:00:00Z"), 
             Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
         assertNull("getLogEntries: action hidden", le[0].getTarget());
         assertTrue("getLogEntries: action hidden", le[0].isTargetDeleted());
@@ -445,7 +447,7 @@ public class WikiUnitTest
         Map<String, Object> info = enWiki.getSiteInfo();
         assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
         assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
-        assertEquals("siteinfo: timezone", "UTC", (String)info.get("timezone"));
+        assertEquals("siteinfo: timezone", ZoneId.of("UTC"), info.get("timezone"));
         info = enWikt.getSiteInfo();
         assertFalse("siteinfo: caplinks false", (Boolean)info.get("usingcapitallinks"));
     }
@@ -488,7 +490,7 @@ public class WikiUnitTest
         // https://en.wikipedia.org/w/index.php?title=Wikipedia_talk%3AWikiProject_Spam&diff=597454682&oldid=597399794
         Wiki.Revision rev = enWiki.getRevision(597454682L);
         assertEquals("getRevision: page", "Wikipedia talk:WikiProject Spam", rev.getPage());
-        assertEquals("getRevision: timestamp", "20140228004031", enWiki.calendarToTimestamp(rev.getTimestamp()));
+        assertEquals("getRevision: timestamp", "2014-02-28T00:40:31Z", rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getRevision: user", "Lowercase sigmabot III", rev.getUser());
         assertEquals("getRevision: summary", "Archiving 3 discussion(s) to [[Wikipedia talk:WikiProject Spam/2014 Archive Feb 1]]) (bot",
             rev.getSummary());
@@ -564,8 +566,8 @@ public class WikiUnitTest
         // editcount omitted because it is dynamic
         assertFalse("getUserInfo: blocked", (Boolean)info[1].get("blocked"));
         assertEquals("getUserInfo: gender", Wiki.Gender.unknown, (Wiki.Gender)info[1].get("gender"));
-        assertEquals("getUserInfo: registration", "20070214113837", 
-            testWiki.calendarToTimestamp((Calendar)info[1].get("created")));
+        assertEquals("getUserInfo: registration", "2007-02-14T11:38:37Z", 
+            ((OffsetDateTime)info[1].get("created")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertTrue("getUserInfo: email", (Boolean)info[1].get("emailable"));
         
         // check groups
