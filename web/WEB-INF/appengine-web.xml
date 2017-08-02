@@ -7,4 +7,5 @@
     <handler file="timeout.html"/>
   </static-error-handlers>
   <threadsafe>false</threadsafe>
+  <runtime>java8</runtime>
 </appengine-web-app>
