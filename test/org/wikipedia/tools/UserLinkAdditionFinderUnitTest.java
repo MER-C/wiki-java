@@ -36,7 +36,10 @@ public class UserLinkAdditionFinderUnitTest
     @Test
     public void parseDiff() throws IOException
     {
-        Wiki.Revision[] revs = testWiki.getRevisions(new long[] { 244169L, 244170L, 244171L });
+        Wiki.Revision[] revs = testWiki.getRevisions(new long[]
+        { 
+            244169L, 244170L, 244171L, 320307L 
+        });
         
         // https://test.wikipedia.org/w/index.php?oldid=244169&diff=prev
         String[] links = UserLinkAdditionFinder.parseDiff(revs[0]);
@@ -52,5 +55,12 @@ public class UserLinkAdditionFinderUnitTest
         // https://test.wikipedia.org/w/index.php?oldid=244171&diff=prev
         links = UserLinkAdditionFinder.parseDiff(revs[2]);
         assertEquals("http://www.example.net", links[2]);
+        
+        // dummy edit
+        // https://test.wikipedia.org/w/index.php?oldid=320307&diff=prev
+        links = UserLinkAdditionFinder.parseDiff(revs[3]);
+        assertEquals(2, links.length);
+        assertEquals("320307", links[0]);
+        assertEquals("AlvaroMolina", links[1]);
     }
 }

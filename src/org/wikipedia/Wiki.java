@@ -6722,6 +6722,10 @@ public class Wiki implements Serializable
         /**
          *  Returns a HTML rendered diff table; see the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  Returns null for page creations, moves, protections and similar 
+         *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
+         *  example</a>).
+         * 
          *  @param other another revision on the same page.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
@@ -6752,7 +6756,10 @@ public class Wiki implements Serializable
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  @param oldid the oldid of a revision on the same page. NEXT_REVISION,
          *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
-         *  effect.
+         *  effect. Returns null for page creations, moves, protections and similar 
+         *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
+         *  example</a>).
+         * 
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @since 0.26
@@ -6765,10 +6772,14 @@ public class Wiki implements Serializable
         /**
          *  Fetches a HTML rendered diff table; see the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  Returns null for page creations, moves, protections and similar 
+         *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
+         *  example</a>).
+         * 
          *  @param oldid the id of another revision; (exclusive) or
          *  @param text some wikitext to compare against
          *  @return a difference between oldid or text or null if there is no
-         *  diff (example: 586849481).
+         *  diff.
          *  @throws IOException if a network error occurs
          *  @since 0.21
          */

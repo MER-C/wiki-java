@@ -50,7 +50,7 @@ public class UserLinkAdditionFinder
         
         Map<String, Set<String>> domains = new HashMap<>();
         System.out.println("{| class=\"wikitable\"\n");
-        
+
         Files.lines(fc.getSelectedFile().toPath(), Charset.forName("UTF-8"))
             // fetch contributions for each user
             .map(user -> {
@@ -108,7 +108,7 @@ public class UserLinkAdditionFinder
                 System.out.println(temp.toString());
             });
         System.out.println("|}");
-        
+
         System.out.println("== Domain list ==");
         for (String domain : domains.keySet())
             System.out.println("*{{spamlink|" + domain + "}}");
@@ -143,6 +143,9 @@ public class UserLinkAdditionFinder
             diff = revision.getText();
         else
             diff = revision.diff(Wiki.PREVIOUS_REVISION);
+        // filter dummy edits
+        if (diff == null)
+            return new String[] { "" + revision.getRevid(), revision.getUser() };
 
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev

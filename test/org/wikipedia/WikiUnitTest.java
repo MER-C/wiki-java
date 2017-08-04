@@ -522,6 +522,7 @@ public class WikiUnitTest
     public void diff() throws Exception
     {
         assertNull("diff: no previous revision", enWiki.getRevision(586849481L).diff(Wiki.PREVIOUS_REVISION));
+        assertNull("diff: dummy edit", enWiki.getRevision(738178354L).diff(Wiki.PREVIOUS_REVISION));
     }
     
     @Test
