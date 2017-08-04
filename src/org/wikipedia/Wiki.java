@@ -6785,64 +6785,37 @@ public class Wiki implements Serializable
          */
         protected String diff(long oldid, String text) throws IOException
         {
-            if (pageDeleted)
+            StringBuilder temp = new StringBuilder();
+            if (oldid == NEXT_REVISION)
+                temp.append("&torelative=next");
+            else if (oldid == CURRENT_REVISION)
+                temp.append("&torelative=cur");
+            else if (oldid == PREVIOUS_REVISION)
+                temp.append("&torelative=prev");
+            else if (oldid == 0L)
             {
-                StringBuilder temp = new StringBuilder("revids=");
-                if (oldid == NEXT_REVISION)
-                    temp.append("&drvdiffto=next");
-                else if (oldid == CURRENT_REVISION)
-                    temp.append("&drvdiffto=cur");
-                else if (oldid == PREVIOUS_REVISION)
-                    temp.append("&drvdiffto=prev");
-                else if (oldid == 0L)
-                {
-                    temp.append("&drvdifftotext=");
-                    temp.append(text);
-                }
-                else
-                {
-                    temp.append("&drvdiffto=");
-                    temp.append(oldid);
-                }
-                String line = post(query + "prop=deletedrevisions", temp.toString(), "Revision.diff");
-                // TODO
-                return null;
+                temp.append("&totext=");
+                temp.append(text);
             }
             else
             {
-                // send via POST
-                StringBuilder temp = new StringBuilder("revids=");
-                temp.append(revid);
-                // no switch for longs? WTF?
-                if (oldid == NEXT_REVISION)
-                    temp.append("&rvdiffto=next");
-                else if (oldid == CURRENT_REVISION)
-                    temp.append("&rvdiffto=cur");
-                else if (oldid == PREVIOUS_REVISION)
-                    temp.append("&rvdiffto=prev");
-                else if (oldid == 0L)
-                {
-                    temp.append("&rvdifftotext=");
-                    temp.append(text);
-                }
-                else
-                {
-                    temp.append("&rvdiffto=");
-                    temp.append(oldid);
-                }
-                String line = post(query + "prop=revisions", temp.toString(), "Revision.diff");
-                // strip extraneous information
-                if (line.contains("</diff>"))
-                {
-                    int a = line.indexOf("<diff");
-                    a = line.indexOf(">", a) + 1;
-                    int b = line.indexOf("</diff>", a);
-                    return decode(line.substring(a, b));
-                }
-                else 
-                    // <diff> tag has no content if there is no diff
-                    return null;
+                temp.append("&torev=");
+                temp.append(oldid);
             }
+            
+            String line = post(apiUrl + "action=compare&fromrev=" + getRevid(), temp.toString(), "Revision.diff");
+
+            // strip extraneous information
+            if (line.contains("</compare>"))
+            {
+                int a = line.indexOf("<compare");
+                a = line.indexOf(">", a) + 1;
+                int b = line.indexOf("</compare>", a);
+                return decode(line.substring(a, b));
+            }
+            else 
+                // <compare> tag has no content if there is no diff
+                return null;
         }
 
         /**
