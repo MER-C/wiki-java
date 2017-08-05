@@ -21,6 +21,7 @@
 package org.wikipedia;
 
 import java.io.File;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.net.URLEncoder;
 import java.nio.file.Files;
@@ -731,5 +732,10 @@ public class WikiUnitTest
         // rev = enWiki.getRevision(596714684L);
         // text = rev.getText();
         // assertEquals("revision text: content deleted", null, text);
+    }
+
+    @Test
+    public void emptycategoryTest() throws IOException{
+        assertNull(testWiki.getPageText("User:NikiWiki/EmptyPage"));
     }
 }
