@@ -7165,7 +7165,7 @@ public class Wiki implements Serializable
      */
     protected String fetch(String url, String caller) throws IOException
     {
-        String temp = "";
+        String temp = null;
         int tries = maxtries;
         do
         {
@@ -7212,7 +7212,7 @@ public class Wiki implements Serializable
                 }
             }
         }
-        while (temp.isEmpty());
+        while (temp == null);
         if (temp.contains("<error code="))
         {
             // assertions

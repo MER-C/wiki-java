@@ -735,5 +735,9 @@ public class WikiUnitTest
         // rev = enWiki.getRevision(596714684L);
         // text = rev.getText();
         // assertEquals("revision text: content deleted", null, text);
+        
+        // https://test.wikipedia.org/w/index.php?oldid=322889
+        rev = testWiki.getRevision(322889L);
+        assertEquals("revision text: empty revision", rev.getText(), "");
     }
 }
