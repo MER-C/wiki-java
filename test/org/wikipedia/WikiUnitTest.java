@@ -592,13 +592,17 @@ public class WikiUnitTest
             // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
             "User:MER-C/UnitTests/pagetext",
             // non-existent -- https://test.wikipedia.org/wiki/Gsgdksgjdsg
-            "Gsgdksgjdsg"
+            "Gsgdksgjdsg",
+            // empty -- https://test.wikipedia.org/wiki/User:NikiWiki/EmptyPage
+            "User:NikiWiki/EmptyPage"
+            
         });
         // API result does not include the terminating new line
         assertEquals("getPageText", text[0], "This revision is not deleted!");
         assertEquals("page text: decoding", text[1], "&#039;&#039;italic&#039;&#039;" +
             "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;");
         assertNull("getPageText: non-existent page", text[2]);
+        assertEquals("getPageText: empty page", text[3], "");
     }
     
     @Test
