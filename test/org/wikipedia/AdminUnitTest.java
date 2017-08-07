@@ -67,5 +67,9 @@ public class AdminUnitTest
         String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
         assertEquals("getDeletedText", text, "This revision is also deleted!");
         assertNull("getDeletedText: page never deleted", testWiki.getDeletedText("Tfs;hojfsdhp;osjfeas;lioejg"));
+        
+        // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/EmptyDelete
+        text = testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete");
+        assertEquals("getDeletedText: empty", testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete"), "");
     }
 }

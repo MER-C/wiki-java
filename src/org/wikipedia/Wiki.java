@@ -2863,9 +2863,9 @@ public class Wiki implements Serializable
         if (a < 0)
             return null;
         a = line.indexOf(">", a) + 1;
-        int b = line.indexOf("</rev>", a);
+        int b = line.indexOf("</rev>", a); // tag not in empty pages
         log(Level.INFO, "getDeletedText", "Successfully retrieved deleted text of page " + page);
-        return line.substring(a, b);
+        return (b < 0) ? "" : line.substring(a, b);
     }
 
     /**
