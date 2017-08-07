@@ -56,20 +56,36 @@ public class AdminUnitTest
             le[0].getUser().getUsername());
     }
     
-
-    /**
-     *  See https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-     *  @throws Exception if something goes wrong
-     */
     @Test
     public void getDeletedText() throws Exception
     {
+        // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/Delete
         String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
         assertEquals("getDeletedText", text, "This revision is also deleted!");
+        
+        // https://test.wikipedia.org/wiki/Special:Undelete/Tfs;hojfsdhp;osjfeas;lioejg
         assertNull("getDeletedText: page never deleted", testWiki.getDeletedText("Tfs;hojfsdhp;osjfeas;lioejg"));
         
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/EmptyDelete
         text = testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete");
         assertEquals("getDeletedText: empty", testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete"), "");
+    }
+    
+    /**
+     *  Fetching revisions of deleted pages.
+     *  @throws Exception if something goes wrong
+     */
+    @Test
+    public void revisionGetText() throws Exception
+    {
+        // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/EmptyDelete
+        Wiki.Revision rev = testWiki.getRevision(323866L);
+        assertEquals("Revision.getText: empty", rev.getText(), "");
+        
+        // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/Delete
+        // most recent deleted revision
+        // page exists, but has deleted revisions (currently broken)
+        // rev = testWiki.getRevision(217079L);
+        // assertEquals("Revision.getText", rev.getText(), "This revision is also deleted!");
     }
 }

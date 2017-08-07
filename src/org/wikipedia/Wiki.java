@@ -6660,21 +6660,20 @@ public class Wiki implements Serializable
 
             // TODO: returning a 404 here when revision content has been deleted
             // is not a good idea.
-            String temp;
-            if (pageDeleted)
+            if (pageDeleted) // FIXME: broken if a page is live, but has deleted revisions
             {
                 String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
-                temp = fetch(url, "Revision.getText");
+                String temp = fetch(url, "Revision.getText");
                 int a = temp.indexOf("<rev ");
                 a = temp.indexOf(">", a) + 1;
-                int b = temp.indexOf("</rev>", a);
+                int b = temp.indexOf("</rev>", a); // tag not present if revision has no content
                 log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
-                return temp.substring(a, b);
+                return (b < 0) ? "" : temp.substring(a, b);
             }
             else
             {
                 String url = base + encode(title, true) + "&oldid=" + revid + "&action=raw";
-                temp = fetch(url, "Revision.getText");
+                String temp = fetch(url, "Revision.getText");
                 log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
                 return temp;
             }
