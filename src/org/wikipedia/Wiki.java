@@ -1,5 +1,5 @@
 /**
- *  @(#)Wiki.java 0.32 18/12/2016
+ *  @(#)Wiki.java 0.33 10/08/2017
  *  Copyright (C) 2007 - 2017 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
@@ -47,7 +47,7 @@ import javax.security.auth.login.*;
  *  or at the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
  *
  *  @author MER-C and contributors
- *  @version 0.32
+ *  @version 0.33
  */
 public class Wiki implements Serializable
 {
@@ -407,7 +407,7 @@ public class Wiki implements Serializable
         unknown;
     }
 
-    private static final String version = "0.32";
+    private static final String version = "0.33";
 
     // the domain of the wiki
     private String domain;
@@ -1341,7 +1341,7 @@ public class Wiki implements Serializable
     {
         Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=info&intoken=edit%7Cwatch&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
+        url.append("prop=info&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
         for (String temp : constructTitleString(url.length(), pages, true))
         {
             String line = fetch(url.toString() + temp, "getPageInfo");
