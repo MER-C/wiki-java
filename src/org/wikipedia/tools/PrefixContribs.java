@@ -42,8 +42,7 @@ public class PrefixContribs
         String prefix = JOptionPane.showInputDialog(null, "Enter query string");
         if (prefix == null)
             System.exit(0);
-        OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC);
-        cutoff.minusDays(7);
+        OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(7);
         Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
         if (revisions.length == 0)
             System.out.println("No contributions found.");

@@ -71,8 +71,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
         {
             Wiki enWiki = new Wiki("en.wikipedia.org");
             enWiki.setMaxLag(-1);
-            Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-            cutoff.add(Calendar.DAY_OF_MONTH, -1 * time);
+            OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(time);
             Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
             if (revisions.length == 0)
                 out.println("<p>\nNo contributions found.");

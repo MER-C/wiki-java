@@ -190,8 +190,7 @@ Someone # Spam
         out.println("</ul>");
 
         // fetch and output contribs
-        Calendar cutoff = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
-        cutoff.add(Calendar.DAY_OF_MONTH, -5);
+        OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(5);
         Wiki.Revision[] contribs = enWiki.contribs(user, "", cutoff, null);
         if (contribs.length == 0)
             out.println("<p>No recent contributions or user does not exist.");
