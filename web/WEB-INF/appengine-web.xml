@@ -11,6 +11,8 @@
     </include>
   </static-files>
 
+  <url-stream-handler>urlfetch</url-stream-handler>
+
   <static-error-handlers>
     <handler file="timeout.html"/>
   </static-error-handlers>
