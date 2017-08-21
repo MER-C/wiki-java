@@ -3,6 +3,14 @@
   <application>wikipediatools-hrd</application>
   <version>1</version>
 
+  <static-files>
+    <include path="/**">
+      <http-header name="Strict-Transport-Security" value="max-age=31536000"/>
+      <http-header name="Content-Security-Policy" value="frame-ancestors 'self'; default-src 'none'; script-src 'self'; style-src 'self'; child-src 'self'"/>
+      <http-header name="Referrer-Policy" value="no-referrer"/>
+    </include>
+  </static-files>
+
   <static-error-handlers>
     <handler file="timeout.html"/>
   </static-error-handlers>
