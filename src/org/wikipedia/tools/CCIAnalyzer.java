@@ -69,7 +69,13 @@ public class CCIAnalyzer
         String deltabegin = "&lt;ins class=&quot;diffchange diffchange-inline&quot;&gt;"; // <ins class="diffchange diffchange-inline">
         String deltaend = "&lt;/ins&gt;"; // </ins>
         
+        // count number of diffs
+        int count = 0;
+        for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
+            count++;
+        
         // parse the list of diffs
+        int parsed = 0;
         ArrayList<String> minoredits = new ArrayList<>(500);
         for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
         {
@@ -116,7 +122,9 @@ public class CCIAnalyzer
             }
             if (!major)
                 minoredits.add(edit);
+            System.err.printf("\r\033[K%d of %d diffs parsed (%2.2f%%)", ++parsed, count, 100.0 * parsed / count);
         }
+        System.err.println();
         
         // remove all minor edits from the CCI
         for (String minoredit : minoredits)
