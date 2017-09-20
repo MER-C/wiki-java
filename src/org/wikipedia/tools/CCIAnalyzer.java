@@ -132,9 +132,20 @@ public class CCIAnalyzer
                 System.out.println(minoredit);
         }
         System.out.println("----------------------");
-        System.out.println(cci);
         
-        // PROTIP: $ sed -i "/.*''''''.*/d" filename.txt
+        // clean up output CCI listing
+        String[] articles = cci.toString().split("\\n");
+        StringBuilder cleaned = new StringBuilder();
+        for (String article : articles)
+        {
+            // remove articles where all diffs are trivial
+            if (article.contains("''''''") && !article.contains("{{dif|"))
+                continue;
+            // strip any left-over bold/unbold markers
+            cleaned.append(article.replaceAll("''''''", ""));
+            cleaned.append("\n");
+        }
+        System.out.println(cleaned);
     }
     
     /**
