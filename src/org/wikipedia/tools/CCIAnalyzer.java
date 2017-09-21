@@ -76,6 +76,7 @@ public class CCIAnalyzer
         
         // parse the list of diffs
         int parsed = 0;
+        long start = System.currentTimeMillis();
         ArrayList<String> minoredits = new ArrayList<>(500);
         for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
         {
@@ -122,7 +123,13 @@ public class CCIAnalyzer
             }
             if (!major)
                 minoredits.add(edit);
-            System.err.printf("\r\033[K%d of %d diffs parsed (%2.2f%%)", ++parsed, count, 100.0 * parsed / count);
+            long now = System.currentTimeMillis();
+            double percent = 100.0 * ++parsed / count;
+            int elapsed = (int)((now - start) / 1000.0);
+            int projected = elapsed * count / parsed;
+            int eta = projected - elapsed;
+            System.err.printf("\r\033[K%d of %d diffs parsed (%2.2f%%, %d:%02d remaining)", 
+                parsed, count, percent, eta / 60, eta % 60);
         }
         System.err.println();
         
