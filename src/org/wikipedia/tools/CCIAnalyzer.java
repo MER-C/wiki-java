@@ -78,6 +78,7 @@ public class CCIAnalyzer
         int parsed = 0;
         long start = System.currentTimeMillis();
         ArrayList<String> minoredits = new ArrayList<>(500);
+        boolean exception = false;
         for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
         {
             int x = cci.indexOf("}}", i);
@@ -89,7 +90,28 @@ public class CCIAnalyzer
             // Fetch diff. No plain text diffs for performance reasons, see
             // https://phabricator.wikimedia.org/T15209
             // We don't use the Wiki.java method here, this avoids an extra query.
-            String diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
+            String diff = "";
+            try 
+            {
+                diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
+                exception = false;
+            }
+            catch (IOException ex)
+            {
+                System.err.println();
+                System.out.flush();
+                ex.printStackTrace();
+                
+                // bail if two IOExceptions are thrown consecutively
+                if (exception)
+                {
+                    System.err.printf("\033[31;1mBailing due to consecutive IOExceptions!\033[0m\n");
+                    break;
+                }
+                System.err.printf("\033[31;1mSkipping oldid %s\033[0m\n", oldid);
+                exception = true;
+                continue;
+            }
             // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
             diff = diff.toLowerCase();
             diff = diff.replace(deltaend + " " + deltabegin, " ");
