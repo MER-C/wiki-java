@@ -2349,26 +2349,17 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=extlinks&titles=");
         url.append(encode(title, true));
-        String eloffset = null;
-        List<String> links = new ArrayList<>(750);
-        do
+        
+        List<String> links = queryAPIResult("el", url, "getExternalLinksOnPage", (line, results) ->
         {
-            String line;
-            if (eloffset == null)
-                line = fetch(url.toString(), "getExternalLinksOnPage");
-            else
-                line = fetch(url.toString() + "&eloffset=" + encode(eloffset, false), "getExternalLinksOnPage");
-            eloffset = parseAttribute(line, "eloffset", 0);
-
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<el "); a > 0; a = line.indexOf("<el ", ++a))
             {
                 int x = line.indexOf('>', a) + 1;
                 int y = line.indexOf("</el>", x);
-                links.add(decode(line.substring(x, y)));
+                results.add(decode(line.substring(x, y)));
             }
-        }
-        while (eloffset != null);
+        });
 
         int size = links.size();
         log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
@@ -4681,26 +4672,21 @@ public class Wiki implements Serializable
         if (user == null)
             throw new CredentialNotFoundException("Not logged in");
         StringBuilder url = new StringBuilder(query);
-        url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes&wllimit=max");
+        url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes");
         if (allrev)
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
 
-        List<Revision> wl = new ArrayList<>(667);
-        String wlstart = "";
-        do
+        List<Revision> wl = queryAPIResult("wl", url, "watchlist", (line, results) ->
         {
-            String line = fetch(url.toString() + "&wlstart=" + wlstart, "watchlist");
-            wlstart = parseAttribute(line, "wlstart", 0);
-
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
             {
                 int j = line.indexOf("/>", i);
-                wl.add(parseRevision(line.substring(i, j), ""));
+                results.add(parseRevision(line.substring(i, j), ""));
             }
-        }
-        while (wlstart != null);
+        });
+        
         int size = wl.size();
         log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + size + " items)");
         return wl.toArray(new Revision[size]);
@@ -4734,24 +4720,12 @@ public class Wiki implements Serializable
         if (namespaces.length == 0)
             namespaces = new int[] { MAIN_NAMESPACE };
         StringBuilder url = new StringBuilder(query);
-        url.append("list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srlimit=max&srsearch=");
+        url.append("list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srsearch=");
         url.append(encode(search, false));
         constructNamespaceString(url, "sr", namespaces);
-        url.append("&sroffset=");
 
-        // some random variables we need later
-        boolean done = false;
-        List<String[]> results = new ArrayList<>(5000);
-
-        // fetch and iterate through the search results
-        while (!done)
+        List<String[]> results = queryAPIResult("sr", url, "search", (line, list) ->
         {
-            String line = fetch(url.toString() + results.size(), "search");
-
-            // if this is the last page of results then there is no sroffset parameter
-            if (!line.contains("sroffset=\""))
-                done = true;
-
             // xml form: <p ns="0" title="Main Page" snippet="Blah blah blah" sectiontitle="Section"/>
             for (int x = line.indexOf("<p "); x > 0; x = line.indexOf("<p ", ++x))
             {
@@ -4765,9 +4739,10 @@ public class Wiki implements Serializable
                     result[1] = "";
 
                 result[2] = parseAttribute(line, "snippet", x);
-                results.add(result);
+                list.add(result);
             }
-        }
+        });
+        
         log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + results.size() + " items found)");
         return results.toArray(new String[0][0]);
     }
@@ -5122,7 +5097,7 @@ public class Wiki implements Serializable
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
      *  @return a LogEntry[] of the blocks
-     *  @throws IOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
@@ -5131,52 +5106,58 @@ public class Wiki implements Serializable
         // quick param check
         if (start != null && end != null && start.isBefore(end))
             throw new IllegalArgumentException("Specified start date is before specified end date!");
-        String bkstart = (start == null ? OffsetDateTime.now(timezone) : start).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
         // url base
-        StringBuilder urlBase = new StringBuilder(query);
-        urlBase.append("list=blocks&bklimit=");
-        urlBase.append(max);
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=blocks");
         if (end != null)
         {
-            urlBase.append("&bkend=");
-            urlBase.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            url.append("&bkend=");
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+        if (start != null)
+        {
+            url.append("&bkstart=");
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (!user.isEmpty())
         {
-            urlBase.append("&bkusers=");
-            urlBase.append(user);
+            url.append("&bkusers=");
+            url.append(user);
         }
-        urlBase.append("&bkstart=");
 
         // connection
-        List<LogEntry> entries = new ArrayList<>(1333);
-        do
+        List<LogEntry> entries = queryAPIResult("bk", url, "getIPBlockList", (line, results) ->
         {
-            String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
-            bkstart = parseAttribute(line, "bkstart", 0);
-
-            // parse xml
-            for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
+            try
             {
-                // find entry
-                int b = line.indexOf("/>", a);
-                String temp = line.substring(a, b);
-                LogEntry le = parseLogEntry(temp);
-                le.type = BLOCK_LOG;
-                le.action = "block";
-                // parseLogEntries parses block target into le.user due to mw.api
-                // attribute name
-                if (le.user == null) // autoblock
-                    le.target = "#" + parseAttribute(temp, "id", 0);
-                else
-                    le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
-                // parse blocker for real
-                le.user = new User(parseAttribute(temp, "by", 0));
-                entries.add(le);
+                // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot" 
+                // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z" 
+                // reason="{{blocked proxy}} <!-- 8080 -->" nocreate="" allowusertalk=""/>
+                for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
+                {
+                    // find entry
+                    int b = line.indexOf("/>", a);
+                    String temp = line.substring(a, b);
+                    LogEntry le = parseLogEntry(temp);
+                    le.type = BLOCK_LOG;
+                    le.action = "block";
+                    // parseLogEntries parses block target into le.user due to mw.api
+                    // attribute name
+                    if (le.user == null) // autoblock
+                        le.target = "#" + parseAttribute(temp, "id", 0);
+                    else
+                        le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
+                    // parse blocker for real
+                    le.user = new User(parseAttribute(temp, "by", 0));
+                    results.add(le);
+                }
             }
-        }
-        while (bkstart != null);
+            catch (IOException ex)
+            {
+                throw new UncheckedIOException(ex);
+            }
+        });
 
         // log statement
         StringBuilder logRecord = new StringBuilder("Successfully fetched IP block list ");
@@ -5691,20 +5672,17 @@ public class Wiki implements Serializable
         if (page.equals("Unwatchedpages") && (user == null || !user.isAllowedTo("unwatchedpages")))
             throw new CredentialNotFoundException("User does not have the \"unwatchedpages\" permission.");
 
-        String url = query + "action=query&list=querypage&qplimit=max&qppage=" + page + "&qpcontinue=";
-        String offset = "";
-        List<String> pages = new ArrayList<>(1333);
-
-        do
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=querypage&qppage=");
+        url.append(page);
+        
+        List<String> pages = queryAPIResult("qp", url, "queryPage", (line, results) ->
         {
-            String line = fetch(url + offset, "queryPage");
-            offset = parseAttribute(line, "qpoffset", 0);
-
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
             for (int x = line.indexOf("<page "); x > 0; x = line.indexOf("<page ", ++x))
-                pages.add(parseAttribute(line, "title", x));
-        }
-        while (offset != null);
+                results.add(parseAttribute(line, "title", x));
+        });
+
         int temp = pages.size();
         log(Level.INFO, "queryPage", "Successfully retrieved [[Special:" + page + "]] (" + temp + " pages)");
         return pages.toArray(new String[temp]);
