@@ -2251,7 +2251,7 @@ public class Wiki implements Serializable
         }
         url.append("&titles=");
 
-        // Also account for unknown lenght of tlcontinue's value
+        // Also account for unknown length of tlcontinue's value
         String[] titlestrings = constructTitleString(url.length() + "&tlcontinue=".length() + 1000, titles, true);
         for (String temp : titlestrings)
         {
@@ -4957,7 +4957,7 @@ public class Wiki implements Serializable
     {
         name = name.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
-        url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
+        url.append("list=categorymembers&cmprop=title&cmtitle=");
         url.append(encode("Category:" + name, true));
         if (sorttimestamp)
             url.append("&cmsort=timestamp");
@@ -4977,36 +4977,37 @@ public class Wiki implements Serializable
         }
         else
             constructNamespaceString(url, "cm", ns);
-        List<String> members = new ArrayList<>();
-        String next = "";
-        do
+        final boolean nocat2 = nocat;
+        
+        List<String> members = queryAPIResult("cm", url, "getCategoryMembers", (line, results) ->
         {
-            if (!next.isEmpty())
-                next = "&cmcontinue=" + encode(next, false);
-            String line = fetch(url.toString() + next, "getCategoryMembers");
-            next = parseAttribute(line, "cmcontinue", 0);
-
-            // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
-            for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
+            try
             {
-                String member = parseAttribute(line, "title", x);
-
-                // fetch subcategories
-                boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
-                if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
+                // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
+                for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
                 {
-                    visitedcategories.add(member);
-                    String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
-                    members.addAll(Arrays.asList(categoryMembers));
+                    String member = parseAttribute(line, "title", x);
+
+                    // fetch subcategories
+                    boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
+                    if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
+                    {
+                        visitedcategories.add(member);
+                        String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
+                        results.addAll(Arrays.asList(categoryMembers));
+                    }
+
+                    // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
+                    if (!(maxdepth > 0) || !nocat2 || !iscat)
+                        results.add(member);
                 }
-
-                // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
-                if (!(maxdepth > 0) || !nocat || !iscat)
-                    members.add(member);
             }
-        }
-        while (next != null);
-
+            catch (IOException ex)
+            {
+                throw new UncheckedIOException(ex);
+            }
+        });
+        
         int size = members.size();
         log(Level.INFO, "getCategoryMembers", "Successfully retrieved contents of Category:" + name + " (" + size + " items)");
         return members.toArray(new String[size]);
@@ -5248,7 +5249,7 @@ public class Wiki implements Serializable
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use 
      *  null to not specify one
-     *  @param amount the number of entries to get
+     *  @param amount the number of entries to get (overrides global limits)
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the log type doesn't exist
      *  @return the specified log entries
@@ -5274,7 +5275,7 @@ public class Wiki implements Serializable
      *  @param end what timestamp to end. Use null to not specify one.
      *  @param amount the amount of log entries to get. If both start and
      *  end are defined, this is ignored. Use Integer.MAX_VALUE to not
-     *  specify one.
+     *  specify one (overrides global limits)
      *  @param namespace filters by namespace. Returns empty if namespace
      *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
      *  @throws IOException if a network error occurs
@@ -5287,12 +5288,11 @@ public class Wiki implements Serializable
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
-        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails&lelimit=");
+        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails");
 
         // check for amount
         if (amount < 1)
             throw new IllegalArgumentException("Tried to retrieve less than one log entry!");
-        url.append(amount > max ? max : amount);
 
         if (!logtype.equals(ALL_LOGS))
         {
@@ -5337,28 +5337,19 @@ public class Wiki implements Serializable
             url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
 
-        // only now we can actually start to retrieve the logs
-        String lecontinue = null;
-        List<LogEntry> entries = new ArrayList<>(6667); // should be enough
-        do
+        int originallimit = getQueryLimit();
+        setQueryLimit(Math.min(amount, originallimit));
+        List<LogEntry> entries = queryAPIResult("le", url, "getLogEntries", (line, results) ->
         {
-            String line;
-            if (lecontinue == null)
-                line = fetch(url.toString(), "getLogEntries");
-            else
-                line = fetch(url.toString() + "&lecontinue=" + lecontinue, "getLogEntries");
-            lecontinue = parseAttribute(line, "lecontinue", 0);
-
-            // parse xml. We need to repeat the test because the XML may contain more than the required amount.
             String[] items = line.split("<item ");
-            for (int i = 1; i < items.length && entries.size() < amount; i++)
+            for (int i = 1; i < items.length; i++)
             {
                 LogEntry le = parseLogEntry(items[i]);
                 le.logid = Long.parseLong(parseAttribute(items[i], "logid", 0));
-                entries.add(le);
+                results.add(le);
             }
-        }
-        while (entries.size() < amount && lecontinue != null);
+        });
+        setQueryLimit(originallimit);
 
         // log the success
         StringBuilder console = new StringBuilder("Successfully retrieved log (type=");
@@ -5598,7 +5589,7 @@ public class Wiki implements Serializable
         // No varargs namespace here because MW API only supports one namespace
         // for this module.
         StringBuilder url = new StringBuilder(query);
-        url.append("list=allpages&aplimit=max");
+        url.append("list=allpages");
         if (!prefix.isEmpty()) // prefix
         {
             // cull the namespace prefix
@@ -5654,33 +5645,19 @@ public class Wiki implements Serializable
             url.append(redirects ? "redirects" : "nonredirects");
         }
 
-        // parse
-        List<String> pages = new ArrayList<>(6667);
-        String next = null;
-        do
+        // set query limit = 1 request if max, min, prefix or protection level
+        // not specified
+        int originallimit = getQueryLimit();
+        if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
+            setQueryLimit(max);
+        List<String> pages = queryAPIResult("ap", url, "listPages", (line, results) ->
         {
-            // connect and read
-            String s = url.toString();
-            if (next != null)
-                s += ("&apcontinue=" + encode(next, false));
-            String line = fetch(s, "listPages");
-
-            // don't set a continuation if no max, min, prefix or protection level
-            if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
-                next = null;
-            // find next value
-            else if (line.contains("apcontinue="))
-                next = parseAttribute(line, "apcontinue", 0);
-            else
-                next = null;
-
             // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
-                pages.add(parseAttribute(line, "title", a));
-        }
-        while (next != null);
+                results.add(parseAttribute(line, "title", a));
+        });
+        setQueryLimit(originallimit);
 
-        // tidy up
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
         return pages.toArray(new String[size]);
@@ -5731,7 +5708,8 @@ public class Wiki implements Serializable
      *  namespace. WARNING: The recent changes table only stores new pages
      *  for about a month. It is not possible to retrieve changes before then.
      *
-     *  @param amount the number of pages to fetch
+     *  @param amount the number of pages to fetch (overrides global query 
+     *  limits)
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
@@ -5751,7 +5729,8 @@ public class Wiki implements Serializable
      *
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
-     *  @param amount the amount of new pages to get
+     *  @param amount the amount of new pages to get (overrides global query
+     *  limits)
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
@@ -5771,7 +5750,8 @@ public class Wiki implements Serializable
      *
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
-     *  @param amount the amount of new pages to get
+     *  @param amount the amount of new pages to get (overrides global query
+     *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the revisions that created the pages satisfying the requirements
      *  above
@@ -5792,7 +5772,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.23
@@ -5810,7 +5791,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
@@ -5830,7 +5812,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return.
@@ -5852,7 +5835,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global
+     *  query limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return.
@@ -5864,7 +5848,7 @@ public class Wiki implements Serializable
     protected Revision[] recentChanges(int amount, int rcoptions, boolean newpages, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1&rclimit=max");
+        url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
         constructNamespaceString(url, "rc", ns);
         if (newpages)
             url.append("&rctype=new");
@@ -5886,26 +5870,20 @@ public class Wiki implements Serializable
             url.delete(url.length() - 3, url.length());
         }
 
-        // fetch, parse
-        url.append("&rcstart=");
-        String rcstart = OffsetDateTime.now(timezone).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        List<Revision> revisions = new ArrayList<>(750);
-        do
+        int originallimit = getQueryLimit();
+        setQueryLimit(amount);
+        List<Revision> revisions = queryAPIResult("rc", url, newpages ? "newPages" : "recentChanges",
+            (line, results) ->
         {
-            String temp = url.toString();
-            String line = fetch(temp + rcstart, newpages ? "newPages" : "recentChanges");
-
-            // set continuation parameter
-            rcstart = parseAttribute(line, "rcstart", 0);
-
             // xml form <rc type="edit" ns="0" title="Main Page" ... />
-            for (int i = line.indexOf("<rc "); i > 0 && revisions.size() < amount; i = line.indexOf("<rc ", ++i))
+            for (int i = line.indexOf("<rc "); i > 0; i = line.indexOf("<rc ", ++i))
             {
                 int j = line.indexOf("/>", i);
-                revisions.add(parseRevision(line.substring(i, j), ""));
+                results.add(parseRevision(line.substring(i, j), ""));
             }
-        }
-        while (revisions.size() < amount);
+        });
+        setQueryLimit(originallimit);
+
         int temp = revisions.size();
         log(Level.INFO, "recentChanges", "Successfully retrieved recent changes (" + temp + " revisions)");
         return revisions.toArray(new Revision[temp]);
