@@ -3586,10 +3586,9 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets duplicates of this file. Capped at <tt>max</tt> number of
-     *  duplicates, there's no good reason why there should be more than that.
-     *  Equivalent to [[Special:FileDuplicateSearch]]. Works for, and returns
-     *  files from external repositories (e.g. Wikimedia Commons).
+     *  Gets duplicates of this file. Equivalent to [[Special:FileDuplicateSearch]].
+     *  Works for, and returns files from external repositories (e.g. Wikimedia
+     *  Commons).
      *
      *  @param file the file for checking duplicates (may contain "File")
      *  @return the duplicates of that file
@@ -3599,15 +3598,19 @@ public class Wiki implements Serializable
     public String[] getDuplicates(String file) throws IOException
     {
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=duplicatefiles&dflimit=max&titles=" + encode("File:" + file, true);
-        String line = fetch(url, "getDuplicates");
-        if (line.contains("missing=\"\""))
-            return new String[0];
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=duplicatefiles&titles=");
+        url.append(encode("File:" + file, true));
 
-        // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
-        List<String> duplicates = new ArrayList<>(10);
-        for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
-            duplicates.add("File:" + parseAttribute(line, "name", a));
+        List<String> duplicates = queryAPIResult("df", url, "getDuplicates", (line, results) ->
+        {
+            if (line.contains("missing=\"\""))
+                return;
+
+            // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
+            for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
+                results.add("File:" + parseAttribute(line, "name", a));
+        });
 
         int size = duplicates.size();
         log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of File:" + file + " (" + size + " files)");
