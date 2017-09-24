@@ -436,6 +436,7 @@ public class Wiki implements Serializable
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
     private transient int statusinterval = 100; // status check
+    private int querylimit = Integer.MAX_VALUE;
     private String useragent = "Wiki.java/" + version + " (https://github.com/MER-C/wiki-java/)";
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
@@ -776,6 +777,34 @@ public class Wiki implements Serializable
     public boolean isMarkMinor()
     {
         return markminor;
+    }
+
+    /**
+     *  Returns the maximum number of results returned when querying the API.
+     *  Default = Integer.MAX_VALUE
+     *  @return see above
+     *  @since 0.34
+     */
+    public int getQueryLimit()
+    {
+        return querylimit;
+    }
+
+    /**
+     *  Sets the maximum number of results returned when querying the API.
+     *  Useful for operating in constrained environments (e.g. web servers)
+     *  or queries for which results are sorted by relevance (e.g. search).
+     *
+     *  @param limit the desired maximum number of results to retrieve
+     *  @throws IllegalArgumentException if <tt>limit</tt> is not a positive
+     *  integer
+     *  @since 0.34
+     */
+    public void setQueryLimit(int limit)
+    {
+        if (limit < 1)
+            throw new IllegalArgumentException("Query limit must be a positive integer.");
+        querylimit = limit;
     }
 
     /**
@@ -7014,13 +7043,12 @@ public class Wiki implements Serializable
     {
         List<T> results = new ArrayList<>(1333);
         StringBuilder xxcontinue = new StringBuilder();
-        int resultstoget = 10000000; // replace with global query limit
         url.append("&");
         url.append(queryPrefix);
         url.append("limit=");
         do
         {
-            int limit = Math.min(resultstoget, max);
+            int limit = Math.min(querylimit - results.size(), max);
             String tempurl = url.toString() + limit;
             String line = fetch(tempurl + xxcontinue.toString(), caller);
             xxcontinue.setLength(0);
@@ -7041,7 +7069,7 @@ public class Wiki implements Serializable
             
             parser.accept(line, results);
         }
-        while (xxcontinue.length() != 0 && resultstoget > results.size());
+        while (xxcontinue.length() != 0 && results.size() < querylimit);
         return results;
     }
     
