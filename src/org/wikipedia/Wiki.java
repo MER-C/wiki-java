@@ -545,7 +545,7 @@ public class Wiki implements Serializable
         basegen.append(domain);
         basegen.append(scriptPath);
         StringBuilder apigen = new StringBuilder(basegen);
-        apigen.append("/api.php?format=xml&rawcontinue=1&");
+        apigen.append("/api.php?format=xml&");
         // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
         // parameter]]. Let's exploit it.
         if (maxlag >= 0)
@@ -2756,6 +2756,7 @@ public class Wiki implements Serializable
         if (namespace == ALL_NAMESPACES)
             throw new IllegalArgumentException("deletedPrefixIndex: you must choose a namespace.");
         
+        // use the generator here to get a list of pages, not revisions
         StringBuilder url = new StringBuilder(query);
         url.append("generator=alldeletedrevisions&gadrdir=newer&gadrgeneratetitles=1&gadrprefix=");
         url.append(encode(prefix, false));
@@ -7034,7 +7035,7 @@ public class Wiki implements Serializable
         BiConsumer<String, List<T>> parser) throws IOException
     {
         List<T> results = new ArrayList<>(1333);
-        String xxcontinue = null;
+        StringBuilder xxcontinue = new StringBuilder();
         int resultstoget = 10000000; // replace with global query limit
         url.append("&");
         url.append(queryPrefix);
@@ -7043,16 +7044,26 @@ public class Wiki implements Serializable
         {
             int limit = Math.min(resultstoget, max);
             String tempurl = url.toString() + limit;
-            String line;
-            if (xxcontinue == null)
-                line = fetch(tempurl, caller);
-            else
-                line = fetch(tempurl + "&" + queryPrefix + "continue=" + xxcontinue, caller);
-            xxcontinue = encode(parseAttribute(line, queryPrefix + "continue", 0), false);
-
+            String line = fetch(tempurl + xxcontinue.toString(), caller);
+            xxcontinue.setLength(0);
+            
+            // Continuation parameter has form:
+            // <continue rccontinue="20170924064528|986351741" continue="-||" />
+            if (line.contains("<continue "))
+            {
+                int a = line.indexOf("<continue ") + 10;
+                int b = line.indexOf("/>", a);
+                String[] temp = line.substring(a, b).split("\"");
+                xxcontinue.append("&");
+                xxcontinue.append(temp[0]);
+                xxcontinue.append(encode(temp[1], false));
+                xxcontinue.append(temp[2].replace(" ", "&"));
+                xxcontinue.append(encode(temp[3], false));
+            }
+            
             parser.accept(line, results);
         }
-        while (xxcontinue != null && resultstoget > results.size());
+        while (xxcontinue.length() != 0 && resultstoget > results.size());
         return results;
     }
     
