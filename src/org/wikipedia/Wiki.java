@@ -3631,26 +3631,32 @@ public class Wiki implements Serializable
     public LogEntry[] getImageHistory(String title) throws IOException
     {
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles="
-            + encode("File:" + title, true);
-        String line = fetch(url, "getImageHistory");
-        if (line.contains("missing=\"\""))
-            return new LogEntry[0];
-        List<LogEntry> history = new ArrayList<>(40);
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&titles=");
+        url.append(encode("File:" + title, true));
+
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
-        // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
-        for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
+        List<LogEntry> history = queryAPIResult("ii", url, "getImageHistory", (line, results) ->
         {
-            int b = line.indexOf('>', a);
-            LogEntry le = parseLogEntry(line.substring(a, b));
-            le.target = prefixtitle;
-            le.type = UPLOAD_LOG;
-            le.action = "overwrite";
-            history.add(le);
-        }
+            if (line.contains("missing=\"\""))
+                return;
+
+            // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
+            for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
+            {
+                int b = line.indexOf('>', a);
+                LogEntry le = parseLogEntry(line.substring(a, b));
+                le.target = prefixtitle;
+                le.type = UPLOAD_LOG;
+                le.action = "overwrite";
+                results.add(le);
+            }
+        });
 
         // crude hack: action adjusting for first image (in the history, not our list)
         int size = history.size();
+        if (size == 0)
+            return new LogEntry[0];
         LogEntry last = history.get(size - 1);
         last.action = "upload";
         history.set(size - 1, last);
