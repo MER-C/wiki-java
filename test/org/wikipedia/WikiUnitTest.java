@@ -109,6 +109,22 @@ public class WikiUnitTest
     }
     
     @Test
+    public void queryLimits() throws Exception
+    {
+        enWiki.setQueryLimit(530);
+        assertEquals("querylimits", 530, enWiki.getQueryLimit());
+        assertEquals("querylimits: length", 530, enWiki.getPageHistory("Main Page").length);
+        // check whether queries that set a separate limit function correctly
+        assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(10).length);
+        assertEquals("querylimits: after recentchanges", 530, enWiki.getPageHistory("Main Page").length);
+        assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", 10).length);
+        assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page").length);
+        assertEquals("querylimits: listPages", 500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).length);
+        assertEquals("querylimits: after listPages", 530, enWiki.getPageHistory("Main Page").length);
+        enWiki.setQueryLimit(Integer.MAX_VALUE);
+    }
+    
+    @Test
     public void getTalkPage() throws Exception
     {
         assertEquals("getTalkPage: main", "Talk:Hello", enWiki.getTalkPage("Hello"));
