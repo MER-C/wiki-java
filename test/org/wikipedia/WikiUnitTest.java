@@ -68,6 +68,60 @@ public class WikiUnitTest
     }
     
     @Test
+    public void assertionMode() throws Exception
+    {
+        enWiki.setAssertionMode(Wiki.ASSERT_USER);
+        assertEquals("assertion mode", Wiki.ASSERT_USER, enWiki.getAssertionMode());
+        try
+        {
+            enWiki.getPageText("Main Page");
+            fail("assertion mode: failed login assertion");
+        }
+        catch (AssertionError ex)
+        {
+            // Test passed. Assertion tests whether we are logged in, which we
+            // are not.
+        }
+        enWiki.setAssertionMode(Wiki.ASSERT_BOT);
+        try
+        {
+            enWiki.getPageText("Main Page");
+            fail("assertion mode: failed bot assertion");
+        }
+        catch (AssertionError ex)
+        {
+            // Test passed. Assertion tests whether we have a bot flag. As we
+            // are not logged in, we cannot have one.
+        }
+        enWiki.setAssertionMode(Wiki.ASSERT_SYSOP);
+        try
+        {
+            enWiki.getPageText("Main Page");
+            fail("assertion mode: failed admin assertion");
+        }
+        catch (AssertionError ex)
+        {
+            // Test passed. Assertion tests whether we are an admin. No sane
+            // wiki owner would allow IPs to be admins.
+        }
+        enWiki.setAssertionMode(Wiki.ASSERT_NONE);
+    }
+    
+    @Test
+    public void setResolveRedirects() throws Exception
+    {
+        testWiki.setResolveRedirects(true);
+        assertTrue("resolving redirects", testWiki.isResolvingRedirects());
+        // https://test.wikipedia.org/w/index.php?title=User:MER-C/UnitTests/redirect&redirect=no
+        // redirects to https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+        // FIXME: currently broken, because getPageText and other vectorized
+        // methods look for the redirected page title
+        assertEquals("getPageText", "This revision is not deleted!", 
+            testWiki.getPageText("User:MER-C/UnitTests/redirect"));
+        testWiki.setResolveRedirects(false);
+    }
+    
+    @Test
     public void namespace() throws Exception
     {
         assertEquals("NS: en category", Wiki.CATEGORY_NAMESPACE, enWiki.namespace("Category:CSD"));
