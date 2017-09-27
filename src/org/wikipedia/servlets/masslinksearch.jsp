@@ -88,6 +88,7 @@ for more domains.
         String[] domains = inputdomains.split("\r\n");
         Wiki w = new Wiki(wiki);
         w.setMaxLag(-1);
+        w.setQueryLimit(500);
 
         StringBuilder regex = new StringBuilder();
         StringBuilder linksummary = new StringBuilder();

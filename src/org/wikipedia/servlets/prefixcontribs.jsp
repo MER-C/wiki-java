@@ -71,12 +71,17 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
         {
             Wiki enWiki = new Wiki("en.wikipedia.org");
             enWiki.setMaxLag(-1);
+            enWiki.setQueryLimit(1000);
             OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(time);
             Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
             if (revisions.length == 0)
                 out.println("<p>\nNo contributions found.");
             else
                 out.println(ParserUtils.revisionsToHTML(enWiki, revisions));
+            if (revisions.length == 1000)
+                out.println("<p>\nAt least 1000 contributions found.");
+            else
+                out.println("<p>\n" + revisions.length + " contributions found.");
         }
     }
 %>
