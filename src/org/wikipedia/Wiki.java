@@ -2242,7 +2242,7 @@ public class Wiki implements Serializable
         List<String>[] ret = new ArrayList[titles.length];
         
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=templates&tllimit=max");
+        url.append("prop=templates&rawcontinue=1&tllimit=max");
         constructNamespaceString(url, "tl", ns);
         if (template != null)
         {
@@ -2310,7 +2310,7 @@ public class Wiki implements Serializable
      */
     public Map<String, String> getInterWikiLinks(String title) throws IOException
     {
-        String url = query + "prop=langlinks&lllimit=max&titles=" + encode(title, true);
+        String url = query + "prop=langlinks&rawcontinue=1&lllimit=max&titles=" + encode(title, true);
         Map<String, String> interwikis = new HashMap<>(750);
         String llcontinue = null;
         
@@ -5056,7 +5056,7 @@ public class Wiki implements Serializable
 
         // set it up
         StringBuilder url = new StringBuilder(query);
-        url.append("list=exturlusage&euprop=title%7curl&eulimit=max&euquery=");
+        url.append("list=exturlusage&euprop=title%7curl&eulimit=max&rawcontinue=1&euquery=");
         url.append(pattern);
         url.append("&euprotocol=");
         url.append(protocol);

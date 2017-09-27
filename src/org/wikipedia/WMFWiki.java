@@ -96,7 +96,7 @@ public class WMFWiki extends Wiki
     	title = normalize(title);
     	if (namespace(title) != FILE_NAMESPACE)
             throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
-    	String url = query + "prop=globalusage&gulimit=max&titles=" + URLEncoder.encode(title, "UTF-8");
+    	String url = query + "prop=globalusage&gulimit=max&rawcontinue=1&titles=" + URLEncoder.encode(title, "UTF-8");
     	String next = "";
     	ArrayList<String[]> usage = new ArrayList<>(500);
     	
