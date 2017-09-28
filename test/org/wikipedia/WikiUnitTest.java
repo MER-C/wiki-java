@@ -500,6 +500,8 @@ public class WikiUnitTest
     @Test
     public void random() throws Exception
     {
+        // The results of this query are obviously non-deterministic, but we can
+        // check whether we get the right namespace.
         for (int i = 0; i < 3; i++)
         {
             String random = enWiki.random();
@@ -674,6 +676,23 @@ public class WikiUnitTest
             "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;");
         assertNull("getPageText: non-existent page", text[2]);
         assertEquals("getPageText: empty page", text[3], "");
+    }
+    
+    @Test
+    public void recentChanges() throws Exception
+    {
+        // The results of this query will never be known in advance, so this is
+        // by necessity an incomplete test. That said, there are a few things we
+        // can test for...
+        Wiki.Revision[] rc = enWiki.recentChanges(10);
+        assertEquals("recentchanges: length", rc.length, 10);
+        // Check if the changes are actually recent (i.e. in the last 10 minutes).
+        assertTrue("recentchanges: recentness", 
+            rc[9].getTimestamp().isAfter(OffsetDateTime.now(ZoneId.of("UTC")).minusMinutes(10)));
+        // Check namespace filtering
+        rc = enWiki.recentChanges(10, new int[] { Wiki.TALK_NAMESPACE });
+        for (Wiki.Revision rev : rc)
+            assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getPage()));
     }
     
     @Test
