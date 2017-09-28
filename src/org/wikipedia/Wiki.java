@@ -608,37 +608,6 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Detects the $wgScriptpath wiki variable and sets the bot framework up
-     *  to use it. You need not call this if you know the script path is
-     *  <tt>/w</tt>. See also [[mw:Manual:$wgScriptpath]].
-     *
-     *  @throws IOException if a network error occurs
-     *  @deprecated use getSiteInfo
-     *  @return the script path, if you have any use for it
-     *  @since 0.14
-     */
-    @Deprecated
-    public String getScriptPath() throws IOException
-    {
-        return (String)getSiteInfo().get("scriptpath");
-    }
-
-    /**
-     *  Detects whether a wiki forces upper case for the first character in a
-     *  title and sets the bot framework up to use it. Example: en.wikipedia =
-     *  true, en.wiktionary = false. Default = true. See [[mw:Manual:$wgCapitalLinks]].
-     *  @return see above
-     *  @deprecated use getSiteInfo
-     *  @throws IOException if a network error occurs
-     *  @since 0.30
-     */
-    @Deprecated
-    public boolean isUsingCapitalLinks() throws IOException
-    {
-        return (Boolean)getSiteInfo().get("usingcapitallinks");
-    }
-
-    /**
      *  Gets various properties of the wiki and sets the bot framework up to use
      *  them. Returns:
      *  <ul>
@@ -1100,20 +1069,6 @@ public class Wiki implements Serializable
         ret.put("admins", Integer.parseInt(parseAttribute(text, "admins", 0)));
         ret.put("jobs", Integer.parseInt(parseAttribute(text, "jobs", 0))); // job queue length
         return ret;
-    }
-
-    /**
-     *  Gets the version of MediaWiki this wiki runs e.g. 1.20wmf5 (54b4fcb).
-     *  See also https://gerrit.wikimedia.org/ .
-     *  @return the version of MediaWiki used
-     *  @throws IOException if a network error occurs
-     *  @deprecated use getSiteInfo
-     *  @since 0.14
-     */
-    @Deprecated
-    public String version() throws IOException
-    {
-        return (String)getSiteInfo().get("version");
     }
 
     /**
@@ -3430,23 +3385,6 @@ public class Wiki implements Serializable
     // IMAGE METHODS
 
     /**
-     *  Fetches an image file and returns the image data in a <tt>byte[]</tt>.
-     *  Works for files originating from external repositories (e.g. Wikimedia 
-     *  Commons).
-     *
-     *  @param title the title of the image (may contain "File")
-     *  @return the image data or null if the image doesn't exist
-     *  @deprecated expects a file as additional parameter
-     *  @throws IOException if a network error occurs
-     *  @since 0.10
-     */
-    @Deprecated
-    public byte[] getImage(String title) throws IOException
-    {
-        return getImage(title, -1, -1);
-    }
-
-    /**
      *  Fetches an image and saves it in the given file. Warning: the specified
      *  file is overwritten! Works for files originating from external 
      *  repositories (e.g. Wikimedia Commons).
@@ -3462,32 +3400,6 @@ public class Wiki implements Serializable
     public boolean getImage(String title, File file) throws FileNotFoundException, IOException
     {
         return getImage(title, -1, -1, file);
-    }
-
-    /**
-     *  Fetches a thumbnail of an image file and returns the image data in a 
-     *  <tt>byte[]</tt>. Works for files originating from external repositories
-     *  (e.g. Wikimedia Commons).
-     *
-     *  @param title the title of the image (may contain "File")
-     *  @param width the width of the thumbnail (use -1 for actual width)
-     *  @param height the height of the thumbnail (use -1 for actual height)
-     *  @return the image data or null if the image doesn't exist
-     *  @throws IOException if a network error occurs
-     *  @deprecated expects a file as additional parameter
-     *  @since 0.13
-     */
-    @Deprecated
-    public byte[] getImage(String title, int width, int height) throws IOException
-    {
-        File image = File.createTempFile("wiki-java_getImage", null);
-        image.deleteOnExit();
-
-        boolean downloaded = getImage(title, width, height, image);
-        if (!downloaded)
-            return null;
-
-        return Files.readAllBytes(image.toPath());
     }
 
     /**
@@ -3715,32 +3627,6 @@ public class Wiki implements Serializable
             }
         }
         return false;
-    }
-
-    /**
-     *  Gets an old image revision and returns the image data in a <tt>byte[]</tt>.
-     *  You will have to do the thumbnailing yourself.n
-     *  @param entry the upload log entry that corresponds to the image being
-     *  uploaded
-     *  @return the image data that was uploaded, as long as it exists in the
-     *  local repository (i.e. not on Commons or deleted)
-     *  @deprecated expects a file as additional parameter
-     *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if the entry is not in the upload log
-     *  @since 0.20
-     */
-    @Deprecated
-    public byte[] getOldImage(LogEntry entry) throws IOException
-    {
-        // @revised 0.24 BufferedImage => byte[]
-        File image = File.createTempFile("wiki-java_getOldImage", null);
-        image.deleteOnExit();
-
-        boolean downloaded = getOldImage(entry, image);
-        if (!downloaded)
-            return null;
-
-        return Files.readAllBytes(image.toPath());
     }
 
     /**

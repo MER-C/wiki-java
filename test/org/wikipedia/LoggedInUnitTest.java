@@ -18,7 +18,9 @@
  */
 package org.wikipedia;
 
+import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
 import org.junit.*;
 import static org.junit.Assert.*;
 
@@ -48,9 +50,13 @@ public class LoggedInUnitTest
         String reason = "Testing upload via URL";
         testWiki.upload(new URL("https://upload.wikimedia.org/wikipedia/commons/b/bc/%28Tsander%29_Large_Impact_Crater%2C_Lunar_Surface.jpg"), 
             uploadDest, description, reason);
-        byte[] expected = testWiki.getImage("(Tsander) Large Impact Crater, Lunar Surface.jpg");
-        byte[] actual = testWiki.getImage(uploadDest);
-        assertArrayEquals("upload via url: image", expected, actual);
+        File expected = File.createTempFile("wikijava_upload1", null);
+        testWiki.getImage("(Tsander) Large Impact Crater, Lunar Surface.jpg", expected);
+        File actual = File.createTempFile("wikijava_upload2", null);
+        testWiki.getImage(uploadDest, actual);
+        // file is 1.55 MB (i.e. less than 2 GB), so one call read is OK
+        assertArrayEquals("upload via url: image", Files.readAllBytes(expected.toPath()), 
+            Files.readAllBytes(actual.toPath()));
         assertEquals("upload via url: description", description, testWiki.getPageText("File:" + uploadDest));
         assertEquals("upload via url: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getSummary());
         // WARNING: delete the image afterwards or supply a new target
