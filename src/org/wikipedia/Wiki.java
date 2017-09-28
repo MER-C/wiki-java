@@ -28,6 +28,7 @@ import java.text.Normalizer;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
+import java.util.function.*;
 import java.util.logging.*;
 import java.util.zip.GZIPInputStream;
 
@@ -435,6 +436,7 @@ public class Wiki implements Serializable
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
     private transient int statusinterval = 100; // status check
+    private int querylimit = Integer.MAX_VALUE;
     private String useragent = "Wiki.java/" + version + " (https://github.com/MER-C/wiki-java/)";
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
@@ -544,7 +546,7 @@ public class Wiki implements Serializable
         basegen.append(domain);
         basegen.append(scriptPath);
         StringBuilder apigen = new StringBuilder(basegen);
-        apigen.append("/api.php?format=xml&rawcontinue=1&");
+        apigen.append("/api.php?format=xml&");
         // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
         // parameter]]. Let's exploit it.
         if (maxlag >= 0)
@@ -775,6 +777,34 @@ public class Wiki implements Serializable
     public boolean isMarkMinor()
     {
         return markminor;
+    }
+
+    /**
+     *  Returns the maximum number of results returned when querying the API.
+     *  Default = Integer.MAX_VALUE
+     *  @return see above
+     *  @since 0.34
+     */
+    public int getQueryLimit()
+    {
+        return querylimit;
+    }
+
+    /**
+     *  Sets the maximum number of results returned when querying the API.
+     *  Useful for operating in constrained environments (e.g. web servers)
+     *  or queries for which results are sorted by relevance (e.g. search).
+     *
+     *  @param limit the desired maximum number of results to retrieve
+     *  @throws IllegalArgumentException if <tt>limit</tt> is not a positive
+     *  integer
+     *  @since 0.34
+     */
+    public void setQueryLimit(int limit)
+    {
+        if (limit < 1)
+            throw new IllegalArgumentException("Query limit must be a positive integer.");
+        querylimit = limit;
     }
 
     /**
@@ -2068,24 +2098,16 @@ public class Wiki implements Serializable
      */
     public String[] getImagesOnPage(String title) throws IOException
     {
-        String url = query + "prop=images&imlimit=max&titles=" + encode(title, true);
-        List<String> images = new ArrayList<>(750);
-        String imcontinue = null;
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=images&titles=");
+        url.append(encode(title, true));
         
-        do
+        List<String> images = queryAPIResult("im", url, "getImagesOnPage", (line, results) ->
         {
-            String line;
-            if (imcontinue == null) 
-                line = fetch(url, "getImagesOnPage");
-            else
-                line = fetch(url + "&imcontinue=" + encode(imcontinue, false), "getImagesOnPage");
-
             // xml form: <im ns="6" title="File:Example.jpg" />
-            imcontinue = parseAttribute(line, "imcontinue", 0);
             for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
-                images.add(parseAttribute(line, "title", a));
-        }
-        while (imcontinue != null);
+                results.add(parseAttribute(line, "title", a));
+        });
 
         int temp = images.size();
         log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + title + " (" + temp + " images)");
@@ -2122,25 +2144,16 @@ public class Wiki implements Serializable
     public String[] getCategories(String title, boolean sortkey, boolean ignoreHidden) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=categories&cllimit=max");
+        url.append("prop=categories");
         if (sortkey || ignoreHidden)
             url.append("&clprop=sortkey%7Chidden");
         url.append("&titles=");
         url.append(encode(title, true));
         
-        List<String> categories = new ArrayList<>(750);
-        String clcontinue = null;
-        do
+        List<String> categories = queryAPIResult("cl", url, "getCategories", (line, results) ->
         {
-            String line;
-            if (clcontinue == null)
-                line = fetch(url.toString(), "getCategories");
-            else
-                line = fetch(url.toString() + "&clcontinue=" + encode(clcontinue, false), "getCategories");
-
             // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
             // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
-            clcontinue = parseAttribute(line, "clcontinue", 0);
             int a, b; // beginIndex and endIndex
             for (a = line.indexOf("<cl "); a > 0; a = b)
             {
@@ -2150,10 +2163,10 @@ public class Wiki implements Serializable
                 String category = parseAttribute(line, "title", a);
                 if (sortkey)
                     category += ("|" + parseAttribute(line, "sortkeyprefix", a));
-                categories.add(category);
+                results.add(category);
             }
-        }
-        while (clcontinue != null);
+        });
+        
         int temp = categories.size();
         log(Level.INFO, "getCategories", "Successfully retrieved categories of " + title + " (" + temp + " categories)");
         return categories.toArray(new String[temp]);
@@ -2229,7 +2242,7 @@ public class Wiki implements Serializable
         List<String>[] ret = new ArrayList[titles.length];
         
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=templates&tllimit=max");
+        url.append("prop=templates&rawcontinue=1&tllimit=max");
         constructNamespaceString(url, "tl", ns);
         if (template != null)
         {
@@ -2238,7 +2251,7 @@ public class Wiki implements Serializable
         }
         url.append("&titles=");
 
-        // Also account for unknown lenght of tlcontinue's value
+        // Also account for unknown length of tlcontinue's value
         String[] titlestrings = constructTitleString(url.length() + "&tlcontinue=".length() + 1000, titles, true);
         for (String temp : titlestrings)
         {
@@ -2297,7 +2310,7 @@ public class Wiki implements Serializable
      */
     public Map<String, String> getInterWikiLinks(String title) throws IOException
     {
-        String url = query + "prop=langlinks&lllimit=max&titles=" + encode(title, true);
+        String url = query + "prop=langlinks&rawcontinue=1&lllimit=max&titles=" + encode(title, true);
         Map<String, String> interwikis = new HashMap<>(750);
         String llcontinue = null;
         
@@ -2337,24 +2350,15 @@ public class Wiki implements Serializable
     public String[] getLinksOnPage(String title) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=links&pllimit=max&titles=");
+        url.append("prop=links&titles=");
         url.append(encode(title, true));
-        String plcontinue = null;
-        List<String> links = new ArrayList<>(750);
-        do
+        
+        List<String> links = queryAPIResult("pl", url, "getLinksOnPage", (line, results) ->
         {
-            String line;
-            if (plcontinue == null)
-                line = fetch(url.toString(), "getLinksOnPage");
-            else
-                line = fetch(url.toString() + "&plcontinue=" + encode(plcontinue, false), "getLinksOnPage");
-            plcontinue = parseAttribute(line, "plcontinue", 0);
-
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<pl "); a > 0; a = line.indexOf("<pl ", ++a))
-                links.add(parseAttribute(line, "title", a));
-        }
-        while (plcontinue != null);
+                results.add(parseAttribute(line, "title", a));
+        });
 
         int size = links.size();
         log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
@@ -2372,28 +2376,19 @@ public class Wiki implements Serializable
     public String[] getExternalLinksOnPage(String title) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=extlinks&ellimit=max&titles=");
+        url.append("prop=extlinks&titles=");
         url.append(encode(title, true));
-        String eloffset = null;
-        List<String> links = new ArrayList<>(750);
-        do
+        
+        List<String> links = queryAPIResult("el", url, "getExternalLinksOnPage", (line, results) ->
         {
-            String line;
-            if (eloffset == null)
-                line = fetch(url.toString(), "getExternalLinksOnPage");
-            else
-                line = fetch(url.toString() + "&eloffset=" + encode(eloffset, false), "getExternalLinksOnPage");
-            eloffset = parseAttribute(line, "eloffset", 0);
-
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<el "); a > 0; a = line.indexOf("<el ", ++a))
             {
                 int x = line.indexOf('>', a) + 1;
                 int y = line.indexOf("</el>", x);
-                links.add(decode(line.substring(x, y)));
+                results.add(decode(line.substring(x, y)));
             }
-        }
-        while (eloffset != null);
+        });
 
         int size = links.size();
         log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
@@ -2552,7 +2547,7 @@ public class Wiki implements Serializable
     {
         // set up the url
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvlimit=max&titles=");
+        url.append("prop=revisions&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
         if (reverse)
@@ -2567,27 +2562,16 @@ public class Wiki implements Serializable
             url.append(reverse ? "&rvend=" : "&rvstart=");
             url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
-        String rvcontinue = null;
-        List<Revision> revisions = new ArrayList<>(1500);
 
-        // main loop
-        do
+        List<Revision> revisions = queryAPIResult("rv", url, "getPageHistory", (line, results) ->
         {
-            String line;
-            if (rvcontinue == null)
-                line = fetch(url.toString(), "getPageHistory");
-            else
-                line = fetch(url.toString() + "&rvcontinue=" + rvcontinue, "getPageHistory");
-            rvcontinue = parseAttribute(line, "rvcontinue", 0);
-
-            // parse stuff
             for (int a = line.indexOf("<rev "); a > 0; a = line.indexOf("<rev ", ++a))
             {
                 int b = line.indexOf("/>", a);
-                revisions.add(parseRevision(line.substring(a, b), title));
+                results.add(parseRevision(line.substring(a, b), title));
             }
-        }
-        while (rvcontinue != null);
+        });
+        
         // populate previous/next
         int size = revisions.size();
         Revision[] temp = revisions.toArray(new Revision[size]);
@@ -2652,7 +2636,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Csha1&drvlimit=max");
+        url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Csha1");
         if (reverse)
             url.append("&drvdir=newer");
         if (start != null)
@@ -2668,21 +2652,11 @@ public class Wiki implements Serializable
         url.append("&titles=");
         url.append(encode(title, true));
 
-        String drvcontinue = null;
-        List<Revision> delrevs = new ArrayList<>(500);
-        do
+        List<Revision> delrevs = queryAPIResult("drv", url, "getDeletedHistory", (response, results) ->
         {
-            String response;
-            if (drvcontinue != null)
-                response = fetch(url.toString() + "&drvcontinue=" + encode(drvcontinue, false), "getDeletedHistory");
-            else
-                response = fetch(url.toString(), "getDeletedHistory");
-            drvcontinue = parseAttribute(response, "drvcontinue", 0);
-
-            // parse
             int x = response.indexOf("<deletedrevs>");
             if (x < 0) // no deleted history
-                break;
+                return;
             for (x = response.indexOf("<page ", x); x > 0; x = response.indexOf("<page ", ++x))
             {
                 String deltitle = parseAttribute(response, "title", x);
@@ -2692,12 +2666,11 @@ public class Wiki implements Serializable
                     int aa = response.indexOf(" />", z);
                     Revision temp = parseRevision(response.substring(z, aa), deltitle);
                     temp.pageDeleted = true;
-                    delrevs.add(temp);
+                    results.add(temp);
                 }
             }
-        }
-        while (drvcontinue != null);
-
+        });
+        
         int size = delrevs.size();
         log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
         return delrevs.toArray(new Revision[size]);
@@ -2739,7 +2712,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Ctimestamp%7Csha1&adrlimit=max");
+        url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Ctimestamp%7Csha1");
         if (reverse)
             url.append("&adrdir=newer");
         if (start != null)
@@ -2756,21 +2729,11 @@ public class Wiki implements Serializable
         url.append(encode(username, true));
         constructNamespaceString(url, "adr", namespace);
 
-        String adrcontinue = null;
-        List<Revision> delrevs = new ArrayList<>(500);
-        do
+        List<Revision> delrevs = queryAPIResult("adr", url, "deletedContribs", (response, results) ->
         {
-            String response;
-            if (adrcontinue != null)
-                response = fetch(url.toString() + "&adrcontinue=" + encode(adrcontinue, false), "deletedContribs");
-            else
-                response = fetch(url.toString(), "deletedContribs");
-            adrcontinue = parseAttribute(response, "adrcontinue", 0);
-
-            // parse
             int x = response.indexOf("<alldeletedrevisions>");
             if (x < 0) // no deleted history
-                break;
+                return;
             for (x = response.indexOf("<page ", x); x > 0; x = response.indexOf("<page ", ++x))
             {
                 String deltitle = parseAttribute(response, "title", x);
@@ -2780,11 +2743,10 @@ public class Wiki implements Serializable
                     int aa = response.indexOf(" />", z);
                     Revision temp = parseRevision(response.substring(z, aa), deltitle);
                     temp.pageDeleted = true;
-                    delrevs.add(temp);
+                    results.add(temp);
                 }
             }
-        }
-        while (adrcontinue != null);
+        });
 
         int size = delrevs.size();
         log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
@@ -2814,27 +2776,19 @@ public class Wiki implements Serializable
         if (namespace == ALL_NAMESPACES)
             throw new IllegalArgumentException("deletedPrefixIndex: you must choose a namespace.");
         
+        // use the generator here to get a list of pages, not revisions
         StringBuilder url = new StringBuilder(query);
         url.append("generator=alldeletedrevisions&gadrdir=newer&gadrgeneratetitles=1&gadrprefix=");
         url.append(encode(prefix, false));
-        url.append("&gadrlimit=max&gadrnamespace=");
+        url.append("&gadrnamespace=");
         url.append(namespace);
 
-        String drcontinue = null;
-        List<String> pages = new ArrayList<>();
-        do
+        List<String> pages = queryAPIResult("gadr", url, "deletedPrefixIndex", (text, results) ->
         {
-            String text;
-            if (drcontinue == null)
-                text = fetch(url.toString(), "deletedPrefixIndex");
-            else
-                text = fetch(url.toString() + "&gadrcontinue=" + encode(drcontinue, false), "deletedPrefixIndex");
-            drcontinue = parseAttribute(text, "gadrcontinue", 0);
-
             for (int x = text.indexOf("<page ", 0); x > 0; x = text.indexOf("<page ", ++x))
-                pages.add(parseAttribute(text, "title", x));
-        }
-        while (drcontinue != null);
+                results.add(parseAttribute(text, "title", x));
+        });
+        
         int size = pages.size();
         log(Level.INFO, "deletedPrefixIndex", "Successfully retrieved deleted page list (" + size + " items).");
         return pages.toArray(new String[size]);
@@ -3632,10 +3586,9 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets duplicates of this file. Capped at <tt>max</tt> number of
-     *  duplicates, there's no good reason why there should be more than that.
-     *  Equivalent to [[Special:FileDuplicateSearch]]. Works for, and returns
-     *  files from external repositories (e.g. Wikimedia Commons).
+     *  Gets duplicates of this file. Equivalent to [[Special:FileDuplicateSearch]].
+     *  Works for, and returns files from external repositories (e.g. Wikimedia
+     *  Commons).
      *
      *  @param file the file for checking duplicates (may contain "File")
      *  @return the duplicates of that file
@@ -3645,15 +3598,19 @@ public class Wiki implements Serializable
     public String[] getDuplicates(String file) throws IOException
     {
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=duplicatefiles&dflimit=max&titles=" + encode("File:" + file, true);
-        String line = fetch(url, "getDuplicates");
-        if (line.contains("missing=\"\""))
-            return new String[0];
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=duplicatefiles&titles=");
+        url.append(encode("File:" + file, true));
 
-        // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
-        List<String> duplicates = new ArrayList<>(10);
-        for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
-            duplicates.add("File:" + parseAttribute(line, "name", a));
+        List<String> duplicates = queryAPIResult("df", url, "getDuplicates", (line, results) ->
+        {
+            if (line.contains("missing=\"\""))
+                return;
+
+            // xml form: <df name="Star-spangled_banner_002.ogg" other stuff >
+            for (int a = line.indexOf("<df "); a > 0; a = line.indexOf("<df ", ++a))
+                results.add("File:" + parseAttribute(line, "name", a));
+        });
 
         int size = duplicates.size();
         log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of File:" + file + " (" + size + " files)");
@@ -3674,26 +3631,32 @@ public class Wiki implements Serializable
     public LogEntry[] getImageHistory(String title) throws IOException
     {
         title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        String url = query + "prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&iilimit=max&titles="
-            + encode("File:" + title, true);
-        String line = fetch(url, "getImageHistory");
-        if (line.contains("missing=\"\""))
-            return new LogEntry[0];
-        List<LogEntry> history = new ArrayList<>(40);
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&titles=");
+        url.append(encode("File:" + title, true));
+
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
-        // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
-        for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
+        List<LogEntry> history = queryAPIResult("ii", url, "getImageHistory", (line, results) ->
         {
-            int b = line.indexOf('>', a);
-            LogEntry le = parseLogEntry(line.substring(a, b));
-            le.target = prefixtitle;
-            le.type = UPLOAD_LOG;
-            le.action = "overwrite";
-            history.add(le);
-        }
+            if (line.contains("missing=\"\""))
+                return;
+
+            // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
+            for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
+            {
+                int b = line.indexOf('>', a);
+                LogEntry le = parseLogEntry(line.substring(a, b));
+                le.target = prefixtitle;
+                le.type = UPLOAD_LOG;
+                le.action = "overwrite";
+                results.add(le);
+            }
+        });
 
         // crude hack: action adjusting for first image (in the history, not our list)
         int size = history.size();
+        if (size == 0)
+            return new LogEntry[0];
         LogEntry last = history.get(size - 1);
         last.action = "upload";
         history.set(size - 1, last);
@@ -3803,7 +3766,7 @@ public class Wiki implements Serializable
     public LogEntry[] getUploads(User user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=allimages&ailimit=max&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser=");
+        url.append("list=allimages&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser=");
         url.append(encode(user.getUsername(), false));
         if (start != null && end != null && start.isBefore(end))
             throw new IllegalArgumentException("Specified start date is before specified end date!");
@@ -3817,17 +3780,9 @@ public class Wiki implements Serializable
             url.append("&aiend=");
             url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
-        List<LogEntry> uploads = new ArrayList<>();
-        String aicontinue = null;
-        do
+        
+        List<LogEntry> uploads = queryAPIResult("ai", url, "getUploads", (line, results) ->
         {
-            String line;
-            if (aicontinue == null)
-                line = fetch(url.toString(), "getUploads");
-            else
-                line = fetch(url.toString() + "&aicontinue=" + aicontinue, "getUploads");
-            aicontinue = parseAttribute(line, "aicontinue", 0);
-
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
                 int b = line.indexOf("/>", i);
@@ -3835,11 +3790,10 @@ public class Wiki implements Serializable
                 le.type = UPLOAD_LOG;
                 le.action = "upload"; // unless it's an overwrite?
                 le.user = user;
-                uploads.add(le);
+                results.add(le);
             }
-        }
-        while (aicontinue != null);
-
+        });
+        
         int size = uploads.size();
         log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)");
         return uploads.toArray(new LogEntry[size]);
@@ -4452,7 +4406,7 @@ public class Wiki implements Serializable
     {
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
-        temp.append("list=usercontribs&uclimit=max&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff&");
+        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff&");
         if (prefix.isEmpty())
         {
             temp.append("ucuser=");
@@ -4472,33 +4426,21 @@ public class Wiki implements Serializable
             temp.append("&ucend=");
             temp.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
-        List<Revision> revisions = new ArrayList<>(7500);
-        String uccontinue = "", ucstart = "";
         if (start != null)
         {
             temp.append("&ucstart=");
             temp.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
 
-        // fetch data
-        do
+        List<Revision> revisions = queryAPIResult("uc", temp, "contribs", (line, results) ->
         {
-            String line = fetch(temp.toString() + uccontinue + ucstart, "contribs");
-
-            // set offset parameter
-            if (line.contains("uccontinue"))
-                uccontinue = "&uccontinue=" + encode(parseAttribute(line, "uccontinue", 0), false);
-            else
-                uccontinue = null; // depleted list
-
             // xml form: <item user="Wizardman" ... size="59460" />
             for (int a = line.indexOf("<item "); a > 0; a = line.indexOf("<item ", ++a))
             {
                 int b = line.indexOf(" />", a);
-                revisions.add(parseRevision(line.substring(a, b), ""));
+                results.add(parseRevision(line.substring(a, b), ""));
             }
-        }
-        while (uccontinue != null);
+        });
 
         // clean up
         int size = revisions.size();
@@ -4677,7 +4619,7 @@ public class Wiki implements Serializable
      *  @param cache whether we should use the watchlist cache
      *  (no online activity, if the cache exists)
      *  @return the contents of the watchlist
-     *  @throws IOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @since 0.18
      */
@@ -4691,29 +4633,28 @@ public class Wiki implements Serializable
         if (watchlist != null && cache)
             return watchlist.toArray(new String[watchlist.size()]);
 
-        // set up some things
-        String url = query + "list=watchlistraw&wrlimit=max";
-        String wrcontinue = null;
-        watchlist = new ArrayList<>(750);
-        // fetch the watchlist
-        do
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=watchlistraw");
+        
+        watchlist = queryAPIResult("wr", url, "getRawWatchlist", (line, results) ->
         {
-            String line;
-            if (wrcontinue == null)
-                line = fetch(url, "getRawWatchlist");
-            else
-                line = fetch(url + "&wrcontinue=" + encode(wrcontinue, false), "getRawWatchlist");
-            wrcontinue = parseAttribute(line, "wrcontinue", 0);
-            // xml form: <wr ns="14" title="Categorie:Even more things"/>
-            for (int a = line.indexOf("<wr "); a > 0; a = line.indexOf("<wr ", ++a))
+            try
             {
-                String title = parseAttribute(line, "title", a);
-                // is this supposed to not retrieve talk pages?
-                if (namespace(title) % 2 == 0)
-                    watchlist.add(title);
+                // xml form: <wr ns="14" title="Categorie:Even more things"/>
+                for (int a = line.indexOf("<wr "); a > 0; a = line.indexOf("<wr ", ++a))
+                {
+                    String title = parseAttribute(line, "title", a);
+                    // is this supposed to not retrieve talk pages?
+                    if (namespace(title) % 2 == 0)
+                        results.add(title);
+                }
             }
-        }
-        while (wrcontinue != null);
+            catch (IOException ex)
+            {
+                throw new UncheckedIOException(ex);
+            }
+        });
+        
         // log
         int size = watchlist.size();
         log(Level.INFO, "getRawWatchlist", "Successfully retrieved raw watchlist (" + size + " items)");
@@ -4769,26 +4710,21 @@ public class Wiki implements Serializable
         if (user == null)
             throw new CredentialNotFoundException("Not logged in");
         StringBuilder url = new StringBuilder(query);
-        url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes&wllimit=max");
+        url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes");
         if (allrev)
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
 
-        List<Revision> wl = new ArrayList<>(667);
-        String wlstart = "";
-        do
+        List<Revision> wl = queryAPIResult("wl", url, "watchlist", (line, results) ->
         {
-            String line = fetch(url.toString() + "&wlstart=" + wlstart, "watchlist");
-            wlstart = parseAttribute(line, "wlstart", 0);
-
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
             {
                 int j = line.indexOf("/>", i);
-                wl.add(parseRevision(line.substring(i, j), ""));
+                results.add(parseRevision(line.substring(i, j), ""));
             }
-        }
-        while (wlstart != null);
+        });
+        
         int size = wl.size();
         log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + size + " items)");
         return wl.toArray(new Revision[size]);
@@ -4822,24 +4758,12 @@ public class Wiki implements Serializable
         if (namespaces.length == 0)
             namespaces = new int[] { MAIN_NAMESPACE };
         StringBuilder url = new StringBuilder(query);
-        url.append("list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srlimit=max&srsearch=");
+        url.append("list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srsearch=");
         url.append(encode(search, false));
         constructNamespaceString(url, "sr", namespaces);
-        url.append("&sroffset=");
 
-        // some random variables we need later
-        boolean done = false;
-        List<String[]> results = new ArrayList<>(5000);
-
-        // fetch and iterate through the search results
-        while (!done)
+        List<String[]> results = queryAPIResult("sr", url, "search", (line, list) ->
         {
-            String line = fetch(url.toString() + results.size(), "search");
-
-            // if this is the last page of results then there is no sroffset parameter
-            if (!line.contains("sroffset=\""))
-                done = true;
-
             // xml form: <p ns="0" title="Main Page" snippet="Blah blah blah" sectiontitle="Section"/>
             for (int x = line.indexOf("<p "); x > 0; x = line.indexOf("<p ", ++x))
             {
@@ -4853,9 +4777,10 @@ public class Wiki implements Serializable
                     result[1] = "";
 
                 result[2] = parseAttribute(line, "snippet", x);
-                results.add(result);
+                list.add(result);
             }
-        }
+        });
+        
         log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + results.size() + " items found)");
         return results.toArray(new String[0][0]);
     }
@@ -4873,26 +4798,17 @@ public class Wiki implements Serializable
     {
         StringBuilder url = new StringBuilder(query);
         image = image.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
-        url.append("list=imageusage&iulimit=max&iutitle=");
+        url.append("list=imageusage&iutitle=");
         url.append(encode("File:" + image, true));
         constructNamespaceString(url, "iu", ns);
 
-        // fiddle
-        List<String> pages = new ArrayList<>(1333);
-        String next = "";
-        do
+        List<String> pages = queryAPIResult("iu", url, "imageUsage", (line, results) ->
         {
-            // connect
-            if (!pages.isEmpty())
-                next = "&iucontinue=" + next;
-            String line = fetch(url + next, "imageUsage");
-            next = parseAttribute(line, "iucontinue", 0);
-
             // xml form: <iu pageid="196465" ns="7" title="File talk:Wiki.png" />
             for (int x = line.indexOf("<iu "); x > 0; x = line.indexOf("<iu ", ++x))
-                pages.add(parseAttribute(line, "title", x));
-        }
-        while (next != null);
+                results.add(parseAttribute(line, "title", x));
+        });
+        
         int size = pages.size();
         log(Level.INFO, "imageUsage", "Successfully retrieved usages of File:" + image + " (" + size + " items)");
         return pages.toArray(new String[size]);
@@ -4929,30 +4845,18 @@ public class Wiki implements Serializable
     public String[] whatLinksHere(String title, boolean redirects, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=backlinks&bllimit=max&bltitle=");
+        url.append("list=backlinks&bltitle=");
         url.append(encode(title, true));
         constructNamespaceString(url, "bl", ns);
         if (redirects)
             url.append("&blfilterredir=redirects");
 
-        // main loop
-        List<String> pages = new ArrayList<>(6667); // generally enough
-        String blcontinue = null;
-        do
+        List<String> pages = queryAPIResult("bl", url, "whatLinksHere", (line, results) ->
         {
-            // fetch data
-            String line;
-            if (blcontinue == null)
-                line = fetch(url.toString(), "whatLinksHere");
-            else
-                line = fetch(url.toString() + "&blcontinue=" + blcontinue, "whatLinksHere");
-            blcontinue = parseAttribute(line, "blcontinue", 0);
-
             // xml form: <bl pageid="217224" ns="0" title="Mainpage" redirect="" />
             for (int x = line.indexOf("<bl "); x > 0; x = line.indexOf("<bl ", ++x))
-                pages.add(parseAttribute(line, "title", x));
-        }
-        while (blcontinue != null);
+                results.add(parseAttribute(line, "title", x));
+        });
 
         int size = pages.size();
         log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + size + " items)");
@@ -4972,28 +4876,17 @@ public class Wiki implements Serializable
     public String[] whatTranscludesHere(String title, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=embeddedin&eilimit=max&eititle=");
+        url.append("list=embeddedin&eititle=");
         url.append(encode(title, true));
         constructNamespaceString(url, "ei", ns);
 
-        // main loop
-        List<String> pages = new ArrayList<>(6667); // generally enough
-        String eicontinue = null;
-        do
+        List<String> pages = queryAPIResult("ei", url, "whatTranscludesHere", (line, results) ->
         {
-            // fetch data
-            String line;
-            if (eicontinue == null)
-                line = fetch(url.toString(), "whatTranscludesHere");
-            else
-                line = fetch(url.toString() + "&eicontinue=" + eicontinue, "whatTranscludesHere");
-            eicontinue = parseAttribute(line, "eicontinue", 0);
-
             // xml form: <ei pageid="7997510" ns="0" title="Maike Evers" />
             for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
-                pages.add(parseAttribute(line, "title", x));
-        }
-        while (eicontinue != null);
+                results.add(parseAttribute(line, "title", x));
+        });
+        
         int size = pages.size();
         log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
@@ -5064,7 +4957,7 @@ public class Wiki implements Serializable
     {
         name = name.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
         StringBuilder url = new StringBuilder(query);
-        url.append("list=categorymembers&cmprop=title&cmlimit=max&cmtitle=");
+        url.append("list=categorymembers&cmprop=title&cmtitle=");
         url.append(encode("Category:" + name, true));
         if (sorttimestamp)
             url.append("&cmsort=timestamp");
@@ -5084,36 +4977,37 @@ public class Wiki implements Serializable
         }
         else
             constructNamespaceString(url, "cm", ns);
-        List<String> members = new ArrayList<>();
-        String next = "";
-        do
+        final boolean nocat2 = nocat;
+        
+        List<String> members = queryAPIResult("cm", url, "getCategoryMembers", (line, results) ->
         {
-            if (!next.isEmpty())
-                next = "&cmcontinue=" + encode(next, false);
-            String line = fetch(url.toString() + next, "getCategoryMembers");
-            next = parseAttribute(line, "cmcontinue", 0);
-
-            // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
-            for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
+            try
             {
-                String member = parseAttribute(line, "title", x);
-
-                // fetch subcategories
-                boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
-                if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
+                // xml form: <cm pageid="24958584" ns="3" title="User talk:86.29.138.185" />
+                for (int x = line.indexOf("<cm "); x > 0; x = line.indexOf("<cm ", ++x))
                 {
-                    visitedcategories.add(member);
-                    String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
-                    members.addAll(Arrays.asList(categoryMembers));
+                    String member = parseAttribute(line, "title", x);
+
+                    // fetch subcategories
+                    boolean iscat = namespace(member) == CATEGORY_NAMESPACE;
+                    if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
+                    {
+                        visitedcategories.add(member);
+                        String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
+                        results.addAll(Arrays.asList(categoryMembers));
+                    }
+
+                    // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
+                    if (!(maxdepth > 0) || !nocat2 || !iscat)
+                        results.add(member);
                 }
-
-                // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
-                if (!(maxdepth > 0) || !nocat || !iscat)
-                    members.add(member);
             }
-        }
-        while (next != null);
-
+            catch (IOException ex)
+            {
+                throw new UncheckedIOException(ex);
+            }
+        });
+        
         int size = members.size();
         log(Level.INFO, "getCategoryMembers", "Successfully retrieved contents of Category:" + name + " (" + size + " items)");
         return members.toArray(new String[size]);
@@ -5162,7 +5056,7 @@ public class Wiki implements Serializable
 
         // set it up
         StringBuilder url = new StringBuilder(query);
-        url.append("list=exturlusage&euprop=title%7curl&eulimit=max&euquery=");
+        url.append("list=exturlusage&euprop=title%7curl&eulimit=max&rawcontinue=1&euquery=");
         url.append(pattern);
         url.append("&euprotocol=");
         url.append(protocol);
@@ -5242,7 +5136,7 @@ public class Wiki implements Serializable
      *  @param start what timestamp to start. Use null to not specify one.
      *  @param end what timestamp to end. Use null to not specify one.
      *  @return a LogEntry[] of the blocks
-     *  @throws IOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
@@ -5251,52 +5145,58 @@ public class Wiki implements Serializable
         // quick param check
         if (start != null && end != null && start.isBefore(end))
             throw new IllegalArgumentException("Specified start date is before specified end date!");
-        String bkstart = (start == null ? OffsetDateTime.now(timezone) : start).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
 
         // url base
-        StringBuilder urlBase = new StringBuilder(query);
-        urlBase.append("list=blocks&bklimit=");
-        urlBase.append(max);
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=blocks");
         if (end != null)
         {
-            urlBase.append("&bkend=");
-            urlBase.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            url.append("&bkend=");
+            url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+        if (start != null)
+        {
+            url.append("&bkstart=");
+            url.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (!user.isEmpty())
         {
-            urlBase.append("&bkusers=");
-            urlBase.append(user);
+            url.append("&bkusers=");
+            url.append(user);
         }
-        urlBase.append("&bkstart=");
 
         // connection
-        List<LogEntry> entries = new ArrayList<>(1333);
-        do
+        List<LogEntry> entries = queryAPIResult("bk", url, "getIPBlockList", (line, results) ->
         {
-            String line = fetch(urlBase.toString() + bkstart, "getIPBlockList");
-            bkstart = parseAttribute(line, "bkstart", 0);
-
-            // parse xml
-            for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
+            try
             {
-                // find entry
-                int b = line.indexOf("/>", a);
-                String temp = line.substring(a, b);
-                LogEntry le = parseLogEntry(temp);
-                le.type = BLOCK_LOG;
-                le.action = "block";
-                // parseLogEntries parses block target into le.user due to mw.api
-                // attribute name
-                if (le.user == null) // autoblock
-                    le.target = "#" + parseAttribute(temp, "id", 0);
-                else
-                    le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
-                // parse blocker for real
-                le.user = new User(parseAttribute(temp, "by", 0));
-                entries.add(le);
+                // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot" 
+                // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z" 
+                // reason="{{blocked proxy}} <!-- 8080 -->" nocreate="" allowusertalk=""/>
+                for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
+                {
+                    // find entry
+                    int b = line.indexOf("/>", a);
+                    String temp = line.substring(a, b);
+                    LogEntry le = parseLogEntry(temp);
+                    le.type = BLOCK_LOG;
+                    le.action = "block";
+                    // parseLogEntries parses block target into le.user due to mw.api
+                    // attribute name
+                    if (le.user == null) // autoblock
+                        le.target = "#" + parseAttribute(temp, "id", 0);
+                    else
+                        le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
+                    // parse blocker for real
+                    le.user = new User(parseAttribute(temp, "by", 0));
+                    results.add(le);
+                }
             }
-        }
-        while (bkstart != null);
+            catch (IOException ex)
+            {
+                throw new UncheckedIOException(ex);
+            }
+        });
 
         // log statement
         StringBuilder logRecord = new StringBuilder("Successfully fetched IP block list ");
@@ -5349,7 +5249,7 @@ public class Wiki implements Serializable
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use 
      *  null to not specify one
-     *  @param amount the number of entries to get
+     *  @param amount the number of entries to get (overrides global limits)
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the log type doesn't exist
      *  @return the specified log entries
@@ -5375,7 +5275,7 @@ public class Wiki implements Serializable
      *  @param end what timestamp to end. Use null to not specify one.
      *  @param amount the amount of log entries to get. If both start and
      *  end are defined, this is ignored. Use Integer.MAX_VALUE to not
-     *  specify one.
+     *  specify one (overrides global limits)
      *  @param namespace filters by namespace. Returns empty if namespace
      *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
      *  @throws IOException if a network error occurs
@@ -5388,12 +5288,11 @@ public class Wiki implements Serializable
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
-        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails&lelimit=");
+        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails");
 
         // check for amount
         if (amount < 1)
             throw new IllegalArgumentException("Tried to retrieve less than one log entry!");
-        url.append(amount > max ? max : amount);
 
         if (!logtype.equals(ALL_LOGS))
         {
@@ -5438,28 +5337,19 @@ public class Wiki implements Serializable
             url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
 
-        // only now we can actually start to retrieve the logs
-        String lecontinue = null;
-        List<LogEntry> entries = new ArrayList<>(6667); // should be enough
-        do
+        int originallimit = getQueryLimit();
+        setQueryLimit(Math.min(amount, originallimit));
+        List<LogEntry> entries = queryAPIResult("le", url, "getLogEntries", (line, results) ->
         {
-            String line;
-            if (lecontinue == null)
-                line = fetch(url.toString(), "getLogEntries");
-            else
-                line = fetch(url.toString() + "&lecontinue=" + lecontinue, "getLogEntries");
-            lecontinue = parseAttribute(line, "lecontinue", 0);
-
-            // parse xml. We need to repeat the test because the XML may contain more than the required amount.
             String[] items = line.split("<item ");
-            for (int i = 1; i < items.length && entries.size() < amount; i++)
+            for (int i = 1; i < items.length; i++)
             {
                 LogEntry le = parseLogEntry(items[i]);
                 le.logid = Long.parseLong(parseAttribute(items[i], "logid", 0));
-                entries.add(le);
+                results.add(le);
             }
-        }
-        while (entries.size() < amount && lecontinue != null);
+        });
+        setQueryLimit(originallimit);
 
         // log the success
         StringBuilder console = new StringBuilder("Successfully retrieved log (type=");
@@ -5699,7 +5589,7 @@ public class Wiki implements Serializable
         // No varargs namespace here because MW API only supports one namespace
         // for this module.
         StringBuilder url = new StringBuilder(query);
-        url.append("list=allpages&aplimit=max");
+        url.append("list=allpages");
         if (!prefix.isEmpty()) // prefix
         {
             // cull the namespace prefix
@@ -5755,33 +5645,19 @@ public class Wiki implements Serializable
             url.append(redirects ? "redirects" : "nonredirects");
         }
 
-        // parse
-        List<String> pages = new ArrayList<>(6667);
-        String next = null;
-        do
+        // set query limit = 1 request if max, min, prefix or protection level
+        // not specified
+        int originallimit = getQueryLimit();
+        if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
+            setQueryLimit(max);
+        List<String> pages = queryAPIResult("ap", url, "listPages", (line, results) ->
         {
-            // connect and read
-            String s = url.toString();
-            if (next != null)
-                s += ("&apcontinue=" + encode(next, false));
-            String line = fetch(s, "listPages");
-
-            // don't set a continuation if no max, min, prefix or protection level
-            if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
-                next = null;
-            // find next value
-            else if (line.contains("apcontinue="))
-                next = parseAttribute(line, "apcontinue", 0);
-            else
-                next = null;
-
             // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
-                pages.add(parseAttribute(line, "title", a));
-        }
-        while (next != null);
+                results.add(parseAttribute(line, "title", a));
+        });
+        setQueryLimit(originallimit);
 
-        // tidy up
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
         return pages.toArray(new String[size]);
@@ -5811,20 +5687,17 @@ public class Wiki implements Serializable
         if (page.equals("Unwatchedpages") && (user == null || !user.isAllowedTo("unwatchedpages")))
             throw new CredentialNotFoundException("User does not have the \"unwatchedpages\" permission.");
 
-        String url = query + "action=query&list=querypage&qplimit=max&qppage=" + page + "&qpcontinue=";
-        String offset = "";
-        List<String> pages = new ArrayList<>(1333);
-
-        do
+        StringBuilder url = new StringBuilder(query);
+        url.append("action=query&list=querypage&qppage=");
+        url.append(page);
+        
+        List<String> pages = queryAPIResult("qp", url, "queryPage", (line, results) ->
         {
-            String line = fetch(url + offset, "queryPage");
-            offset = parseAttribute(line, "qpoffset", 0);
-
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
             for (int x = line.indexOf("<page "); x > 0; x = line.indexOf("<page ", ++x))
-                pages.add(parseAttribute(line, "title", x));
-        }
-        while (offset != null);
+                results.add(parseAttribute(line, "title", x));
+        });
+
         int temp = pages.size();
         log(Level.INFO, "queryPage", "Successfully retrieved [[Special:" + page + "]] (" + temp + " pages)");
         return pages.toArray(new String[temp]);
@@ -5835,7 +5708,8 @@ public class Wiki implements Serializable
      *  namespace. WARNING: The recent changes table only stores new pages
      *  for about a month. It is not possible to retrieve changes before then.
      *
-     *  @param amount the number of pages to fetch
+     *  @param amount the number of pages to fetch (overrides global query 
+     *  limits)
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
@@ -5855,7 +5729,8 @@ public class Wiki implements Serializable
      *
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
-     *  @param amount the amount of new pages to get
+     *  @param amount the amount of new pages to get (overrides global query
+     *  limits)
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
@@ -5875,7 +5750,8 @@ public class Wiki implements Serializable
      *
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
-     *  @param amount the amount of new pages to get
+     *  @param amount the amount of new pages to get (overrides global query
+     *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the revisions that created the pages satisfying the requirements
      *  above
@@ -5896,7 +5772,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.23
@@ -5914,7 +5791,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
@@ -5934,7 +5812,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return.
@@ -5956,7 +5835,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
-     *  @param amount the number of entries to return
+     *  @param amount the number of entries to return (overrides global
+     *  query limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
      *  we return.
@@ -5968,7 +5848,7 @@ public class Wiki implements Serializable
     protected Revision[] recentChanges(int amount, int rcoptions, boolean newpages, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1&rclimit=max");
+        url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
         constructNamespaceString(url, "rc", ns);
         if (newpages)
             url.append("&rctype=new");
@@ -5990,26 +5870,20 @@ public class Wiki implements Serializable
             url.delete(url.length() - 3, url.length());
         }
 
-        // fetch, parse
-        url.append("&rcstart=");
-        String rcstart = OffsetDateTime.now(timezone).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        List<Revision> revisions = new ArrayList<>(750);
-        do
+        int originallimit = getQueryLimit();
+        setQueryLimit(amount);
+        List<Revision> revisions = queryAPIResult("rc", url, newpages ? "newPages" : "recentChanges",
+            (line, results) ->
         {
-            String temp = url.toString();
-            String line = fetch(temp + rcstart, newpages ? "newPages" : "recentChanges");
-
-            // set continuation parameter
-            rcstart = parseAttribute(line, "rcstart", 0);
-
             // xml form <rc type="edit" ns="0" title="Main Page" ... />
-            for (int i = line.indexOf("<rc "); i > 0 && revisions.size() < amount; i = line.indexOf("<rc ", ++i))
+            for (int i = line.indexOf("<rc "); i > 0; i = line.indexOf("<rc ", ++i))
             {
                 int j = line.indexOf("/>", i);
-                revisions.add(parseRevision(line.substring(i, j), ""));
+                results.add(parseRevision(line.substring(i, j), ""));
             }
-        }
-        while (revisions.size() < amount);
+        });
+        setQueryLimit(originallimit);
+
         int temp = revisions.size();
         log(Level.INFO, "recentChanges", "Successfully retrieved recent changes (" + temp + " revisions)");
         return revisions.toArray(new Revision[temp]);
@@ -6084,7 +5958,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Interwiki backlinks: title specified without prefix!");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("list=iwbacklinks&iwbllimit=max&iwblprefix=");
+        url.append("list=iwbacklinks&iwblprefix=");
         url.append(prefix);
         if (!title.equals("|"))
         {
@@ -6093,28 +5967,19 @@ public class Wiki implements Serializable
         }
         url.append("&iwblprop=iwtitle%7Ciwprefix");
 
-        String iwblcontinue = "";
-        List<String[]> links = new ArrayList<>(500);
-        do
+        List<String[]> links = queryAPIResult("iwbl", url, "getInterWikiBacklinks", (line, results) ->
         {
-            String line;
-            if (iwblcontinue.isEmpty())
-                line = fetch(url.toString(), "getInterWikiBacklinks");
-            else
-                line = fetch(url.toString() + "&iwblcontinue=" + iwblcontinue, "getInterWikiBacklinks");
-            iwblcontinue = parseAttribute(line, "iwblcontinue", 0);
-
             // xml form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wroclaw" iwprefix="pl" iwtitle="Main_Page" />
             for (int x = line.indexOf("<iw "); x > 0; x = line.indexOf("<iw ", ++x))
             {
-                links.add(new String[]
+                results.add(new String[]
                 {
                     parseAttribute(line, "title", x),
                     parseAttribute(line, "iwprefix", x) + ':' + parseAttribute(line, "iwtitle", x)
                 });
             }
-        }
-        while (iwblcontinue != null);
+        });
+        
         log(Level.INFO, "getInterWikiBacklinks", "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)");
         return links.toArray(new String[0][0]);
     }
@@ -7146,6 +7011,55 @@ public class Wiki implements Serializable
 
     // INTERNALS
 
+    /**
+     *  Fetches list-type results from the MediaWiki API.
+     * 
+     *  @param <T> a class describing the parsed API results (e.g. String, 
+     *  LogEntry, Revision)
+     *  @param queryPrefix the request type prefix (e.g. "pl" for prop=links)
+     *  @param url the query URL, without the limit and XXcontinue parameters
+     *  @param caller the name of the calling method
+     *  @param parser a BiConsumer that parses the XML returned by the MediaWiki
+     *  API into things we want, dumping them into the given List
+     *  @return the query results
+     *  @throws IOException if a network error occurs
+     *  @since 0.34
+     */
+    protected <T> List<T> queryAPIResult(String queryPrefix, StringBuilder url, String caller, 
+        BiConsumer<String, List<T>> parser) throws IOException
+    {
+        List<T> results = new ArrayList<>(1333);
+        StringBuilder xxcontinue = new StringBuilder();
+        url.append("&");
+        url.append(queryPrefix);
+        url.append("limit=");
+        do
+        {
+            int limit = Math.min(querylimit - results.size(), max);
+            String tempurl = url.toString() + limit;
+            String line = fetch(tempurl + xxcontinue.toString(), caller);
+            xxcontinue.setLength(0);
+            
+            // Continuation parameter has form:
+            // <continue rccontinue="20170924064528|986351741" continue="-||" />
+            if (line.contains("<continue "))
+            {
+                int a = line.indexOf("<continue ") + 10;
+                int b = line.indexOf("/>", a);
+                String[] temp = line.substring(a, b).split("\"");
+                xxcontinue.append("&");
+                xxcontinue.append(temp[0]);
+                xxcontinue.append(encode(temp[1], false));
+                xxcontinue.append(temp[2].replace(" ", "&"));
+                xxcontinue.append(encode(temp[3], false));
+            }
+            
+            parser.accept(line, results);
+        }
+        while (xxcontinue.length() != 0 && results.size() < querylimit);
+        return results;
+    }
+    
     // miscellany
 
     /**

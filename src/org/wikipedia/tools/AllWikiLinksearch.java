@@ -249,6 +249,7 @@ public class AllWikiLinksearch
         Map<Wiki, List[]> ret = new LinkedHashMap<>();
         for (Wiki wiki : wikis)
         {
+            wiki.setQueryLimit(500);
             List[] temp = wiki.linksearch("*." + domain, "http", ns);
             // silly api designs aplenty here!
             if (https)
