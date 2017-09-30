@@ -155,13 +155,12 @@ public class IOUtils
 	 * @throws FileNotFoundException If <tt>localpath</tt> cannot be resolved to a pathname on the
 	 *            local system.
 	 * 
-	 * 
+	 * @deprecated replace with Wiki.getImage(title, new File(localpath))
 	 */
+        @Deprecated
 	public static void downloadFile(String title, String localpath, Wiki wiki) throws IOException, FileNotFoundException
 	{
-		FileOutputStream fos = new FileOutputStream(localpath);
-		fos.write(wiki.getImage(title));
-		fos.close();
+		wiki.getImage(title, new File(localpath));
 	}
 	
 	/**
