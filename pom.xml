@@ -21,9 +21,6 @@
                     <includes>
                         <include>**/*.java</include>
                     </includes>
-                    <testExcludes>
-                        <testExclude>**/UserLinkAdditionFinderUnitTest.java</testExclude>
-                    </testExcludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -62,10 +59,8 @@
                 <configuration>
                     <includes>
                         <include>**/WikiUnitTest.java</include>
+                        <include>**/UserLinkAdditionFinderUnitTest.java</include>
                     </includes>
-                    <excludes>
-                        <exclude>**/UserLinkAdditionFinderUnitTest.java</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
