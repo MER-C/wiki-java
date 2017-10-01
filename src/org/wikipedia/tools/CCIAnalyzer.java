@@ -41,7 +41,7 @@ public class CCIAnalyzer
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = new Wiki("en.wikipedia.org");
+        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         StringBuilder cci;
         if (args.length < 1)
         {

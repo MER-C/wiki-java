@@ -34,7 +34,7 @@ public class LoggedInTests
     {
 
         // login
-        Wiki wiki = new Wiki("test.wikipedia.org");
+        Wiki wiki = Wiki.createInstance("test.wikipedia.org");
         LoginUtils.guiLogin(wiki);
         wiki.setThrottle(5);
   /*   
@@ -77,7 +77,7 @@ public class LoggedInTests
 
         // TODO: move the following to testwiki
         
-//        Wiki enWiki = new Wiki("en.wikipedia.org");
+//        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
 //        LoginUtils.guiLogin(enWiki);
 //        enWiki.setThrottle(5);
         

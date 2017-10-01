@@ -35,9 +35,9 @@ public class AdminUnitTest
     private static Wiki testWiki;
     
     @BeforeClass
-    public static void setUpClass()
+    public static void setUpClass() throws Exception
     {
-        testWiki = new Wiki("test.wikipedia.org");
+        testWiki = Wiki.createInstance("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
     }

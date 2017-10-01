@@ -128,7 +128,7 @@ timeout is more likely when searching for more wikis or protocols.
         }
         else   
             results = AllWikiLinksearch.crossWikiLinksearch(domain, new Wiki[] 
-                { new Wiki(wikiinput) }, https, mailto, ns);
+                { Wiki.createInstance(wikiinput) }, https, mailto, ns);
 
         for (Map.Entry<Wiki, List[]> entry : results.entrySet())
         {

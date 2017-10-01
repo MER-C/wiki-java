@@ -472,7 +472,9 @@ public class Wiki implements Serializable
     /**
      *  Creates a new connection to the English Wikipedia via HTTPS.
      *  @since 0.02
+     *  @deprecated use Wiki#createInstance instead
      */
+    @Deprecated
     public Wiki()
     {
         this("en.wikipedia.org", "/w");
@@ -486,7 +488,9 @@ public class Wiki implements Serializable
      *
      *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
      *  en.wikipedia.org)
+     *  @deprecated use Wiki#createInstance instead
      */
+    @Deprecated
     public Wiki(String domain)
     {
         this(domain, "/w");
@@ -499,7 +503,9 @@ public class Wiki implements Serializable
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
      *  @since 0.14
+     *  @deprecated use Wiki#createInstance instead
      */
+    @Deprecated
     public Wiki(String domain, String scriptPath)
     {
         this(domain, scriptPath, "https://");
@@ -513,7 +519,10 @@ public class Wiki implements Serializable
      *  @param scriptPath the script path
      *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
      *  @since 0.31
+     *  @deprecated use Wiki#createInstance instead; this will be made private
+     *  for the reason in the TODO comment below
      */
+    @Deprecated
     public Wiki(String domain, String scriptPath, String protocol)
     {
         if (domain == null || domain.isEmpty())
@@ -526,10 +535,48 @@ public class Wiki implements Serializable
         // This is fine as long as you do not have parameters other than domain
         // and scriptpath in constructors and do not do anything else than super(x)!
         // http://stackoverflow.com/questions/3404301/whats-wrong-with-overridable-method-calls-in-constructors
-        // TODO: make this more sane.
+        // TODO: remove this
         logger.setLevel(loglevel);
         logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
         initVars();
+    }
+    
+    /**
+     *  Creates a new connection to a wiki via HTTPS. Depending on the settings
+     *  of the wiki, you may need to call {@link Wiki#getSiteInfo()} on the 
+     *  returned object after this in order for some functionality to work 
+     *  correctly.
+     *
+     *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
+     *  en.wikipedia.org)
+     *  @return the created wiki
+     *  @since 0.34
+     */
+    public static Wiki createInstance(String domain)
+    {
+        return createInstance(domain, "/w", "https://");
+    }
+    
+    /**
+     *  Creates a new connection to a wiki with $wgScriptpath set to
+     *  settings <tt>scriptPath</tt> via the specified protocol. Depending on 
+     *  the settings of the wiki, you may need to call {@link Wiki#getSiteInfo()} 
+     *  on the returned object after this in order for some functionality to work 
+     *  correctly.
+     *
+     *  @param domain the wiki domain name
+     *  @param scriptPath the script path
+     *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
+     *  @return the constructed Wiki object
+     *  @since 0.34
+     */
+    public static Wiki createInstance(String domain, String scriptPath, String protocol)
+    {
+        // Don't put network requests here. Servlets cannot afford to make
+        // unnecessary network requests in initialization.
+        Wiki wiki = new Wiki(domain, "/w", protocol);
+        wiki.initVars(); // construct URL bases
+        return wiki;
     }
 
     /**
@@ -7503,7 +7550,7 @@ public class Wiki implements Serializable
      *  @param s the string to normalize
      *  @return the normalized string
      *  @throws IllegalArgumentException if the title is invalid
-     *  @throws IOException if a network error occurs during initialization of the namespaces
+     *  @throws IOException if a network error occurs
      *  @since 0.27
      */
     public String normalize(String s) throws IOException

@@ -39,7 +39,7 @@ public class ContributionSurveyor
     {
         // placeholders
         boolean images = false, userspace = false;
-        Wiki homewiki = new Wiki("en.wikipedia.org");
+        Wiki homewiki = Wiki.createInstance("en.wikipedia.org");
         File out = null;
         String wikipage = null;
         String infile = null;
@@ -81,7 +81,7 @@ public class ContributionSurveyor
                     userspace = true;
                     break;
                 case "--wiki":
-                    homewiki = new Wiki(args[++i]);
+                    homewiki = Wiki.createInstance(args[++i]);
                     break;
                 case "--outfile":
                     out = new File(args[++i]);
@@ -299,7 +299,7 @@ public class ContributionSurveyor
             localuploads.add(upload.getTarget());
         
         // fetch commons uploads
-        Wiki commons = new Wiki("commons.wikimedia.org");
+        Wiki commons = Wiki.createInstance("commons.wikimedia.org");
         Wiki.User comuser = commons.getUser(user.getUsername());
         HashSet<String> comuploads = new HashSet<>(10000);
         if (comuser != null)

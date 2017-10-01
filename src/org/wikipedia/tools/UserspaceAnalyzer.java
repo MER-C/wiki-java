@@ -39,7 +39,7 @@ public class UserspaceAnalyzer
      */
     public static void main(String[] args) throws Exception
     {
-        Wiki wiki = new Wiki();
+        Wiki wiki = Wiki.createInstance("en.wikipedia.org");
         String[][] results = wiki.search("\"seo analyst\"", Wiki.USER_NAMESPACE);
         HashSet<String> users = new HashSet<>(500);
         for (String[] result : results)

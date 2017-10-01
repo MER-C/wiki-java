@@ -52,15 +52,15 @@ public class WikiUnitTest
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        enWiki = new Wiki("en.wikipedia.org");
+        enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-        deWiki = new Wiki("de.wikipedia.org");
+        deWiki = Wiki.createInstance("de.wikipedia.org");
         deWiki.setMaxLag(-1);
-        arWiki = new Wiki("ar.wikipedia.org");
+        arWiki = Wiki.createInstance("ar.wikipedia.org");
         arWiki.setMaxLag(-1);
-        testWiki = new Wiki("test.wikipedia.org");
+        testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
-        enWikt = new Wiki("en.wiktionary.org");
+        enWikt = Wiki.createInstance("en.wiktionary.org");
         enWikt.setMaxLag(-1);
         enWikt.getSiteInfo();
         
@@ -535,11 +535,9 @@ public class WikiUnitTest
         assertEquals("normalize", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));        
 
         // capital links = false
-        // FIXME: only works because we have called getSiteInfo above
         assertEquals("normalize", "blah", enWikt.normalize("blah"));
         assertEquals("normalize", "Wiktionary:main page", enWikt.normalize("Wiktionary:main page"));
         assertEquals("normalize", "Wiktionary:main page", enWikt.normalize("wiktionary:main page"));
-        
     }
     
     @Test

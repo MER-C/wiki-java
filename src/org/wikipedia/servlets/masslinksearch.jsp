@@ -86,7 +86,7 @@ for more domains.
     {
         out.println("<hr>");
         String[] domains = inputdomains.split("\r\n");
-        Wiki w = new Wiki(wiki);
+        Wiki w = Wiki.createInstance(wiki);
         w.setMaxLag(-1);
         w.setQueryLimit(500);
 

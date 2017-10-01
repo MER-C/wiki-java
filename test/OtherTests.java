@@ -26,10 +26,10 @@ import org.wikipedia.*;
  */
 public class OtherTests
 {
-    private static WMFWiki enWiki = new WMFWiki("en.wikipedia.org");
-    
     public static void main(String[] args) throws java.io.IOException
     {
+        WMFWiki enWiki = WMFWiki.createInstance("en.wikipedia.org");
+        
         // WMFWiki.getSiteMatrix()
         // for (Wiki x : WMFWiki.getSiteMatrix())
         //     System.out.println(x.getDomain());

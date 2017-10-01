@@ -35,7 +35,7 @@ public class LoggedInUnitTest
     @BeforeClass
     public static void setUpClass() throws Exception
     {
-        testWiki = new Wiki("test.wikipedia.org");
+        testWiki = Wiki.createInstance("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
     }

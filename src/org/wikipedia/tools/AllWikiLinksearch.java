@@ -81,26 +81,27 @@ public class AllWikiLinksearch
             // 20-40
             "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr",  "kk",
             "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
+        
         for (int i = 0; i < temp.length; i++)
         {
-            TOP40[i] = new Wiki(temp[i] + ".wikipedia.org");
+            TOP40[i] = Wiki.createInstance(temp[i] + ".wikipedia.org");
             TOP40[i].setMaxLag(-1);
         }
         System.arraycopy(TOP40, 0, TOP20, 0, 20);
-        
+
         temp = new String[] { "en", "de", "fr" };
         for (int i = 0; i < temp.length; i++)
         {
-            MAJOR_WIKIS[5 * i    ] = new Wiki(temp[i] + ".wikipedia.org");
-            MAJOR_WIKIS[5 * i + 1] = new Wiki(temp[i] + ".wiktionary.org");
-            MAJOR_WIKIS[5 * i + 2] = new Wiki(temp[i] + ".wikibooks.org");
-            MAJOR_WIKIS[5 * i + 3] = new Wiki(temp[i] + ".wikiquote.org");
-            MAJOR_WIKIS[5 * i + 4] = new Wiki(temp[i] + ".wikivoyage.org");
+            MAJOR_WIKIS[5 * i    ] = Wiki.createInstance(temp[i] + ".wikipedia.org");
+            MAJOR_WIKIS[5 * i + 1] = Wiki.createInstance(temp[i] + ".wiktionary.org");
+            MAJOR_WIKIS[5 * i + 2] = Wiki.createInstance(temp[i] + ".wikibooks.org");
+            MAJOR_WIKIS[5 * i + 3] = Wiki.createInstance(temp[i] + ".wikiquote.org");
+            MAJOR_WIKIS[5 * i + 4] = Wiki.createInstance(temp[i] + ".wikivoyage.org");
         }
-        MAJOR_WIKIS[15] = new Wiki("meta.wikimedia.org");
-        MAJOR_WIKIS[16] = new Wiki("commons.wikimedia.org");
-        MAJOR_WIKIS[17] = new Wiki("mediawiki.org");
-        MAJOR_WIKIS[18] = new Wiki("wikidata.org");
+        MAJOR_WIKIS[15] = Wiki.createInstance("meta.wikimedia.org");
+        MAJOR_WIKIS[16] = Wiki.createInstance("commons.wikimedia.org");
+        MAJOR_WIKIS[17] = Wiki.createInstance("mediawiki.org");
+        MAJOR_WIKIS[18] = Wiki.createInstance("wikidata.org");
         for (Wiki tempwiki : MAJOR_WIKIS)
             tempwiki.setMaxLag(-1);
     }

@@ -30,11 +30,11 @@ public class WikiTests
 {
     public static void main(String[] args) throws Exception
     {
-        Wiki enWiki = new Wiki("en.wikipedia.org");
+        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-        Wiki deWiki = new Wiki("de.wikipedia.org");
+        Wiki deWiki = Wiki.createInstance("de.wikipedia.org");
         deWiki.setMaxLag(-1);
-        Wiki testWiki = new Wiki("test.wikipedia.org");
+        Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
 
         /*
@@ -101,7 +101,7 @@ public class WikiTests
         for (String image : enWiki.getImagesOnPage("Main Page"))
             System.out.println(image);
         // This site runs an obsolete MW where "File:" doesn't exist
-        for (String image : new Wiki("wiki.eclipse.org", "").getImagesOnPage("Main Page"))
+        for (String image : Wiki.createInstance("wiki.eclipse.org", "").getImagesOnPage("Main Page"))
             System.out.println(image);
 
         // getImage()

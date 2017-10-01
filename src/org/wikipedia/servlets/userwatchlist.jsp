@@ -100,7 +100,7 @@ Someone # Spam
         <%
         return;
     }
-    Wiki enWiki = new Wiki("en.wikipedia.org");
+    Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
     enWiki.setMaxLag(-1);
     String us = inputpage.substring(5, inputpage.indexOf('/'));
     Wiki.User us2 = enWiki.getUser(us);

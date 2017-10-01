@@ -82,8 +82,8 @@ public class SpamArchiveSearch
      */
     public static ArrayList<String[]> archiveSearch(String query) throws IOException
     {
-        Wiki enWiki = new Wiki("en.wikipedia.org");
-        Wiki meta = new Wiki("meta.wikimedia.org");
+        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        Wiki meta = Wiki.createInstance("meta.wikimedia.org");
         enWiki.setMaxLag(-1);
         meta.setMaxLag(-1);
         

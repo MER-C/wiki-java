@@ -37,7 +37,7 @@
         response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
 
         // get results
-        Wiki wiki = new Wiki(homewiki);
+        Wiki wiki = Wiki.createInstance(homewiki);
         Wiki.User wpuser = wiki.getUser(user);
         String[][] survey = ContributionSurveyor.imageContributionSurvey(wiki, wpuser);
 

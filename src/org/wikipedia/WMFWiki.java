@@ -34,7 +34,9 @@ public class WMFWiki extends Wiki
 {
     /**
      *  Creates a new WMF wiki that represents the English Wikipedia.
+     *  @deprecated use WMFWiki#createInstance instead
      */
+    @Deprecated
     public WMFWiki()
     {
         super("en.wikipedia.org");
@@ -43,10 +45,24 @@ public class WMFWiki extends Wiki
     /**
      *  Creates a new WMF wiki that has the given domain name.
      *  @param domain a WMF wiki domain name e.g. en.wikipedia.org
+     *  @deprecated use WMFWiki#createInstance instead; this will be made private
      */
+    @Deprecated
     public WMFWiki(String domain)
     {
         super(domain);
+    }
+    
+    /**
+     *  Creates a new WMF wiki that has the given domain name.
+     *  @param domain a WMF wiki domain name e.g. en.wikipedia.org
+     *  @return the constructed Wiki object
+     */
+    public static WMFWiki createInstance(String domain)
+    {
+        WMFWiki wiki = new WMFWiki(domain);
+        wiki.initVars();
+        return wiki;
     }
 
     /**
@@ -57,7 +73,7 @@ public class WMFWiki extends Wiki
      */
     public static WMFWiki[] getSiteMatrix() throws IOException
     {
-        WMFWiki wiki = new WMFWiki("en.wikipedia.org");
+        WMFWiki wiki = createInstance("en.wikipedia.org");
         wiki.setMaxLag(0);
         String line = wiki.fetch("https://en.wikipedia.org/w/api.php?format=xml&action=sitematrix", "WMFWiki.getSiteMatrix");
         ArrayList<WMFWiki> wikis = new ArrayList<WMFWiki>(1000);
@@ -75,7 +91,7 @@ public class WMFWiki extends Wiki
             String temp = line.substring(b, c);
             if (temp.contains("closed=\"\"") || temp.contains("private=\"\"") || temp.contains("fishbowl=\"\""))
                 continue;
-            wikis.add(new WMFWiki(line.substring(a, b)));
+            wikis.add(createInstance(line.substring(a, b)));
         }
         int size = wikis.size();
         Logger temp = Logger.getLogger("wiki");

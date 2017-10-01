@@ -69,7 +69,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
             out.println("<span class=\"error\">ERROR: search key of insufficient length.</span>");
         else
         {
-            Wiki enWiki = new Wiki("en.wikipedia.org");
+            Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
             enWiki.setMaxLag(-1);
             enWiki.setQueryLimit(1000);
             OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(time);

@@ -42,7 +42,7 @@ public class UserLinkAdditionFinder
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = new Wiki("en.wikipedia.org");
+        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         // read in from file
         JFileChooser fc = new JFileChooser();
         if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
