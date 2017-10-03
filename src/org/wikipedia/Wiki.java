@@ -447,8 +447,6 @@ public class Wiki implements Serializable
 
     // Store time when the last throttled action was executed
     private long lastThrottleActionTime = 0;
-    // Store time when next login attempt can be executed
-    private long nextLoginTime = -1;
 
     // retry count
     private int maxtries = 2;
@@ -1376,10 +1374,14 @@ public class Wiki implements Serializable
         Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
         url.append("prop=info&inprop=protection%7Cdisplaytitle%7Cwatchers&titles=");
+        // copy because redirect resolver overwrites
+        String[] pages2 = Arrays.copyOf(pages, pages.length); 
         for (String temp : constructTitleString(url.length(), pages, true))
         {
             String line = fetch(url.toString() + temp, "getPageInfo");
-
+            if (resolveredirect)
+                resolveRedirectParser(pages2, line);
+            
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
             // </page>
@@ -1446,8 +1448,8 @@ public class Wiki implements Serializable
                     tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
 
                 // reorder
-                for (int i = 0; i < pages.length; i++)
-                    if (normalize(pages[i]).equals(parsedtitle))
+                for (int i = 0; i < pages2.length; i++)
+                    if (normalize(pages2[i]).equals(parsedtitle))
                         info[i] = tempmap;
             }
         }
@@ -1653,10 +1655,14 @@ public class Wiki implements Serializable
                 throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
         HashMap<String, String> pageTexts = new HashMap<>(2 * titles.length);
         String url = query + "prop=revisions&rvprop=content&titles=";
+        // copy because redirect resolver overwrites
+        String[] titles2 = Arrays.copyOf(titles, titles.length); 
         
         for (String chunk : constructTitleString(url.length(), titles, true))
         {
             String[] results = fetch(url + chunk, "getPageText").split("<page ");
+            if (resolveredirect)
+                resolveRedirectParser(titles2, results[0]);
 
             // skip first element to remove front crud
             for (int i = 1; i < results.length; i++)
@@ -1678,12 +1684,12 @@ public class Wiki implements Serializable
             }
         }
 
-        String[] ret = new String[titles.length];
+        String[] ret = new String[titles2.length];
         // returned array is in the same order as input array
-        for (int j = 0; j < titles.length; j++)
-            ret[j] = pageTexts.get(normalize(titles[j]));
+        for (int j = 0; j < titles2.length; j++)
+            ret[j] = pageTexts.get(normalize(titles2[j]));
 
-        log(Level.INFO, "getPageText", "Successfully retrieved text of " + titles.length + " pages.");
+        log(Level.INFO, "getPageText", "Successfully retrieved text of " + titles2.length + " pages.");
         return ret;
     }
 
@@ -2241,8 +2247,6 @@ public class Wiki implements Serializable
      */
     protected List<String>[] getTemplates(String[] titles, String template, int... ns) throws IOException
     {
-        List<String>[] ret = new ArrayList[titles.length];
-        
         StringBuilder url = new StringBuilder(query);
         url.append("prop=templates&rawcontinue=1&tllimit=max");
         constructNamespaceString(url, "tl", ns);
@@ -2252,6 +2256,9 @@ public class Wiki implements Serializable
             url.append(encode(template, false));
         }
         url.append("&titles=");
+        // copy array so redirect resolver doesn't overwrite
+        String[] titles2 = Arrays.copyOf(titles, titles.length);
+        Map<String, List<String>> ret = new HashMap<>();
 
         // Also account for unknown length of tlcontinue's value
         String[] titlestrings = constructTitleString(url.length() + "&tlcontinue=".length() + 1000, titles, true);
@@ -2270,33 +2277,34 @@ public class Wiki implements Serializable
                 tlcontinue = parseAttribute(line, "tlcontinue", 0);
                 
                 // Split the result into individual listings for each article.
-                // Skip first element to remove front crud.
                 String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
+                // Skip first element to remove front crud.
                 for (int i = 1; i < x.length; i++)
                 {
-                    // Figure out where to put the results in the return array
-                    int index = -1;
                     String parsedtitle = parseAttribute(x[i], "title", 0);
-                    for (int j = 0; j < titles.length; j++)
-                        if (normalize(titles[j]).equals(parsedtitle))
-                            index = j;
-                    
                     // Instantiate. Need to keep the list object around, results
                     // for a given page may be split over API query fetches.
-                    if (ret[index] == null)
-                        ret[index] = new ArrayList<>(750);
+                    if (ret.get(parsedtitle) == null)
+                        ret.put(parsedtitle, new ArrayList<>(750));
                     
                     // Actually parse the templates.
                     // xml form: <tl ns="10" title="Template:POTD" />
+                    List<String> list = ret.get(parsedtitle);
                     for (int a = x[i].indexOf("<tl "); a > 0; a = x[i].indexOf("<tl ", ++a))
-                        ret[index].add(parseAttribute(x[i], "title", a));
+                        list.add(parseAttribute(x[i], "title", a));
                 }
             }
             while (tlcontinue != null);
         }
-
+        
+        // reorder stuff 
+        List<String>[] out = new ArrayList[titles.length];
+        for (int i = 0; i < titles2.length; i++)
+            out[i] = ret.get(normalize(titles2[i]));
         log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + titles.length + " pages.");
-        return ret;
+        return out;
     }
 
     /**
@@ -2490,7 +2498,8 @@ public class Wiki implements Serializable
      *  Gets the newest page name or the name of a page where the asked pages
      *  redirect.
      *  @param titles a list of titles.
-     *  @return for each title, the page redirected to or null if not a redirect
+     *  @return for each title, the page redirected to or the original page 
+     *  title if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
      *  @author Nirvanchik/MER-C
@@ -2501,22 +2510,38 @@ public class Wiki implements Serializable
         if (!resolveredirect)
             url.append("redirects");
         url.append("&titles=");
-        String[] ret = new String[titles.length];
+        String[] ret = Arrays.copyOf(titles, titles.length);
         for (String blah : constructTitleString(url.length(), titles, true))
         {
             String line = fetch(url.toString() + blah, "resolveRedirects");
-            // expected form: <redirects><r from="Main page" to="Main Page"/>
-            // <r from="Home Page" to="Home page"/>...</redirects>
-            // TODO: look for the <r> tag instead
-            for (int j = line.indexOf("<r "); j > 0; j = line.indexOf("<r ", ++j))
-            {
-                String parsedtitle = parseAttribute(line, "from", j);
-                for (int i = 0; i < titles.length; i++)
-                    if (normalize(titles[i]).equals(parsedtitle))
-                        ret[i] = parseAttribute(line, "to", j);
-            }
+            resolveRedirectParser(ret, line);
         }
         return ret;
+    }
+    
+    /**
+     *  Parses the output of queries that resolve redirects (extracted to 
+     *  separate method as requirement for all vectorized queries when 
+     *  {@link Wiki#isResolvingRedirects()} is true).
+     *
+     *  @param inputpages the array of pages to resolve redirects for. Entries
+     *  will be overwritten.
+     *  @param xml the xml to parse
+     *  @throws IOException if a network error occurs
+     *  @since 0.34
+     */
+    protected void resolveRedirectParser(String[] inputpages, String xml) throws IOException
+    {
+        // expected form: <redirects><r from="Main page" to="Main Page"/>
+        // <r from="Home Page" to="Home page"/>...</redirects>
+        // TODO: look for the <r> tag instead
+        for (int j = xml.indexOf("<r "); j > 0; j = xml.indexOf("<r ", ++j))
+        {
+            String parsedtitle = parseAttribute(xml, "from", j);
+            for (int i = 0; i < inputpages.length; i++)
+                if (normalize(inputpages[i]).equals(parsedtitle))
+                    inputpages[i] = parseAttribute(xml, "to", j);
+        }
     }
 
     /**

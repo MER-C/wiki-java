@@ -110,15 +110,25 @@ public class WikiUnitTest
     @Test
     public void setResolveRedirects() throws Exception
     {
+        String[] pages = { 
+            "User:MER-C/UnitTests/redirect", 
+            "User:MER-C/UnitTests/Delete"
+        };
+            
         testWiki.setResolveRedirects(true);
+        enWiki.setResolveRedirects(true);
         assertTrue("resolving redirects", testWiki.isResolvingRedirects());
         // https://test.wikipedia.org/w/index.php?title=User:MER-C/UnitTests/redirect&redirect=no
         // redirects to https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-        // FIXME: currently broken, because getPageText and other vectorized
-        // methods look for the redirected page title
-        assertEquals("getPageText", "This revision is not deleted!", 
-            testWiki.getPageText("User:MER-C/UnitTests/redirect"));
+        assertEquals("resolveredirects/getPageText", "This revision is not deleted!", 
+            testWiki.getPageText(pages[0]));
+        Map<String, Object>[] x = testWiki.getPageInfo(pages);
+        assertEquals("resolveredirects/getPageInfo", x[1], x[0]);
+        pages = new String[] { "Main page", "Main Page" };
+        List<String>[] y = enWiki.getTemplates(pages);
+        assertEquals("resolveredirects/getTemplates", y[1], y[0]);
         testWiki.setResolveRedirects(false);
+        enWiki.setResolveRedirects(false);
     }
     
     @Test
@@ -273,7 +283,7 @@ public class WikiUnitTest
     public void resolveRedirects() throws Exception
     {
         String[] titles = new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main page", "Fish & chips" };
-        String[] expected = new String[] { "Main Page", null, null, "Goatse.cx", "Main Page", "Fish and chips" };
+        String[] expected = new String[] { "Main Page", "Main Page", "sdkghsdklg", "Goatse.cx", "Main Page", "Fish and chips" };
         assertArrayEquals("resolveRedirects", expected, enWiki.resolveRedirects(titles)); 
         assertEquals("resolveRedirects: RTL", "الصفحة الرئيسية", arWiki.resolveRedirect("الصفحه الرئيسيه"));
     }
