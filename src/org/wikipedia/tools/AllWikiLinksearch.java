@@ -1,5 +1,5 @@
 /**
- *  @(#)AllWikiLinksearch.java 0.02 26/12/2016
+ *  @(#)AllWikiLinksearch.java 0.03 26/12/2016
  *  Copyright (C) 2011 - 2017 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,32 +20,30 @@
 
 package org.wikipedia.tools;
 
+import java.awt.GraphicsEnvironment;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
+import java.util.stream.*;
 import javax.swing.*;
 import org.wikipedia.*;
 
 /**
  *  Searches all Wikimedia wikis for a given external link. Consider:
  *  <ul>
- *      <li>Running the <a href="http://wikipediatools.appspot.com">top 20 WPs
+ *      <li>Running the <a href="https://wikipediatools.appspot.com">Cross-wiki
  *      linksearch tool</a>
  *      <li>COIBot poking the domain AND
  *      <li>Using Luxo's cross-wiki contributions to undo revisions by spammers
  *  </ul>
- *  before running this program. This will never be a servlet, as it takes about
- *  6 minutes to run.
+ *  before running this program. This also provides the backend for the above
+ *  cross-wiki linksearch tool.
+ * 
  *  @author MER-C
- *  @version 0.02
+ *  @version 0.03
  */
 public class AllWikiLinksearch
-{
-    private static final Queue<Wiki> queue = new ConcurrentLinkedQueue();
-    private static FileWriter out = null;
-    private static ProgressMonitor monitor;
-    private static int progress = 0;
-    
+{    
     // predefined wiki sets
     
     /**
@@ -106,59 +104,11 @@ public class AllWikiLinksearch
             tempwiki.setMaxLag(-1);
     }
     
-
-    private static class LinksearchThread extends Thread
-    {
-        private final String domain;
-        private final boolean httponly;
-
-        public LinksearchThread(String domain, boolean httponly)
-        {
-            this.domain = domain;
-            this.httponly = httponly;
-        }
-
-        /**
-         *  The real meat of this program.
-         */
-        @Override
-        public void run()
-        {
-            while(!queue.isEmpty())
-            {
-                // only write when there are results
-                int linknumber = 0;
-                // buffer so we don't get the output all mixed up
-                StringBuilder builder = new StringBuilder(1000);
-                try
-                {
-                    Wiki wiki = queue.poll();
-                    wiki.setMaxLag(0);
-                    builder.append("=== Results for ");
-                    builder.append(wiki.getDomain());
-                    builder.append(" ===\n");
-                    List[] links = crossWikiLinksearch(domain, new Wiki[] { wiki }, !httponly, false).get(wiki);
-                    linknumber = links[0].size();
-                    if (linknumber != 0)
-                        builder.append(ParserUtils.linksearchResultsToWikitext(links, domain));
-                }
-                catch (IOException ex)
-                {
-                    builder.append("<font color=red>An error occurred: ");
-                    linknumber = -1;
-                    builder.append(ex.getMessage());
-                }
-                finally
-                {
-                    builder.append("\n\n");
-                    if (linknumber != 0)
-                        writeOutput(builder.toString());
-                    updateProgress();
-                }
-            }
-        }
-    }
-
+    /**
+     *  Runs this program. In offline mode, this searches all wikis.
+     *  @param args command line arguments (see case "--help" below).
+     *  @throws IOException if a filesystem error occurs
+     */
     public static void main(String[] args) throws IOException
     {
         // parse command line options
@@ -169,6 +119,14 @@ public class AllWikiLinksearch
         {
             switch (args[i])
             {
+                case "--help":
+                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.AllWikiLinksearch [options] domain\n\n"
+                        + "DESCRIPTION:\n\tSearches Wikimedia projects for links.\n\n"
+                        + "\t--help\n\t\tPrints this screen and exits.\n"
+                        + "\t--httponly\n\t\tSearch for non-secure links only.\n"
+                        + "\t--numthreads n\n\t\tUse n threads.\n"
+                        + "A dialog box will pop up if domain is not specified.");
+                    System.exit(0);
                 case "--httponly":
                     httponly = true;
                     break;
@@ -180,93 +138,96 @@ public class AllWikiLinksearch
                     break;
             }
         }
-        
-        // retrieve site matrix
-        ArrayList<WMFWiki> temp = new ArrayList<>(Arrays.asList(WMFWiki.getSiteMatrix()));
-        for (Wiki wiki : temp)
-        {
-            String wikidomain = wiki.getDomain();
-            // bad wikis: everything containing wikimania
-            if (!wikidomain.contains("wikimania"))
-                queue.add(wiki);
-        }
-
-        // initialize progress monitor
-        if (domain != null)
+        if (!GraphicsEnvironment.isHeadless() && domain == null)
             domain = JOptionPane.showInputDialog(null, "Enter domain to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
-        monitor = new ProgressMonitor(null, "Searching for links to " + domain, null, 0, queue.size());
-        monitor.setMillisToPopup(0);
-
-        // do the searching
-        out = new FileWriter(domain + ".wiki");
-        writeOutput("*{{LinkSummary|" + domain + "}}\nSearching " + queue.size() + " wikis at "
-            + new Date().toString() + ".\n\n");
-        for (int i = 0; i < threads; i++)
-            new LinksearchThread(domain, httponly).start();
-    }
-
-    /**
-     *  Writes output to the results file.
-     *  @param output the output to write
-     */
-    public static synchronized void writeOutput(String output)
-    {
-        try
+        if (domain == null)
         {
-            out.write(output);
-            out.flush();
+            System.out.println("No domain specified!");
+            System.exit(0);
         }
-        catch (IOException ex)
+        
+        WMFWiki[] wikis = WMFWiki.getSiteMatrix();
+        Map<Wiki, List[]> results = crossWikiLinksearch(false, threads, domain, wikis, !httponly, false);
+        
+        // output results
+        FileWriter out = new FileWriter(domain + ".wiki");
+        for (Map.Entry<Wiki, List[]> result : results.entrySet())
         {
-            // shouldn't happen
-            JOptionPane.showMessageDialog(null, "Error writing to file!", "All wiki linksearch", JOptionPane.ERROR_MESSAGE);
+            Wiki wiki = result.getKey();
+            List[] links = result.getValue();
+            StringBuilder temp = new StringBuilder("=== Results for ");
+            temp.append(wiki.getDomain());
+            temp.append(" ===\n");
+            if (links == null)
+            {
+                temp.append("<span style=\"color: red\">An error occurred!</span>\n\n");
+                out.write(temp.toString());
+                continue;
+            }
+            int linknumber = links[0].size();
+            if (linknumber != 0)
+            {
+                temp.append(ParserUtils.linksearchResultsToWikitext(links, domain));
+                out.write(temp.toString());
+            }
         }
-    }
-
-    /**
-     *  Update progress. (Shouldn't cause Swing corruption).
-     */
-    public static synchronized void updateProgress()
-    {
-        progress++;
-        monitor.setProgress(progress);
+        out.close();
     }
     
     /**
-     *  Performs a cross-wiki linksearch (see xwikilinksearch.jsp).
+     *  Performs a cross-wiki linksearch.
+     * 
+     *  @param querylimit sets a query limit (500) for servlets
+     *  @param threads use this many threads. If <tt>querylimit</tt> is supplied
+     *  this is forced to 1. If greater than 1, this overwrites the system
+     *  property <tt>java.util.concurrent.ForkJoinPool.common.parallelism</tt>.
      *  @param domain the domain to search
      *  @param wikis the wikis to search
      *  @param https include HTTPS links?
      *  @param mailto include mailto links?
      *  @param ns restrict to the given namespaces
-     *  @return the linksearch results, as in wiki => results
-     *  @throws IOException if a network error occurs
+     *  @return the linksearch results, as in wiki => results, or null if an
+     *  IOException occurred
      */
-    public static Map<Wiki, List[]> crossWikiLinksearch(String domain, Wiki[] 
-        wikis, boolean https, boolean mailto, int... ns) throws IOException
+    public static Map<Wiki, List[]> crossWikiLinksearch(boolean querylimit, 
+        int threads, String domain, Wiki[] wikis, boolean https, boolean mailto, 
+        int... ns)
     {
-        // TODO: integrate this with the above
-        
-        Map<Wiki, List[]> ret = new LinkedHashMap<>();
-        for (Wiki wiki : wikis)
+        Stream<Wiki> stream = Arrays.stream(wikis);
+        // set concurrency if desired
+        if (!querylimit && threads > 1)
         {
-            wiki.setQueryLimit(500);
-            List[] temp = wiki.linksearch("*." + domain, "http", ns);
-            // silly api designs aplenty here!
-            if (https)
-            {
-                List[] temp2 = wiki.linksearch("*." + domain, "https", ns);
-                temp[0].addAll(temp2[0]);
-                temp[1].addAll(temp2[1]);
-            }
-            if (mailto)
-            {
-                List[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
-                temp[0].addAll(temp2[0]);
-                temp[1].addAll(temp2[1]);
-            }
-            ret.put(wiki, temp);
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "" + threads);
+            stream = stream.parallel();
         }
+        Map<Wiki, List[]> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
+        {
+            if (querylimit)
+                wiki.setQueryLimit(500);
+            try
+            {
+                List[] temp = wiki.linksearch("*." + domain, "http", ns);
+                // silly api designs aplenty here!
+                if (https)
+                {
+                    List[] temp2 = wiki.linksearch("*." + domain, "https", ns);
+                    temp[0].addAll(temp2[0]);
+                    temp[1].addAll(temp2[1]);
+                }
+                if (mailto)
+                {
+                    List[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
+                    temp[0].addAll(temp2[0]);
+                    temp[1].addAll(temp2[1]);
+                }
+                return temp;
+            }
+            catch (IOException ex)
+            {
+                return null;
+            }
+        }));
+
         return ret;
     }
 }

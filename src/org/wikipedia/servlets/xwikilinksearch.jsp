@@ -107,16 +107,16 @@ timeout is more likely when searching for more wikis or protocols.
             switch (set)
             {
                 case "top20":
-                    results = AllWikiLinksearch.crossWikiLinksearch(domain, 
-                        AllWikiLinksearch.TOP20, https, mailto, ns);
+                    results = AllWikiLinksearch.crossWikiLinksearch(true, 1, 
+                        domain, AllWikiLinksearch.TOP20, https, mailto, ns);
                     break;
                 case "top40":
-                    results = AllWikiLinksearch.crossWikiLinksearch(domain, 
-                        AllWikiLinksearch.TOP40, https, mailto, ns);
+                    results = AllWikiLinksearch.crossWikiLinksearch(true, 1, 
+                        domain, AllWikiLinksearch.TOP40, https, mailto, ns);
                     break;
                 case "major":
-                    results = AllWikiLinksearch.crossWikiLinksearch(domain, 
-                        AllWikiLinksearch.MAJOR_WIKIS, https, mailto, ns);
+                    results = AllWikiLinksearch.crossWikiLinksearch(true, 1, 
+                        domain, AllWikiLinksearch.MAJOR_WIKIS, https, mailto, ns);
                     break;
                 default:
     %>
@@ -127,8 +127,8 @@ timeout is more likely when searching for more wikis or protocols.
             }
         }
         else   
-            results = AllWikiLinksearch.crossWikiLinksearch(domain, new Wiki[] 
-                { Wiki.createInstance(wikiinput) }, https, mailto, ns);
+            results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 
+                new Wiki[] { Wiki.createInstance(wikiinput) }, https, mailto, ns);
 
         for (Map.Entry<Wiki, List[]> entry : results.entrySet())
         {
