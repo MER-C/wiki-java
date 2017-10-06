@@ -59,6 +59,7 @@
                 <configuration>
                     <includes>
                         <include>**/WikiUnitTest.java</include>
+                        <include>**/ParserUtilsUnitTest.java</include>
                         <include>**/UserLinkAdditionFinderUnitTest.java</include>
                     </includes>
                 </configuration>

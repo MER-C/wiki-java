@@ -170,21 +170,14 @@ Someone # Spam
     {
         String user = entry.getKey();
         String reason = ServletUtils.sanitizeForHTML(entry.getValue());
-        String userenc = ServletUtils.sanitizeForURL(user);
-
         // user links
         %>
 <h3><%= user %></h3>
 <p>
 <ul>
-    <li><a href="//en.wikipedia.org/wiki/User:<%= userenc %>"><%= user %></a> | 
-        <a href="//en.wikipedia.org/wiki/User_talk:<%= userenc %>">talk</a> | 
-        <a href="//en.wikipedia.org/wiki/Special:Contributions/<%= userenc %>">contribs</a> | 
-        <a href="//en.wikipedia.org/wiki/Special:DeletedContributions/<%= userenc %>">deleted contribs</a> | 
-        <a href="//en.wikipedia.org/wiki/Special:Block/<%= userenc %>">block</a> | 
-        <a href="//en.wikipedia.org/w/index.php?title=Special:Log&type=block&page=User:<%= userenc %>">block log</a>
-
+    <li>
         <%
+        out.println(ParserUtils.generateUserLinks(enWiki, user));
         if (!reason.isEmpty())
             out.println("<li><i>" + reason + "</i>");
         out.println("</ul>");

@@ -21,6 +21,7 @@ package org.wikipedia;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import org.wikipedia.servlets.ServletUtils;
 
 /**
  *  Various parsing methods that e.g. turning Wiki.java objects into wikitext 
@@ -355,6 +356,24 @@ public class ParserUtils
         buffer.append(domain);
         buffer.append("\">Linksearch</a>)\n");
         return buffer.toString();
+    }
+    
+    /**
+     *  Creates user links in HTML of the form <tt>User (talk | contribs | 
+     *  deletedcontribs | block | block log)</tt>
+     *  @param username the username, NOT sanitized for XSS
+     *  @returned the generated HTML
+     */
+    public static String generateUserLinks(Wiki wiki, String username)
+    {
+        String domain = wiki.getDomain();
+        String userenc = ServletUtils.sanitizeForURL(username.replace(' ', '_'));
+        return "<a href=\"//" + domain + "/wiki/User:" + userenc + "\">" + username + "</a> ("
+            +  "<a href=\"//" + domain + "/wiki/User_talk:" + userenc + "\">talk</a> | "
+            +  "<a href=\"//" + domain + "/wiki/Special:Contributions/" + userenc + "\">contribs</a> | "
+            +  "<a href=\"//" + domain + "/wiki/Special:DeletedContributions/" + userenc + "\">deleted contribs</a> | "
+            +  "<a href=\"//" + domain + "/wiki/Special:Block/" + userenc + "\">block</a> | "
+            +  "<a href=\"//" + domain + "/w/index.php?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
     }
     
     /**
