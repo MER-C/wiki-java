@@ -4,7 +4,7 @@ ol { margin: 15px }
 
 /* fix input sizes */
 input[type=text] { width: 300px }
-textarea { width: 500px }
+textarea { width: 700px }
 
 /* error messages */
 .error { color: red; size: 24pt }

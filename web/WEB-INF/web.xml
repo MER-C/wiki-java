@@ -28,6 +28,10 @@
         <servlet-name>UserWatchlist</servlet-name>
         <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/userwatchlist.jsp</jsp-file>
     </servlet>
+    <servlet>
+        <servlet-name>Article-editor intersection</servlet-name>
+        <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/editorintersection.jsp</jsp-file>
+    </servlet>
     
     <servlet-mapping>
         <servlet-name>Cross-wiki linksearch</servlet-name>
@@ -53,6 +57,11 @@
         <servlet-name>UserWatchlist</servlet-name>
         <url-pattern>/userwatchlist.jsp</url-pattern>
     </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>Article-editor intersection</servlet-name>
+        <url-pattern>/editorintersection.jsp</url-pattern>
+    </servlet-mapping>
+    
     <session-config>
         <session-timeout>30</session-timeout>
     </session-config>
