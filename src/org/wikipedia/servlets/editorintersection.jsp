@@ -70,6 +70,8 @@ the 1500 most recent revisions in each of 25 articles for now.
     {
         out.println("<hr>");
         String[] temp = pages.split("\r\n");
+        for (int i = 0; i < temp.length; i++)
+            temp[i] = temp[i].trim();
         String[] pagesarray = Arrays.copyOf(temp, Math.min(temp.length, 24));
         Wiki wiki = Wiki.createInstance("en.wikipedia.org");
         wiki.setMaxLag(-1);
