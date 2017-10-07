@@ -45,10 +45,12 @@ public class ParserUtils
      *  * [[Main Page]]
      *  * [[Wikipedia:Featured picture candidates]]
      *  * [[:File:Example.png]]
+     *  * [[Cape Town#Economy]]
      *  </pre>
      *
      *  in which case <tt>{ "Main Page", "Wikipedia:Featured picture
-     *  candidates", "File:Example.png" }</tt> is the return value.
+     *  candidates", "File:Example.png", "Cape Town#Economy" }</tt> is the 
+     *  return value. Numbered lists are allowed. Nested lists are flattened. 
      *
      *  @param list a list of pages
      *  @see #formatList

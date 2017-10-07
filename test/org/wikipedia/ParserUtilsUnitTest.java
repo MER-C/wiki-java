@@ -46,6 +46,46 @@ public class ParserUtilsUnitTest
     }
     
     @Test
+    public void formatList()
+    {
+        // Wiki-markup breaking titles should not make it to this method
+        String[] articles = {
+            "File:Example.png",
+            "Main Page",
+            "Category:Example",
+            "*-algebra"
+        };
+        String expected = "*[[:File:Example.png]]\n*[[:Main Page]]\n"
+            + "*[[:Category:Example]]\n*[[:*-algebra]]\n";
+        assertEquals("formatlist", expected, ParserUtils.formatList(articles));
+    }
+    
+    @Test
+    public void parseList()
+    {
+        // Again, wiki-markup breaking titles should not make it to this method.
+        // In particular, titles must not contain [.
+        String list = "*[[:File:Example.png]]\n*[[Main Page]]\n"
+            + "*[[*-algebra]]\n*:Not a list item."
+            + "*[[Cape Town#Economy]]\n**[[Nested list]]";
+        String[] expected = {
+            "File:Example.png",
+            "Main Page",
+            "*-algebra",
+            "Cape Town#Economy",
+            "Nested list"
+        };
+        assertArrayEquals("parselist", expected, ParserUtils.parseList(list));
+        list = "#[[:File:Example.png]]\n#[[*-algebra]]\n#[[Cape Town#Economy]]";
+        expected = new String[] {
+            "File:Example.png",
+            "*-algebra",
+            "Cape Town#Economy",
+        };
+        assertArrayEquals("parselist: numbered", expected, ParserUtils.parseList(list));
+    }
+    
+    @Test
     public void generateUserLinks() throws Exception
     {
         String expected = 
