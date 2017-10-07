@@ -7,7 +7,15 @@ input[type=text] { width: 300px }
 textarea { width: 700px }
 
 /* error messages */
-.error { color: red; size: 24pt }
+.error { color: red; font-size: 24pt }
+
+/* collapsibles */
+.collapsecontainer { border: 1px solid crimson }
+.collapseboxtop { display: block; background: #ffdddd; width: 100% }
+.collapseheader { font-weight: bold }
+.showhidespan { text-align: right }
+.collapsed { display: none }
+.notcollapsed { display: block }
 
 /* Styles for ParserUtils.revisionsToHTML() */
 ul.htmlrevisions { font-family: monospace; font-size: 120% }

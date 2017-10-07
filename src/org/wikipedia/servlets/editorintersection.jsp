@@ -38,6 +38,7 @@
 <html>
 <head>
 <link rel=stylesheet href="styles.css">
+<script src="collapsible.js"></script>
 <title><%= request.getAttribute("toolname") %></title>
 </head>
 
@@ -87,9 +88,13 @@ the 1500 most recent revisions in each of 25 articles for now.
             for (Map.Entry<String, List<Wiki.Revision>> entry2 : grouppage.entrySet())
             {
                 List<Wiki.Revision> revs = entry2.getValue();
-                out.print("<h3>" + entry2.getKey() + " (" + revs.size() + " edit");
-                out.println(revs.size() > 1 ? "s)</h3>" : ")</h3>");
+                String title = entry2.getKey() + " &ndash; " + revs.size() + " edit";
+                if (revs.size() > 1)
+                    title += "s";
+                out.println("<p>");
+                out.println(ServletUtils.beginCollapsibleSection(title, false));
                 out.println(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
+                out.println(ServletUtils.endCollapsibleSection());
             }
         }
     }

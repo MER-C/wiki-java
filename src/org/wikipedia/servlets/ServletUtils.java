@@ -76,4 +76,46 @@ public class ServletUtils
             return "";
         }
     }
+    
+    /**
+     *  Denotes the start of a collapsible section. Requires the separate 
+     *  JavaScript file collapsible.js to function.
+     * 
+     *  @param title the title of the collapsed section sanitized for XSS
+     *  @param collapsed whether to start off in the collapsed state
+     *  @return HTML for a collapsible section
+     *  @see #endCollapsibleSection
+     */
+    public static String beginCollapsibleSection(String title, boolean collapsed)
+    {
+        StringBuilder sb = new StringBuilder();
+        // create a container to house a border for the collapsed element and a
+        // title for the collapsed section
+        sb.append("<div class=\"collapsecontainer\">\n");
+        sb.append("<span class=\"collapseboxtop\">\n");
+        sb.append("<span class=\"collapseheader\">");
+        sb.append(title);
+        sb.append("</span>\n");
+        // show/hide link
+        sb.append("<span class=\"showhidespan\">[<a href=\"#fasfd\" class=\"showhidelink\">");
+        sb.append(collapsed ? "show" : "hide");
+        sb.append("</a>]</span>\n");
+        sb.append("</span>\n");
+        // the actual collapsible 
+        sb.append("<div class=\"");
+        sb.append(collapsed ? "collapsed" : "notcollapsed");
+        sb.append("\">\n");
+        return sb.toString();
+    }
+    
+    /**
+     *  Denotes the end of a collapsible section.
+     *  @return HTML denoting the end of a collapsible section
+     *  @see #beginCollapsibleSection
+     */
+    public static String endCollapsibleSection()
+    {
+        // the only reason this exists is readibility 
+        return "</div>\n</div>\n";
+    }
 }

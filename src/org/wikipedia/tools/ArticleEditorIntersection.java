@@ -40,7 +40,8 @@ public class ArticleEditorIntersection
     // 1) Make offline mode fully functional, as opposed to just a test
     // 2) Add category option to servlets
     // 3) Add category option to offline mode
-    // 4) Collapsible revision lists
+    // 4) Article links
+    // 5) Date cut off.
     
     /**
      *  Runs this program.
