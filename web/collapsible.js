@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', function()
     var collapsibles = document.getElementsByClassName("collapsecontainer");
     for (i = 0; i < collapsibles.length; i++)
     {
+        // collapse all divs in Javascript to keep them displayed if NoScripted
+        var temp = collapsibles[i].getElementsByClassName("tocollapse")[0];
+        temp.className = "collapsed";
+        
+        // install collapse listener
         var link = collapsibles[i].getElementsByClassName("showhidelink")[0];
         link.addEventListener('click', function(event)
         {

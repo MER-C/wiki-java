@@ -94,7 +94,7 @@ the 1500 most recent revisions in each of 25 articles for now.
                 if (revs.size() > 1)
                     title += "s";
                 out.println("<p>");
-                out.println(ServletUtils.beginCollapsibleSection(title, false));
+                out.println(ServletUtils.beginCollapsibleSection(title, true));
                 out.println(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
                 out.println(ServletUtils.endCollapsibleSection());
             }

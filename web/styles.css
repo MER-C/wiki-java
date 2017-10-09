@@ -15,6 +15,7 @@ textarea { width: 700px }
 .collapseheader { font-weight: bold }
 .showhidespan { text-align: right }
 .collapsed { display: none }
+.tocollapse { display: block }
 .notcollapsed { display: block }
 
 /* Styles for ParserUtils.revisionsToHTML() */

@@ -79,7 +79,8 @@ public class ServletUtils
     
     /**
      *  Denotes the start of a collapsible section. Requires the separate 
-     *  JavaScript file collapsible.js to function.
+     *  JavaScript file collapsible.js to function (otherwise the sections will
+     *  be expanded).
      * 
      *  @param title the title of the collapsed section sanitized for XSS
      *  @param collapsed whether to start off in the collapsed state
@@ -103,7 +104,7 @@ public class ServletUtils
         sb.append("</span>\n");
         // the actual collapsible 
         sb.append("<div class=\"");
-        sb.append(collapsed ? "collapsed" : "notcollapsed");
+        sb.append(collapsed ? "tocollapse" : "notcollapsed");
         sb.append("\">\n");
         return sb.toString();
     }
