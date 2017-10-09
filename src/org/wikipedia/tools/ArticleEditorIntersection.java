@@ -21,6 +21,7 @@
 package org.wikipedia.tools;
 
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
 import org.wikipedia.Wiki;
@@ -37,20 +38,52 @@ import org.wikipedia.Wiki;
 public class ArticleEditorIntersection
 {
     // TODO
-    // 1) Make offline mode fully functional, as opposed to just a test
-    // 2) Add category option to servlets
-    // 3) Add category option to offline mode
-    // 4) Article links
-    // 5) Date cut off.
+    // 1) Make offline mode print out more than revids.
+    // 2) Add category and user contribs option to servlets
+    // 3) Article links
+    // 4) Date cut off.
     
     /**
      *  Runs this program.
-     *  @param args the command line arguments
+     *  @param args the command line arguments (see --help below for 
+     *  documentation).
      */
     public static void main(String[] args) throws IOException
     {
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
-        String[] articles = enWiki.getCategoryMembers("Category:Indian general election, 2009", Wiki.MAIN_NAMESPACE);
+        String[] articles;
+        
+        // parse command line arguments
+        if (args.length == 0)
+            args = new String[] { "--help" };
+        switch (args[0])
+        {
+            case "--help":
+                System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.AllWikiLinksearch [options] [articles]\n\n"
+                    + "DESCRIPTION:\n\tSearches Wikimedia projects for links.\n\n"
+                    + "\t--help\n\t\tPrints this screen and exits.\n"
+                    + "\t--category category\n\t\tUse the members of the specified category as the list of articles.\n"
+                    + "\t--contribs user\n\t\tUse the list of articles edited by the given user.\n"
+                    + "\t--file file\n\t\tRead in the list of articles from the given file.\n");
+                System.exit(0);
+            case "--category":
+                articles = enWiki.getCategoryMembers(args[1]);
+                break;
+            case "--file":
+                List<String> temp = Files.readAllLines(new File(args[1]).toPath());
+                articles = temp.toArray(new String[temp.size()]);
+                break;
+            case "--contribs":
+                articles = Arrays.stream(enWiki.contribs(args[1]))
+                    .map(Wiki.Revision::getPage)
+                    .distinct()
+                    .toArray(String[]::new);
+                break;
+            default:
+                articles = args;
+                break;
+        }
+        
         Map<String, List<Wiki.Revision>> data = articleEditorIntersection(enWiki, articles, true, true, false);
         for (Map.Entry<String, List<Wiki.Revision>> entry : data.entrySet())
         {
