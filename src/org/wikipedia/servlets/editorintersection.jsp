@@ -78,27 +78,42 @@ the 1500 most recent revisions in each of 25 articles for now.
         wiki.setQueryLimit(1500);
         
         Map<String, List<Wiki.Revision>> results = ArticleEditorIntersection.articleEditorIntersection(wiki, pagesarray, noadmin, nobot, noanon);
-        for (Map.Entry<String, List<Wiki.Revision>> entry : results.entrySet())
+        Map<String, Map<String, List<Wiki.Revision>>> bypage = new HashMap<>();
+        results.forEach((key, value) ->
         {
-            out.println("<h2>" + entry.getKey() + "</h2>");
-            out.println(ParserUtils.generateUserLinks(wiki, entry.getKey()));
-            
             // group by article
-            Map<String, List<Wiki.Revision>> grouppage = entry.getValue()
-                .stream()
+            Map<String, List<Wiki.Revision>> grouppage = value.stream()
                 .collect(Collectors.groupingBy(Wiki.Revision::getPage));
-            for (Map.Entry<String, List<Wiki.Revision>> entry2 : grouppage.entrySet())
+            bypage.put(key, grouppage);
+        });
+        String blah = bypage.entrySet().stream().sorted((entry1, entry2) -> 
+        {
+            // sort by number of articles hit
+            return entry2.getValue().size() - entry1.getValue().size();
+
+        }).map(entry ->
+        {
+            // generate HTML
+            StringBuilder sb = new StringBuilder();
+            sb.append("<h2>");
+            sb.append(entry.getKey());
+            sb.append("</h2>\n");
+            sb.append(ParserUtils.generateUserLinks(wiki, entry.getKey()));
+           
+            for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
             {
                 List<Wiki.Revision> revs = entry2.getValue();
                 String title = entry2.getKey() + " &ndash; " + revs.size() + " edit";
                 if (revs.size() > 1)
                     title += "s";
-                out.println("<p>");
-                out.println(ServletUtils.beginCollapsibleSection(title, true));
-                out.println(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
-                out.println(ServletUtils.endCollapsibleSection());
+                sb.append("<p>\n");
+                sb.append(ServletUtils.beginCollapsibleSection(title, true));
+                sb.append(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
+                sb.append(ServletUtils.endCollapsibleSection());
             }
-        }
+            return sb;
+        }).collect(Collectors.joining());
+        out.println(blah);
     }
 %>
 <%@ include file="footer.jsp" %>

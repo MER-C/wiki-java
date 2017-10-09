@@ -117,6 +117,6 @@ public class ServletUtils
     public static String endCollapsibleSection()
     {
         // the only reason this exists is readibility 
-        return "</div>\n</div>\n";
+        return "</div>\n</div>\n\n";
     }
 }
