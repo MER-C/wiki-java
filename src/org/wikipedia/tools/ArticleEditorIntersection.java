@@ -39,9 +39,9 @@ public class ArticleEditorIntersection
 {
     // TODO
     // 1) Make offline mode print out more than revids.
-    // 2) Add category and user contribs option to servlets
-    // 3) Article links
-    // 4) Date cut off.
+    // 2) Article links
+    // 3) Date cut off.
+    // 4) Admin mode -- deleted contributions and articles
     
     /**
      *  Runs this program.
@@ -82,6 +82,12 @@ public class ArticleEditorIntersection
             default:
                 articles = args;
                 break;
+        }
+        
+        if (articles.length == 0)
+        {
+            System.err.println("Input has no articles!");
+            System.exit(0);
         }
         
         Map<String, List<Wiki.Revision>> data = articleEditorIntersection(enWiki, articles, true, true, false);
