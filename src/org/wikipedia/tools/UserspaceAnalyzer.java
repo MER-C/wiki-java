@@ -34,13 +34,24 @@ public class UserspaceAnalyzer
 {
     /**
      *  Runs this tool.
-     *  @param args command line arguments (currently ignored)
+     *  @param args command line arguments (args[0] = the search term)
      *  @throws Exception if a network error occurs
      */
     public static void main(String[] args) throws Exception
     {
+        // check command line arguments
+        if (args.length == 0)
+            args = new String[] { "--help" };
+        if (args[0].equals("--help"))
+        {
+            System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.UserspaceAnalyzer [search term]\n\n"
+                    + "DESCRIPTION:\n\tSearches userspace for pages eligible for deletion per [[WP:CSD#U5]].\n\n"
+                    + "\t--help\n\t\tPrints this screen and exits.");
+            System.exit(0);
+        }
+
         Wiki wiki = Wiki.createInstance("en.wikipedia.org");
-        String[][] results = wiki.search("\"seo analyst\"", Wiki.USER_NAMESPACE);
+        String[][] results = wiki.search(args[0], Wiki.USER_NAMESPACE);
         HashSet<String> users = new HashSet<>(500);
         for (String[] result : results)
         {
@@ -54,6 +65,7 @@ public class UserspaceAnalyzer
         String[] usernames = users.toArray(new String[0]);
         Map<String, Object>[] userinfo = wiki.getUserInfo(usernames);
         
+        System.out.println("==Results for " + args[0] + "==");
         System.out.println("{| class=\"wikitable sortable\"");
         System.out.println("|-");
         System.out.println("! Username !! Last edit !! Editcount !! Mainspace edits");
