@@ -192,6 +192,7 @@ public class WikiUnitTest
     public void getTalkPage() throws Exception
     {
         assertEquals("getTalkPage: main", "Talk:Hello", enWiki.getTalkPage("Hello"));
+        assertEquals("getTalkPage: user", "User talk:Hello", enWiki.getTalkPage("User:Hello"));
         try
         {
             enWiki.getTalkPage("Talk:Hello");
@@ -256,19 +257,15 @@ public class WikiUnitTest
     public void getFirstRevision() throws Exception
     {
         assertNull("Non-existent page", enWiki.getFirstRevision("dgfhdf&jklg"));
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+        Wiki.Revision first = testWiki.getFirstRevision("User:MER-C/UnitTests/Delete");
+        assertEquals("getFirstRevision", 217080L, first.getRevid());
     }
     
     @Test
     public void getLastRevision() throws Exception
     {
         assertNull("Non-existent page", enWiki.getTopRevision("dgfhd&fjklg"));
-    }
-    
-    @Test
-    public void getTemplates() throws Exception
-    {
-        assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkf&hsdklj"));
-        assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("User:MER-C/monobook.js"));
     }
     
     @Test
@@ -304,10 +301,18 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getTemplates() throws Exception
+    {
+        assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkf&hsdklj"));
+        assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("User:MER-C/monobook.js"));
+    }
+    
+    @Test
     public void getCategories() throws Exception
     {
-        assertArrayEquals("getCategories: non-existent page", new String[0], enWiki.getImagesOnPage("Skfls&jdkfs"));
-        assertArrayEquals("getCategories: page with no images", new String[0], enWiki.getImagesOnPage("User:MER-C/monobook.js"));
+        assertArrayEquals("getCategories: non-existent page", new String[0], enWiki.getCategories("sdkf&hsdklj"));
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+        assertArrayEquals("getCategories: page with no categories", new String[0], testWiki.getCategories("User:MER-C/UnitTests/Delete"));
     }
     
     @Test
@@ -340,6 +345,7 @@ public class WikiUnitTest
         assertArrayEquals("getPageHistory: special page", new Wiki.Revision[0], enWiki.getPageHistory("Special:Specialpages"));
         
         // test for RevisionDeleted revisions
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         Wiki.Revision[] history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete");
         for (Wiki.Revision rev : history)
         {
@@ -603,6 +609,7 @@ public class WikiUnitTest
     @Test
     public void diff() throws Exception
     {
+        // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
         assertNull("diff: dummy edit", enWiki.getRevision(738178354L).diff(Wiki.PREVIOUS_REVISION));
     }
     
@@ -610,7 +617,7 @@ public class WikiUnitTest
     public void contribs() throws Exception
     {
         // should really be null, but the API returns zero
-        assertEquals("contribs: non-existent user", testWiki.contribs("Dsdlgfkjsdlkfdjilgsujilvjcl").length, 0);
+        assertEquals("contribs: non-existent user", 0, testWiki.contribs("Dsdlgfkjsdlkfdjilgsujilvjcl").length);
         
         // RevisionDeleted content
         Wiki.Revision[] contribs = enWiki.contribs("Allancake");
@@ -837,5 +844,23 @@ public class WikiUnitTest
         // https://test.wikipedia.org/w/index.php?oldid=322889
         rev = testWiki.getRevision(322889L);
         assertEquals("revision text: empty revision", rev.getText(), "");
+    }
+    
+    @Test
+    public void userIsAllowedTo() throws Exception
+    {
+        Wiki.User user = enWiki.getUser("LornaIln046035"); // spambot
+        assertTrue("User.isAllowedTo: true", user.isAllowedTo("read"));
+        assertFalse("User.isAllowedTo: false", user.isAllowedTo("checkuser"));
+        assertFalse("User.isAllowedTo: nonsense input", user.isAllowedTo("sdlkghsdlkgsd"));
+    }
+    
+    @Test
+    public void userIsA() throws Exception
+    {
+        Wiki.User me = testWiki.getUser("MER-C");
+        assertTrue("User.isA: true", me.isA("sysop"));
+        assertFalse("User.isA: false", me.isA("templateeditor"));
+        assertFalse("User.isA: nonsense input", me.isA("sdlkghsdlkgsd"));
     }
 }
