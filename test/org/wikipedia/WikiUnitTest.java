@@ -611,6 +611,10 @@ public class WikiUnitTest
     {
         // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
         assertNull("diff: dummy edit", enWiki.getRevision(738178354L).diff(Wiki.PREVIOUS_REVISION));
+        // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343
+        // should be empty string, but the MediaWiki API does not distinguish 
+        // between a dummy edit and no difference
+        assertNull("diff: no difference", enWiki.getRevision(803731343L).diff(804972897L));
     }
     
     @Test

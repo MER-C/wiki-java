@@ -6585,7 +6585,7 @@ public class Wiki implements Serializable
          *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
          *  effect. Returns null for page creations, moves, protections and similar 
          *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
-         *  example</a>).
+         *  example</a>) and pairs of revisions where there is no difference.
          * 
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
@@ -6601,7 +6601,7 @@ public class Wiki implements Serializable
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *  Returns null for page creations, moves, protections and similar 
          *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
-         *  example</a>).
+         *  example</a>) and pairs of revisions where there is no difference.
          * 
          *  @param oldid the id of another revision; (exclusive) or
          *  @param text some wikitext to compare against
@@ -6641,7 +6641,11 @@ public class Wiki implements Serializable
                 return decode(line.substring(a, b));
             }
             else 
-                // <compare> tag has no content if there is no diff
+                // <compare> tag has no content if there is no diff or the two
+                // revisions are identical. In particular, the API does not
+                // distinguish between:
+                // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343 (no difference)
+                // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
                 return null;
         }
 
