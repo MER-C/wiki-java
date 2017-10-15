@@ -66,16 +66,16 @@ first in the GUI) apply.
 <tr>
     <td><input type=radio name=mode id="radio_cat" value="category"<%= mode.equals("category") ? " checked" : "" %>>
     <td>Category:
-    <td><input type=text id=category name=category <%= mode.equals("category") ? "value=\"" + category + "\"" : "disabled"%>>
+    <td><input type=text id=category name=category <%= mode.equals("category") ? "value=\"" + category + "\" required" : "disabled"%>>
 <tr>
     <td><input type=radio name=mode id="radio_user" value="contribs"<%= mode.equals("contribs") ? " checked" : "" %>>
     <td>Pages edited by:
-    <td><input type=text id=user name=user <%= mode.equals("contribs") ? "value=\"" + user + "\"" : "disabled"%>>
+    <td><input type=text id=user name=user <%= mode.equals("contribs") ? "value=\"" + user + "\" required" : "disabled"%>>
 <tr>
     <td valign=top><input type=radio name=mode id="radio_pages" value="pages"<%= mode.equals("pages") ? " checked" : "" %>>
     <td valign=top>Pages:<br>(one per line)
     <td>
-        <textarea id=pages name=pages rows=10<%= mode.equals("pages") ? "" : " disabled" %>>
+        <textarea id=pages name=pages rows=10 <%= mode.equals("pages") ? "required" : "disabled" %>>
 <%= pages %>
         </textarea>
 <tr>

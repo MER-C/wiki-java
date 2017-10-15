@@ -24,13 +24,17 @@ document.addEventListener('DOMContentLoaded', function()
 {
     document.getElementById('radio_multi').addEventListener('click', function()
     {
-        document.getElementById('wiki').disabled = true;
-        document.getElementById('set').disabled  = false;
+        var el = document.getElementById('wiki');
+        el.disabled = true;
+        el.required = false;
+        document.getElementById('set').disabled = false;
     });
     
     document.getElementById('radio_single').addEventListener('click', function()
     {
-        document.getElementById('wiki').disabled = false;
-        document.getElementById('set').disabled  = true;
+        var el = document.getElementById('wiki');
+        el.disabled = false;
+        el.required = true;
+        el = document.getElementById('set').disabled = true;
     });
 });
