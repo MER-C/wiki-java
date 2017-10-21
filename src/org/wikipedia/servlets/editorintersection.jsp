@@ -175,11 +175,23 @@ first in the GUI) apply.
         for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
         {
             List<Wiki.Revision> revs = entry2.getValue();
-            String title = entry2.getKey() + " &ndash; " + revs.size() + " edit";
+            StringBuilder title = new StringBuilder("<a href=\"//");
+            title.append(wiki.getDomain());
+            title.append("/wiki/");
+            title.append(entry2.getKey());
+            title.append("\">");
+            title.append(entry2.getKey());
+            title.append("</a> (<a href=\"//");
+            title.append(wiki.getDomain());
+            title.append("/w/index.php?title=");
+            title.append(entry2.getKey());
+            title.append("&action=history\">history</a>) &ndash; ");
+            title.append(revs.size());
+            title.append(" edit");
             if (revs.size() > 1)
-                title += "s";
+                title.append("s");
             sb.append("<p>\n");
-            sb.append(ServletUtils.beginCollapsibleSection(title, true));
+            sb.append(ServletUtils.beginCollapsibleSection(title.toString(), true));
             sb.append(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
             sb.append(ServletUtils.endCollapsibleSection());
         }

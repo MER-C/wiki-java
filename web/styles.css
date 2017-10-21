@@ -12,7 +12,7 @@ textarea { width: 700px }
 /* collapsibles */
 .collapsecontainer { border: 1px solid crimson }
 .collapseboxtop { display: block; background: #ffdddd; width: 100% }
-.collapseheader { font-weight: bold }
+.collapseheader { font-weight: 600 }
 .showhidespan { text-align: right }
 .collapsed { display: none }
 .tocollapse { display: block }

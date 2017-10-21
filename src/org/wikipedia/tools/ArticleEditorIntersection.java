@@ -39,9 +39,8 @@ public class ArticleEditorIntersection
 {
     // TODO
     // 1) Make offline mode print out more than revids.
-    // 2) Article links
-    // 3) Date cut off.
-    // 4) Admin mode -- deleted contributions and articles
+    // 2) Date cut off.
+    // 3) Admin mode -- deleted contributions and articles
     
     /**
      *  Runs this program.
