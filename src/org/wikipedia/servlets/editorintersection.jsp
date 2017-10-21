@@ -23,6 +23,12 @@
 <%
     request.setAttribute("toolname", "Article/editor intersection (beta)");
 
+    String wikiparam = request.getParameter("wiki");
+    if (wikiparam == null)
+        wikiparam = "en.wikipedia.org";
+    else
+        wikiparam = ServletUtils.sanitizeForAttribute(wikiparam);
+
     String mode = request.getParameter("mode");
     if (mode == null)
         mode = "pages";
@@ -64,6 +70,9 @@ first in the GUI) apply.
 <form action="./editorintersection.jsp" method=POST>
 <table>
 <tr>
+    <td colspan=2>Wiki:
+    <td><input type=text name=wiki value="<%= wikiparam %>" required>
+<tr>
     <td><input type=radio name=mode id="radio_cat" value="category"<%= mode.equals("category") ? " checked" : "" %>>
     <td>Category:
     <td><input type=text id=category name=category <%= mode.equals("category") ? "value=\"" + category + "\" required" : "disabled"%>>
@@ -89,7 +98,7 @@ first in the GUI) apply.
 </form>
 
 <%
-    Wiki wiki = Wiki.createInstance("en.wikipedia.org");
+    Wiki wiki = Wiki.createInstance(wikiparam);
     wiki.setMaxLag(-1);
     wiki.setQueryLimit(1500);
 
