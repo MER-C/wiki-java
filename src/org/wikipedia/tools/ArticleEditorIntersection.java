@@ -41,10 +41,15 @@ public class ArticleEditorIntersection
     // TODO
     // 1) Make offline mode print out more than revids.
     // 2) Date cut off.  (backend)
-    // 3) Admin mode -- deleted articles
+    // 3) Deleted articles in articleEditorIntersection()
     // 4) Remove minor edits (backend)
-    // 5) Require edits to more than X articles (frontend)
-    // 6) Require more than X edits per article (frontend)
+    // 5) Require edits to more than X articles
+    // 6) Require more than X edits per article
+    
+    // Worth thinking about:
+    // 1) Start from multiple users see articlesEdited()
+    // 2) Count/return lists of new users in article histories in 
+    //    articlesEdited()
     
     /**
      *  Runs this program.
@@ -117,6 +122,7 @@ public class ArticleEditorIntersection
         if (articlelist.size() > 0)
             articles = articlelist.toArray(new String[articlelist.size()]);
         
+        // grab user contributions
         if (user != null)
         {
             Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user));
@@ -144,6 +150,7 @@ public class ArticleEditorIntersection
                 .distinct()
                 .toArray(String[]::new);
         }
+        // grab from category
         if (category != null)
             articles = wiki.getCategoryMembers(category);
         
@@ -257,5 +264,48 @@ public class ArticleEditorIntersection
         }
         
         return results;
+    }
+    
+    /**
+     *  Given a set of users of <tt>wiki</tt>, find the list of articles they 
+     *  have edited.
+     * 
+     *  @param wiki the wiki to fetch content from
+     *  @param users the list of users on <tt>wiki</tt>to fetch contributions for
+     *  @param deletedcontribs include deleted contributions (REQUIRES ADMIN
+     *  PRIVILEGES)
+     *  @param nominor exclude minor edits
+     *  @throws SecurityException if permission is denied when getting deleted 
+     *  contribs
+     *  @return a map with page => list of revisions made
+     */
+    public static Map<String, List<Wiki.Revision>> articlesEdited(Wiki wiki, 
+        String[] users, boolean deletedcontribs, boolean nominor)
+    {
+        // fetch the list of (deleted) edits
+        Stream<Wiki.Revision> revstream = Arrays.stream(users)
+            .flatMap(user -> 
+            {
+                try
+                {
+                    Stream<Wiki.Revision> str = Arrays.stream(wiki.contribs(user));
+                    if (deletedcontribs)
+                        str = Stream.concat(str, Arrays.stream(wiki.deletedContribs(user)));
+                    return str;
+                }
+                catch (IOException ex)
+                {
+                    return Arrays.stream(new Wiki.Revision[0]);
+                }
+                catch (CredentialNotFoundException ex)
+                {
+                    throw new SecurityException(ex);
+                }
+            });
+        // we cannot filter by sizediff here, the MediaWiki API does not return
+        // this information for deleted revisions
+        if (nominor)
+            revstream = revstream.filter(rev -> !rev.isMinor());
+        return revstream.collect(Collectors.groupingBy(Wiki.Revision::getPage));
     }
 }
