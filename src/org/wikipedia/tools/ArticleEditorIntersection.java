@@ -24,6 +24,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
+import javax.security.auth.login.*;
 import org.wikipedia.Wiki;
 
 /**
@@ -39,8 +40,11 @@ public class ArticleEditorIntersection
 {
     // TODO
     // 1) Make offline mode print out more than revids.
-    // 2) Date cut off.
-    // 3) Admin mode -- deleted contributions and articles
+    // 2) Date cut off.  (backend)
+    // 3) Admin mode -- deleted articles
+    // 4) Remove minor edits (backend)
+    // 5) Require edits to more than X articles (frontend)
+    // 6) Require more than X edits per article (frontend)
     
     /**
      *  Runs this program.
@@ -49,39 +53,99 @@ public class ArticleEditorIntersection
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
-        String[] articles;
+        String wikidomain = "en.wikipedia.org";
+        String user = null;
+        String category = null;
+        boolean nobot = false, noadmin = false, noanon = false;
+        boolean deletedcontribs = false;
+        List<String> articlelist = new ArrayList<>();
         
         // parse command line arguments
         if (args.length == 0)
             args = new String[] { "--help" };
-        switch (args[0])
+        for (int i = 0; i < args.length; i++)
         {
-            case "--help":
-                System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.AllWikiLinksearch [options] [articles]\n\n"
-                    + "DESCRIPTION:\n\tSearches Wikimedia projects for links.\n\n"
-                    + "\t--help\n\t\tPrints this screen and exits.\n"
-                    + "\t--category category\n\t\tUse the members of the specified category as the list of articles.\n"
-                    + "\t--contribs user\n\t\tUse the list of articles edited by the given user.\n"
-                    + "\t--file file\n\t\tRead in the list of articles from the given file.\n");
-                System.exit(0);
-            case "--category":
-                articles = enWiki.getCategoryMembers(args[1]);
-                break;
-            case "--file":
-                List<String> temp = Files.readAllLines(new File(args[1]).toPath());
-                articles = temp.toArray(new String[temp.size()]);
-                break;
-            case "--contribs":
-                articles = Arrays.stream(enWiki.contribs(args[1]))
-                    .map(Wiki.Revision::getPage)
-                    .distinct()
-                    .toArray(String[]::new);
-                break;
-            default:
-                articles = args;
-                break;
+            switch (args[i])
+            {
+                case "--help":
+                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.ArticleEditorIntersection [options] [source] [pages]\n\n"
+                        + "DESCRIPTION:\n\tFor a given set of pages, finds the common set of editors and lists the edits made.\n\n"
+                        + "\t--help\n\t\tPrints this screen and exits.\n\n"
+                        + "Options:\n"
+                        + "\t--wiki wiki\n\t\tFetch data from wiki (default: en.wikipedia.org).\n"
+                        + "\t--nobot\n\t\tExclude bots from the analysis.\n"
+                        + "\t--noadmin\n\t\tExclude admins from the analysis.\n"
+                        + "\t--noanon\n\t\tExclude IPs from the analysis.\n"
+                        + "Sources of pages:\n"
+                        + "\t--category category\n\t\tUse the members of the specified category as the list of articles.\n"
+                        + "\t--contribs user\n\t\tUse the list of articles edited by the given user.\n"
+                        + "\t--deleted\n\t\tAdds deleted contributions to the analysis (REQUIRES ADMIN LOGIN)\n\n"
+                        + "\t--file file\n\t\tRead in the list of articles from the given file.\n");
+                    System.exit(0);
+                case "--wiki":
+                    wikidomain = args[++i];
+                    break;
+                case "--category":
+                    category = args[++i];
+                    break;
+                case "--file":
+                    articlelist = Files.readAllLines(new File(args[++i]).toPath());
+                    break;
+                case "--contribs":
+                    user = args[++i];
+                    break;
+                case "--nobot":
+                    nobot = true;
+                    break;
+                case "--noadmin":
+                    noadmin = true;
+                    break;
+                case "--noanon":
+                    noanon = true;
+                    break;
+                case "--deleted":
+                    deletedcontribs = true;
+                    break;
+                default:
+                    articlelist.add(args[i]);
+                    break;
+            }
         }
+        
+        Wiki wiki = Wiki.createInstance(wikidomain);
+        String[] articles = null;
+        if (articlelist.size() > 0)
+            articles = articlelist.toArray(new String[articlelist.size()]);
+        
+        if (user != null)
+        {
+            Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user));
+            if (deletedcontribs)
+            {
+                try
+                {
+                    // CLI login
+                    Console console = System.console();
+                    wiki.login(console.readLine("Username: "), console.readPassword("Password: "));
+                    stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user)));
+                }
+                catch (FailedLoginException ex)
+                {
+                    System.err.println("Invalid username or password.");
+                    System.exit(1);
+                }
+                catch (CredentialNotFoundException ex)
+                {
+                    System.err.println("Permission denied: Cannot retrieve deleted revisions.");
+                    System.exit(1);
+                }
+            }
+            articles = stuff.map(Wiki.Revision::getPage)
+                .distinct()
+                .toArray(String[]::new);
+        }
+        if (category != null)
+            articles = wiki.getCategoryMembers(category);
         
         if (articles.length == 0)
         {
@@ -89,7 +153,7 @@ public class ArticleEditorIntersection
             System.exit(0);
         }
         
-        Map<String, List<Wiki.Revision>> data = articleEditorIntersection(enWiki, articles, true, true, false);
+        Map<String, List<Wiki.Revision>> data = articleEditorIntersection(wiki, articles, noadmin, nobot, noanon);
         for (Map.Entry<String, List<Wiki.Revision>> entry : data.entrySet())
         {
             System.out.print(entry.getKey());
