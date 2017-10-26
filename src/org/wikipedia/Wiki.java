@@ -657,7 +657,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets various properties of the wiki and sets the bot framework up to use
-     *  them. Returns:
+     *  them. Also populates the namespace cache. Returns:
      *  <ul>
      *  <li><b>usingcapitallinks</b>: (Boolean) whether a wiki forces upper case
      *    for the title. Example: en.wikipedia = true, en.wiktionary = false.
@@ -677,15 +677,48 @@ public class Wiki implements Serializable
     public Map<String, Object> getSiteInfo() throws IOException
     {
         Map<String, Object> ret = new HashMap<>();
-        String line = fetch(query + "action=query&meta=siteinfo", "getSiteInfo");
-        wgCapitalLinks = parseAttribute(line, "case", 0).equals("first-letter");
+        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", "getSiteInfo");
+        
+        // general site info
+        String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
+        wgCapitalLinks = parseAttribute(bits, "case", 0).equals("first-letter");
         ret.put("usingcapitallinks", wgCapitalLinks);
-        scriptPath = parseAttribute(line, "scriptpath", 0);
+        scriptPath = parseAttribute(bits, "scriptpath", 0);
         ret.put("scriptpath", scriptPath);
-        timezone = ZoneId.of(parseAttribute(line, "timezone", 0));
+        timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
         ret.put("timezone", timezone);
-        ret.put("version", parseAttribute(line, "generator", 0));
+        ret.put("version", parseAttribute(bits, "generator", 0));
+        
+        // populate namespace cache
+        namespaces = new LinkedHashMap<>(30);
+        ns_subpages = new ArrayList<>(30);
+        // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
+        String[] items = line.split("<ns ");
+        for (int i = 1; i < items.length; i++)
+        {
+            int ns = Integer.parseInt(parseAttribute(items[i], "id", 0));
+            
+            // parse localized namespace name
+            // must be before parsing canonical namespace so that 
+            // namespaceIdentifier always returns the localized name
+            int b = items[i].indexOf('>') + 1;
+            int c = items[i].indexOf("</ns>");
+            if (c < 0)
+                namespaces.put("", ns);
+            else
+                namespaces.put(normalize(decode(items[i].substring(b, c))), ns);
+            
+            String canonicalnamespace = parseAttribute(items[i], "canonical", 0);
+            if (canonicalnamespace != null)
+                namespaces.put(canonicalnamespace, ns);
+            
+            // does this namespace support subpages?
+            if (items[i].contains("subpages=\"\""))
+                ns_subpages.add(ns);
+        }
+        
         initVars();
+        log(Level.INFO, "getSiteInfo", "Successfully retrieved site info for " + getDomain());
         return ret;
     }
 
@@ -1168,28 +1201,20 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches a random page in the main namespace. Equivalent to
-     *  [[Special:Random]].
-     *  @return the title of the page
-     *  @throws IOException if a network error occurs
-     *  @since 0.13
-     */
-    public String random() throws IOException
-    {
-        return random(MAIN_NAMESPACE);
-    }
-
-    /**
      *  Fetches a random page in the specified namespaces. Equivalent to
      *  [[Special:Random]].
      *
-     *  @param ns namespace(s)
+     *  @param ns the namespaces to fetch random pages from. If not present,
+     *  fetch pages from {@link #MAIN_NAMESPACE}.
      *  @return the title of the page
      *  @throws IOException if a network error occurs
      *  @since 0.13
      */
     public String random(int... ns) throws IOException
     {
+        if (ns.length == 0)
+            ns = new int[] { MAIN_NAMESPACE };
+        
         // no bulk queries here because they are deterministic
         // https://mediawiki.org/wiki/API:Random
         StringBuilder url = new StringBuilder(query);
@@ -1477,7 +1502,7 @@ public class Wiki implements Serializable
     private synchronized void ensureNamespaceCache() throws IOException
     {
         if (namespaces == null)
-            populateNamespaceCache();
+            getSiteInfo();
     }
 
     /**
@@ -1569,45 +1594,6 @@ public class Wiki implements Serializable
         throw new IllegalArgumentException("Invalid namespace " + ns);
     }
     
-    /**
-     *  Populates the namespace cache.
-     *  @throws IOException if a network error occurs.
-     *  @since 0.25
-     */
-    protected void populateNamespaceCache() throws IOException
-    {
-        String line = fetch(query + "meta=siteinfo&siprop=namespaces%7Cnamespacealiases", "namespace");
-        namespaces = new LinkedHashMap<>(30);
-        ns_subpages = new ArrayList<>(30);
-
-        // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
-        String[] items = line.split("<ns");
-        for (int i = 1; i < items.length; i++)
-        {
-            int ns = Integer.parseInt(parseAttribute(items[i], "id", 0));
-            
-            // parse localized namespace name
-            // must be before parsing canonical namespace so that 
-            // namespaceIdentifier always returns the localized name
-            int b = items[i].indexOf('>') + 1;
-            int c = items[i].indexOf("</ns>");
-            if (c < 0)
-                namespaces.put("", ns);
-            else
-                namespaces.put(normalize(decode(items[i].substring(b, c))), ns);
-            
-            String canonicalnamespace = parseAttribute(items[i], "canonical", 0);
-            if (canonicalnamespace != null)
-                namespaces.put(canonicalnamespace, ns);
-            
-            // does this namespace support subpages?
-            if (items[i].contains("subpages=\"\""))
-                ns_subpages.add(ns);
-        }
-
-        log(Level.INFO, "namespace", "Successfully retrieved namespace list (" + namespaces.size() + " namespaces)");
-    }
-
     /**
      *  Determines whether a series of pages exist.
      *  @param titles the titles to check.
@@ -4723,17 +4709,14 @@ public class Wiki implements Serializable
      *  </samp>
      *
      *  @param search a search string
-     *  @param namespaces the namespaces to search. If no parameters are passed
-     *  then the default is {@link #MAIN_NAMESPACE} only.
+     *  @param namespaces the namespaces to search. If not present, search
+     *  {@link #MAIN_NAMESPACE} only.
      *  @return the search results
      *  @throws IOException if a network error occurs
      *  @since 0.14
      */
     public String[][] search(String search, int... namespaces) throws IOException
     {
-        // this varargs thing is really handy, there's no need to define a
-        // separate search(String search) while allowing multiple namespaces
-
         // default to main namespace
         if (namespaces.length == 0)
             namespaces = new int[] { MAIN_NAMESPACE };
