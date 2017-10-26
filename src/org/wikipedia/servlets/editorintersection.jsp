@@ -149,7 +149,8 @@ first in the GUI) apply.
     }
     pagesarray = Arrays.copyOf(pagesarray, Math.min(pagesarray.length, 24));
         
-    Map<String, List<Wiki.Revision>> results = ArticleEditorIntersection.articleEditorIntersection(wiki, pagesarray, noadmin, nobot, noanon);
+    ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
+    Map<String, List<Wiki.Revision>> results = aei.intersectArticles(pagesarray, noadmin, nobot, noanon);
     Map<String, Map<String, List<Wiki.Revision>>> bypage = new HashMap<>();
     results.forEach((key, value) ->
     {
