@@ -30,6 +30,7 @@ import java.time.format.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import javax.security.auth.login.*;
@@ -37,17 +38,18 @@ import javax.security.auth.login.*;
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
  *  Requires JDK 1.8 or greater. Uses the <a
- *  href="//www.mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
+ *  href="https://mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.28), otherwise some functions may not work.
+ *  of MediaWiki (1.31), otherwise some functions may not work.
  *  <p>
  *  Extended documentation is available
- *  <a href="//github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>.
+ *  <a href="https://github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>.
  *  All wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
  *  </p>
- *  Please file bug reports <a href="//en.wikipedia.org/wiki/User_talk:MER-C">here</a>
- *  or at the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
+ *  Please file bug reports <a href="https://en.wikipedia.org/wiki/User_talk:MER-C">here</a>
+ *  or at the <a href="https://github.com/MER-C/wiki-java/issues">Github issue 
+ * tracker</a>.
  *
  *  @author MER-C and contributors
  *  @version 0.33
@@ -361,21 +363,21 @@ public class Wiki implements Serializable
     // REVISION OPTIONS
 
     /**
-     *  In <tt>Revision.diff()</tt>, denotes the next revision.
+     *  In <code>Revision.diff()</code>, denotes the next revision.
      *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
      *  @since 0.21
      */
     public static final long NEXT_REVISION = -1L;
 
     /**
-     *  In <tt>Revision.diff()</tt>, denotes the current revision.
+     *  In <code>Revision.diff()</code>, denotes the current revision.
      *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
      *  @since 0.21
      */
     public static final long CURRENT_REVISION = -2L;
 
     /**
-     *  In <tt>Revision.diff()</tt>, denotes the previous revision.
+     *  In <code>Revision.diff()</code>, denotes the previous revision.
      *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
      *  @since 0.21
      */
@@ -556,11 +558,12 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Creates a new connection to a wiki with $wgScriptpath set to
-     *  settings <tt>scriptPath</tt> via the specified protocol. Depending on 
-     *  the settings of the wiki, you may need to call {@link Wiki#getSiteInfo()} 
-     *  on the returned object after this in order for some functionality to work 
-     *  correctly.
+     *  Creates a new connection to a wiki with <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
+     *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the 
+     *  specified protocol. Depending on the settings of the wiki, you may need 
+     *  to call {@link Wiki#getSiteInfo()} on the returned object after this in 
+     *  order for some functionality to work correctly.
      *
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
@@ -658,9 +661,11 @@ public class Wiki implements Serializable
      *  <ul>
      *  <li><b>usingcapitallinks</b>: (Boolean) whether a wiki forces upper case
      *    for the title. Example: en.wikipedia = true, en.wiktionary = false.
-     *    Default = true. See [[mw:Manual:$wgCapitalLinks]].
-     *  <li><b>scriptpath</b>: (String) the $wgScriptpath wiki variable. Default
-     *    = <tt>/w</tt>. See [[mw:Manual:$wgScriptpath]].
+     *    Default = true. See <a href="https://mediawiki.org/wiki/Manual:$wgCapitalLinks">
+     *    <var>$wgCapitalLinks</var></a>
+     *  <li><b>scriptpath</b>: (String) the <a 
+     *    href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
+     *    $wgScriptPath</var> wiki variable</a>. Default = <code>/w</code>.
      *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
      *  <li><b>timezone</b>: (String) the timezone the wiki is in, default = UTC
      *  </ul>
@@ -686,7 +691,7 @@ public class Wiki implements Serializable
 
     /**
      *  Sets the user agent HTTP header to be used for requests. Default is
-     *  "Wiki.java " + version.
+     *  <samp>"Wiki.java " + version</samp>.
      *  @param useragent the new user agent
      *  @since 0.22
      */
@@ -697,7 +702,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the user agent HTTP header to be used for requests. Default is
-     *  "Wiki.java " + version.
+     *  <samp>"Wiki.java " + version</samp>.
      *  @return useragent the user agent
      *  @since 0.22
      */
@@ -751,9 +756,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Sets whether edits are marked as bot by default (may be overridden
-     *  specifically by edit()). Default = false. Works only if one has the
-     *  required permissions.
+     *  Sets whether edits are marked as bot by default (may be overridden).
+     *  Default = false. Works only if one has the required permissions.
      *  @param markbot (see above)
      *  @since 0.26
      */
@@ -773,8 +777,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Sets whether edits are marked as minor by default (may be overridden
-     *  specifically by edit()). Default = false.
+     *  Sets whether edits are marked as minor by default (may be overridden).
+     *  Default = false.
      *  @param minor (see above)
      *  @since 0.26
      */
@@ -810,7 +814,7 @@ public class Wiki implements Serializable
      *  or queries for which results are sorted by relevance (e.g. search).
      *
      *  @param limit the desired maximum number of results to retrieve
-     *  @throws IllegalArgumentException if <tt>limit</tt> is not a positive
+     *  @throws IllegalArgumentException if <var>limit</var> is not a positive
      *  integer
      *  @since 0.34
      */
@@ -879,10 +883,12 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the maxlag parameter. See [[mw:Manual:Maxlag parameter]].
+     *  Gets the maxlag parameter.
      *  @return the current maxlag, in seconds
      *  @see #setMaxLag
      *  @see #getCurrentDatabaseLag
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  MediaWiki documentation</a>
      *  @since 0.11
      */
     public int getMaxLag()
@@ -896,6 +902,8 @@ public class Wiki implements Serializable
      *  @param lag the desired maxlag in seconds
      *  @see #getMaxLag
      *  @see #getCurrentDatabaseLag
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  MediaWiki documentation</a>
      *  @since 0.11
      */
     public void setMaxLag(int lag)
@@ -918,7 +926,7 @@ public class Wiki implements Serializable
 
     /**
      *  Sets the assertion mode. Do this AFTER logging in, otherwise the login
-     *  will fail. Assertion modes are bitmasks. Default is <tt>ASSERT_NONE</tt>.
+     *  will fail. Assertion modes are bitmasks. Default is {@link #ASSERT_NONE}.
      *  @param mode an assertion mode
      *  @see #getAssertionMode
      *  @since 0.11
@@ -1082,6 +1090,8 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @see #setMaxLag
      *  @see #getMaxLag
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  MediaWiki documentation</a>
      *  @since 0.10
      */
     public int getCurrentDatabaseLag() throws IOException
@@ -1138,8 +1148,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Same as <tt>parse()</tt>, but also strips out unwanted crap. This might
-     *  be useful to subclasses.
+     *  Same as {@link #parse(java.lang.String)}, but also strips out unwanted 
+     *  crap. This might be useful to subclasses.
      *
      *  @param in the string to parse
      *  @return that string without the crap
@@ -1170,7 +1180,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches a random page in the specified namespace. Equivalent to
+     *  Fetches a random page in the specified namespaces. Equivalent to
      *  [[Special:Random]].
      *
      *  @param ns namespace(s)
@@ -1180,7 +1190,8 @@ public class Wiki implements Serializable
      */
     public String random(int... ns) throws IOException
     {
-        // no bulk queries here because they are deterministic -- [[mw:API:Random]]
+        // no bulk queries here because they are deterministic
+        // https://mediawiki.org/wiki/API:Random
         StringBuilder url = new StringBuilder(query);
         url.append("list=random");
         constructNamespaceString(url, "rn", ns);
@@ -1209,7 +1220,7 @@ public class Wiki implements Serializable
      *  Such lists might be generated from the various list methods below.
      *  Examples from the English Wikipedia:
      *
-     *  <pre>
+     *  <code>
      *  // find all orphaned and unwikified articles
      *  String[] articles = Wiki.intersection(wikipedia.getCategoryMembers("All orphaned articles", Wiki.MAIN_NAMESPACE),
      *      wikipedia.getCategoryMembers("All pages needing to be wikified", Wiki.MAIN_NAMESPACE));
@@ -1217,7 +1228,7 @@ public class Wiki implements Serializable
      *  // find all (notable) living people who are related to Barack Obama
      *  String[] people = Wiki.intersection(wikipedia.getCategoryMembers("Living people", Wiki.MAIN_NAMESPACE),
      *      wikipedia.whatLinksHere("Barack Obama", Wiki.MAIN_NAMESPACE));
-     *  </pre>
+     *  </code>
      *
      *  @param a a list of pages
      *  @param b another list of pages
@@ -1240,7 +1251,7 @@ public class Wiki implements Serializable
      *  This is not the same as b \ a. Such lists might be generated from the
      *  various lists below. Some examples from the English Wikipedia:
      *
-     *  <pre>
+     *  <code>
      *  // find all Martian crater articles that do not have an infobox
      *  String[] articles = Wiki.relativeComplement(wikipedia.getCategoryMembers("Craters on Mars"),
      *      wikipedia.whatTranscludesHere("Template:MarsGeo-Crater", Wiki.MAIN_NAMESPACE));
@@ -1248,7 +1259,7 @@ public class Wiki implements Serializable
      *  // find all images without a description that haven't been tagged "no license"
      *  String[] images = Wiki.relativeComplement(wikipedia.getCategoryMembers("Images lacking a description"),
      *      wikipedia.getCategoryMembers("All images with unknown copyright status"));
-     *  </pre>
+     *  </code>
      *
      *  @param a a list of pages
      *  @param b another list of pages
@@ -1269,7 +1280,7 @@ public class Wiki implements Serializable
      *  Returns the corresponding talk page to this page.
      *
      *  @param title the page title
-     *  @return the name of the talk page corresponding to <tt>title</tt>
+     *  @return the name of the talk page corresponding to <var>title</var>
      *  or "" if we cannot recognise it
      *  @throws IllegalArgumentException if given title is in a talk namespace
      *  or we try to retrieve the talk page of a Special: or Media: page.
@@ -1292,10 +1303,10 @@ public class Wiki implements Serializable
     
     /**
      *  If a namespace supports subpages, return the top-most page -- e.g. 
-     *  <tt>getRootPage("Talk:Aaa/Bbb/Ccc")</tt> returns "Talk:Aaa" if the talk
-     *  namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See also
-     *  the parser function {{ROOTPAGENAME}}, though that removes the namespace
-     *  prefix.
+     *  <code>getRootPage("Talk:Aaa/Bbb/Ccc")</code> returns "Talk:Aaa" if the 
+     *  talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See 
+     *  also the parser function <kbd>{{ROOTPAGENAME}}</kbd>, though that 
+     *  removes the namespace prefix.
      * 
      *  @param page a page
      *  @return (see above)
@@ -1312,10 +1323,10 @@ public class Wiki implements Serializable
     
     /**
      *  If a namespace supports subpages, return the top-most page -- e.g. 
-     *  <tt>getRootPage("Talk:Aaa/Bbb/Ccc")</tt> returns "Talk:Aaa/Bbb" if the 
-     *  talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See
-     *  also the parser function {{BASEPAGENAME}}, though that removes the
-     *  namespace prefix.
+     *  <code>getRootPage("Talk:Aaa/Bbb/Ccc")</code> returns "Talk:Aaa/Bbb" if  
+     *  the talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. 
+     *  See also the parser function <kbd>{{BASEPAGENAME}}</kbd>, though that 
+     *  removes the namespace prefix.
      * 
      *  @param page a page
      *  @return (see above)
@@ -1470,13 +1481,13 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Returns the namespace a page is in. No need to override this to
+     *  Returns the namespace a page is in. There is no need to override this to
      *  add custom namespaces, though you may want to define static fields e.g.
-     *  <tt>public static final int PORTAL_NAMESPACE = 100;</tt> for the Portal
-     *  namespace on the English Wikipedia.
+     *  <code>public static final int <var>PORTAL_NAMESPACE</var> = 100;</code> 
+     *  for the Portal namespace on the English Wikipedia.
      *
      *  @param title any valid page name
-     *  @return an integer array containing the namespace of <tt>title</tt>
+     *  @return an integer representing the namespace of <var>title</var>
      *  @throws IOException if a network error occurs while populating the
      *  namespace cache
      *  @see #namespaceIdentifier(int)
@@ -1503,9 +1514,9 @@ public class Wiki implements Serializable
 
     /**
      *  For a given namespace denoted as an integer, fetch the corresponding
-     *  identification string e.g. <tt>namespaceIdentifier(1)</tt> should return
-     *  "Talk" on en.wp. (This does the exact opposite to <tt>namespace()</tt>).
-     *  Strings returned are always localized.
+     *  identification string e.g. <code>namespaceIdentifier(1)</code> should 
+     *  return "Talk" on en.wp. (This does the exact opposite to 
+     *  <code>namespace()</code>). Strings returned are always localized.
      *
      *  @param namespace an integer corresponding to a namespace. If it does not
      *  correspond to a namespace, we assume you mean the main namespace (i.e.
@@ -1616,8 +1627,8 @@ public class Wiki implements Serializable
     /**
      *  Gets the raw wikicode for a page. WARNING: does not support special
      *  pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use <tt>getImage()</tt> to
-     *  fetch an image.
+     *  for fetching the contents of special pages. Use {@link #getImage(java.lang.String, java.io.File)}
+     *  to fetch an image.
      *
      *  @param title the title of the page.
      *  @return the raw wikicode of a page, or null if the page doesn't exist
@@ -1634,9 +1645,9 @@ public class Wiki implements Serializable
     /**
      *  Gets the raw wikicode for a set of pages. WARNING: does not support 
      *  special pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use <tt>getImage()</tt> to
-     *  fetch an image. If a page doesn't exist, the corresponding return value
-     *  is null.
+     *  for fetching the contents of special pages. Use {@link #getImage(java.lang.String, 
+     *  java.io.File)} to fetch an image. If a page doesn't exist, the 
+     *  corresponding return value is <code>null</code>.
      *
      *  @param titles a list of titles
      *  @return the raw wikicode of those titles, in the same order as the input
@@ -1699,7 +1710,8 @@ public class Wiki implements Serializable
      *  @param number the section number of the section to retrieve text for
      *  @return the text of the given section
      *  @throws IOException if a network error occurs
-     *  @throws UnknownError if the page has less than <tt>number</tt>
+     *  @throws UnknownError if the page has less than <var>number</var> 
+     *  sections
      *  sections
      *  @since 0.24
      */
@@ -1727,12 +1739,12 @@ public class Wiki implements Serializable
     /**
      *  Gets the contents of a page, rendered in HTML (as opposed to
      *  wikitext). WARNING: only supports special pages in certain
-     *  circumstances, for example <tt>getRenderedText("Special:Recentchanges")
-     *  </tt> returns the 50 most recent change to the wiki in pretty-print
+     *  circumstances, for example <code>getRenderedText("Special:Recentchanges")
+     *  </code> returns the 50 most recent change to the wiki in pretty-print
      *  HTML. You should test any use of this method on-wiki through the text
-     *  <tt>{{Special:Specialpage}}</tt>. Use <tt>getImage()</tt> to fetch an
-     *  image. Be aware of any transclusion limits, as outlined at
-     *  [[Wikipedia:Template limits]].
+     *  <kbd>{{Special:Specialpage}}</kbd>. Use {@link #getImage(java.lang.String, 
+     *  java.io.File)} to fetch an image. Be aware of any transclusion limits, 
+     *  as outlined at [[Wikipedia:Template limits]].
      *
      *  @param title the title of the page
      *  @return the rendered contents of that page
@@ -1748,8 +1760,9 @@ public class Wiki implements Serializable
     /**
      *  Edits a page by setting its text to the supplied value. This method is
      *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
-     *  and minor if <tt>isMarkMinor() == true</tt>.
+     *  {@linkplain #getThrottle throttle}. The edit will be marked bot if 
+     *  {@link #isMarkBot()} is <code>true</code> and minor if 
+     *  {@link #isMarkMinor()} is <code>true</code>.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1769,17 +1782,18 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Edits a page by setting its text to the supplied value. This method is
-     *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
-     *  and minor if <tt>isMarkMinor() == true</tt>.
+     *  Edits a page by setting its <var>text</var> to the supplied value. This 
+     *  method is thread safe and blocks for a minimum time as specified by the
+     *  {@linkplain #getThrottle throttle}. The edit will be marked bot if 
+     *  {@link #isMarkBot()} is <var>true</var> and minor if {@link #isMarkMinor()}
+     *  is <var>true</var>.
      *
      *  @param text the text of the page
      *  @param title the title of the page
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
-     *  @param basetime the timestamp of the revision on which <tt>text</tt> is
-     *  based, used to check for edit conflicts. <tt>null</tt> disables this.
+     *  @param basetime the timestamp of the revision on which <var>text</var> is
+     *  based, used to check for edit conflicts. <code>null</code> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1794,10 +1808,11 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Edits a page by setting its text to the supplied value. This method is
-     *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
-     *  and minor if <tt>isMarkMinor() == true</tt>.
+     *  Edits a section by setting its <var>text</var> to the supplied value. 
+     *  This method is thread safe and blocks for a minimum time as specified by 
+     *  the {@linkplain #getThrottle throttle}. The edit will be marked bot if 
+     *  {@link #isMarkBot()} is <code>true</code> and minor if 
+     *  {@link #isMarkMinor()} is <code>true</code>.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1820,10 +1835,11 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Edits a page by setting its text to the supplied value. This method is
-     *  thread safe and blocks for a minimum time as specified by the
-     *  throttle. The edit will be marked bot if <tt>isMarkBot() == true</tt>
-     *  and minor if <tt>isMarkMinor() == true</tt>.
+     *  Edits a page by setting its <var>text</var> to the supplied value. This
+     *  method is thread safe and blocks for a minimum time as specified by the
+     *  {@linkplain #getThrottle throttle}. The edit will be marked bot if 
+     *  {@link #isMarkBot()} is <code>true</code> and minor if {@link #isMarkMinor()}
+     *  is <code>true</code>.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1831,8 +1847,8 @@ public class Wiki implements Serializable
      *  longer than 200 characters are truncated server-side.
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
-     *  @param basetime the timestamp of the revision on which <tt>text</tt> is
-     *  based, used to check for edit conflicts. <tt>null</tt> disables this.
+     *  @param basetime the timestamp of the revision on which <var>text</var> is
+     *  based, used to check for edit conflicts. <code>null</code> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1856,16 +1872,16 @@ public class Wiki implements Serializable
      *  @param text the text of the page
      *  @param title the title of the page
      *  @param summary the edit summary or the title of the new section. See
-     *  [[Help:Edit summary]]. Summaries longer than 200 characters are
+     *  [[Help:Edit summary]]. Summaries longer than 255 characters are
      *  truncated server-side.
-     *  @param minor whether the edit should be marked as minor, See
-     *  [[Help:Minor edit]].
-     *  @param bot whether to mark the edit as a bot edit (ignored if one does
-     *  not have the necessary permissions)
+     *  @param minor whether the edit should be marked as minor. See
+     *  [[Help:Minor edit]]. Overrides {@link #isMarkMinor()}.
+     *  @param bot whether to mark the edit as a bot edit. Ignored if one does
+     *  not have the necessary permissions. Overrides {@link #isMarkBot()}.
      *  @param section the section to edit. Use -1 to specify a new section and
      *  -2 to disable section editing.
-     *  @param basetime the timestamp of the revision on which <tt>text</tt> is
-     *  based, used to check for edit conflicts. <tt>null</tt> disables this.
+     *  @param basetime the timestamp of the revision on which <var>text</var> is
+     *  based, used to check for edit conflicts. <code>null</code> disables this.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialExpiredException if cookies have expired
@@ -1939,16 +1955,16 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Creates a new section on the specified page. Leave <tt>subject</tt> as
+     *  Creates a new section on the specified page. Leave <var>subject</var> as
      *  the empty string if you just want to append.
      *
      *  @param title the title of the page to edit
      *  @param subject the subject of the new section
      *  @param text the text of the new section
-     *  @param minor whether the edit should be marked as minor (see
-     *  [[Help:Minor edit]])
-     *  @param bot whether to mark the edit as a bot edit (ignored if one does
-     *  not have the necessary permissions)
+     *  @param minor whether the edit should be marked as minor. See
+     *  [[Help:Minor edit]]. Overrides {@link #isMarkMinor()}.
+     *  @param bot whether to mark the edit as a bot edit. Ignored if one does
+     *  not have the necessary permissions. Overrides {@link #isMarkBot()}.
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
@@ -1964,16 +1980,16 @@ public class Wiki implements Serializable
 
     /**
      *  Prepends something to the given page. A convenience method for
-     *  adding maintainance templates, rather than getting and setting the
+     *  adding maintenance templates, rather than getting and setting the
      *  page yourself.
      *
      *  @param title the title of the page
      *  @param stuff what to prepend to the page
      *  @param summary the edit summary. See [[Help:Edit summary]]. Summaries
      *  longer than 200 characters are truncated server-side.
-     *  @param minor whether the edit is minor
-     *  @param bot whether to mark the edit as a bot edit (ignored if one does
-     *  not have the necessary permissions)
+     *  @param minor whether the edit is minor. Overrides {@link #isMarkMinor()}.
+     *  @param bot whether to mark the edit as a bot edit. Ignored if one does
+     *  not have the necessary permissions. Overrides {@link #isMarkBot()}.
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialException if page is protected and we can't edit it
      *  @throws CredentialExpiredException if cookies have expired
@@ -1991,7 +2007,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Deletes a page. Does not delete any page requiring <tt>bigdelete</tt>.
+     *  Deletes a page. Does not delete any page with more than 5000 revisions.
      *  @param title the page to delete
      *  @param reason the reason for deletion
      *  @throws IOException if a network error occurs
@@ -2138,9 +2154,9 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the list of categories a particular page is in. Ignores hidden
-     *  categories if ignoreHidden is true. Also includes the sortkey of a
-     *  category if sortkey is true. The sortkey would then be appended to
-     *  the element of the returned string array (separated by "|").
+     *  categories if <var>ignoreHidden</var> is true. Also includes the sortkey
+     *  of a category if <var>sortkey</var> is true. The sortkey would then be 
+     *  appended to the element of the returned string array (separated by "|").
      *
      *  @param title a page
      *  @param sortkey return a sortkey as well (default = false)
@@ -2406,16 +2422,17 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the list of sections on a particular page. The returned map pairs
-     *  the section numbering as in the table of contents with the section
-     *  title, as in the following example:
+     *  Gets the list of sections on the specified <var>page</var>. The returned 
+     *  map pairs the section numbering as in the table of contents with the 
+     *  section title, as in the following example:
      *
-     *  { 1 : How to nominate }, <br>
-     *  { 1.1 : Step 1 - Evaluate }, <br>
-     *  { 1.2 : Step 2 - Create subpage }, <br>
-     *  { 1.2.1 : Step 2.5 - Transclude and link }, <br>
-     *  { 1.3 : Step 3 - Update image }, <br>
-     *  ...
+     *  <samp>
+     *  1 &#8594; How to nominate
+     *  1.1 &#8594; Step 1 - Evaluate
+     *  1.2 &#8594; Step 2 - Create subpage
+     *  1.2.1 &#8594; Step 2.5 - Transclude and link
+     *  1.3 &#8594; Step 3 - Update image
+     *  </samp>
      *
      *  @param page the page to get sections for
      *  @return the section map for that page
@@ -2440,7 +2457,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the most recent revision of a page, or null if the page does not exist.
+     *  Gets the most recent revision of a page, or <code>null</code> if the 
+     *  page does not exist.
      *  @param title a page
      *  @return the most recent revision of that page
      *  @throws IOException if a network error occurs
@@ -2522,7 +2540,7 @@ public class Wiki implements Serializable
     /**
      *  Parses the output of queries that resolve redirects (extracted to 
      *  separate method as requirement for all vectorized queries when 
-     *  {@link Wiki#isResolvingRedirects()} is true).
+     *  {@link #isResolvingRedirects()} is <code>true</code>).
      *
      *  @param inputpages the array of pages to resolve redirects for. Entries
      *  will be overwritten.
@@ -2946,10 +2964,10 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Protects a page. Structure of <tt>protectionstate</tt> (everything is
+     *  Protects a page. Structure of <var>protectionstate</var> (everything is
      *  optional, if a value is not present, then the corresponding values will
      *  be left untouched):
-     *  <pre>
+     *  <samp>
      *  {
      *     edit: one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
      *     editexpiry: OffsetDateTime, // expiry time for edit protection, null = indefinite
@@ -2959,7 +2977,7 @@ public class Wiki implements Serializable
      *     cascade: Boolean, // Enables cascading protection (requires edit=FULL_PROTECTION). Default: false.
      *     cascadesource: String // souce of cascading protection (here ignored)
      *  };
-     *  </pre>
+     *  </samp>
      *
      *  @param page the page
      *  @param protectionstate (see above)
@@ -3053,11 +3071,11 @@ public class Wiki implements Serializable
 
     /**
      *  Gets a revision based on a given oldid. Automatically fills out all
-     *  attributes of that revision except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
+     *  attributes of that revision except <var>rcid</var> and <var>rollbacktoken</var>.
      *
      *  @param oldid an oldid
-     *  @return the revision corresponding to that oldid, or null if it has been
-     *  deleted
+     *  @return the revision corresponding to <var>oldid</var>, or <code>null</code> 
+     *  if it has been deleted
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
@@ -3068,12 +3086,12 @@ public class Wiki implements Serializable
 
     /**
      *  Gets revisions based on given oldids. Automatically fills out all
-     *  attributes of those revisions except <tt>rcid</tt> and <tt>rollbacktoken</tt>.
+     *  attributes of those revisions except <var>rcid</var> and <var>rollbacktoken</var>.
      *
      *  @param oldids a list of oldids
-     *  @return the revisions corresponding to those oldids, in the order of the
-     *  input array. If a particular revision has been deleted, the corresponding
-     *  index is null.
+     *  @return the revisions corresponding to <var>oldids</var>, in the order 
+     *  of the input array. If a particular revision has been deleted, the 
+     *  corresponding index is <code>null</code>.
      *  @throws IOException if a network error occurs
      *  @since 0.29
      */
@@ -3114,10 +3132,8 @@ public class Wiki implements Serializable
     /**
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
-     *  is not the case, then this method does nothing. See
-     *  [[mw:Manual:Parameters to index.php#Actions]] (look under rollback)
-     *  for more information. The edit and reverted edits will be marked as bot
-     *  if <tt>isMarkBot() == true</tt>.
+     *  is not the case, then this method does nothing. The edit and reverted 
+     *  edits will be marked as bot if {@link #isMarkBot()} is <code>true</code>.
      *
      *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
      *  be true for the rollback to succeed
@@ -3126,6 +3142,8 @@ public class Wiki implements Serializable
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if the user is blocked
      *  @since 0.19
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Parameters_to_index.php#rollback">
+     *  MediaWiki documentation</a>
      */
     public void rollback(Revision revision) throws IOException, LoginException
     {
@@ -3135,9 +3153,8 @@ public class Wiki implements Serializable
     /**
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
-     *  is not the case, then this method does nothing. See
-     *  [[mw:Manual:Parameters to index.php#Actions]] (look under rollback)
-     *  for more information.
+     *  is not the case, then this method does nothing. The edit and reverted 
+     *  edits will be marked as bot if {@link #isMarkBot()} is <code>true</code>.
      *
      *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
      *  be true for the rollback to succeed
@@ -3149,6 +3166,8 @@ public class Wiki implements Serializable
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialNotFoundException if the user cannot rollback
      *  @throws AccountLockedException if the user is blocked
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Parameters_to_index.php#rollback">
+     *  MediaWiki documentation</a>
      *  @since 0.19
      */
     public synchronized void rollback(Revision revision, boolean bot, String reason) throws IOException, LoginException
@@ -3295,10 +3314,10 @@ public class Wiki implements Serializable
      *  <li> (revid=200) 2008-07-31 16:46 EvilCabalMember
      *  </ul>
      *  Then:
-     *  <pre>
+     *  <code>
      *  wiki.undo(wiki.getRevision(314L), null, reason, false); // undo revision 314 only
      *  wiki.undo(wiki.getRevision(236L), wiki.getRevision(325L), reason, false); // undo revisions 236-325
-     *  </pre>
+     *  </code>
      *
      *  This will only work if revision 541 or any subsequent edits do not
      *  clash with the change resulting from the undo.
@@ -3603,8 +3622,8 @@ public class Wiki implements Serializable
 
     /**
      *  Returns the upload history of an image. This is not the same as
-     *  <tt>getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG,
-     *  title, Wiki.FILE_NAMESPACE)</tt>, as the image may have been deleted.
+     *  <code>getLogEntries(null, null, Integer.MAX_VALUE, {@link #UPLOAD_LOG},
+     *  title, {@link #FILE_NAMESPACE})</code>, as the image may have been deleted.
      *  This returns only the live history of an image.
      *
      *  @param title the title of the image (may contain File)
@@ -3768,7 +3787,7 @@ public class Wiki implements Serializable
      *  @param filename the target file name (may contain File)
      *  @param contents the contents of the image description page, set to ""
      *  if overwriting an existing file
-     *  @param reason an upload summary (defaults to <tt>contents</tt>, use ""
+     *  @param reason an upload summary (defaults to <var>contents</var>, use ""
      *  to not specify one)
      *  @throws CredentialNotFoundException if not logged in
      *  @throws CredentialException if (page is protected OR file is on a central
@@ -4269,12 +4288,12 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the contributions of a user in a particular namespace. Equivalent
-     *  to [[Special:Contributions]]. Be careful when using this method because
-     *  the user may have a high edit count e.g. <tt>enWiki.contribs("MER-C",
-     *  Wiki.MAIN_NAMESPACE).length</tt> %gt; 50000.
+     *  Gets the contributions of a user, IP address or range of IP addresses 
+     *  in a particular namespace. Equivalent to [[Special:Contributions]]. Be 
+     *  careful when using this method on large wikis because more than 100000
+     *  edits may be returned for certain values of <var>user</var>.
      *
-     *  @param user the user or IP to get contributions for
+     *  @param user the user, IP or IP range to get contributions for
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return the contributions of the user, or a zero length array if the user
      *  does not exist
@@ -4299,7 +4318,9 @@ public class Wiki implements Serializable
      *  @throws UnknownHostException if the IP address is not valid
      *  @throws NumberFormatException if the subnet mask is not valid
      *  @since 0.17
+     *  @deprecated As of MediaWiki 1.31, you can call <code>contribs(range)</code>.
      */
+    @Deprecated
     public Revision[] rangeContribs(String range) throws IOException
     {
         String[] parts = range.split("/");
@@ -4342,19 +4363,16 @@ public class Wiki implements Serializable
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. Equivalent to [[Special:Contributions]]. To fetch contribs
-     *  for an IP range, specify part of an IP address e.g. prefix="127.0."
-     *  for 127.0.0.0/16; for IPv6 addresses use e.g. prefix="2001:db8:0:0:0:".
-     *  MediaWiki always fully expands IPv6 addresses and converts all digits
-     *  A through F to uppercase. (No sanitization is done on IP addresses). Be
-     *  careful when using <tt>prefix</tt> as it may take too long and/or cause OOM.
+     *  addresses. Equivalent to [[Special:Contributions]]. Be careful when 
+     *  using <var>prefix</var> and <var>user</var> on large wikis because more 
+     *  than 100000 edits may be returned for certain values of <var>user</var>.
      *
-     *  @param user the user to get contributions for.
+     *  @param user the user, IP address or IP range to get contributions for
      *  @param start fetch edits no newer than this date
      *  @param end fetch edits no older than this date
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param prefix a prefix of usernames. Overrides <tt>user</tt>.  Use "" to
-     *  not specify one.
+     *  @param prefix a prefix of usernames. Overrides <var>user</var>. Use ""
+     *  to not specify one.
      *  @return contributions of this user, or a zero length array if the user
      *  does not exist
      *  @throws IOException if a network error occurs
@@ -4637,8 +4655,10 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches the most recent changes to pages on your watchlist. Data is
-     *  retrieved from the <tt>recentchanges</tt> table and hence cannot be
-     *  older than about a month.
+     *  retrieved from the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
+     *  recentchanges table</a> and hence cannot be retrieved after <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">a certain amount
+     *  of time</a>.
      *
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
@@ -4651,9 +4671,11 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches recent changes to pages on your watchlist. Data is retrieved
-     *  from the <tt>recentchanges</tt> table and hence cannot be older than
-     *  about a month.
+     *  Fetches recent changes to pages on your watchlist. Data is
+     *  retrieved from the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
+     *  recentchanges table</a> and hence cannot be retrieved after <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">a certain amount
+     *  of time</a>.
      *
      *  @param allrev show all revisions to the pages, instead of the top most
      *  change
@@ -4694,15 +4716,15 @@ public class Wiki implements Serializable
      *  Performs a full text search of the wiki. Equivalent to
      *  [[Special:Search]], or that little textbox in the sidebar. Returns an
      *  array of search results, where:
-     *  <pre>
-     *  results[0] == page name
-     *  results[1] == parsed section name (may be "")
-     *  results[2] == snippet of page text
-     *  </pre>
+     *  <samp>
+     *  results[0] == <var>page name</var>
+     *  results[1] == <var>parsed section name (may be "")</var>
+     *  results[2] == <var>snippet of page text</var>
+     *  </samp>
      *
      *  @param search a search string
      *  @param namespaces the namespaces to search. If no parameters are passed
-     *  then the default is MAIN_NAMESPACE only.
+     *  then the default is {@link #MAIN_NAMESPACE} only.
      *  @return the search results
      *  @throws IOException if a network error occurs
      *  @since 0.14
@@ -4789,8 +4811,8 @@ public class Wiki implements Serializable
 
     /**
      *  Returns a list of all pages linking to this page within the specified
-     *  namespaces. Alternatively, we can retrive a list of what redirects to a
-     *  page by setting <tt>redirects</tt> to true. Equivalent to
+     *  namespaces. Alternatively, we can retrieve a list of what redirects to a
+     *  page by setting <var>redirects</var> to true. Equivalent to
      *  [[Special:Whatlinkshere]].
      *
      *  @param title the title of the page
@@ -5054,8 +5076,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Looks up a particular user in the IP block list, i.e. whether a user
-     *  is currently blocked. Equivalent to [[Special:BlockList]].
+     *  Looks up a particular user in the list of current blocks, i.e. whether 
+     *  a user is currently blocked. Equivalent to [[Special:BlockList]].
      *
      *  @param user a username or IP (e.g. "127.0.0.1")
      *  @return the block log entry
@@ -5202,7 +5224,7 @@ public class Wiki implements Serializable
     /**
      *  Gets the last how ever many log entries in the specified log. Equivalent
      *  to [[Special:Log]] and [[Special:Newimages]] when
-     *  <tt>type.equals(UPLOAD_LOG)</tt>.
+     *  <code>type.equals({@link #UPLOAD_LOG})</code>.
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use 
@@ -5662,9 +5684,11 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches the <tt>amount</tt> most recently created pages in the main
-     *  namespace. WARNING: The recent changes table only stores new pages
-     *  for about a month. It is not possible to retrieve changes before then.
+     *  Fetches the <var>amount</var> most recently created pages in the main
+     *  namespace. WARNING: The <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
+     *  recentchanges table</a> stores new pages for a <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of time</a>;
+     *  it is not possible to retrieve pages created before then.
      *
      *  @param amount the number of pages to fetch (overrides global query 
      *  limits)
@@ -5679,35 +5703,16 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches the <tt>amount</tt> most recently created pages in the main
-     *  namespace subject to the specified constraints. WARNING: The
-     *  recent changes table only stores new pages for about a month. It is not
-     *  possible to retrieve changes before then. Equivalent to
-     *  [[Special:Newpages]].
+     *  Fetches the <var>amount</var> most recently created pages in the main
+     *  namespace subject to the specified constraints. WARNING: The <a 
+     *  href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
+     *  table</a> stores new pages for a <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
+     *  time</a>; it is not possible to retrieve pages created before then. 
+     *  Equivalent to [[Special:Newpages]].
      *
-     *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
-     *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
-     *  @param amount the amount of new pages to get (overrides global query
-     *  limits)
-     *  @return the revisions that created the pages satisfying the requirements
-     *  above
-     *  @throws IOException if a network error occurs
-     *  @since 0.20
-     */
-    public Revision[] newPages(int amount, int rcoptions) throws IOException
-    {
-        return recentChanges(amount, rcoptions, true, MAIN_NAMESPACE);
-    }
-
-    /**
-     *  Fetches the <tt>amount</tt> most recently created pages in the
-     *  specified namespace, subject to the specified constraints. WARNING: The
-     *  recent changes table only stores new pages for about a month. It is not
-     *  possible to retrieve changes before then. Equivalent to
-     *  [[Special:Newpages]].
-     *
-     *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
-     *  we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
+     *  @param rcoptions a bitmask of {@link #HIDE_ANON} etc that dictate which 
+     *  pages we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get (overrides global query
      *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -5718,15 +5723,16 @@ public class Wiki implements Serializable
      */
     public Revision[] newPages(int amount, int rcoptions, int... ns) throws IOException
     {
-        // @revised 0.23 move code to recent changes
         return recentChanges(amount, rcoptions, true, ns);
     }
 
     /**
-     *  Fetches the <tt>amount</tt> most recent changes in the main namespace.
-     *  WARNING: The recent changes table only stores new pages for about a
-     *  month. It is not possible to retrieve changes before then. Equivalent
-     *  to [[Special:Recentchanges]].
+     *  Fetches the <var>amount</var> most recent changes in the main namespace.
+     *  WARNING: The <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
+     *  recentchanges table</a> stores new pages for a <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
+     *  time</a>; it is not possible to retrieve pages created before then.
+     *  Equivalent to [[Special:Recentchanges]].
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
@@ -5756,13 +5762,13 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public Revision[] recentChanges(int amount, int... ns) throws IOException
+    public Revision[] recentChanges(int amount, int[] ns) throws IOException
     {
         return recentChanges(amount, 0, false, ns);
     }
 
     /**
-     *  Fetches the <tt>amount</tt> most recent changes in the specified
+     *  Fetches the <var>amount</var> most recent changes in the specified
      *  namespace subject to the specified constraints. WARNING: The recent
      *  changes table only stores new pages for about a month. It is not
      *  possible to retrieve changes before then. Equivalent to
@@ -5785,7 +5791,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches the <tt>amount</tt> most recent changes in the specified
+     *  Fetches the <var>amount</var> most recent changes in the specified
      *  namespace subject to the specified constraints. WARNING: The recent
      *  changes table only stores new pages for about a month. It is not
      *  possible to retrieve changes before then. Equivalent to
@@ -5849,14 +5855,14 @@ public class Wiki implements Serializable
 
     /**
      *  Fetches all pages that use interwiki links to the specified wiki and the
-     *  page on that wiki that is linked to. For example, <tt>
-     *  getInterWikiBacklinks("testwiki")</tt> may return:
-     *  <pre>
+     *  page on that wiki that is linked to. For example, <code>
+     *  getInterWikiBacklinks("testwiki")</code> may return:
+     *  <samp>
      *  {
      *      { "Spam", "testwiki:Blah" },
      *      { "Test", "testwiki:Main_Page" }
      *  }
-     *  </pre>
+     *  </samp>
      *  <p>
      *  Here the page [[Spam]] contains the interwiki link [[testwiki:Blah]] and
      *  the page [[Test]] contains the interwiki link [[testwiki:Main_Page]].
@@ -5864,7 +5870,7 @@ public class Wiki implements Serializable
      *
      *  <p>
      *  For WMF wikis, see <a href="https://meta.wikimedia.org/wiki/Interwiki_map">
-     *  the interwiki map</a>for where some prefixes link to.
+     *  the interwiki map</a> for where some prefixes link to.
      *
      *  @param prefix the interwiki prefix that denotes a wiki
      *  @return all pages that contain interwiki links to said wiki
@@ -5877,22 +5883,22 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fetches all pages that use interwiki links with a certain <tt>prefix</tt>
-     *  and <tt>title</tt>. <tt>prefix</tt> refers to the wiki being linked to
-     *  and <tt>title</tt> refers to the page on said wiki being linked to. In
+     *  Fetches all pages that use interwiki links with a certain <var>prefix</var>
+     *  and <var>title</var>. <var>prefix</var> refers to the wiki being linked to
+     *  and <var>title</var> refers to the page on said wiki being linked to. In
      *  wiki syntax, this is [[prefix:title]]. This does not resolve nested
      *  prefixes, e.g. [[wikt:fr:Test]].
      *
      *  <p>
      *  Example: If [[Test]] and [[Spam]] both contain the interwiki link
-     *  [[testwiki:Blah]] then <tt>getInterWikiBacklinks("testwiki", "Blah");
-     *  </tt> will return (sorted by <tt>title</tt>)
-     *  <pre>
+     *  [[testwiki:Blah]] then <code>getInterWikiBacklinks("testwiki", "Blah");
+     *  </code> will return (sorted by <var>title</var>)
+     *  <samp>
      *  {
      *      { "Spam", "testwiki:Blah" },
      *      { "Test", "testwiki:Blah" }
      *  }
-     *  </pre>
+     *  </samp>
      *
      *  <p>
      *  For WMF wikis, see <a href="https://meta.wikimedia.org/wiki/Interwiki_map">
@@ -6068,7 +6074,7 @@ public class Wiki implements Serializable
          *  Fetches the internal edit count for this user, which includes all
          *  live edits and deleted edits after (I think) January 2007. If you
          *  want to count live edits only, use the slower
-         *  <tt>int count = user.contribs().length;</tt>.
+         *  <code>int <var>count</var> = {@link User#contribs(int...) <var>user</var>.contribs()}.length;</code>.
          *
          *  @return the user's edit count
          *  @throws IOException if a network error occurs
@@ -6189,15 +6195,15 @@ public class Wiki implements Serializable
          *  Creates a new log entry. WARNING: does not perform the action
          *  implied. Use Wiki.class methods to achieve this.
          *
-         *  @param type the type of log entry, one of USER_CREATION_LOG,
-         *  DELETION_LOG, BLOCK_LOG, etc.
+         *  @param type the type of log entry, one of {@link #USER_CREATION_LOG},
+         *  {@link #DELETION_LOG}, {@link #BLOCK_LOG}, etc.
          *  @param action the type of action that was performed e.g. "delete",
          *  "unblock", "overwrite", etc.
          *  @param reason why the action was performed
          *  @param user the user who performed the action
          *  @param target the target of the action
          *  @param timestamp the local time when the action was performed.
-         *  We will convert this back into a Calendar.
+         *  We will convert this back into an <code>OffsetDateTime</code>
          *  @param details the details of the action (e.g. the new title of
          *  the page after a move was performed).
          *  @since 0.08
@@ -6350,8 +6356,8 @@ public class Wiki implements Serializable
          *
          *  Note that the duration of a block may be given as a period of time
          *  (e.g. "31 hours") or a timestamp (e.g. 20071216160302). To tell
-         *  these apart, feed it into <tt>Long.parseLong()</tt> and catch any
-         *  resulting exceptions.
+         *  these apart, feed it into <code>Long.parseLong()</code> and catch
+         *  any resulting exceptions.
          *
          *  @return the details of the log entry
          *  @since 0.08
@@ -6581,12 +6587,13 @@ public class Wiki implements Serializable
         /**
          *  Returns a HTML rendered diff table; see the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  @param oldid the oldid of a revision on the same page. NEXT_REVISION,
-         *  PREVIOUS_REVISION and CURRENT_REVISION can be used here for obvious
-         *  effect. Returns null for page creations, moves, protections and similar 
-         *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
-         *  example</a>) and pairs of revisions where there is no difference.
+         *  Returns <code>null</code> for page creations, moves, protections and 
+         *  similar dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
+         *  and pairs of revisions where there is no difference.
          * 
+         *  @param oldid the oldid of a revision on the same page. {@link Wiki#NEXT_REVISION},
+         *  {@link Wiki#PREVIOUS_REVISION} and {@link Wiki#CURRENT_REVISION} can 
+         *  be used here for obvious effect. 
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @since 0.26
@@ -6777,7 +6784,7 @@ public class Wiki implements Serializable
 
         /**
          *  Returns the oldid of this revision. Don't confuse this with
-         *  <tt>rcid</tt>
+         *  <var>rcid</var>
          *  @return the oldid (long)
          *  @since 0.17
          */
@@ -6896,7 +6903,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Sets the <tt>rcid</tt> of this revision, used for patrolling.
+         *  Sets the <var>rcid</var> of this revision, used for patrolling.
          *  This parameter is optional. This is publicly editable for
          *  subclassing.
          *  @param rcid the rcid of this revision (long)
@@ -6908,7 +6915,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Gets the <tt>rcid</tt> of this revision for patrolling purposes.
+         *  Gets the <var>rcid</var> of this revision for patrolling purposes.
          *  @return the rcid of this revision (long)
          *  @since 0.17
          */
@@ -6940,7 +6947,8 @@ public class Wiki implements Serializable
 
         /**
          *  Reverts this revision using the rollback method. See
-         *  <tt>Wiki.rollback()</tt>.
+         *  {@link Wiki#rollback(org.wikipedia.Wiki.Revision)}.
+         * 
          *  @throws IOException if a network error occurs
          *  @throws CredentialNotFoundException if not logged in or user is not
          *  an admin
@@ -6955,7 +6963,8 @@ public class Wiki implements Serializable
 
         /**
          *  Reverts this revision using the rollback method. See
-         *  <tt>Wiki.rollback()</tt>.
+         *  {@link Wiki#rollback(org.wikipedia.Wiki.Revision)}.
+         * 
          *  @param bot mark this and the reverted revision(s) as bot edits
          *  @param reason (optional) a custom reason
          *  @throws IOException if a network error occurs
@@ -7030,7 +7039,7 @@ public class Wiki implements Serializable
      *  useful for subclasses.
      *
      *  Here we also check the database lag and wait if it exceeds
-     *  <tt>maxlag</tt>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  <var>maxlag</var>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
      *  here</a> for how this works.
      *
      *  @param url the url to fetch
@@ -7461,24 +7470,16 @@ public class Wiki implements Serializable
      */
     protected void constructNamespaceString(StringBuilder sb, String id, int[] namespaces)
     {
-        int temp = namespaces.length;
-        if (temp == 0)
+        if (namespaces.length == 0)
             return;
-        Arrays.sort(namespaces);
         sb.append("&");
         sb.append(id);
         sb.append("namespace=");
-        int previous = -1;
-        for (int i = 0; i < temp - 1; i++)
-        {
-            // remove duplicates
-            if (namespaces[i] == previous)
-                continue;
-            previous = namespaces[i];
-            sb.append(namespaces[i]);
-            sb.append("%7C");
-        }
-        sb.append(namespaces[temp - 1]);
+        sb.append(Arrays.stream(namespaces)
+            .distinct()
+            .sorted()
+            .mapToObj(String::valueOf)
+            .collect(Collectors.joining("%7C")));
     }
     
     /**
@@ -7489,17 +7490,18 @@ public class Wiki implements Serializable
      */
     protected String[] constructRevisionString(long[] ids)
     {
-        // copy ids to preserve order 
-        long[] sortedids = Arrays.copyOf(ids, ids.length);
-        long previous = -1;
+        // sort and remove duplicates per https://mediawiki.org/wiki/API
+        String[] sortedids = Arrays.stream(ids)
+            .distinct()
+            .sorted()
+            .mapToObj(String::valueOf)
+            .toArray(String[]::new);
         
         StringBuilder buffer = new StringBuilder();
         ArrayList<String> chunks = new ArrayList<>();
         for (int i = 0; i < sortedids.length; i++)
         {
-            // remove duplicates
-            if (sortedids[i] != previous)
-                buffer.append(sortedids[i]);
+            buffer.append(sortedids[i]);
             if (i == ids.length - 1 || i == slowmax - 1)
             {
                 chunks.add(buffer.toString());
@@ -7522,7 +7524,7 @@ public class Wiki implements Serializable
      */
     protected String[] constructTitleString(int lengthBaseUrl, String[] titles, boolean limit) throws IOException
     {
-        // sort and remove duplicates per [[mw:API]]
+        // sort and remove duplicates per https://mediawiki.org/wiki/API
         Set<String> set = new TreeSet<>();
         for (String title : titles)
             set.add(encode(title, true));
@@ -7628,13 +7630,13 @@ public class Wiki implements Serializable
                     break;
             }
         }
-        // https://www.mediawiki.org/wiki/Unicode_normalization_considerations
+        // https://mediawiki.org/wiki/Unicode_normalization_considerations
         String temp2 = new String(temp).trim().replaceAll("\\s+", " ");
         return Normalizer.normalize(temp2, Normalizer.Form.NFC);
     }
 
     /**
-     *  Ensures no less than <tt>throttle</tt> milliseconds pass between edits
+     *  Ensures no less than <var>throttle</var> milliseconds pass between edits
      *  and other write actions.
      *  @since 0.30
      */
@@ -7658,7 +7660,7 @@ public class Wiki implements Serializable
      *  Checks whether the currently logged on user has sufficient rights to
      *  edit/move a protected page.
      *
-     *  @param pageinfo the output from <tt>getPageInfo()</tt>
+     *  @param pageinfo the output from {@link #getPageInfo(java.lang.String)}
      *  @param action what we are doing
      *  @return whether the user can perform the specified action
      *  @throws IOException if a network error occurs

@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.regex.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.util.stream.Stream;
 import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
 
@@ -52,23 +51,17 @@ public class UserLinkAdditionFinder
         System.out.println("{| class=\"wikitable\"\n");
 
         Files.lines(fc.getSelectedFile().toPath(), Charset.forName("UTF-8"))
-            // fetch contributions for each user
-            .map(user -> {
-                // goddammit Oracle!
+            .flatMap(user -> {
                 try 
                 { 
-                    return Optional.of(enWiki.contribs(user, Wiki.MAIN_NAMESPACE));
+                    return Arrays.stream(enWiki.contribs(user, Wiki.MAIN_NAMESPACE));
                 }
                 catch (IOException ex)
                 {
-                    System.out.println("IOException for fetching contribs of user " + user);
-                    Optional<Wiki.Revision[]> temp = Optional.empty();
-                    return temp;
+                    System.err.println("IOException for fetching contribs of user " + user);
+                    return Arrays.stream(new Wiki.Revision[0]);
                 }
             })
-            // goddammit Oracle (again)! TODO: replace this when Java 1.9 is a thing.
-            .flatMap(opt -> opt.isPresent() ? Stream.of(opt.get()) : Stream.empty())
-            // fetch and parse diffs
             .map(revision -> {
                 try
                 {

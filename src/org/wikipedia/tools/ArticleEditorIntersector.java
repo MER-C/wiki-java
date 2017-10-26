@@ -262,7 +262,7 @@ public class ArticleEditorIntersector
      *  @param noadmin exclude admins from the analysis
      *  @param nobot exclude flagged bots from the analysis
      *  @param noanon exclude IPs from the analysis
-     *  @return a map with user => list of revisions made
+     *  @return a map with user &#8594; list of revisions made
      *  @throws IOException if a network error occurs
      */
     public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
@@ -353,7 +353,7 @@ public class ArticleEditorIntersector
      *  is <code>true</code>.
      * 
      *  @param users the list of users to fetch contributions for
-     *  @return a map with page => list of revisions made
+     *  @return a map with page &#8594; list of revisions made
      */
     public Map<String, List<Wiki.Revision>> intersectEditors(String[] users)
     {

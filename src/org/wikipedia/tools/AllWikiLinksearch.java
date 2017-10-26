@@ -178,15 +178,15 @@ public class AllWikiLinksearch
      *  Performs a cross-wiki linksearch.
      * 
      *  @param querylimit sets a query limit (500) for servlets
-     *  @param threads use this many threads. If <tt>querylimit</tt> is supplied
-     *  this is forced to 1. If greater than 1, this overwrites the system
-     *  property <tt>java.util.concurrent.ForkJoinPool.common.parallelism</tt>.
+     *  @param threads use this many threads. If <var>querylimit</var> is 
+     *  supplied this is forced to 1. If greater than 1, this overwrites the system
+     *  property <var>java.util.concurrent.ForkJoinPool.common.parallelism</var>.
      *  @param domain the domain to search
      *  @param wikis the wikis to search
      *  @param https include HTTPS links?
      *  @param mailto include mailto links?
      *  @param ns restrict to the given namespaces
-     *  @return the linksearch results, as in wiki => results, or null if an
+     *  @return the linksearch results, as in wiki &#8594; results, or null if an
      *  IOException occurred
      */
     public static Map<Wiki, List[]> crossWikiLinksearch(boolean querylimit, 

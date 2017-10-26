@@ -361,10 +361,11 @@ public class ParserUtils
     }
     
     /**
-     *  Creates user links in HTML of the form <tt>User (talk | contribs | 
-     *  deletedcontribs | block | block log)</tt>
+     *  Creates user links in HTML of the form <samp>User (talk | contribs | 
+     *  deletedcontribs | block | block log)</samp>
      *  @param username the username, NOT sanitized for XSS
-     *  @returned the generated HTML
+     *  @param wiki the wiki to build links for
+     *  @return the generated HTML
      */
     public static String generateUserLinks(Wiki wiki, String username)
     {
