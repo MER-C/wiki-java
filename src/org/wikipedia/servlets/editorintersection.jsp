@@ -50,6 +50,7 @@
     boolean noadmin = (request.getParameter("noadmin") != null);
     boolean nobot = (request.getParameter("nobot") != null);
     boolean noanon = (request.getParameter("noanon") != null);
+    boolean nominor = (request.getParameter("nominor") != null);
 %>
 
 <!doctype html>
@@ -92,6 +93,7 @@ first in the GUI) apply.
     <td><input type=checkbox name=noadmin value=1<%= (pages.isEmpty() || noadmin) ? " checked" : "" %>>admins</input>
         <input type=checkbox name=nobot value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>bots</input>
         <input type=checkbox name=noanon value=1<%= noanon ? " checked" : "" %>>IPs</input>
+        <input type=checkbox name=nominor value=1<%= nominor ? " checked" : "" %>>minor edits</input>
 </table>
 <br>
 <input type=submit value=Search>
@@ -150,6 +152,7 @@ first in the GUI) apply.
     pagesarray = Arrays.copyOf(pagesarray, Math.min(pagesarray.length, 24));
         
     ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
+    aei.setIgnoringMinorEdits(nominor);
     Map<String, List<Wiki.Revision>> results = aei.intersectArticles(pagesarray, noadmin, nobot, noanon);
     Map<String, Map<String, List<Wiki.Revision>>> bypage = new HashMap<>();
     results.forEach((key, value) ->

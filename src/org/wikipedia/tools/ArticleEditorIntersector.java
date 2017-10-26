@@ -41,9 +41,8 @@ public class ArticleEditorIntersector
     // TODO
     // 1) Make offline mode print out more than revids.
     // 2) Date cut off.  (backend)
-    // 3) Remove minor edits (backend)
-    // 4) Require edits to more than X articles
-    // 5) Require more than X edits per article
+    // 3) Require edits to more than X articles
+    // 4) Require more than X edits per article
     
     // Worth thinking about:
     // 1) Start from multiple users see articlesEdited()
@@ -51,7 +50,7 @@ public class ArticleEditorIntersector
     //    articlesEdited()
     
     private final Wiki wiki;
-    private boolean adminmode;
+    private boolean adminmode, nominor;
     
     /**
      *  Runs this program.
@@ -65,7 +64,7 @@ public class ArticleEditorIntersector
         String user = null;
         String category = null;
         boolean nobot = false, noadmin = false, noanon = false;
-        boolean adminmode = false;
+        boolean adminmode = false, nominor = false;
         List<String> articlelist = new ArrayList<>();
         
         // parse command line arguments
@@ -79,12 +78,14 @@ public class ArticleEditorIntersector
                     System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.ArticleEditorIntersector [options] [source] [pages]\n\n"
                         + "DESCRIPTION:\n\tFor a given set of pages, finds the common set of editors and lists the edits made.\n\n"
                         + "\t--help\n\t\tPrints this screen and exits.\n\n"
-                        + "Options:\n"
+                        + "Global options:\n"
                         + "\t--wiki wiki\n\t\tFetch data from wiki (default: en.wikipedia.org).\n"
+                        + "\t--adminmode\n\t\tFetch deleted edits (REQUIRES ADMIN LOGIN)\n"
+                        + "\t--nominor\n\t\tIgnore minor edits.\n\n"
+                        + "Options:\n"
                         + "\t--nobot\n\t\tExclude bots from the analysis.\n"
                         + "\t--noadmin\n\t\tExclude admins from the analysis.\n"
                         + "\t--noanon\n\t\tExclude IPs from the analysis.\n"
-                        + "\t--adminmode\n\t\tFetch deleted edits (REQUIRES ADMIN LOGIN)\n\n"
                         + "Sources of pages:\n"
                         + "\t--category category\n\t\tUse the members of the specified category as the list of articles.\n"
                         + "\t--contribs user\n\t\tUse the list of articles edited by the given user.\n"
@@ -114,6 +115,9 @@ public class ArticleEditorIntersector
                 case "--adminmode":
                     adminmode = true;
                     break;
+                case "--nominor":
+                    nominor = true;
+                    break;
                 default:
                     articlelist.add(args[i]);
                     break;
@@ -126,6 +130,7 @@ public class ArticleEditorIntersector
         
         Wiki wiki = Wiki.createInstance(wikidomain);
         ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
+        aei.setIgnoringMinorEdits(nominor);
         if (adminmode)
         {
             // CLI login
@@ -158,6 +163,8 @@ public class ArticleEditorIntersector
                     System.exit(2);
                 }
             }
+            if (nominor)
+                stuff = stuff.filter(rev -> !rev.isMinor());
             articles = stuff.map(Wiki.Revision::getPage)
                 .distinct()
                 .toArray(String[]::new);
@@ -226,9 +233,30 @@ public class ArticleEditorIntersector
     }
     
     /**
+     *  Sets whether minor edits will be ignored.
+     *  @param ignoreminor whether minor edits will be ignored
+     *  @see #isIgnoringMinorEdits() 
+     */
+    public void setIgnoringMinorEdits(boolean ignoreminor)
+    {
+        nominor = ignoreminor;
+    }
+    
+    /**
+     *  Checks whether minor edits are ignored.
+     *  @return whether minor edits are ignored
+     *  @see #setIgnoringMinorEdits(boolean) 
+     */
+    public boolean isIgnoringMinorEdits()
+    {
+        return nominor;
+    }
+    
+    /**
      *  Finds the set of common editors for a given set of <var>articles</var>.
      *  Includes deleted edits if {@link #isUsingAdminPrivileges()} is 
-     *  <code>true</code>.
+     *  <code>true</code> and ignores minor edits if {@link #isIgnoringMinorEdits()}
+     *  is <code>true</code>.
      * 
      *  @param articles a list of pages to analyze for common editors
      *  @param noadmin exclude admins from the analysis
@@ -241,7 +269,7 @@ public class ArticleEditorIntersector
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
     {
         // fetch histories and group by user
-        Map<String, List<Wiki.Revision>> results = Arrays.stream(articles).flatMap(article -> 
+        Stream<Wiki.Revision> revstream = Arrays.stream(articles).flatMap(article -> 
         {
             Stream<Wiki.Revision> str = Arrays.stream(new Wiki.Revision[0]);
             try
@@ -258,7 +286,10 @@ public class ArticleEditorIntersector
                 // with the live history returned.
             }
             return str;
-        }).collect(Collectors.groupingBy(Wiki.Revision::getUser));
+        });
+        if (nominor)
+            revstream = revstream.filter(rev -> !rev.isMinor());
+        Map<String, List<Wiki.Revision>> results = revstream.collect(Collectors.groupingBy(Wiki.Revision::getUser));
         
         Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = results.entrySet().iterator();
         while (iter.hasNext())
@@ -318,13 +349,13 @@ public class ArticleEditorIntersector
     /**
      *  Given a set of <var>users</var>, find the list of articles they have 
      *  edited. Includes deleted contributions if {@link #isUsingAdminPrivileges()}
+     *  is <code>true</code> and ignores minor edits if {@link #isIgnoringMinorEdits()}
      *  is <code>true</code>.
      * 
      *  @param users the list of users to fetch contributions for
-     *  @param nominor exclude minor edits
      *  @return a map with page => list of revisions made
      */
-    public Map<String, List<Wiki.Revision>> intersectEditors(String[] users, boolean nominor)
+    public Map<String, List<Wiki.Revision>> intersectEditors(String[] users)
     {
         // fetch the list of (deleted) edits
         Stream<Wiki.Revision> revstream = Arrays.stream(users).flatMap(user -> 
