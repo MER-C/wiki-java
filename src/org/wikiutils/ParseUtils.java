@@ -12,7 +12,6 @@ import org.wikipedia.Wiki;
  * @author Fastily
  * 
  * @see org.wikiutils.CollectionUtils
- * @see org.wikiutils.DateUtils
  * @see org.wikiutils.GUIUtils
  * @see org.wikiutils.IOUtils
  * @see org.wikiutils.LoginUtils

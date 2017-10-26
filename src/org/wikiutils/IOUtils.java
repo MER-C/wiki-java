@@ -20,7 +20,6 @@ import org.wikipedia.Wiki;
  * @author Fastily
  * 
  * @see org.wikiutils.CollectionUtils
- * @see org.wikiutils.DateUtils
  * @see org.wikiutils.GUIUtils
  * @see org.wikiutils.LoginUtils
  * @see org.wikiutils.ParseUtils
@@ -86,8 +85,10 @@ public class IOUtils
 	 * 
 	 * @throws FileNotFoundException If the source file could not be found
 	 * @throws IOException If we encountered some sort of read/write error
+         * @deprecated use <code>Files.copy(Paths.get(src), Paths.get(dest))</code>
+         * in the <code>java.nio.file</code> package.
 	 */
-
+        @Deprecated
 	public static void copyFile(String src, String dest) throws FileNotFoundException, IOException
 	{
 		FileInputStream in = new FileInputStream(new File(src));
