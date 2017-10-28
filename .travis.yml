@@ -1,14 +1,14 @@
-# use Docker-based container (instead of OpenVZ)
+install:
 sudo: false
+language: java
 
 cache:
   directories:
     - $HOME/.m2/repository
 
-language: java
-
 jdk:
-  - oraclejdk8
+    - oraclejdk8
 
-after_success:
+script:
+    - mvn -B clean jacoco:prepare-agent install jacoco:report
     - bash <(curl -s https://codecov.io/bash)
