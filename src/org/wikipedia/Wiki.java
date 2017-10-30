@@ -1381,14 +1381,16 @@ public class Wiki implements Serializable
     /**
      *  Gets miscellaneous page info. Returns:
      *  <ul>
+     *  <li><b>inputpagename</b>: (String) the page name supplied to this method
+     *  <li><b>pagename</b>: (String) the normalized page name
      *  <li><b>displaytitle</b>: (String) the title of the page that is actually
      *    displayed. Example: "iPod"
      *  <li><b>protection</b>: (Map) the {@link #protect(java.lang.String,
      *    java.util.Map, java.lang.String) protection state} of the page. Does
      *    not cover implied protection levels (e.g. MediaWiki namespace).
      *  <li><b>exists</b>: (Boolean) whether the page exists
-     *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or null
-     *    if the page does not exist
+     *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or 
+     *    <code>null</code> if the page does not exist
      *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the
      *    page does not exist
      *  <li><b>size</b>: (Integer) the size of the page or -1 if the page does
@@ -1428,6 +1430,8 @@ public class Wiki implements Serializable
                 Map<String, Object> tempmap = new HashMap<>(15);
 
                 // does the page exist?
+                String parsedtitle = parseAttribute(item, "title", 0);
+                tempmap.put("pagename", parsedtitle);
                 boolean exists = !item.contains("missing=\"\"");
                 tempmap.put("exists", exists);
                 if (exists)
@@ -1464,7 +1468,6 @@ public class Wiki implements Serializable
                         protectionstate.put("cascadesource", parseAttribute(item, "source", z));
                 }
                 // MediaWiki namespace
-                String parsedtitle = parseAttribute(item, "title", 0);
                 if (namespace(parsedtitle) == MEDIAWIKI_NAMESPACE)
                 {
                     protectionstate.put("edit", FULL_PROTECTION);
@@ -1485,8 +1488,13 @@ public class Wiki implements Serializable
 
                 // reorder
                 for (int i = 0; i < pages2.length; i++)
+                {
                     if (normalize(pages2[i]).equals(parsedtitle))
+                    {
                         info[i] = tempmap;
+                        tempmap.put("inputpagename", pages2[i]);
+                    }
+                }
             }
         }
 
@@ -4184,6 +4192,8 @@ public class Wiki implements Serializable
      *  Gets information about the given users. For each username, this returns
      *  either null if the user doesn't exist, or:
      *  <ul>
+     *  <li><b>inputname</b>: (String) the username supplied to this method
+     *  <li><b>username</b>: (String) the normalized user name
      *  <li><b>editcount</b>: (int) the user's edit count (see {@link 
      *    User#countEdits()})
      *  <li><b>groups</b>: (String[]) the groups the user is in (see
@@ -4221,6 +4231,7 @@ public class Wiki implements Serializable
                 Map<String, Object> ret = new HashMap<>(10);
                 String parsedname = parseAttribute(result, "name", 0);
 
+                ret.put("username", parsedname);
                 ret.put("blocked", result.contains("blockedby=\""));
                 ret.put("emailable", result.contains("emailable=\""));
                 ret.put("editcount", Integer.parseInt(parseAttribute(result, "editcount", 0)));
@@ -4253,8 +4264,13 @@ public class Wiki implements Serializable
 
                 // place the result into the return array
                 for (int j = 0; j < usernames.length; j++)
+                {
                     if (normalize(usernames[j]).equals(parsedname))
+                    {
                         info[j] = ret;
+                        ret.put("inputname", usernames[j]);
+                    }
+                }
             }
         }
 
