@@ -37,6 +37,13 @@ import org.wikipedia.*;
  */
 public class ContributionSurveyor
 {
+    private Wiki wiki;
+    
+    /**
+     *  Runs this program.
+     *  @param args command line arguments (see --help below)
+     *  @throws IOException 
+     */
     public static void main(String[] args) throws IOException
     {
         // placeholders
@@ -158,12 +165,32 @@ public class ContributionSurveyor
                 System.exit(0);
             }
         }
-        contributionSurvey(homewiki, users.toArray(new String[users.size()]), out, userspace, images);
+        ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
+        surveyor.contributionSurvey(users.toArray(new String[users.size()]), out, userspace, images);
+    }
+    
+    /**
+     *  Constructs a new ContributionSurveyor instance.
+     *  @param Wiki homewiki the wiki that has users we want to survey
+     *  @since 0.03
+     */
+    public ContributionSurveyor(Wiki homewiki)
+    {
+        this.wiki = homewiki;
+    }
+    
+    /**
+     *  Returns the home wiki of users that can be surveyed by this instance.
+     *  @return (see above)
+     *  @since 0.03
+     */
+    public Wiki getWiki()
+    {
+        return wiki;
     }
     
     /**
      *  Performs a mass contribution survey.
-     *  @param homewiki the wiki to survey on
      *  @param users the users to survey
      *  @param output the output file to write to
      *  @param userspace whether to survey output
@@ -171,16 +198,16 @@ public class ContributionSurveyor
      *  @throws IOException if a network error occurs
      *  @since 0.02
      */
-    public static void contributionSurvey(Wiki homewiki, String[] users, File output, boolean userspace, boolean images) throws IOException
+    public void contributionSurvey(String[] users, File output, boolean userspace, boolean images) throws IOException
     {
         FileWriter out = new FileWriter(output);
         for (String user : users)
         {
             // determine if user exists; if so, stats
-            Wiki.Revision[] contribs = homewiki.contribs(user);
+            Wiki.Revision[] contribs = wiki.contribs(user);
             out.write("===" + user + "===\n");
             out.write("*{{user5|" + user + "}}\n");
-            Wiki.User wpuser = homewiki.getUser(user);
+            Wiki.User wpuser = wiki.getUser(user);
             if (wpuser != null)
             {
                 int editcount = wpuser.countEdits();
@@ -199,7 +226,7 @@ public class ContributionSurveyor
                 .filter(rev -> {
                     try
                     { 
-                        return homewiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() > 149;
+                        return wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() > 149;
                     }
                     catch (IOException ex)
                     {
@@ -237,7 +264,7 @@ public class ContributionSurveyor
                 {
                     String title = revision.getPage();
                     // check only userspace edits
-                    int ns = homewiki.namespace(title);
+                    int ns = wiki.namespace(title);
                     if (ns != Wiki.USER_NAMESPACE)
                         continue;
                     temp.add(title);
@@ -252,7 +279,7 @@ public class ContributionSurveyor
             // survey images
             if (images && wpuser != null)
             {
-                String[][] survey = imageContributionSurvey(homewiki, wpuser);
+                String[][] survey = imageContributionSurvey(wpuser);
                 if (survey[0].length > 0)
                 {
                     out.write("====Local uploads (" + user + ")====\n");
@@ -284,18 +311,17 @@ public class ContributionSurveyor
     
     /**
      *  Performs an image contribution survey on a user.
-     *  @param homewiki a wiki
-     *  @param user a user on that wiki
+     *  @param user a user on the wiki
      *  @return first element = local uploads, second element = uploads on Wikimedia
      *  Commons by the user, third element = images transferred to Commons (may
      *  be inaccurate depending on username).
      *  @throws IOException if a network error occurs
      */
-    public static String[][] imageContributionSurvey(Wiki homewiki, Wiki.User user) throws IOException
+    public String[][] imageContributionSurvey(Wiki.User user) throws IOException
     {
         // fetch local uploads
         HashSet<String> localuploads = new HashSet<>(10000);
-        for (Wiki.LogEntry upload : homewiki.getUploads(user))
+        for (Wiki.LogEntry upload : wiki.getUploads(user))
             localuploads.add(upload.getTarget());
         
         // fetch commons uploads
@@ -330,18 +356,17 @@ public class ContributionSurveyor
      *  limitations, it is not possible to filter by bytes added or whether an
      *  edit created a new page.)
      * 
-     *  @param homewiki the user's home wiki
      *  @param username the user to survey
      *  @param ns the namespaces to survey (not specified = all namespaces)
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if one cannot view deleted pages
      *  @since 0.03
      */
-    public static LinkedHashMap<String, ArrayList<Wiki.Revision>> deletedContributionSurvey(Wiki homewiki, 
-        String username, int... ns) throws IOException, CredentialNotFoundException
+    public LinkedHashMap<String, ArrayList<Wiki.Revision>> deletedContributionSurvey(String username, 
+        int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
-        Wiki.Revision[] delcontribs = homewiki.deletedContribs(username, null, 
+        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, null, 
             null, false, ns);
         LinkedHashMap<String, ArrayList<Wiki.Revision>> ret = new LinkedHashMap<>();
         

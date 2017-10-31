@@ -1238,67 +1238,6 @@ public class Wiki implements Serializable
         return parseAttribute(content, type + "token", 0);
     }
     
-    // STATIC MEMBERS
-
-    /**
-     *  Determines the intersection of two lists of pages a and b.
-     *  Such lists might be generated from the various list methods below.
-     *  Examples from the English Wikipedia:
-     *
-     *  <code>
-     *  // find all orphaned and unwikified articles
-     *  String[] articles = Wiki.intersection(wikipedia.getCategoryMembers("All orphaned articles", Wiki.MAIN_NAMESPACE),
-     *      wikipedia.getCategoryMembers("All pages needing to be wikified", Wiki.MAIN_NAMESPACE));
-     *
-     *  // find all (notable) living people who are related to Barack Obama
-     *  String[] people = Wiki.intersection(wikipedia.getCategoryMembers("Living people", Wiki.MAIN_NAMESPACE),
-     *      wikipedia.whatLinksHere("Barack Obama", Wiki.MAIN_NAMESPACE));
-     *  </code>
-     *
-     *  @param a a list of pages
-     *  @param b another list of pages
-     *  @return a intersect b (as String[])
-     *  @since 0.04
-     */
-    public static String[] intersection(String[] a, String[] b)
-    {
-        // @revised 0.11 to take advantage of Collection.retainAll()
-        // @revised 0.14 genericised to all page titles, not just category members
-
-        List<String> intersec = new ArrayList<>(5000); // silly workaround
-        intersec.addAll(Arrays.asList(a));
-        intersec.retainAll(Arrays.asList(b));
-        return intersec.toArray(new String[intersec.size()]);
-    }
-
-    /**
-     *  Determines the list of articles that are in a but not b, i.e. a \ b.
-     *  This is not the same as b \ a. Such lists might be generated from the
-     *  various lists below. Some examples from the English Wikipedia:
-     *
-     *  <code>
-     *  // find all Martian crater articles that do not have an infobox
-     *  String[] articles = Wiki.relativeComplement(wikipedia.getCategoryMembers("Craters on Mars"),
-     *      wikipedia.whatTranscludesHere("Template:MarsGeo-Crater", Wiki.MAIN_NAMESPACE));
-     *
-     *  // find all images without a description that haven't been tagged "no license"
-     *  String[] images = Wiki.relativeComplement(wikipedia.getCategoryMembers("Images lacking a description"),
-     *      wikipedia.getCategoryMembers("All images with unknown copyright status"));
-     *  </code>
-     *
-     *  @param a a list of pages
-     *  @param b another list of pages
-     *  @return a \ b
-     *  @since 0.14
-     */
-    public static String[] relativeComplement(String[] a, String[] b)
-    {
-        List<String> compl = new ArrayList<>(5000); // silly workaround
-        compl.addAll(Arrays.asList(a));
-        compl.removeAll(Arrays.asList(b));
-        return compl.toArray(new String[compl.size()]);
-    }
-
     // PAGE METHODS
 
     /**
