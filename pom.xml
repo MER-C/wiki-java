@@ -106,6 +106,7 @@
                             <include>**/WikiUnitTest.java</include>
                             <include>**/ParserUtilsUnitTest.java</include>
                             <include>**/ArrayUtilsUnitTest.java</include>
+                            <include>**/ArticleEditorIntersectorUnitTest.java</include>
                             <include>**/UserLinkAdditionFinderUnitTest.java</include>
                         </includes>
                     </configuration>

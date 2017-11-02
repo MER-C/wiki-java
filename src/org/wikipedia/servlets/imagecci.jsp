@@ -39,7 +39,8 @@
         // get results
         Wiki wiki = Wiki.createInstance(homewiki);
         Wiki.User wpuser = wiki.getUser(user);
-        String[][] survey = ContributionSurveyor.imageContributionSurvey(wiki, wpuser);
+        ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
+        String[][] survey = surveyor.imageContributionSurvey(wpuser);
 
         // output results
         out.println("=== Uploads to " + wiki.getDomain() + " ===");

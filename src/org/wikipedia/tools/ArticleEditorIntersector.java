@@ -212,6 +212,15 @@ public class ArticleEditorIntersector
     }
     
     /**
+     *  Returns the wiki that this intersector fetches data from.
+     *  @return (see above)
+     */
+    public Wiki getWiki()
+    {
+        return wiki;
+    }
+    
+    /**
      *  Sets whether fetching of deleted material will be attempted. You will 
      *  need to login to the wiki with an admin account separately.
      *  @param mode whether to fetch deleted material
@@ -258,22 +267,38 @@ public class ArticleEditorIntersector
      *  <code>true</code> and ignores minor edits if {@link #isIgnoringMinorEdits()}
      *  is <code>true</code>.
      * 
-     *  @param articles a list of pages to analyze for common editors
+     *  @param articles a list of at least two unique pages to analyze for 
+     *  common editors
      *  @param noadmin exclude admins from the analysis
      *  @param nobot exclude flagged bots from the analysis
      *  @param noanon exclude IPs from the analysis
-     *  @return a map with user &#8594; list of revisions made
+     *  @return a map with user &#8594; list of revisions made. If the total
+     *  number of pages does not exceed one after applying all exclusions and 
+     *  removing revisions with deleted/suppressed usernames and pages with no
+     *  (deleted) history or are invalid (Special/Media namespaces) or there is
+     *  no intersection, return an empty map.
      *  @throws IOException if a network error occurs
+     *  @throws IllegalArgumentException if <code><var>articles.length</var> &lt; 2</code>
+     *  after duplicates (as in <code>String.equals</code>) are removed
      */
     public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
     {
+        // remove duplicates and fail quickly if less than two pages
+        Set<String> pageset = new HashSet<>(2 * articles.length);
+        pageset.addAll(Arrays.asList(articles));
+        if (pageset.size() < 2)
+            throw new IllegalArgumentException("At least two articles are needed to derive a meaningful intersection.");
+        
         // fetch histories and group by user
-        Stream<Wiki.Revision> revstream = Arrays.stream(articles).flatMap(article -> 
+        Stream<Wiki.Revision> revstream = pageset.stream().flatMap(article -> 
         {
             Stream<Wiki.Revision> str = Arrays.stream(new Wiki.Revision[0]);
             try
             {
+                // remove Special: and Media: pages
+                if (wiki.namespace(article) < 0)
+                    return str;
                 str = Arrays.stream(wiki.getPageHistory(article));
                 if (adminmode)
                     str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article)));
@@ -286,7 +311,7 @@ public class ArticleEditorIntersector
                 // with the live history returned.
             }
             return str;
-        });
+        }).filter(rev -> rev.getUser() != null); // remove deleted/suppressed usernames
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
         Map<String, List<Wiki.Revision>> results = revstream.collect(Collectors.groupingBy(Wiki.Revision::getUser));
@@ -311,6 +336,8 @@ public class ArticleEditorIntersector
         } 
 
         // remove admins, bots and anons if necessary
+        if (results.isEmpty())
+            return results;
         Set<String> keyset = results.keySet();
         if (noadmin || nobot || noanon)
         {

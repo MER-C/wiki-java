@@ -72,37 +72,32 @@ public class WikiUnitTest
     {
         enWiki.setAssertionMode(Wiki.ASSERT_USER);
         assertEquals("assertion mode", Wiki.ASSERT_USER, enWiki.getAssertionMode());
+        // This test runs logged out. The following assertions are expected to fail.
         try
         {
             enWiki.getPageText("Main Page");
-            fail("assertion mode: failed login assertion");
+            fail("assertion mode: logged out, but ASSERT_USER passed");
         }
-        catch (AssertionError ex)
+        catch (AssertionError expected)
         {
-            // Test passed. Assertion tests whether we are logged in, which we
-            // are not.
         }
         enWiki.setAssertionMode(Wiki.ASSERT_BOT);
         try
         {
             enWiki.getPageText("Main Page");
-            fail("assertion mode: failed bot assertion");
+            fail("assertion mode: logged out, but ASSERT_BOT passed");
         }
-        catch (AssertionError ex)
+        catch (AssertionError expected)
         {
-            // Test passed. Assertion tests whether we have a bot flag. As we
-            // are not logged in, we cannot have one.
         }
         enWiki.setAssertionMode(Wiki.ASSERT_SYSOP);
         try
         {
             enWiki.getPageText("Main Page");
-            fail("assertion mode: failed admin assertion");
+            fail("assertion mode: logged out, but ASSERT_SYSOP passed");
         }
-        catch (AssertionError ex)
+        catch (AssertionError expected)
         {
-            // Test passed. Assertion tests whether we are an admin. No sane
-            // wiki owner would allow IPs to be admins.
         }
         enWiki.setAssertionMode(Wiki.ASSERT_NONE);
     }
@@ -166,9 +161,8 @@ public class WikiUnitTest
             enWiki.supportsSubpages(-4444);
             fail("supportsSubpages: obviously invalid namespace");
         }
-        catch (IllegalArgumentException ex)
+        catch (IllegalArgumentException expected)
         {
-            // test passed
         }
     }
     
@@ -198,27 +192,24 @@ public class WikiUnitTest
             enWiki.getTalkPage("Talk:Hello");
             fail("getTalkPage: tried to get talk page of a talk page");
         }
-        catch (IllegalArgumentException ex)
+        catch (IllegalArgumentException expected)
         {
-            // test passed
         }
         try
         {
             enWiki.getTalkPage("Special:Newpages");
             fail("getTalkPage: tried to get talk page of a special page");
         }
-        catch (IllegalArgumentException ex)
+        catch (IllegalArgumentException expected)
         {
-            // test passed
         }
         try
         {
             enWiki.getTalkPage("Media:Wiki.png");
             fail("getTalkPage: tried to get talk page of a media page");
         }
-        catch (IllegalArgumentException ex)
+        catch (IllegalArgumentException expected)
         {
-            // test passed
         }
     }
     
@@ -256,7 +247,7 @@ public class WikiUnitTest
     @Test
     public void getFirstRevision() throws Exception
     {
-        assertNull("Non-existent page", enWiki.getFirstRevision("dgfhdf&jklg"));
+        assertNull("getFirstRevision: Non-existent page", enWiki.getFirstRevision("dgfhdf&jklg"));
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         Wiki.Revision first = testWiki.getFirstRevision("User:MER-C/UnitTests/Delete");
         assertEquals("getFirstRevision", 217080L, first.getRevid());

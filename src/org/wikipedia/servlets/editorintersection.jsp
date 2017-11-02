@@ -104,35 +104,14 @@ first in the GUI) apply.
     wiki.setMaxLag(-1);
     wiki.setQueryLimit(1500);
 
-    String[] pagesarray = null;
+    Stream<String> pagestream = null;
     if (mode.equals("category"))
-    {
-        out.println("<hr>");
-        pagesarray = wiki.getCategoryMembers(category);
-        if (pagesarray.length == 0)
-        {
-%>
-    <span class="error">Category <%= ServletUtils.sanitizeForHTML(category) %> does not exist or is empty!</span>
-    <%@ include file="footer.jsp" %>
-<%
-            return;
-        }
-    }
+        pagestream = Arrays.stream(wiki.getCategoryMembers(category));
     else if (mode.equals("contribs"))
     {
         out.println("<hr>");
-        pagesarray = Arrays.stream(wiki.contribs(user))
-            .map(Wiki.Revision::getPage)
-            .distinct()
-            .toArray(String[]::new);
-        if (pagesarray.length == 0)
-        {
-%>
-    <span class="error">User <%= ServletUtils.sanitizeForHTML(user) %> does not exist or has no edits!</span>
-    <%@ include file="footer.jsp" %>
-<%
-            return;
-        }
+        pagestream = Arrays.stream(wiki.contribs(user))
+            .map(Wiki.Revision::getPage);
     }
     else if (mode.equals("pages"))
     {
@@ -144,16 +123,29 @@ first in the GUI) apply.
 <%
             return;
         }
-        String[] temp = pages.split("\r\n");
-        for (int i = 0; i < temp.length; i++)
-            temp[i] = temp[i].trim();
-        pagesarray = temp;
+        pagestream = Arrays.stream(pages.split("\r\n")).map(String::trim);
     }
-    pagesarray = Arrays.copyOf(pagesarray, Math.min(pagesarray.length, 24));
-        
+    out.println("<hr>");
+    String[] pagesarray = pagestream.distinct().limit(25).toArray(String[]::new);
+    if (pagesarray.length < 2)
+    {
+%>
+    <span class="error">Need at least two distinct pages to perform an intersection!</span>
+<%@ include file="footer.jsp" %>
+<%
+        return;
+    }
     ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
     aei.setIgnoringMinorEdits(nominor);
     Map<String, List<Wiki.Revision>> results = aei.intersectArticles(pagesarray, noadmin, nobot, noanon);
+    if (results.isEmpty())
+    {
+%>
+    <span class="error">No intersection after applying exclusions and removing non-existing pages!</span>
+<%@ include file="footer.jsp" %>
+<%
+        return;
+    }
     Map<String, Map<String, List<Wiki.Revision>>> bypage = new HashMap<>();
     results.forEach((key, value) ->
     {
