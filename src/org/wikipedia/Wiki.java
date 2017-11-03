@@ -1205,7 +1205,10 @@ public class Wiki implements Serializable
      *  [[Special:Random]].
      *
      *  @param ns the namespaces to fetch random pages from. If not present,
-     *  fetch pages from {@link #MAIN_NAMESPACE}.
+     *  fetch pages from {@link #MAIN_NAMESPACE}. Allows {@link #ALL_NAMESPACES}
+     *  for obvious effect. Invalid namespaces, {@link #SPECIAL_NAMESPACE} and
+     *  {@link #MEDIA_NAMESPACE} are ignored; if only these namespaces are 
+     *  provided, this is equivalent to {@link #ALL_NAMESPACES}.
      *  @return the title of the page
      *  @throws IOException if a network error occurs
      *  @since 0.13
@@ -1219,7 +1222,8 @@ public class Wiki implements Serializable
         // https://mediawiki.org/wiki/API:Random
         StringBuilder url = new StringBuilder(query);
         url.append("list=random");
-        constructNamespaceString(url, "rn", ns);
+        if (ns[0] != ALL_NAMESPACES)
+            constructNamespaceString(url, "rn", ns);
         String line = fetch(url.toString(), "random");
         return parseAttribute(line, "title", 0);
     }
@@ -1341,8 +1345,8 @@ public class Wiki implements Serializable
      *  </ul>
      *
      *  @param pages the pages to get info for.
-     *  @return (see above). The Maps will come out in the same order as the
-     *  processed array.
+     *  @return (see above), or <code>null</code> for Special and Media pages. 
+     *  The Maps will come out in the same order as the processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
@@ -1425,13 +1429,13 @@ public class Wiki implements Serializable
                 if (item.contains("watchers=\""))
                     tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
 
-                // reorder
+                // Reorder. Make a new HashMap so that identity mapping does not overwrite.
                 for (int i = 0; i < pages2.length; i++)
                 {
                     if (normalize(pages2[i]).equals(parsedtitle))
                     {
-                        info[i] = tempmap;
-                        tempmap.put("inputpagename", pages2[i]);
+                        info[i] = new HashMap(tempmap);
+                        info[i].put("inputpagename", pages[i]);
                     }
                 }
             }
@@ -1522,7 +1526,7 @@ public class Wiki implements Serializable
     public LinkedHashMap<String, Integer> getNamespaces() throws IOException
     {
         ensureNamespaceCache();
-        return (LinkedHashMap<String, Integer>)namespaces.clone();
+        return new LinkedHashMap<String, Integer>(namespaces);
     }
     
     /**
@@ -1948,13 +1952,17 @@ public class Wiki implements Serializable
      *  delete
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.24
      */
     public synchronized void delete(String title, String reason) throws IOException, LoginException
     {
-        throttle();
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
         if (user == null || !user.isAllowedTo("delete"))
             throw new CredentialNotFoundException("Cannot delete: Permission denied");
+        throttle();
 
         // edit token
         Map info = getPageInfo(title);
@@ -1990,13 +1998,17 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if we cannot undelete
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.30
      */
     public synchronized void undelete(String title, String reason, Revision... revisions) throws IOException, LoginException
     {
-        throttle();
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
         if (user == null || !user.isAllowedTo("undelete"))
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
+        throttle();
 
         StringBuilder out = new StringBuilder("title=");
         out.append(encode(title, true));
@@ -2395,10 +2407,14 @@ public class Wiki implements Serializable
      *  @param title a page
      *  @return the most recent revision of that page
      *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.24
      */
     public Revision getTopRevision(String title) throws IOException
     {
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Special and Media pages do not have histories!");
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=1&meta=tokens&type=rollback&titles=");
         url.append(encode(title, true));
@@ -2416,10 +2432,14 @@ public class Wiki implements Serializable
      *  @param title a page
      *  @return the oldest revision of that page
      *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.24
      */
     public Revision getFirstRevision(String title) throws IOException
     {
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Special and Media pages do not have histories!");
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=1&rvdir=newer&titles=");
         url.append(encode(title, true));
@@ -2516,20 +2536,29 @@ public class Wiki implements Serializable
      *  @param start the EARLIEST of the two dates
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work)
+     *  first is how history pages work). DEPRECATED: use <code>Collections.reverse()</code>
+     *  in the JDK.
      *  @return the revisions of that page in that time span
      *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.19
      */
     public Revision[] getPageHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse) throws IOException
     {
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Special and Media pages do not have histories!");
+        
         // set up the url
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
         if (reverse)
+        {
+            log(Level.WARNING, "getPageHistory", "Parameter reverse is deprecated.");
             url.append("&rvdir=newer");
+        }
         if (start != null)
         {
             url.append(reverse ? "&rvstart=" : "&rvend=");
@@ -2587,6 +2616,8 @@ public class Wiki implements Serializable
      *  @return the deleted revisions of that page in that time span
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.30
      */
     public Revision[] getDeletedHistory(String title) throws IOException, CredentialNotFoundException
@@ -2600,23 +2631,31 @@ public class Wiki implements Serializable
      *  @param start the EARLIEST of the two dates
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work)
+     *  first is how history pages work) DEPRECATED: use <code>Collections.reverse()</code>
+     *  in the JDK.
      *  @return the deleted revisions of that page in that time span
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws UnsupportedOperationException if <var>title</var> is a Special
+     *  or Media page
      *  @since 0.30
      */
     public Revision[] getDeletedHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse)
         throws IOException, CredentialNotFoundException
     {
-        // admin queries are annoying
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Special and Media pages do not have histories!");
         if (user == null || !user.isAllowedTo("deletedhistory"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
         url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Csha1");
         if (reverse)
+        {
+            log(Level.WARNING, "getDeletedHistory", "Parameter reverse is deprecated");
             url.append("&drvdir=newer");
+        }
+            
         if (start != null)
         {
             url.append(reverse ? "&drvstart=" : "&drvend=");
@@ -2675,7 +2714,8 @@ public class Wiki implements Serializable
      *  @param start the EARLIEST of the two dates
      *  @param end the LATEST of the two dates
      *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work)
+     *  first is how history pages work). DEPRECATED: use <code>Collections.reverse()</code>
+     *  in the JDK.
      *  @param namespace a list of namespaces
      *  @return the deleted contributions of that user
      *  @throws IOException if a network error occurs
@@ -2692,7 +2732,10 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Ctimestamp%7Csha1");
         if (reverse)
+        {
+            log(Level.WARNING, "deletedContribs", "Parameter reverse is deprecated.");
             url.append("&adrdir=newer");
+        }
         if (start != null)
         {
             url.append(reverse ? "&adrstart=" : "&adrend=");
@@ -2805,13 +2848,14 @@ public class Wiki implements Serializable
     /**
      *  Moves a page. Moves the associated talk page and leaves redirects, if
      *  applicable. Equivalent to [[Special:MovePage]]. This method is thread
-     *  safe and is subject to the throttle.
+     *  safe and is subject to the throttle. Does not recategorize pages
+     *  in moved categories.
      *
      *  @param title the title of the page to move
      *  @param newTitle the new title of the page
      *  @param reason a reason for the move
      *  @throws UnsupportedOperationException if the original page is in the
-     *  Category or Image namespace. MediaWiki does not support moving of
+     *  Special or Media namespaces. MediaWiki does not support moving of
      *  these pages.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
@@ -2826,7 +2870,8 @@ public class Wiki implements Serializable
 
     /**
      *  Moves a page. Equivalent to [[Special:MovePage]]. This method is
-     *  thread safe and is subject to the throttle.
+     *  thread safe and is subject to the throttle. Does not recategorize pages
+     *  in moved categories.
      *
      *  @param title the title of the page to move
      *  @param newTitle the new title of the page
@@ -2837,7 +2882,8 @@ public class Wiki implements Serializable
      *  be an admin to do this, otherwise this will be ignored.
      *  @param movetalk move the talk page as well (if applicable)
      *  @throws UnsupportedOperationException if the original page is in the
-     *  Category namespace. MediaWiki does not support moving of these pages.
+     *  Special or Media namespaces. MediaWiki does not support moving of these 
+     *  pages.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @throws CredentialExpiredException if cookies have expired
@@ -2847,6 +2893,9 @@ public class Wiki implements Serializable
     public synchronized void move(String title, String newTitle, String reason, boolean noredirect, boolean movetalk,
         boolean movesubpages) throws IOException, LoginException
     {
+        if (namespace(title) < 0)
+            throw new UnsupportedOperationException("Tried to move a Special or Media page.");
+        
         throttle();
         // check for log in
         if (user == null || !user.isAllowedTo("move"))
@@ -2855,10 +2904,6 @@ public class Wiki implements Serializable
             log(Level.SEVERE, "move", "Cannot move - permission denied: " + ex);
             throw ex;
         }
-
-        // check namespace
-        if (namespace(title) == CATEGORY_NAMESPACE)
-            throw new UnsupportedOperationException("Tried to move a category.");
 
         // protection and token
         Map info = getPageInfo(title);
@@ -3066,10 +3111,12 @@ public class Wiki implements Serializable
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
      *  is not the case, then this method does nothing. The edit and reverted 
-     *  edits will be marked as bot if {@link #isMarkBot()} is <code>true</code>.
+     *  edits will be marked as bot if {@link #isMarkBot()} is <code>true</code>
+     *  
      *
-     *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
-     *  be true for the rollback to succeed
+     *  @param revision the revision to revert. All subsequent revisions to
+     *  the corresponding page must be made by this revision's user in order for
+     *  the rollback to succeed.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if the user is not an admin
      *  @throws CredentialExpiredException if cookies have expired
@@ -3086,13 +3133,13 @@ public class Wiki implements Serializable
     /**
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
-     *  is not the case, then this method does nothing. The edit and reverted 
-     *  edits will be marked as bot if {@link #isMarkBot()} is <code>true</code>.
+     *  is not the case, then this method does nothing. 
      *
-     *  @param revision the revision to revert. <tt>revision.isTop()</tt> must
-     *  be true for the rollback to succeed
+     *  @param revision the revision to revert. All subsequent revisions to
+     *  the corresponding page must be made by this revision's user in order for
+     *  the rollback to succeed.
      *  @param bot whether to mark this edit and the reverted revisions as
-     *  bot edits (ignored if we cannot do this)
+     *  bot edits (ignored if we cannot do this, overrides {@link #isMarkBot()}).
      *  @param reason (optional) a reason for the rollback. Use "" for the
      *  default ([[MediaWiki:Revertpage]]).
      *  @throws IOException if a network error occurs
@@ -3109,26 +3156,14 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("rollback"))
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
 
-        // check whether we are "on top".
-        Revision top = getTopRevision(revision.getPage());
-        if (!top.equals(revision))
-        {
-            log(Level.INFO, "rollback", "Rollback failed: revision is not the most recent");
-            return;
-        }
-
-        // get the rollback token
-        String token = encode(top.getRollbackToken(), false);
-
-        // Perform the rollback. Although it's easier through the human interface, we want
-        // to make sense of any resulting errors.
+        // Perform the rollback. 
         StringBuilder buffer = new StringBuilder(10000);
         buffer.append("title=");
         buffer.append(encode(revision.getPage(), true));
         buffer.append("&user=");
         buffer.append(encode(revision.getUser(), true));
         buffer.append("&token=");
-        buffer.append(token);
+        buffer.append(encode(getToken("rollback"), false));
         if (bot && user.isAllowedTo("markbotedits"))
             buffer.append("&markbot=1");
         if (!reason.isEmpty())
@@ -3141,7 +3176,8 @@ public class Wiki implements Serializable
         // done
         // ignorable errors
         if (response.contains("alreadyrolled"))
-            log(Level.INFO, "rollback", "Edit has already been rolled back.");
+            log(Level.INFO, "rollback", "Edit has already been rolled back or cannot be "
+                + "rolled back due to intervening edits.");
         else if (response.contains("onlyauthor"))
             log(Level.INFO, "rollback", "Cannot rollback as the page only has one author.");
         // probably not ignorable (otherwise success)
@@ -4206,8 +4242,8 @@ public class Wiki implements Serializable
                 {
                     if (normalize(usernames[j]).equals(parsedname))
                     {
-                        info[j] = ret;
-                        ret.put("inputname", usernames[j]);
+                        info[j] = new HashMap(ret);
+                        info[j].put("inputname", usernames[j]);
                     }
                 }
             }
@@ -5022,9 +5058,9 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.12
      */
-    public LogEntry[] getIPBlockList(String user) throws IOException
+    public LogEntry[] getBlockList(String user) throws IOException
     {
-        return getIPBlockList(user, null, null);
+        return getBlockList(user, null, null);
     }
 
     /**
@@ -5037,9 +5073,9 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.12
      */
-    public LogEntry[] getIPBlockList(OffsetDateTime start, OffsetDateTime end) throws IOException
+    public LogEntry[] getBlockList(OffsetDateTime start, OffsetDateTime end) throws IOException
     {
-        return getIPBlockList("", start, end);
+        return getBlockList("", start, end);
     }
 
     /**
@@ -5058,7 +5094,7 @@ public class Wiki implements Serializable
      *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
-    protected LogEntry[] getIPBlockList(String user, OffsetDateTime start, OffsetDateTime end) throws IOException
+    protected LogEntry[] getBlockList(String user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
         // quick param check
         if (start != null && end != null && start.isBefore(end))
@@ -6005,7 +6041,7 @@ public class Wiki implements Serializable
         public boolean isBlocked() throws IOException
         {
             // @revised 0.18 now check for errors after each edit, including blocks
-            return getIPBlockList(username, null, null).length != 0;
+            return getBlockList(username, null, null).length != 0;
         }
 
         /**
@@ -6866,7 +6902,9 @@ public class Wiki implements Serializable
          *  Sets a rollback token for this revision.
          *  @param token a rollback token
          *  @since 0.24
+         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")</code>
          */
+        @Deprecated
         public void setRollbackToken(String token)
         {
             rollbacktoken = token;
@@ -6877,7 +6915,9 @@ public class Wiki implements Serializable
          *  for good reasons: cannot rollback or not top revision.
          *  @return the rollback token
          *  @since 0.24
+         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")</code>
          */
+        @Deprecated
         public String getRollbackToken()
         {
             return rollbacktoken;
@@ -7401,20 +7441,22 @@ public class Wiki implements Serializable
 
     /**
      *  Convenience method for converting a namespace list into String form.
+     *  Negative namespace numbers are removed.
      *  @param sb the url StringBuilder to append to
      *  @param id the request type prefix (e.g. "pl" for prop=links)
-     *  @param namespaces the list of namespaces to append
+     *  @param ns the list of namespaces to append
      *  @since 0.27
      */
-    protected void constructNamespaceString(StringBuilder sb, String id, int[] namespaces)
+    protected void constructNamespaceString(StringBuilder sb, String id, int[] ns)
     {
-        if (namespaces.length == 0)
+        if (ns.length == 0)
             return;
         sb.append("&");
         sb.append(id);
         sb.append("namespace=");
-        sb.append(Arrays.stream(namespaces)
+        sb.append(Arrays.stream(ns)
             .distinct()
+            .filter(namespace -> namespace >= 0)
             .sorted()
             .mapToObj(String::valueOf)
             .collect(Collectors.joining("%7C")));

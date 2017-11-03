@@ -28,6 +28,7 @@ import java.security.MessageDigest;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import javax.security.auth.login.CredentialNotFoundException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -118,6 +119,8 @@ public class WikiUnitTest
         assertEquals("resolveredirects/getPageText", "This revision is not deleted!", 
             testWiki.getPageText(pages[0]));
         Map<String, Object>[] x = testWiki.getPageInfo(pages);
+        x[0].remove("inputpagename");
+        x[1].remove("inputpagename");
         assertEquals("resolveredirects/getPageInfo", x[1], x[0]);
         pages = new String[] { "Main page", "Main Page" };
         List<String>[] y = enWiki.getTemplates(pages);
@@ -149,6 +152,7 @@ public class WikiUnitTest
         assertEquals("NSIdentifier: wrong identifier", "Category", enWiki.namespaceIdentifier(Wiki.CATEGORY_NAMESPACE));
         assertEquals("NSIdentifier: i18n fail", "Kategorie", deWiki.namespaceIdentifier(Wiki.CATEGORY_NAMESPACE));
         assertEquals("NSIdentifier: custom namespace", "Portal", enWiki.namespaceIdentifier(100));
+        assertEquals("NSIdentifier: obviously invalid", "", enWiki.namespaceIdentifier(-100));
     }
     
     @Test
@@ -156,6 +160,8 @@ public class WikiUnitTest
     {
         assertFalse("supportsSubpages: main", enWiki.supportsSubpages(Wiki.MAIN_NAMESPACE));
         assertTrue("supportsSubpages: talk", enWiki.supportsSubpages(Wiki.TALK_NAMESPACE));
+        // Slashes in special pages denote arguments, not subpages
+        assertFalse("supportsSubpages: special", enWiki.supportsSubpages(Wiki.SPECIAL_NAMESPACE));
         try
         {
             enWiki.supportsSubpages(-4444);
@@ -169,6 +175,14 @@ public class WikiUnitTest
     @Test
     public void queryLimits() throws Exception
     {
+        try
+        {
+            enWiki.setQueryLimit(-1);
+            fail("Negative query limits don't make sense.");
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
         enWiki.setQueryLimit(530);
         assertEquals("querylimits", 530, enWiki.getQueryLimit());
         assertEquals("querylimits: length", 530, enWiki.getPageHistory("Main Page").length);
@@ -247,6 +261,22 @@ public class WikiUnitTest
     @Test
     public void getFirstRevision() throws Exception
     {
+        try
+        {
+            enWiki.getFirstRevision("Special:SpecialPages");
+            fail("Attempted to get the page history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.getFirstRevision("Media:Example.png");
+            fail("Attempted to get the page history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
         assertNull("getFirstRevision: Non-existent page", enWiki.getFirstRevision("dgfhdf&jklg"));
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         Wiki.Revision first = testWiki.getFirstRevision("User:MER-C/UnitTests/Delete");
@@ -254,8 +284,24 @@ public class WikiUnitTest
     }
     
     @Test
-    public void getLastRevision() throws Exception
+    public void getTopRevision() throws Exception
     {
+        try
+        {
+            enWiki.getTopRevision("Special:SpecialPages");
+            fail("Attempted to get the page history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.getTopRevision("Media:Example.png");
+            fail("Attempted to get the page history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
         assertNull("Non-existent page", enWiki.getTopRevision("dgfhd&fjklg"));
     }
     
@@ -332,8 +378,24 @@ public class WikiUnitTest
     @Test
     public void getPageHistory() throws Exception
     {
+        try
+        {
+            enWiki.getPageHistory("Special:SpecialPages");
+            fail("Attempted to get the page history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.getPageHistory("Media:Example.png");
+            fail("Attempted to get the page history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        
         assertArrayEquals("getPageHistory: non-existent page", new Wiki.Revision[0], enWiki.getPageHistory("EOTkd&ssdf"));
-        assertArrayEquals("getPageHistory: special page", new Wiki.Revision[0], enWiki.getPageHistory("Special:Specialpages"));
         
         // test for RevisionDeleted revisions
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
@@ -351,11 +413,119 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getDeletedHistory() throws Exception
+    {
+        try
+        {
+            enWiki.getPageHistory("Special:SpecialPages");
+            fail("Attempted to get the deleted history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.getDeletedHistory("Media:Example.png");
+            fail("Attempted to get the deleted history of a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        // Test runs without logging in, therefore expect failure.
+        try
+        {
+            enWiki.getDeletedHistory("Main Page");
+        }
+        catch (CredentialNotFoundException expected)
+        {
+        }
+    }
+    
+    @Test
+    public void move() throws Exception
+    {
+        try
+        {
+            enWiki.move("Special:SpecialPages", "New page name", "Not a reason");
+            fail("Attempted to move a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.move("Media:Example.png", "New page name", "Not a reason");
+            fail("Attempted to delete a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+    }
+    
+    @Test
+    public void delete() throws Exception
+    {
+        try
+        {
+            enWiki.delete("Special:SpecialPages", "Not a reason");
+            fail("Attempted to delete a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.delete("Media:Example.png", "Not a reason");
+            fail("Attempted to delete a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        // Test runs without logging in, therefore expect failure.
+        try
+        {
+            enWiki.delete("User:MER-C", "Not a reason");
+        }
+        catch (CredentialNotFoundException expected)
+        {
+        }
+    }
+    
+    @Test
+    public void undelete() throws Exception
+    {
+        try
+        {
+            enWiki.undelete("Special:SpecialPages", "Not a reason");
+            fail("Attempted to delete a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            enWiki.undelete("Media:Example.png", "Not a reason");
+            fail("Attempted to delete a special page.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        // Test runs without logging in, therefore expect failure.
+        try
+        {
+            enWiki.undelete("User:MER-C", "Not a reason");
+        }
+        catch (CredentialNotFoundException expected)
+        {
+        }
+    }
+    
+    @Test
     public void getIPBlockList() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
         // see also getLogEntries() below
-        Wiki.LogEntry[] le = enWiki.getIPBlockList("Nimimaan");
+        Wiki.LogEntry[] le = enWiki.getBlockList("Nimimaan");
         assertEquals("getIPBlockList: ID not available", -1, le[0].getLogID());
         assertEquals("getIPBlockList: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getIPBlockList: user", "MER-C", le[0].getUser().getUsername());
@@ -370,7 +540,7 @@ public class WikiUnitTest
 //        }, le[0].getDetails());
         
         // This IP address should not be blocked (it is reserved)
-        le = enWiki.getIPBlockList("0.0.0.0");
+        le = enWiki.getBlockList("0.0.0.0");
         assertEquals("getIPBlockList: not blocked", 0, le.length);
     }
     
@@ -436,7 +606,8 @@ public class WikiUnitTest
     @Test
     public void getPageInfo() throws Exception
     {
-        Map<String, Object>[] pageinfo = enWiki.getPageInfo(new String[] { "Main Page", "IPod", "Main_Page" });
+        String[] pages = new String[] { "Main Page", "IPod", "Main_Page", "Special:Specialpages" };
+        Map<String, Object>[] pageinfo = enWiki.getPageInfo(pages);
         
         // Main Page
         Map<String, Object> protection = (Map<String, Object>)pageinfo[0].get("protection");
@@ -446,12 +617,20 @@ public class WikiUnitTest
         assertNull("getPageInfo: Main Page move protection expiry", protection.get("moveexpiry"));
         assertTrue("getPageInfo: Main Page cascade protection", (Boolean)protection.get("cascade"));
         assertEquals("getPageInfo: Main Page display title", "Main Page", pageinfo[0].get("displaytitle"));
+        assertEquals("getPageInfo: identity", pages[0], pageinfo[0].get("inputpagename"));
+        assertEquals("getPageInfo: normalized identity", pages[0], pageinfo[0].get("pagename"));
         
         // different display title
         assertEquals("getPageInfo: iPod display title", "iPod", pageinfo[1].get("displaytitle"));
         
-        // Main_Page (duplicate, should be removed)
+        // Main_Page (duplicate, should be identical except for inputpagename)
+        assertEquals("getPageInfo: identity (2)", pages[2], pageinfo[2].get("inputpagename"));
+        pageinfo[0].remove("inputpagename");
+        pageinfo[2].remove("inputpagename");
         assertEquals("getPageInfo: duplicate", pageinfo[0], pageinfo[2]);
+        
+        // Special page = return null
+        assertNull("getPageInfo: special page", pageinfo[3]);
     }
     
     @Test
@@ -517,6 +696,8 @@ public class WikiUnitTest
             int temp = enWiki.namespace(random);
             if (temp != Wiki.PROJECT_NAMESPACE && temp != Wiki.USER_NAMESPACE)
                 fail("random: multiple namespaces");
+            random = enWiki.random(Wiki.PROJECT_NAMESPACE, Wiki.MEDIA_NAMESPACE, Wiki.SPECIAL_NAMESPACE, -1245, 999999);
+            assertEquals("random: ignoring invalid namespaces", Wiki.PROJECT_NAMESPACE, enWiki.namespace(random));
         }
     }
     
@@ -636,16 +817,21 @@ public class WikiUnitTest
     @Test
     public void getUserInfo() throws Exception
     {
-        Map<String, Object>[] info = testWiki.getUserInfo(new String[]
+        String[] users = new String[]
         {
             "127.0.0.1", // IP address
             "MER-C", 
-            "DKdsf;lksd" // should be non-existent...
-        });
+            "DKdsf;lksd", // should be non-existent...
+            "Jimbo Wales", 
+            "Jimbo_Wales" // duplicate
+        };
+        Map<String, Object>[] info = testWiki.getUserInfo(users);
         assertNull("getUserInfo: IP address", info[0]);
         assertNull("getUserInfo: non-existent user", info[2]);
         
         // editcount omitted because it is dynamic
+        assertEquals("getUserInfo: username", users[1], info[1].get("inputname"));
+        assertEquals("getUserInfo: normalized username", users[1], info[1].get("username"));
         assertFalse("getUserInfo: blocked", (Boolean)info[1].get("blocked"));
         assertEquals("getUserInfo: gender", Wiki.Gender.unknown, (Wiki.Gender)info[1].get("gender"));
         assertEquals("getUserInfo: registration", "2007-02-14T11:38:37Z", 
@@ -663,11 +849,35 @@ public class WikiUnitTest
         List<String> rights = Arrays.asList(temp);
         temp = new String[] { "apihighlimits", "delete", "block", "editinterface", "writeapi" };
         assertTrue("getUserInfo: groups", rights.containsAll(Arrays.asList(temp)));
+        
+        // check de-duplication
+        assertEquals("getUserInfo: username", users[3], info[3].get("inputname"));
+        assertEquals("getUserInfo: username", users[4], info[4].get("inputname"));
+        info[3].remove("inputname");
+        info[4].remove("inputname");
+        assertEquals("getUserInfo: duplicates", info[3], info[4]);
     }
     
     @Test
     public void getPageText() throws Exception
     {
+        try
+        {
+            testWiki.getPageText("Special:Specialpages");
+            fail("Tried to get page text for a special page!");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        try
+        {
+            testWiki.getPageText("Media:Example.png");
+            fail("Tried to get page text for a media page!");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+        
         String[] text = testWiki.getPageText(new String[]
         {
             // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
@@ -721,7 +931,7 @@ public class WikiUnitTest
     public void constructNamespaceString() throws Exception
     {
         StringBuilder temp = new StringBuilder();
-        enWiki.constructNamespaceString(temp, "blah", new int[] { 3, 2, 1, 2 });
+        enWiki.constructNamespaceString(temp, "blah", new int[] { 3, 2, 1, 2, -10 });
         assertEquals("constructNamespaceString", "&blahnamespace=1%7C2%7C3", temp.toString());
     }
     
