@@ -147,14 +147,14 @@ public class AllWikiLinksearch
         }
         
         WMFWiki[] wikis = WMFWiki.getSiteMatrix();
-        Map<Wiki, List[]> results = crossWikiLinksearch(false, threads, domain, wikis, !httponly, false);
+        Map<Wiki, List<String[]>> results = crossWikiLinksearch(false, threads, domain, wikis, !httponly, false);
         
         // output results
         FileWriter out = new FileWriter(domain + ".wiki");
-        for (Map.Entry<Wiki, List[]> result : results.entrySet())
+        for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
         {
             Wiki wiki = result.getKey();
-            List[] links = result.getValue();
+            List<String[]> links = result.getValue();
             StringBuilder temp = new StringBuilder("=== Results for ");
             temp.append(wiki.getDomain());
             temp.append(" ===\n");
@@ -164,7 +164,7 @@ public class AllWikiLinksearch
                 out.write(temp.toString());
                 continue;
             }
-            int linknumber = links[0].size();
+            int linknumber = links.size();
             if (linknumber != 0)
             {
                 temp.append(ParserUtils.linksearchResultsToWikitext(links, domain));
@@ -189,7 +189,7 @@ public class AllWikiLinksearch
      *  @return the linksearch results, as in wiki &#8594; results, or null if an
      *  IOException occurred
      */
-    public static Map<Wiki, List[]> crossWikiLinksearch(boolean querylimit, 
+    public static Map<Wiki, List<String[]>> crossWikiLinksearch(boolean querylimit, 
         int threads, String domain, Wiki[] wikis, boolean https, boolean mailto, 
         int... ns)
     {
@@ -200,25 +200,22 @@ public class AllWikiLinksearch
             System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "" + threads);
             stream = stream.parallel();
         }
-        Map<Wiki, List[]> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
+        Map<Wiki, List<String[]>> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
         {
             if (querylimit)
                 wiki.setQueryLimit(500);
             try
             {
-                List[] temp = wiki.linksearch("*." + domain, "http", ns);
-                // silly api designs aplenty here!
+                List<String[]> temp = wiki.linksearch("*." + domain, "http", ns);
                 if (https)
                 {
-                    List[] temp2 = wiki.linksearch("*." + domain, "https", ns);
-                    temp[0].addAll(temp2[0]);
-                    temp[1].addAll(temp2[1]);
+                    List<String[]> temp2 = wiki.linksearch("*." + domain, "https", ns);
+                    temp.addAll(temp2);
                 }
                 if (mailto)
                 {
-                    List[] temp2 = wiki.linksearch("*." + domain, "mailto", ns);
-                    temp[0].addAll(temp2[0]);
-                    temp[1].addAll(temp2[1]);
+                    List<String[]> temp2 = wiki.linksearch("*." + domain, "mailto", ns);
+                    temp.addAll(temp2);
                 }
                 return temp;
             }

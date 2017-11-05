@@ -4977,11 +4977,10 @@ public class Wiki implements Serializable
      *  @param pattern the pattern (String) to search for (e.g. example.com,
      *  *.example.com)
      *  @throws IOException if a network error occurs
-     *  @return two lists - index 0 is the list of pages (String), index 1 is
-     *  the list of urls (instance of <tt>java.net.URL</tt>)
+     *  @return a list of results where each entry is { page, URL }
      *  @since 0.06
      */
-    public List[] linksearch(String pattern) throws IOException
+    public List<String[]> linksearch(String pattern) throws IOException
     {
         return linksearch(pattern, "http");
     }
@@ -4999,16 +4998,14 @@ public class Wiki implements Serializable
      *  @param protocol one of { http, https, ftp, irc, gopher, telnet, nntp,
      *  worldwind, mailto, news, svn, git, mms } or "" (equivalent to http)
      *  @throws IOException if a network error occurs
-     *  @return two lists - index 0 is the list of pages (String), index 1 is
-     *  the list of urls (instance of <tt>java.net.URL</tt>)
+     *  @return a list of results where each entry is { page, URL }
      *  @since 0.24
      */
-    public List[] linksearch(String pattern, String protocol, int... ns) throws IOException
+    public List<String[]> linksearch(String pattern, String protocol, int... ns) throws IOException
     {
-        // FIXME: Change return type to ArrayList<Object[]> or Object[][]
-        // First index refers to item number, linksearch()[x][0] = page title
-
-        // set it up
+        // I'm still not happy with the return type, but I think this is as good
+        // as it gets in vanilla JDK.
+        
         StringBuilder url = new StringBuilder(query);
         url.append("list=exturlusage&euprop=title%7curl&eulimit=max&rawcontinue=1&euquery=");
         url.append(pattern);
@@ -5017,36 +5014,22 @@ public class Wiki implements Serializable
         constructNamespaceString(url, "eu", ns);
         url.append("&euoffset=");
 
-        // some variables we need later
-        List[] ret = new ArrayList[] // no reason for more than 500 links
+        List<String[]> links = queryAPIResult("eu", url, "linksearch", (line, results) ->
         {
-            new ArrayList<String>(667), // page titles
-            new ArrayList<URL>(667) // urls
-        };
-        String euoffset = "0";
-        // begin
-        do
-        {
-            // if this is the last page of results then there is no euoffset parameter
-            String line = fetch(url.toString() + euoffset, "linksearch");
-            euoffset = parseAttribute(line, "euoffset", 0);
-
             // xml form: <eu ns="0" title="Main Page" url="http://example.com" />
             for (int x = line.indexOf("<eu"); x > 0; x = line.indexOf("<eu ", ++x))
             {
                 String link = parseAttribute(line, "url", x);
-                ret[0].add(parseAttribute(line, "title", x));
+                String pagename = parseAttribute(line, "title", x);
                 if (link.charAt(0) == '/') // protocol relative url
-                    ret[1].add(new URL(protocol + ":" + link));
+                    results.add(new String[] { pagename, protocol + ":" + link });
                 else
-                    ret[1].add(new URL(link));
+                    results.add(new String[] { pagename, link });
             }
-        }
-        while (euoffset != null);
-
-        // return value
-        log(Level.INFO, "linksearch", "Successfully returned instances of external link " + pattern + " (" + ret[0].size() + " links)");
-        return ret;
+        });
+        
+        log(Level.INFO, "linksearch", "Successfully returned instances of external link " + pattern + " (" + links.size() + " links)");
+        return links;
     }
 
     /**

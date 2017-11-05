@@ -304,16 +304,16 @@ public class ParserUtils
      *  @return the rendered wikitext
      *  @since 0.02
      */
-    public static String linksearchResultsToWikitext(List[] results, String domain)
+    public static String linksearchResultsToWikitext(List<String[]> results, String domain)
     {
         StringBuilder builder = new StringBuilder(100);
-        int linknumber = results[0].size();
-        for (int i = 0; i < linknumber; i++)
+        int linknumber = results.size();
+        for (String[] result : results)
         {
             builder.append("# [[");
-            builder.append((String)results[0].get(i));
+            builder.append(result[0]);
             builder.append("]] uses link [");
-            builder.append(results[1].get(i));
+            builder.append(result[1]);
             builder.append("]\n");
         }
         builder.append(linknumber);
@@ -332,26 +332,26 @@ public class ParserUtils
      *  @return the rendered HTML
      *  @since 0.02
      */
-    public static String linksearchResultsToHTML(List[] results, Wiki wiki, String domain)
+    public static String linksearchResultsToHTML(List<String[]> results, Wiki wiki, String domain)
     {
         StringBuilder buffer = new StringBuilder(1000);
         buffer.append("<p>\n<ol>\n");
-        for (int j = 0; j < results[0].size(); j++)
+        for (String[] result : results)
         {
             buffer.append("\t<li><a href=\"//");
             buffer.append(wiki.getDomain());
             buffer.append("/wiki/");
-            buffer.append((String)results[0].get(j));
+            buffer.append(result[0]);
             buffer.append("\">");
-            buffer.append((String)results[0].get(j));
+            buffer.append(result[0]);
             buffer.append("</a> uses link <a href=\"");
-            buffer.append(results[1].get(j).toString());
+            buffer.append(result[1]);
             buffer.append("\">");
-            buffer.append(results[1].get(j).toString());
+            buffer.append(result[1]);
             buffer.append("</a>\n");
         }
         buffer.append("</ol>\n<p>");
-        buffer.append(results[0].size());
+        buffer.append(results.size());
         buffer.append(" links found. (<a href=\"//");
         buffer.append(wiki.getDomain());
         buffer.append("/wiki/Special:Linksearch/*.");

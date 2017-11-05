@@ -111,7 +111,7 @@ timeout is more likely when searching for more wikis or protocols.
         return;
     }
     out.println("<hr>");
-    Map<Wiki, List[]> results = null;
+    Map<Wiki, List<String[]>> results = null;
     if (mode.equals("multi"))
     {
         switch (set)
@@ -140,7 +140,7 @@ timeout is more likely when searching for more wikis or protocols.
         results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 
             new Wiki[] { Wiki.createInstance(wikiinput) }, https, mailto, ns);
 
-    for (Map.Entry<Wiki, List[]> entry : results.entrySet())
+    for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
     {
         Wiki wiki = entry.getKey();
         out.println("<h3>" + wiki.getDomain() + "</h3>");
