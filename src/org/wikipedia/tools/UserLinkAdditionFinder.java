@@ -1,6 +1,6 @@
 /**
- *  @(#)UserLinkAdditionFinder.java 0.01 01/09/2015
- *  Copyright (C) 2015 MER-C
+ *  @(#)UserLinkAdditionFinder.java 0.02 05/11/2017
+ *  Copyright (C) 2015-2017 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ import org.wikipedia.Wiki;
 /**
  *  Finds links added by a user in the main namespace.
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
 public class UserLinkAdditionFinder
 {
@@ -42,14 +42,15 @@ public class UserLinkAdditionFinder
     public static void main(String[] args) throws IOException
     {
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki.setQueryLimit(500);
+        
         // read in from file
         JFileChooser fc = new JFileChooser();
         if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
             System.exit(0);      
         
-        Map<String, Set<String>> domains = new HashMap<>();
-        System.out.println("{| class=\"wikitable\"\n");
-
+        // fetch and parse edits
+        Map<Wiki.Revision, List<String>> results = new HashMap<>();
         Files.lines(fc.getSelectedFile().toPath(), Charset.forName("UTF-8"))
             .flatMap(user -> {
                 try 
@@ -61,47 +62,66 @@ public class UserLinkAdditionFinder
                     System.err.println("IOException for fetching contribs of user " + user);
                     return Arrays.stream(new Wiki.Revision[0]);
                 }
-            })
-            .map(revision -> {
+            }).forEach(revision -> {
                 try
                 {
-                    return parseDiff(revision);
+                    // remove all sets { revision, links... } where no links are added
+                    Map<Wiki.Revision, List<String>> temp = parseDiff(revision);
+                    if (!temp.get(revision).isEmpty())
+                        results.putAll(temp);
                 }
                 catch (IOException ex)
                 {
-                    return new String[] {
-                        "" + revision.getRevid(),
-                        "IOException when fetching revision"
-                    };
                 }
-            })
-            // remove all sets { revid, user, links... } where no links are added
-            .filter(result -> result.length > 2)
-            // transform to wikitext table output
-            .forEach(links -> {
-                StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
-                temp.append(links[0]);
-                temp.append("]]\n|| ");
-                for (int i = 2; i < links.length; i++)
-                {
-                    temp.append(links[i]);
-                    temp.append("\n");
-                    // get domain name
-                    String[] temp2 = links[i].split("/");
-                    String domain = temp2[2].replace("www.", "");
-                    if (domains.containsKey(domain))
-                        domains.get(domain).add(links[1]);
-                    else
-                    {
-                        HashSet<String> blah = new HashSet<>();
-                        blah.add(links[1]);
-                        domains.put(domain, blah);
-                    }
-                }
-                System.out.println(temp.toString());
             });
+        
+        // transform to wikitable
+        System.out.println("{| class=\"wikitable\"\n");
+        results.forEach((revision, links) ->
+        {
+            StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
+            temp.append(revision.getRevid());
+            temp.append("]]\n|| ");
+            for (int i = 0; i < links.size(); i++)
+            {
+                temp.append(links.get(i));
+                temp.append("\n");
+            }
+            System.out.println(temp.toString());
+        });
         System.out.println("|}");
-
+        
+        // then transform to a map with domain -> spammers
+        Map<String, Set<String>> domains = new HashMap<>();
+        results.forEach((revision, links) ->
+        {
+            for (int i = 0; i < links.size(); i++)
+            {
+                String link = links.get(i);
+                // get domain name
+                String[] temp2 = link.split("/");
+                String domain = temp2[2].replace("www.", "");
+                if (domains.containsKey(domain))
+                    domains.get(domain).add(revision.getUser());
+                else
+                {
+                    HashSet<String> blah = new HashSet<>();
+                    blah.add(revision.getUser());
+                    domains.put(domain, blah);
+                }
+            }
+        });
+        // perform a linksearch to remove frequently used domains
+        Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
+        while (iter.hasNext())
+        {
+            Map.Entry<String, Set<String>> entry = iter.next();
+            int linkcount = enWiki.linksearch("*." + entry.getKey()).size()
+                + enWiki.linksearch("*." + entry.getKey(), "https").size();
+            if (linkcount > 14)
+                iter.remove();
+        }
+        
         System.out.println("== Domain list ==");
         for (String domain : domains.keySet())
             System.out.println("*{{spamlink|" + domain + "}}");
@@ -125,20 +145,25 @@ public class UserLinkAdditionFinder
     /**
      *  Returns a list of external links added by a particular revision.
      *  @param revision the revision to check of added external links.
-     *  @return an array: [0] = the revid, [1] = the user, [2+] = added URLs.
+     *  @return a map: revision &#8594; list of added URLs.
      *  @throws IOException if a network error occurs
      */
-    public static String[] parseDiff(Wiki.Revision revision) throws IOException
+    public static Map<Wiki.Revision, List<String>> parseDiff(Wiki.Revision revision) throws IOException
     {
         // fetch the diff
         String diff;
+        Map<Wiki.Revision, List<String>> ret = new HashMap<>();
+        List<String> links = new ArrayList<>();
         if (revision.isNew())
             diff = revision.getText();
         else
             diff = revision.diff(Wiki.PREVIOUS_REVISION);
         // filter dummy edits
         if (diff == null)
-            return new String[] { "" + revision.getRevid(), revision.getUser() };
+        {
+            ret.put(revision, links);
+            return ret;
+        }
 
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
@@ -148,10 +173,6 @@ public class UserLinkAdditionFinder
         String deltaend = "</ins>";
         // link regex
         Pattern pattern = Pattern.compile("https?://.+?\\..{2,}?(?:\\s|]|<|$)");
-        
-        ArrayList<String> links = new ArrayList<>();
-        links.add("" + revision.getRevid());
-        links.add(revision.getUser());
         
         // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
         diff = diff.toLowerCase();
@@ -186,6 +207,7 @@ public class UserLinkAdditionFinder
             j = y2;
         }
         
-        return links.toArray(new String[links.size()]);
+        ret.put(revision, links);
+        return ret;
     }
 }

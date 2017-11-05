@@ -21,6 +21,7 @@
 package org.wikipedia.tools;
 
 import java.io.IOException;
+import java.util.*;
 import org.junit.*;
 import org.wikipedia.Wiki;
 import static org.junit.Assert.*;
@@ -52,25 +53,26 @@ public class UserLinkAdditionFinderUnitTest
         });
         
         // https://test.wikipedia.org/w/index.php?oldid=244169&diff=prev
-        String[] links = UserLinkAdditionFinder.parseDiff(revs[0]);
-        assertEquals("244169", links[0]);
-        assertEquals(3, links.length);
-        assertEquals("MER-C", links[1]);
-        assertEquals("http://spam.example.com", links[2]);
+        Map<Wiki.Revision, List<String>> results = UserLinkAdditionFinder.parseDiff(revs[0]);
+        List<String> links = results.get(revs[0]);
+        assertNotNull(links);
+        assertEquals(1, links.size());
+        assertEquals("http://spam.example.com", links.get(0));
                 
         // https://test.wikipedia.org/w/index.php?oldid=244170&diff=prev
-        links = UserLinkAdditionFinder.parseDiff(revs[1]);
-        assertEquals("https://en.wikipedia.org", links[2]);
+        results = UserLinkAdditionFinder.parseDiff(revs[1]);
+        links = results.get(revs[1]);
+        assertEquals("https://en.wikipedia.org", links.get(0));
         
         // https://test.wikipedia.org/w/index.php?oldid=244171&diff=prev
-        links = UserLinkAdditionFinder.parseDiff(revs[2]);
-        assertEquals("http://www.example.net", links[2]);
+        results = UserLinkAdditionFinder.parseDiff(revs[2]);
+        links = results.get(revs[2]);
+        assertEquals("http://www.example.net", links.get(0));
         
         // dummy edit
         // https://test.wikipedia.org/w/index.php?oldid=320307&diff=prev
-        links = UserLinkAdditionFinder.parseDiff(revs[3]);
-        assertEquals(2, links.length);
-        assertEquals("320307", links[0]);
-        assertEquals("AlvaroMolina", links[1]);
+        results = UserLinkAdditionFinder.parseDiff(revs[3]);
+        links = results.get(revs[3]);
+        assertEquals(0, links.size());
     }
 }
