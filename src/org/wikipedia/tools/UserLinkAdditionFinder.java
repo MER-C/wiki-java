@@ -23,7 +23,8 @@ import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
+import java.nio.file.*;
+import java.time.OffsetDateTime;
 import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
 
@@ -36,7 +37,7 @@ public class UserLinkAdditionFinder
 {
     /**
      *  Runs this program.
-     *  @param args the command line arguments (not used)
+     *  @param args the command line arguments (see "--help" below)
      *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
@@ -44,18 +45,54 @@ public class UserLinkAdditionFinder
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setQueryLimit(500);
         
+        // parse command line args
+        boolean linksearch = false;
+        String filename = null;
+        String datestring = null;
+        for (int i = 0; i < args.length; i++)
+        {
+            switch (args[i])
+            {
+                case "--help":
+                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.UserLinkAdditionFinder [options] [file]\n\n"
+                        + "DESCRIPTION:\n\tFinds the set of links added by a list of users.\n\n"
+                        + "\t--help\n\t\tPrints this screen and exits.\n"
+                        + "\t--linksearch\n\t\tConduct a linksearch to filter commonly used links.\n"
+                        + "\t--fetchafter\n\t\tFetch only edits after this date.\n"
+                        + "If a file is not specified, a dialog box will prompt for one.");
+                    System.exit(0);
+                case "--linksearch":
+                    linksearch = true;
+                    break;
+                case "--fetchafter":
+                    datestring = args[++i];
+                    break;
+                default:
+                    filename = args[i];
+                    break;
+            }
+        }
+        final OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
+        
         // read in from file
-        JFileChooser fc = new JFileChooser();
-        if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-            System.exit(0);      
+        Path fp = null;
+        if (filename == null)
+        {
+            JFileChooser fc = new JFileChooser();
+            if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+                System.exit(0);
+            fp = fc.getSelectedFile().toPath();
+        }
+        else
+            fp = Paths.get(filename);
         
         // fetch and parse edits
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
-        Files.lines(fc.getSelectedFile().toPath(), Charset.forName("UTF-8"))
+        Files.lines(fp, Charset.forName("UTF-8"))
             .flatMap(user -> {
                 try 
-                { 
-                    return Arrays.stream(enWiki.contribs(user, Wiki.MAIN_NAMESPACE));
+                {
+                    return Arrays.stream(enWiki.contribs(user, "", null, date, Wiki.MAIN_NAMESPACE));
                 }
                 catch (IOException ex)
                 {
@@ -74,6 +111,11 @@ public class UserLinkAdditionFinder
                 {
                 }
             });
+        if (results.isEmpty())
+        {
+            System.out.println("No links found.");
+            System.exit(0);
+        }
         
         // transform to wikitable
         System.out.println("{| class=\"wikitable\"\n");
@@ -112,14 +154,17 @@ public class UserLinkAdditionFinder
             }
         });
         // perform a linksearch to remove frequently used domains
-        Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
-        while (iter.hasNext())
+        if (linksearch)
         {
-            Map.Entry<String, Set<String>> entry = iter.next();
-            int linkcount = enWiki.linksearch("*." + entry.getKey()).size()
-                + enWiki.linksearch("*." + entry.getKey(), "https").size();
-            if (linkcount > 14)
-                iter.remove();
+            Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
+            while (iter.hasNext())
+            {
+                Map.Entry<String, Set<String>> entry = iter.next();
+                int linkcount = enWiki.linksearch("*." + entry.getKey()).size()
+                    + enWiki.linksearch("*." + entry.getKey(), "https").size();
+                if (linkcount > 14)
+                    iter.remove();
+            }
         }
         
         System.out.println("== Domain list ==");
