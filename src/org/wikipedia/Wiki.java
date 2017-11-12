@@ -7465,7 +7465,7 @@ public class Wiki implements Serializable
         for (int i = 0; i < sortedids.length; i++)
         {
             buffer.append(sortedids[i]);
-            if (i == ids.length - 1 || i == slowmax - 1)
+            if (i == ids.length - 1 || (i % slowmax) == slowmax - 1)
             {
                 chunks.add(buffer.toString());
                 buffer.setLength(0);

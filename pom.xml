@@ -104,6 +104,7 @@
                     <configuration>
                         <includes>
                             <include>**/WikiUnitTest.java</include>
+                            <include>**/WMFWikiUnitTest.java</include>
                             <include>**/ParserUtilsUnitTest.java</include>
                             <include>**/ArrayUtilsUnitTest.java</include>
                             <include>**/ArticleEditorIntersectorUnitTest.java</include>

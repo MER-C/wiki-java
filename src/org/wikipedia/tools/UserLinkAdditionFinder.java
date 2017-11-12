@@ -26,7 +26,7 @@ import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.time.OffsetDateTime;
 import javax.swing.JFileChooser;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  Finds links added by a user in the main namespace.
@@ -42,11 +42,11 @@ public class UserLinkAdditionFinder
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        WMFWiki enWiki = WMFWiki.createInstance("en.wikipedia.org");
         enWiki.setQueryLimit(500);
         
         // parse command line args
-        boolean linksearch = false;
+        boolean linksearch = false, removeblacklisted = false;
         String filename = null;
         String datestring = null;
         for (int i = 0; i < args.length; i++)
@@ -63,6 +63,9 @@ public class UserLinkAdditionFinder
                     System.exit(0);
                 case "--linksearch":
                     linksearch = true;
+                    break;
+                case "--removeblacklisted":
+                    removeblacklisted = true;
                     break;
                 case "--fetchafter":
                     datestring = args[++i];
@@ -153,6 +156,17 @@ public class UserLinkAdditionFinder
                 }
             }
         });
+        // remove blacklisted domains (if applicable)
+        if (removeblacklisted)
+        {
+            Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
+            while (iter.hasNext())
+            {
+                Map.Entry<String, Set<String>> entry = iter.next();
+                if (enWiki.isSpamBlacklisted(entry.getKey()))
+                    iter.remove();
+            }
+        }
         // perform a linksearch to remove frequently used domains
         if (linksearch)
         {
