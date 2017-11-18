@@ -422,7 +422,7 @@ public class Wiki implements Serializable
     private ZoneId timezone = ZoneId.of("UTC");
 
     // user management
-    private Map<String, String> cookies = new HashMap<>(12);
+    private final CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
     private User user;
     private int statuscounter = 0;
 
@@ -451,7 +451,7 @@ public class Wiki implements Serializable
     private long lastThrottleActionTime = 0;
 
     // retry count
-    private int maxtries = 2;
+    private final int maxtries = 2;
 
     // serial version
     private static final long serialVersionUID = -8745212681497643456L;
@@ -530,7 +530,7 @@ public class Wiki implements Serializable
         this.domain = domain;
         this.scriptPath = scriptPath;
         this.protocol = protocol;
-
+        
         // init variables
         // This is fine as long as you do not have parameters other than domain
         // and scriptpath in constructors and do not do anything else than super(x)!
@@ -538,6 +538,7 @@ public class Wiki implements Serializable
         // TODO: remove this
         logger.setLevel(loglevel);
         logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
+        CookieHandler.setDefault(cookies);
         initVars();
     }
     
@@ -1078,7 +1079,7 @@ public class Wiki implements Serializable
      */
     public synchronized void logout()
     {
-        cookies.clear();
+        cookies.getCookieStore().removeAll();
         user = null;
         max = 500;
         slowmax = 50;
@@ -3496,7 +3497,6 @@ public class Wiki implements Serializable
         // then we read the image
         logurl(url2, "getImage");
         URLConnection connection = makeConnection(url2);
-        setCookies(connection);
         connection.connect();
 
         // download image to the file
@@ -3670,7 +3670,6 @@ public class Wiki implements Serializable
                 url = parseAttribute(line, "url", a);
                 logurl(url, "getOldImage");
                 URLConnection connection = makeConnection(url);
-                setCookies(connection);
                 connection.connect();
 
                 // download image to file
@@ -7021,11 +7020,7 @@ public class Wiki implements Serializable
             {
                 // connect
                 URLConnection connection = makeConnection(url);
-                connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
-                connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
-                setCookies(connection);
                 connection.connect();
-                grabCookies(connection);
 
                 // check lag and retry
                 if (checkLag(connection))
@@ -7098,10 +7093,7 @@ public class Wiki implements Serializable
             try
             {
                 URLConnection connection = makeConnection(url);
-                setCookies(connection);
                 connection.setDoOutput(true);
-                connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
-                connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
                 connection.connect();
 
                 try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
@@ -7112,7 +7104,6 @@ public class Wiki implements Serializable
                 if (checkLag(connection))
                     return post(url, text, caller);
 
-                grabCookies(connection);
                 StringBuilder buffer = new StringBuilder(100000);
                 String line;
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
@@ -7184,10 +7175,7 @@ public class Wiki implements Serializable
                 URLConnection connection = makeConnection(url);
                 String boundary = "----------NEXT PART----------";
                 connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-                setCookies(connection);
                 connection.setDoOutput(true);
-                connection.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
-                connection.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
                 connection.connect();
 
                 // write stuff to a local buffer
@@ -7231,7 +7219,6 @@ public class Wiki implements Serializable
                     return multipartPost(url, params, caller);
 
                 // done, read the response
-                grabCookies(connection);
                 String line;
                 StringBuilder buffer = new StringBuilder(100000);
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
@@ -7315,7 +7302,13 @@ public class Wiki implements Serializable
      */
     protected URLConnection makeConnection(String url) throws IOException
     {
-        return new URL(url).openConnection();
+        URLConnection u = new URL(url).openConnection();
+        u.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
+        u.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
+        if (zipped)
+            u.setRequestProperty("Accept-encoding", "gzip");
+        u.setRequestProperty("User-Agent", useragent);
+        return u;
     }
 
     /**
@@ -7642,52 +7635,6 @@ public class Wiki implements Serializable
         if ((Boolean)protectionstate.get("cascade") == Boolean.TRUE) // can be null
             return user.isAllowedTo("editprotected");
         return true;
-    }
-
-    // cookie methods
-
-    /**
-     *  Sets cookies to an unconnected URLConnection and enables gzip
-     *  compression of returned text.
-     *  @param u an unconnected URLConnection
-     */
-    protected void setCookies(URLConnection u)
-    {
-        StringBuilder cookie = new StringBuilder(100);
-        for (Map.Entry<String, String> entry : cookies.entrySet())
-        {
-            cookie.append(entry.getKey());
-            cookie.append("=");
-            cookie.append(entry.getValue());
-            cookie.append("; ");
-        }
-        u.setRequestProperty("Cookie", cookie.toString());
-
-        // enable gzip compression
-        if (zipped)
-            u.setRequestProperty("Accept-encoding", "gzip");
-        u.setRequestProperty("User-Agent", useragent);
-    }
-
-    /**
-     *  Grabs cookies from the URL connection provided.
-     *  @param u an unconnected URLConnection
-     */
-    private void grabCookies(URLConnection u)
-    {
-        String headerName;
-        for (int i = 1; (headerName = u.getHeaderFieldKey(i)) != null; i++)
-            if (headerName.equals("Set-Cookie"))
-            {
-                String cookie = u.getHeaderField(i);
-                cookie = cookie.substring(0, cookie.indexOf(';'));
-                String name = cookie.substring(0, cookie.indexOf('='));
-                String value = cookie.substring(cookie.indexOf('=') + 1, cookie.length());
-                // these cookies were pruned, but are still sent for some reason?
-                // TODO: when these cookies are no longer sent, remove this test
-                if (!value.equals("deleted"))
-                    cookies.put(name, value);
-            }
     }
 
     // logging methods
