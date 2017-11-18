@@ -180,26 +180,24 @@ public class ArticleEditorIntersector
         }
         
         Map<String, List<Wiki.Revision>> data = aei.intersectArticles(articles, noadmin, nobot, noanon);
-        for (Map.Entry<String, List<Wiki.Revision>> entry : data.entrySet())
+        data.forEach((username, edits) ->
         {
-            System.out.print(entry.getKey());
+            System.out.print(username);
             System.out.println(" => {");
             
             // group by article
-            Map<String, List<Wiki.Revision>> grouppage = entry.getValue()
-                .stream()
+            Map<String, List<Wiki.Revision>> grouppage = edits.stream()
                 .collect(Collectors.groupingBy(Wiki.Revision::getPage));
-            
-            for (Map.Entry<String, List<Wiki.Revision>> entry2 : grouppage.entrySet())
+            grouppage.forEach((article, articleedits) ->
             {
-                System.out.print("\t" + entry2.getKey());
+                System.out.print("\t" + article);
                 System.out.print(" => ");
-                for (Wiki.Revision rev : entry2.getValue())
+                for (Wiki.Revision rev : articleedits)
                     System.out.print(rev.getRevid() + " ");
                 System.out.println();
-            }
+            });
             System.out.println("}");
-        }
+        });
     }
     
     /**

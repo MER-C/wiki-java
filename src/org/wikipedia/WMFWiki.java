@@ -109,36 +109,27 @@ public class WMFWiki extends Wiki
      *  @param title the title of the page (must contain "File:")
      *  @return the global usage of the file, including the wiki and page the file is used on
      *  @throws IOException if a network error occurs
-     *  @throws UnsupportedOperationException if <tt>namespace(title) != FILE_NAMESPACE</tt>
+     *  @throws UnsupportedOperationException if <code>{@link Wiki#namespace(java.lang.String) 
+     *  namespace(title)} != {@link Wiki#FILE_NAMESPACE}</code>
      */
     public String[][] getGlobalUsage(String title) throws IOException
     {
-    	title = normalize(title);
     	if (namespace(title) != FILE_NAMESPACE)
             throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
-    	String url = query + "prop=globalusage&gulimit=max&rawcontinue=1&titles=" + URLEncoder.encode(title, "UTF-8");
-    	String next = "";
-    	ArrayList<String[]> usage = new ArrayList<>(500);
+        
+    	StringBuilder url = new StringBuilder(query);
+        url.append("prop=globalusage&titles=");
+        title = normalize(title);
+        url.append(URLEncoder.encode(title, "UTF-8"));
     	
-    	do
+        List<String[]> usage = queryAPIResult("gu", url, "getGlobalUsage", (line, results) ->
         {
-            if (!next.isEmpty())
-                next = "&gucontinue=" + URLEncoder.encode(next, "UTF-8");
-            String line = fetch(url+next, "getGlobalUsageCount");
-
-            // parse gucontinue if it is there
-            if (line.contains("<query-continue>"))
-                next = parseAttribute(line, "gucontinue", 0);
-            else
-                next = null;
-
             for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
-                usage.add(new String[] {
+                results.add(new String[] {
                     parseAttribute(line, "wiki", i),
                     parseAttribute(line, "title", i)
                 });
-        }
-        while (next != null);
+        });
 
     	return usage.toArray(new String[0][0]);
     }

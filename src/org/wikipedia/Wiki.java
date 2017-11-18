@@ -5007,12 +5007,11 @@ public class Wiki implements Serializable
         // as it gets in vanilla JDK.
         
         StringBuilder url = new StringBuilder(query);
-        url.append("list=exturlusage&euprop=title%7curl&eulimit=max&rawcontinue=1&euquery=");
+        url.append("list=exturlusage&euprop=title%7curl&euquery=");
         url.append(pattern);
         url.append("&euprotocol=");
         url.append(protocol);
         constructNamespaceString(url, "eu", ns);
-        url.append("&euoffset=");
 
         List<String[]> links = queryAPIResult("eu", url, "linksearch", (line, results) ->
         {

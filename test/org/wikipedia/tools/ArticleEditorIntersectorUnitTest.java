@@ -23,7 +23,6 @@ import java.util.*;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.wikipedia.Wiki;
-import org.wikipedia.tools.ArticleEditorIntersector;
 
 /**
  *  Unit tests for {@link ArticleEditorIntersector}.
