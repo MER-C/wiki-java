@@ -1022,6 +1022,9 @@ public class Wiki implements Serializable
      *  @param username a username
      *  @param password a password (as a char[] due to JPasswordField)
      *  @throws IOException if a network error occurs
+     *  @throws FailedLoginException if the login failed due to an incorrect
+     *  username or password, the requirement for an interactive login (not
+     *  supported, use [[Special:Botpasswords]]) or some other reason
      *  @see #logout
      */
     public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
@@ -1063,6 +1066,9 @@ public class Wiki implements Serializable
      *  @param username a username
      *  @param password a string with the password
      *  @throws IOException if a network error occurs
+     *  @throws FailedLoginException if the login failed due to an incorrect
+     *  username or password, the requirement for an interactive login (not
+     *  supported, use [[Special:Botpasswords]]) or some other reason
      *  @see #logout
      */
     public synchronized void login(String username, String password) throws IOException, FailedLoginException
@@ -1527,7 +1533,7 @@ public class Wiki implements Serializable
     public LinkedHashMap<String, Integer> getNamespaces() throws IOException
     {
         ensureNamespaceCache();
-        return new LinkedHashMap<String, Integer>(namespaces);
+        return new LinkedHashMap<>(namespaces);
     }
     
     /**
@@ -2282,30 +2288,25 @@ public class Wiki implements Serializable
      */
     public Map<String, String> getInterWikiLinks(String title) throws IOException
     {
-        String url = query + "prop=langlinks&rawcontinue=1&lllimit=max&titles=" + encode(title, true);
-        Map<String, String> interwikis = new HashMap<>(750);
-        String llcontinue = null;
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=langlinks&titles=");
+        url.append(encode(title, true));
         
-        do
+        List<String[]> blah = queryAPIResult("ll", url, "getInterWikiLinks", (line, results) ->
         {
-            String line;
-            if (llcontinue == null)
-                line = fetch(url, "getInterwikiLinks");
-            else
-                line = fetch(url + "&llcontinue=" + encode(llcontinue, false), "getInterwikiLinks");
-
             // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
-            llcontinue = parseAttribute(line, "llcontinue", 0);
             for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
             {
                 String language = parseAttribute(line, "lang", a);
                 int b = line.indexOf('>', a) + 1;
                 int c = line.indexOf('<', b);
                 String page = decode(line.substring(b, c));
-                interwikis.put(language, page);
+                results.add(new String[] { language, page });
             }
-        }
-        while (llcontinue != null);
+        });
+        
+        Map<String, String> interwikis = new HashMap<>(750);
+        blah.forEach(result -> interwikis.put(result[0], result[1]));
         log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links on " + title);
         return interwikis;
     }
@@ -4856,7 +4857,7 @@ public class Wiki implements Serializable
      */
     public String[] getCategoryMembers(String name, int... ns) throws IOException
     {
-        return getCategoryMembers(name, 0, new ArrayList<String>(), false, ns);
+        return getCategoryMembers(name, 0, new ArrayList<>(), false, ns);
     }
 
     /**
@@ -4872,7 +4873,7 @@ public class Wiki implements Serializable
      */
     public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
     {
-        return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<String>(), false, ns);
+        return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<>(), false, ns);
     }
 
     /**
@@ -4889,7 +4890,7 @@ public class Wiki implements Serializable
      */
     public String[] getCategoryMembers(String name, int maxdepth, boolean sorttimestamp, int... ns) throws IOException
     {
-        return getCategoryMembers(name, maxdepth, new ArrayList<String>(), sorttimestamp, ns);
+        return getCategoryMembers(name, maxdepth, new ArrayList<>(), sorttimestamp, ns);
     }
 
     /**
@@ -5542,22 +5543,21 @@ public class Wiki implements Serializable
         {
             StringBuilder apprtype = new StringBuilder("&apprtype=");
             StringBuilder apprlevel = new StringBuilder("&apprlevel=");
-            for (Map.Entry<String, Object> entry : protectionstate.entrySet())
+            protectionstate.forEach((key, value) ->
             {
-                String key = entry.getKey();
                 if (key.equals("cascade"))
                 {
                     url.append("&apprfiltercascade=");
-                    url.append((Boolean)entry.getValue() ? "cascading" : "noncascading");
+                    url.append((Boolean)value ? "cascading" : "noncascading");
                 }
                 else if (!key.contains("expiry"))
                 {
                     apprtype.append(key);
                     apprtype.append("%7C");
-                    apprlevel.append((String)entry.getValue());
+                    apprlevel.append(value);
                     apprlevel.append("%7C");
                 }
-            }
+            });
             apprtype.delete(apprtype.length() - 3, apprtype.length());
             apprlevel.delete(apprlevel.length() - 3, apprlevel.length());
             url.append(apprtype);
