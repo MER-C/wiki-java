@@ -678,7 +678,7 @@ public class Wiki implements Serializable
     public Map<String, Object> getSiteInfo() throws IOException
     {
         Map<String, Object> ret = new HashMap<>();
-        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", "getSiteInfo");
+        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", null, "getSiteInfo");
         
         // general site info
         String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
@@ -1020,24 +1020,22 @@ public class Wiki implements Serializable
      *  Logs in to the wiki. This method is thread-safe. 
      *
      *  @param username a username
-     *  @param password a password (as a char[] due to JPasswordField)
+     *  @param password a password, as a <code>char[]</code> for security 
+     *  reasons. Overwritten once the password is used.
      *  @throws IOException if a network error occurs
      *  @throws FailedLoginException if the login failed due to an incorrect
      *  username or password, the requirement for an interactive login (not
-     *  supported, use [[Special:Botpasswords]]) or some other reason
+     *  supported, use [[Special:BotPasswords]]) or some other reason
      *  @see #logout
      */
     public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
     {
-        StringBuilder buffer = new StringBuilder(500);
-        buffer.append("lgname=");
-        buffer.append(encode(username, false));
-        buffer.append("&lgpassword=");
-        buffer.append(encode(new String(password), false));
-        buffer.append("&lgtoken=");
-        buffer.append(encode(getToken("login"), false));
-        String line = post(apiUrl + "action=login", buffer.toString(), "login");
-        buffer.setLength(0);
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("lgname", encode(username, false));
+        postparams.put("lgpassword", encode(new String(password), false));
+        postparams.put("lgtoken", encode(getToken("login"), false));
+        String line = fetch(apiUrl + "action=login", postparams, "login");
+        Arrays.fill(password, '0');
 
         // check for success
         if (line.contains("result=\"Success\""))
@@ -1107,7 +1105,7 @@ public class Wiki implements Serializable
      */
     public synchronized void logoutServerSide() throws IOException
     {
-        fetch(apiUrl + "action=logout", "logoutServerSide");
+        fetch(apiUrl + "action=logout", null, "logoutServerSide");
         logout(); // destroy local cookies
     }
 
@@ -1121,7 +1119,7 @@ public class Wiki implements Serializable
     public boolean hasNewMessages() throws IOException
     {
         String url = query + "meta=userinfo&uiprop=hasmsg";
-        return fetch(url, "hasNewMessages").contains("messages=\"\"");
+        return fetch(url, null, "hasNewMessages").contains("messages=\"\"");
     }
 
     /**
@@ -1136,7 +1134,7 @@ public class Wiki implements Serializable
      */
     public int getCurrentDatabaseLag() throws IOException
     {
-        String line = fetch(query + "meta=siteinfo&siprop=dbrepllag", "getCurrentDatabaseLag");
+        String line = fetch(query + "meta=siteinfo&siprop=dbrepllag", null, "getCurrentDatabaseLag");
         String lag = parseAttribute(line, "lag", 0);
         log(Level.INFO, "getCurrentDatabaseLag", "Current database replication lag is " + lag + " seconds");
         return Integer.parseInt(lag);
@@ -1154,7 +1152,7 @@ public class Wiki implements Serializable
      */
     public Map<String, Integer> getSiteStatistics() throws IOException
     {
-        String text = fetch(query + "meta=siteinfo&siprop=statistics", "getSiteStatistics");
+        String text = fetch(query + "meta=siteinfo&siprop=statistics", null, "getSiteStatistics");
         Map<String, Integer> ret = new HashMap<>(20);
         ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
         ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
@@ -1181,7 +1179,9 @@ public class Wiki implements Serializable
     {
         // This is POST because markup can be arbitrarily large, as in the size
         // of an article (over 10kb).
-        String response = post(apiUrl + "action=parse", "prop=text&text=" + encode(markup, false), "parse");
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("text", encode(markup, false));
+        String response = fetch(apiUrl + "action=parse&prop=text", postparams, "parse");
         int y = response.indexOf('>', response.indexOf("<text")) + 1;
         int z = response.indexOf("</text>");
         return decode(response.substring(y, z));
@@ -1231,7 +1231,7 @@ public class Wiki implements Serializable
         url.append("list=random");
         if (ns[0] != ALL_NAMESPACES)
             constructNamespaceString(url, "rn", ns);
-        String line = fetch(url.toString(), "random");
+        String line = fetch(url.toString(), null, "random");
         return parseAttribute(line, "title", 0);
     }
     
@@ -1245,7 +1245,7 @@ public class Wiki implements Serializable
      */
     public String getToken(String type) throws IOException
     {
-        String content = fetch(query + "meta=tokens&type=" + type, "getToken");
+        String content = fetch(query + "meta=tokens&type=" + type, null, "getToken");
         return parseAttribute(content, type + "token", 0);
     }
     
@@ -1366,7 +1366,7 @@ public class Wiki implements Serializable
         String[] pages2 = Arrays.copyOf(pages, pages.length); 
         for (String temp : constructTitleString(url.length(), pages, true))
         {
-            String line = fetch(url.toString() + temp, "getPageInfo");
+            String line = fetch(url.toString() + temp, null, "getPageInfo");
             if (resolveredirect)
                 resolveRedirectParser(pages2, line);
             
@@ -1615,7 +1615,7 @@ public class Wiki implements Serializable
         
         for (String chunk : constructTitleString(url.length(), titles, true))
         {
-            String[] results = fetch(url + chunk, "getPageText").split("<page ");
+            String[] results = fetch(url + chunk, null, "getPageText").split("<page ");
             if (resolveredirect)
                 resolveRedirectParser(titles2, results[0]);
 
@@ -1666,7 +1666,7 @@ public class Wiki implements Serializable
         url.append(encode(title, true));
         url.append("&rvsection=");
         url.append(number);
-        String text = fetch(url.toString(), "getSectionText");
+        String text = fetch(url.toString(), null, "getSectionText");
         // This is currently broken because fetch() intercepts the API error.
         // if (text.contains("code=\"rvnosuchsection\""))
         //    throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
@@ -1854,42 +1854,31 @@ public class Wiki implements Serializable
         }
 
         // post data
-        StringBuilder buffer = new StringBuilder(300000);
-        buffer.append("title=");
-        buffer.append(encode(title, true));
-        buffer.append("&text=");
-        buffer.append(encode(text, false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("title", encode(title, true));
+        postparams.put("text", encode(text, false));
+        // edit summary is created automatically if making a new section
         if (section != -1)
-        {
-            // edit summary created automatically if making a new section
-            buffer.append("&summary=");
-            buffer.append(encode(summary, false));
-        }
-        buffer.append("&token=");
-        buffer.append(encode(getToken("csrf"), false));
+            postparams.put("summary", encode(summary, false));
+        postparams.put("token", encode(getToken("csrf"), false));
         if (basetime != null)
         {
-            buffer.append("&starttimestamp=");
-            buffer.append(((OffsetDateTime)info.get("timestamp")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-            buffer.append("&basetimestamp=");
+            postparams.put("starttimestamp", ((OffsetDateTime)info.get("timestamp")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             // I wonder if the time getPageText() was called suffices here
-            buffer.append(basetime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            postparams.put("basetimestamp", basetime.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         if (minor)
-            buffer.append("&minor=1");
+            postparams.put("minor", "1");
         if (bot && user != null && user.isAllowedTo("bot"))
-            buffer.append("&bot=1");
+            postparams.put("bot", "1");
         if (section == -1)
         {
-            buffer.append("&section=new&sectiontitle=");
-            buffer.append(encode(summary, false));
+            postparams.put("section", "new");
+            postparams.put("sectiontitle", encode(summary, false));
         }
         else if (section != -2)
-        {
-            buffer.append("&section=");
-            buffer.append(section);
-        }
-        String response = post(apiUrl + "action=edit", buffer.toString(), "edit");
+            postparams.put("section", String.valueOf(section));
+        String response = fetch(apiUrl + "action=edit", postparams, "edit");
 
         // done
         if (response.contains("error code=\"editconflict\""))
@@ -1980,14 +1969,11 @@ public class Wiki implements Serializable
         }
 
         // post data
-        StringBuilder buffer = new StringBuilder(500);
-        buffer.append("title=");
-        buffer.append(encode(title, true));
-        buffer.append("&reason=");
-        buffer.append(encode(reason, false));
-        buffer.append("&token=");
-        buffer.append(encode(getToken("csrf"), false));
-        String response = post(apiUrl + "action=delete", buffer.toString(), "delete");
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("title", encode(title, true));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("token", encode(getToken("csrf"), false));
+        String response = fetch(apiUrl + "action=delete", postparams, "delete");
 
         // done
         if (!response.contains("<delete title="))
@@ -2017,23 +2003,18 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Cannot undelete: Permission denied");
         throttle();
 
-        StringBuilder out = new StringBuilder("title=");
-        out.append(encode(title, true));
-        out.append("&reason=");
-        out.append(encode(reason, false));
-        out.append("&token=");
-        out.append(encode(getToken("csrf"), false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("title", encode(title, true));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("token", encode(getToken("csrf"), false));
         if (revisions.length != 0)
         {
-            out.append("&timestamps=");
-            for (int i = 0; i < revisions.length - 1; i++)
-            {
-                out.append(revisions[i].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-                out.append("%7C");
-            }
-            out.append(revisions[revisions.length - 1].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            StringJoiner sj = new StringJoiner("%7C");
+            for (Wiki.Revision revision : revisions)
+                sj.add(revision.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            postparams.put("timestamps", sj.toString());
         }
-        String response = post(apiUrl + "action=undelete", out.toString(), "undelete");
+        String response = fetch(apiUrl + "action=undelete", postparams, "undelete");
 
         // done
         checkErrorsAndUpdateStatus(response, "undelete");
@@ -2057,8 +2038,12 @@ public class Wiki implements Serializable
         url.append("action=purge");
         if (links)
             url.append("&forcelinkupdate");
+        Map<String, String> postparams = new HashMap<>();
         for (String x : constructTitleString(0, titles, false))
-            post(url.toString(), "titles=" + x, "purge");
+        {
+            postparams.put("title", x);
+            fetch(url.toString(), postparams, "purge");
+        }
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
 
@@ -2239,9 +2224,9 @@ public class Wiki implements Serializable
             {
                 String line;
                 if (tlcontinue == null)
-                    line = fetch(tempurl, "getTemplates");
+                    line = fetch(tempurl, null, "getTemplates");
                 else
-                    line = fetch(tempurl + "&tlcontinue=" + encode(tlcontinue, false), "getTemplates");
+                    line = fetch(tempurl + "&tlcontinue=" + encode(tlcontinue, false), null, "getTemplates");
                 tlcontinue = parseAttribute(line, "tlcontinue", 0);
                 
                 // Split the result into individual listings for each article.
@@ -2389,7 +2374,7 @@ public class Wiki implements Serializable
     public LinkedHashMap<String, String> getSectionMap(String page) throws IOException
     {
         String url = apiUrl + "action=parse&text={{:" + encode(page, true) + "}}__TOC__&prop=sections";
-        String line = fetch(url, "getSectionMap");
+        String line = fetch(url, null, "getSectionMap");
 
         // xml form: <s toclevel="1" level="2" line="How to nominate" number="1" />
         LinkedHashMap<String, String> map = new LinkedHashMap<>(30);
@@ -2421,7 +2406,7 @@ public class Wiki implements Serializable
         url.append("prop=revisions&rvlimit=1&meta=tokens&type=rollback&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        String line = fetch(url.toString(), "getTopRevision");
+        String line = fetch(url.toString(), null, "getTopRevision");
         int a = line.indexOf("<rev "); // important space
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
@@ -2446,7 +2431,7 @@ public class Wiki implements Serializable
         url.append("prop=revisions&rvlimit=1&rvdir=newer&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        String line = fetch(url.toString(), "getFirstRevision");
+        String line = fetch(url.toString(), null, "getFirstRevision");
         int a = line.indexOf("<rev "); // important space!
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
@@ -2486,7 +2471,7 @@ public class Wiki implements Serializable
         String[] ret = Arrays.copyOf(titles, titles.length);
         for (String blah : constructTitleString(url.length(), titles, true))
         {
-            String line = fetch(url.toString() + blah, "resolveRedirects");
+            String line = fetch(url.toString() + blah, null, "resolveRedirects");
             resolveRedirectParser(ret, line);
         }
         return ret;
@@ -2837,7 +2822,7 @@ public class Wiki implements Serializable
         url.append(encode(page, true));
 
         // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
-        String line = fetch(url.toString(), "getDeletedText");
+        String line = fetch(url.toString(), null, "getDeletedText");
         int a = line.indexOf("<rev ");
         if (a < 0)
             return null;
@@ -2920,22 +2905,18 @@ public class Wiki implements Serializable
         }
 
         // post data
-        StringBuilder buffer = new StringBuilder(10000);
-        buffer.append("from=");
-        buffer.append(encode(title, true));
-        buffer.append("&to=");
-        buffer.append(encode(newTitle, true));
-        buffer.append("&reason=");
-        buffer.append(encode(reason, false));
-        buffer.append("&token=");
-        buffer.append(encode(getToken("csrf"), false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("from", encode(title, true));
+        postparams.put("to", encode(newTitle, true));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("token", encode(getToken("csrf"), false));
         if (movetalk)
-            buffer.append("&movetalk=1");
+            postparams.put("movetalk", "1");
         if (noredirect && user.isAllowedTo("suppressredirect"))
-            buffer.append("&noredirect=1");
+            postparams.put("noredirect", "1");
         if (movesubpages && user.isAllowedTo("move-subpages"))
-            buffer.append("&movesubpages=1");
-        String response = post(apiUrl + "action=move", buffer.toString(), "move");
+            postparams.put("movesubpages", "1");
+        String response = fetch(apiUrl + "action=move", postparams, "move");
 
         // done
         if (!response.contains("move from"))
@@ -2975,37 +2956,35 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
         
-        StringBuilder out = new StringBuilder("title=");
-        out.append(encode(page, true));
-        out.append("&reason=");
-        out.append(encode(reason, false));
-        out.append("&token=");
-        out.append(encode(getToken("csrf"), false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("title", encode(page, true));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("token", encode(getToken("csrf"), false));
         // cascade protection
         if (protectionstate.containsKey("cascade"))
-            out.append("&cascade=1");
+            postparams.put("cascade", "1");
         // protection levels
-        out.append("&protections=");
-        StringBuilder temp = new StringBuilder();
-        for (Map.Entry<String, Object> entry : protectionstate.entrySet())
+        StringBuilder pro = new StringBuilder();
+        StringBuilder exp = new StringBuilder();
+        protectionstate.forEach((key, value) ->
         {
-            String key = entry.getKey();
             if (!key.contains("expiry") && !key.equals("cascade"))
             {
-                out.append(key);
-                out.append("=");
-                out.append(entry.getValue());
+                pro.append(key);
+                pro.append("=");
+                pro.append(value);
+                pro.append("%7C");
+                
                 OffsetDateTime expiry = (OffsetDateTime)protectionstate.get(key + "expiry");
-                temp.append(expiry == null ? "never" : expiry.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-                out.append("%7C");
-                temp.append("%7C");
+                exp.append(expiry == null ? "never" : expiry.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                exp.append("%7C");
             }
-        }
-        out.delete(out.length() - 3, out.length());
-        temp.delete(temp.length() - 3, temp.length());
-        out.append("&expiry=");
-        out.append(temp);
-        String response = post(apiUrl + "action=protect", out.toString(), "protect");
+        });
+        pro.delete(pro.length() - 3, pro.length());
+        exp.delete(exp.length() - 3, exp.length());
+        postparams.put("protections", pro.toString());
+        postparams.put("expiry", exp.toString());
+        String response = fetch(apiUrl + "action=protect", postparams, "protect");
 
         // done
         if (!response.contains("<protect "))
@@ -3044,7 +3023,7 @@ public class Wiki implements Serializable
      */
     public String export(String title) throws IOException
     {
-        return fetch(query + "export&exportnowrap&titles=" + encode(title, true), "export");
+        return fetch(query + "export&exportnowrap&titles=" + encode(title, true), null, "export");
     }
 
     // REVISION METHODS
@@ -3085,7 +3064,7 @@ public class Wiki implements Serializable
         // fetch and parse
         for (String chunk : constructRevisionString(oldids))
         {
-            String line = fetch(url.toString() + chunk, "getRevision");
+            String line = fetch(url.toString() + chunk, null, "getRevision");
 
             for (int i = line.indexOf("<page "); i > 0; i = line.indexOf("<page ", ++i))
             {
@@ -3159,21 +3138,15 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
 
         // Perform the rollback. 
-        StringBuilder buffer = new StringBuilder(10000);
-        buffer.append("title=");
-        buffer.append(encode(revision.getPage(), true));
-        buffer.append("&user=");
-        buffer.append(encode(revision.getUser(), true));
-        buffer.append("&token=");
-        buffer.append(encode(getToken("rollback"), false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("title", encode(revision.getPage(), true));
+        postparams.put("user", encode(revision.getUser(), true));
+        postparams.put("token", encode(getToken("rollback"), false));
         if (bot && user.isAllowedTo("markbotedits"))
-            buffer.append("&markbot=1");
+            postparams.put("markbot", "1");
         if (!reason.isEmpty())
-        {
-            buffer.append("&summary=");
-            buffer.append(reason);
-        }
-        String response = post(apiUrl + "action=rollback", buffer.toString(), "rollback");
+            postparams.put("summary", reason);
+        String response = fetch(apiUrl + "action=rollback", postparams, "rollback");
 
         // done
         // ignorable errors
@@ -3212,64 +3185,67 @@ public class Wiki implements Serializable
         if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
 
-        StringBuilder out = new StringBuilder("reason=");
-        out.append(encode(reason, false));
-        out.append("&type=revision"); // FIXME: allow log entry deletion
-        out.append("&ids=");
-        for (int i = 0; i < revisions.length - 1; i++) // FIXME: allow more than slowmax revisions
-        {
-            out.append(revisions[i].getRevid());
-            out.append("%7C");
-        }
-        out.append(revisions[revisions.length - 1].getRevid());
-        out.append("&token=");
-        out.append(encode(getToken("csrf"), false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("reason", encode(reason, false));
+        postparams.put("type", "revision"); // FIXME: allow log entry deletion
         if (user.isAllowedTo("suppressrevision") && suppress != null)
-            out.append(suppress ? "&suppress=yes" : "&suppress=no");
+            postparams.put("suppress", suppress ? "yes" : "no");
         // this is really stupid... I'm open to suggestions
-        out.append("&hide=");
-        StringBuilder temp = new StringBuilder("&show=");
+        StringBuilder hide = new StringBuilder();
+        StringBuilder show = new StringBuilder();
         if (hidecontent != null)
         {
             if (hidecontent)
-                out.append("content%7C");
+                hide.append("content%7C");
             else
-                temp.append("content%7C");
+                show.append("content%7C");
         }
         if (hideuser != null)
         {
             if (hideuser)
-                out.append("user%7C");
+                hide.append("user%7C");
             else
-                temp.append("user%7C");
+                show.append("user%7C");
         }
         if (hidereason != null)
         {
             if (hidereason)
-                out.append("comment");
+                hide.append("comment");
             else
-                temp.append("comment");
+                show.append("comment");
         }
-        if (out.lastIndexOf("%7C") == out.length() - 2)
-            out.delete(out.length() - 2, out.length());
-        if (temp.lastIndexOf("%7C") == temp.length() - 2)
-            temp.delete(temp.length() - 2, temp.length());
-        out.append(temp);
-
+        if (hide.lastIndexOf("%7C") == hide.length() - 2)
+            hide.delete(hide.length() - 2, hide.length());
+        if (show.lastIndexOf("%7C") == show.length() - 2)
+            show.delete(show.length() - 2, show.length());
+        postparams.put("hide", hide.toString());
+        postparams.put("show", show.toString());
+        
+        long[] revids = new long[revisions.length];
+        for (int i = 0; i < revisions.length; i++)
+            revids[i] = revisions[i].getRevid();
+        
         // send/read response
-        String response = post(apiUrl + "action=revisiondelete", out.toString(), "revisionDelete");
-        if (!response.contains("<revisiondelete "))
-            checkErrorsAndUpdateStatus(response, "move");
-        log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + revisions.length + " revisions.");
-        for (Revision rev : revisions)
+        for (String revstring : constructRevisionString(revids))
         {
-            if (hideuser != null)
-                rev.userDeleted = hideuser;
-            if (hidereason != null)
-                rev.summaryDeleted = hidereason;
-            if (hidecontent != null)
-                rev.contentDeleted = hidecontent;
+            postparams.put("token", encode(getToken("csrf"), false));
+            postparams.put("ids", revstring);
+            String response = fetch(apiUrl + "action=revisiondelete", postparams, "revisionDelete");
+            
+            if (!response.contains("<revisiondelete "))
+                checkErrorsAndUpdateStatus(response, "move");
+            for (Revision rev : revisions)
+            {
+                if (hideuser != null)
+                    rev.userDeleted = hideuser;
+                if (hidereason != null)
+                    rev.summaryDeleted = hidereason;
+                if (hidecontent != null)
+                    rev.contentDeleted = hidecontent;
+            }
         }
+        
+        log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + revisions.length + " revisions.");
     }
 
     /**
@@ -3328,28 +3304,19 @@ public class Wiki implements Serializable
         }
 
         // send data
-        StringBuilder buffer = new StringBuilder(10000);
-        buffer.append("title=");
-        buffer.append(rev.getPage());
+        HashMap<String, String> postparams = new HashMap<>();
+        postparams.put("title", rev.getPage());
         if (!reason.isEmpty())
-        {
-            buffer.append("&summary=");
-            buffer.append(reason);
-        }
-        buffer.append("&undo=");
-        buffer.append(rev.getRevid());
+            postparams.put("summary", reason);
+        postparams.put("undo", String.valueOf(rev.getRevid()));
         if (to != null)
-        {
-            buffer.append("&undoafter=");
-            buffer.append(to.getRevid());
-        }
+            postparams.put("undoafter", String.valueOf(to.getRevid()));
         if (minor)
-            buffer.append("&minor=1");
+            postparams.put("minor", "1");
         if (bot)
-            buffer.append("&bot=1");
-        buffer.append("&token=");
-        buffer.append(encode(getToken("csrf"), false));
-        String response = post(apiUrl + "action=edit", buffer.toString(), "undo");
+            postparams.put("bot", "1");
+        postparams.put("token", encode(getToken("csrf"), false));
+        String response = fetch(apiUrl + "action=edit", postparams, "undo");
 
         // done
         if (response.contains("error code=\"editconflict\""))
@@ -3490,7 +3457,7 @@ public class Wiki implements Serializable
         url.append(width);
         url.append("&iiurlheight=");
         url.append(height);
-        String line = fetch(url.toString(), "getImage");
+        String line = fetch(url.toString(), null, "getImage");
         if (!line.contains("<imageinfo>"))
             return false;
         String url2 = parseAttribute(line, "url", 0);
@@ -3532,7 +3499,7 @@ public class Wiki implements Serializable
         file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
         String url = query + "prop=imageinfo&iiprop=size%7Csha1%7Cmime%7Cmetadata&titles="
             + encode("File:" + file, true);
-        String line = fetch(url, "getFileMetadata");
+        String line = fetch(url, null, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
         Map<String, Object> metadata = new HashMap<>(30);
@@ -3658,7 +3625,7 @@ public class Wiki implements Serializable
         // no thumbnails for image history, sorry.
         String title = entry.getTarget();
         String url = query + "prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=" + encode(title, true);
-        String line = fetch(url, "getOldImage");
+        String line = fetch(url, null, "getOldImage");
 
         // find the correct log entry by comparing timestamps
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
@@ -3916,17 +3883,14 @@ public class Wiki implements Serializable
         }
         
         // send and build request
-        StringBuilder postData = new StringBuilder("ignorewarnings=1&token=");
-        postData.append(encode(getToken("csrf"), false));
-        postData.append("&filename=");
-        postData.append(filename);
-        postData.append("&text=");
-        postData.append(encode(contents, false));
-        postData.append("&comment=");
-        postData.append(encode(reason, false));
-        postData.append("&url=");
-        postData.append(encode(url.toExternalForm(), false));
-        String response = post(apiUrl + "action=upload", postData.toString(), "upload");
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("ignorewarnings", "1");
+        postparams.put("token", encode(getToken("csrf"), false));
+        postparams.put("filename", filename);
+        postparams.put("text", encode(contents, false));
+        postparams.put("comment", encode(reason, false));
+        postparams.put("url", encode(url.toExternalForm(), false));
+        String response = fetch(apiUrl + "action=upload", postparams, "upload");
         
         if (response.contains("error code=\"fileexists-shared-forbidden\""))
         {
@@ -4109,7 +4073,7 @@ public class Wiki implements Serializable
             String temp = url.toString();
             if (!next.isEmpty())
                 temp += ("&aufrom=" + encode(next, false));
-            String line = fetch(temp, "allUsers");
+            String line = fetch(temp, null, "allUsers");
             
             // bail if nonsense groups/rights
             if (line.contains("Unrecognized values for parameter"))
@@ -4194,7 +4158,7 @@ public class Wiki implements Serializable
         String url = query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration&ususers=";
         for (String fragment : constructTitleString(url.length(), usernames, true))
         {
-            String line = fetch(url + fragment, "getUserInfo");
+            String line = fetch(url + fragment, null, "getUserInfo");
             String[] results = line.split("<user ");
             for (int i = 1; i < results.length; i++)
             {
@@ -4435,18 +4399,14 @@ public class Wiki implements Serializable
         }
 
         // post email
-        StringBuilder buffer = new StringBuilder(20000);
-        buffer.append("token=");
-        buffer.append(encode(getToken("csrf"), false));
-        buffer.append("&target=");
-        buffer.append(encode(user.getUsername(), false));
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("token", encode(getToken("csrf"), false));
+        postparams.put("target", encode(user.getUsername(), false));
         if (emailme)
-            buffer.append("&ccme=true");
-        buffer.append("&text=");
-        buffer.append(encode(message, false));
-        buffer.append("&subject=");
-        buffer.append(encode(subject, false));
-        String response = post(apiUrl + "action=emailuser", buffer.toString(), "emailUser");
+            postparams.put("ccme", "1");
+        postparams.put("text", encode(message, false));
+        postparams.put("subject", encode(subject, false));
+        String response = fetch(apiUrl + "action=emailuser", postparams, "emailUser");
 
         // check for errors
         checkErrorsAndUpdateStatus(response, "email");
@@ -4472,9 +4432,11 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
 
         // send request
-        String request = "user=" + encode(blockeduser, false) + "&reason=" +
-            encode(reason, false) + "&token=" + encode(getToken("csrf"), false);
-        String response = post(query + "action=unblock", request, "unblock");
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("user", encode(blockeduser, false));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("token", encode(getToken("csrf"), false));
+        String response = fetch(query + "action=unblock", postparams, "unblock");
 
         // done
         if (!response.contains("<unblock "))
@@ -4539,16 +4501,14 @@ public class Wiki implements Serializable
         String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
+        Map<String, String> postparams = new HashMap<>();
+        if (unwatch)
+            postparams.put("unwatch", "1");
         for (String titlestring : constructTitleString(0, titles, false))
         {
-            StringBuilder request = new StringBuilder("titles=");
-            request.append(titlestring);
-            if (unwatch)
-                request.append("&unwatch=1");
-            request.append("&token=");
-            request.append(getToken("watch"));
-
-            post(apiUrl + "action=watch", request.toString(), state);
+            postparams.put("titles", titlestring);
+            postparams.put("token", getToken("watch"));
+            fetch(apiUrl + "action=watch", postparams, state);
         }
         log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
     }
@@ -6451,7 +6411,7 @@ public class Wiki implements Serializable
             if (pageDeleted) // FIXME: broken if a page is live, but has deleted revisions
             {
                 String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
-                String temp = fetch(url, "Revision.getText");
+                String temp = fetch(url, null, "Revision.getText");
                 int a = temp.indexOf("<rev ");
                 a = temp.indexOf(">", a) + 1;
                 int b = temp.indexOf("</rev>", a); // tag not present if revision has no content
@@ -6461,7 +6421,7 @@ public class Wiki implements Serializable
             else
             {
                 String url = base + encode(title, true) + "&oldid=" + revid + "&action=raw";
-                String temp = fetch(url, "Revision.getText");
+                String temp = fetch(url, null, "Revision.getText");
                 log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
                 return temp;
             }
@@ -6485,13 +6445,13 @@ public class Wiki implements Serializable
             if (pageDeleted)
             {
                 String url = query + "prop=deletedrevisions&drvprop=content&drvparse=1&revids=" + revid;
-                temp = fetch(url, "Revision.getRenderedText");
+                temp = fetch(url, null, "Revision.getRenderedText");
                 // TODO
             }
             else
             {
                 String url = base + "&action=render&oldid=" + revid;
-                temp = fetch(url, "Revision.getRenderedText");
+                temp = fetch(url, null, "Revision.getRenderedText");
             }
             log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
             return decode(temp);
@@ -6574,25 +6534,19 @@ public class Wiki implements Serializable
          */
         protected String diff(long oldid, String text) throws IOException
         {
-            StringBuilder temp = new StringBuilder();
+            HashMap<String, String> postparams = new HashMap<>();
             if (oldid == NEXT_REVISION)
-                temp.append("&torelative=next");
+                postparams.put("torelative", "next");
             else if (oldid == CURRENT_REVISION)
-                temp.append("&torelative=cur");
+                postparams.put("torelative", "cur");
             else if (oldid == PREVIOUS_REVISION)
-                temp.append("&torelative=prev");
+                postparams.put("torelative", "prev");
             else if (oldid == 0L)
-            {
-                temp.append("&totext=");
-                temp.append(text);
-            }
+                postparams.put("totext", text);
             else
-            {
-                temp.append("&torev=");
-                temp.append(oldid);
-            }
+                postparams.put("torev", String.valueOf(oldid));
             
-            String line = post(apiUrl + "action=compare&fromrev=" + getRevid(), temp.toString(), "Revision.diff");
+            String line = fetch(apiUrl + "action=compare&fromrev=" + getRevid(), postparams, "Revision.diff");
 
             // strip extraneous information
             if (line.contains("</compare>"))
@@ -6967,7 +6921,7 @@ public class Wiki implements Serializable
         {
             int limit = Math.min(querylimit - results.size(), max);
             String tempurl = url.toString() + limit;
-            String line = fetch(tempurl + xxcontinue.toString(), caller);
+            String line = fetch(tempurl + xxcontinue.toString(), null, caller);
             xxcontinue.setLength(0);
             
             // Continuation parameter has form:
@@ -6993,23 +6947,28 @@ public class Wiki implements Serializable
     // miscellany
 
     /**
-     *  A generic URL content fetcher. This is only useful for GET requests,
-     *  which is almost everything that doesn't modify the wiki. Might be
-     *  useful for subclasses.
+     *  A generic URL content fetcher. If <var>postparams</var> is not null, 
+     *  the request is sent using HTTP GET, otherwise it is sent using HTTP 
+     *  POST. Might be useful for subclasses.
      *
      *  Here we also check the database lag and wait if it exceeds
      *  <var>maxlag</var>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
      *  here</a> for how this works.
      *
      *  @param url the url to fetch
+     *  @param postparams if null, send the request using POST otherwise use GET
      *  @param caller the caller of this method
-     *  @return the content of the fetched URL
+     *  @return the server response
      *  @throws IOException if a network error occurs
      *  @throws AssertionError if assert=user|bot fails
      *  @since 0.18
      */
-    protected String fetch(String url, String caller) throws IOException
+    protected String fetch(String url, Map<String, String> postparams, String caller) throws IOException
     {
+        StringJoiner postbody = new StringJoiner("&");
+        if (postparams != null)
+            postparams.forEach((key, value) -> postbody.add(key + "=" + value));
+
         String temp = null;
         int tries = maxtries;
         do
@@ -7020,11 +6979,23 @@ public class Wiki implements Serializable
             {
                 // connect
                 URLConnection connection = makeConnection(url);
+                if (postparams != null)
+                    connection.setDoOutput(true);
                 connection.connect();
+                if (postparams != null)
+                {
+                    try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
+                    {
+                        out.write(postbody.toString());
+                    }
+                }
 
                 // check lag and retry
                 if (checkLag(connection))
-                    return fetch(url, caller);
+                {
+                    tries++;
+                    continue;
+                }
 
                 // get the text
                 String line;
@@ -7039,6 +7010,21 @@ public class Wiki implements Serializable
                     }
                 }
                 temp = text.toString();
+                
+                // check for recoverable errors
+                
+                // rate limit (though might be a long one e.g. email)
+                if (temp.contains("error code=\"ratelimited\""))
+                {
+                    log(Level.WARNING, caller, "Server-side throttle hit.");
+                    throw new HttpRetryException("Action throttled.", 503);
+                }
+                // database lock
+                if (temp.contains("error code=\"readonly\""))
+                {
+                    log(Level.WARNING, caller, "Database locked!");
+                    throw new HttpRetryException("Database locked!", 503);
+                }
             }
             catch (IOException ex)
             {
@@ -7070,84 +7056,6 @@ public class Wiki implements Serializable
                 throw new UnknownError("MW API error. Server response was: " + temp);
         }
         return temp;
-    }
-
-    /**
-     *  Does a text-only HTTP POST.
-     *  @param url the url to post to
-     *  @param text the text to post
-     *  @param caller the caller of this method
-     *  @throws IOException if a network error occurs
-     *  @return the server response
-     *  @see #multipartPost(java.lang.String, java.util.Map, java.lang.String)
-     *  @since 0.24
-     */
-    protected String post(String url, String text, String caller) throws IOException
-    {
-        String temp = "";
-        int tries = maxtries;
-        do
-        {
-            logurl(url, caller);
-            tries--;
-            try
-            {
-                URLConnection connection = makeConnection(url);
-                connection.setDoOutput(true);
-                connection.connect();
-
-                try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
-                {
-                    out.write(text);
-                }
-                // check lag and retry
-                if (checkLag(connection))
-                    return post(url, text, caller);
-
-                StringBuilder buffer = new StringBuilder(100000);
-                String line;
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                    zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
-                {
-                    while ((line = in.readLine()) != null)
-                    {
-                        buffer.append(line);
-                        buffer.append("\n");
-                    }
-                }
-                temp = buffer.toString();
-                
-                // check for recoverable errors
-                
-                // rate limit (though might be a long one e.g. email)
-                if (temp.contains("error code=\"ratelimited\""))
-                {
-                    log(Level.WARNING, caller, "Server-side throttle hit.");
-                    throw new HttpRetryException("Action throttled.", 503);
-                }
-                // database lock
-                if (temp.contains("error code=\"readonly\""))
-                {
-                    log(Level.WARNING, caller, "Database locked!");
-                    throw new HttpRetryException("Database locked!", 503);
-                }
-                return temp;
-            }
-            catch (IOException ex)
-            {
-                if (tries == 0)
-                    throw ex;
-                try
-                {
-                    Thread.sleep(10000);
-                }
-                catch (InterruptedException ignored)
-                {
-                }
-            }
-        }
-        while (temp.isEmpty());
-        throw new AssertionError("Unreachable.");
     }
 
     /**
