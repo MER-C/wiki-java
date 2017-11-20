@@ -223,16 +223,8 @@ public class ContributionSurveyor
             
             // this looks a lot like ArticleEditorIntersector.intersectEditors()...
             Map<String, List<Wiki.Revision>> results = Arrays.stream(contribs)
-                .filter(rev -> {
-                    try
-                    { 
-                        return wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() > 149;
-                    }
-                    catch (IOException ex)
-                    {
-                        return true;
-                    }
-                }).collect(Collectors.groupingBy(Wiki.Revision::getPage));
+                .filter(rev -> wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() > 149)
+                .collect(Collectors.groupingBy(Wiki.Revision::getPage));
 
             if (results.isEmpty())
                 out.write("\nNo major mainspace contributions.");

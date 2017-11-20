@@ -289,27 +289,27 @@ public class ArticleEditorIntersector
             throw new IllegalArgumentException("At least two articles are needed to derive a meaningful intersection.");
         
         // fetch histories and group by user
-        Stream<Wiki.Revision> revstream = pageset.stream().flatMap(article -> 
-        {
-            Stream<Wiki.Revision> str = Arrays.stream(new Wiki.Revision[0]);
-            try
+        Stream<Wiki.Revision> revstream = pageset.stream()
+            // remove Special: and Media: pages
+            .filter(article -> wiki.namespace(article) >= 0) 
+            .flatMap(article ->  
             {
-                // remove Special: and Media: pages
-                if (wiki.namespace(article) < 0)
-                    return str;
-                str = Arrays.stream(wiki.getPageHistory(article));
-                if (adminmode)
-                    str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article)));
-            }
-            catch (IOException | CredentialNotFoundException ignored)
-            {
-                // If a network error occurs when fetching the live history,
-                // that page will be skipped. If a network or privilege error 
-                // occurs when fetching deleted history, that will be skipped
-                // with the live history returned.
-            }
-            return str;
-        }).filter(rev -> rev.getUser() != null); // remove deleted/suppressed usernames
+                Stream<Wiki.Revision> str = Arrays.stream(new Wiki.Revision[0]);
+                try
+                {
+                    str = Arrays.stream(wiki.getPageHistory(article));
+                    if (adminmode)
+                        str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article)));
+                }
+                catch (IOException | CredentialNotFoundException ignored)
+                {
+                    // If a network error occurs when fetching the live history,
+                    // that page will be skipped. If a network or privilege error 
+                    // occurs when fetching deleted history, that will be skipped
+                    // with the live history returned.
+                }
+                return str;
+            }).filter(rev -> rev.getUser() != null); // remove deleted/suppressed usernames
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
         Map<String, List<Wiki.Revision>> results = revstream.collect(Collectors.groupingBy(Wiki.Revision::getUser));

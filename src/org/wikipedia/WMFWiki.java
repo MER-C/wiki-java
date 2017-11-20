@@ -122,7 +122,7 @@ public class WMFWiki extends Wiki
         title = normalize(title);
         url.append(URLEncoder.encode(title, "UTF-8"));
     	
-        List<String[]> usage = queryAPIResult("gu", url, "getGlobalUsage", (line, results) ->
+        List<String[]> usage = queryAPIResult("gu", url, null, "getGlobalUsage", (line, results) ->
         {
             for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
                 results.add(new String[] {
