@@ -2217,7 +2217,7 @@ public class Wiki implements Serializable
     protected List<String>[] getTemplates(String[] titles, String template, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=templates&rawcontinue=1&tllimit=max");
+        url.append("prop=templates");
         constructNamespaceString(url, "tl", ns);
         if (template != null)
         {
@@ -2226,24 +2226,13 @@ public class Wiki implements Serializable
         }
         // copy array so redirect resolver doesn't overwrite
         String[] titles2 = Arrays.copyOf(titles, titles.length);
-        Map<String, List<String>> ret = new HashMap<>();
+        List<Map<String, List<String>>> stuff = new ArrayList<>();
         Map<String, String> postparams = new HashMap<>();
-        // Also account for unknown length of tlcontinue's value
-        String[] titlestrings = constructTitleString(titles);
-        for (String temp : titlestrings)
+        for (String temp : constructTitleString(titles))
         {
             postparams.put("titles", temp);
-            String tlcontinue = null;
-            
-            do
+            stuff.addAll(queryAPIResult("tl", url, postparams, "getTemplates", (line, results) ->
             {
-                String line;
-                if (tlcontinue == null)
-                    line = fetch(url.toString(), postparams, "getTemplates");
-                else
-                    line = fetch(url.toString() + "&tlcontinue=" + encode(tlcontinue, false), postparams, "getTemplates");
-                tlcontinue = parseAttribute(line, "tlcontinue", 0);
-                
                 // Split the result into individual listings for each article.
                 String[] x = line.split("<page ");
                 if (resolveredirect)
@@ -2251,26 +2240,35 @@ public class Wiki implements Serializable
                 // Skip first element to remove front crud.
                 for (int i = 1; i < x.length; i++)
                 {
-                    String parsedtitle = parseAttribute(x[i], "title", 0);
-                    // Instantiate. Need to keep the list object around, results
-                    // for a given page may be split over API query fetches.
-                    if (ret.get(parsedtitle) == null)
-                        ret.put(parsedtitle, new ArrayList<>(750));
-                    
-                    // Actually parse the templates.
                     // xml form: <tl ns="10" title="Template:POTD" />
-                    List<String> list = ret.get(parsedtitle);
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String> list = new ArrayList<>();
                     for (int a = x[i].indexOf("<tl "); a > 0; a = x[i].indexOf("<tl ", ++a))
                         list.add(parseAttribute(x[i], "title", a));
+                    Map<String, List<String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, list);
+                    results.add(intermediate);
                 }
-            }
-            while (tlcontinue != null);
+            }));
         }
         
-        // reorder stuff 
+        // merge and reorder
         List<String>[] out = new ArrayList[titles.length];
-        for (int i = 0; i < titles2.length; i++)
-            out[i] = ret.get(normalize(titles2[i]));
+        stuff.forEach(entry ->
+        {
+            String parsedtitle = entry.keySet().iterator().next();
+            List<String> templates = entry.get(parsedtitle);
+            for (int i = 0; i < titles2.length; i++)
+            {
+                if (normalize(titles2[i]).equals(parsedtitle))
+                {
+                    if (out[i] == null)
+                        out[i] = new ArrayList<>();
+                    out[i].addAll(templates);
+                }
+            }
+        });
+
         log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + titles.length + " pages.");
         return out;
     }
@@ -6928,7 +6926,7 @@ public class Wiki implements Serializable
         {
             int limit = Math.min(querylimit - results.size(), max);
             String tempurl = url.toString() + limit;
-            String line = fetch(tempurl + xxcontinue.toString(), null, caller);
+            String line = fetch(tempurl + xxcontinue.toString(), postparams, caller);
             xxcontinue.setLength(0);
             
             // Continuation parameter has form:

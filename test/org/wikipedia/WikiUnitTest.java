@@ -340,8 +340,24 @@ public class WikiUnitTest
     @Test
     public void getTemplates() throws Exception
     {
-        assertArrayEquals("getTemplates: non-existent page", new String[0], enWiki.getTemplates("sdkf&hsdklj"));
-        assertArrayEquals("getTemplates: page with no templates", new String[0], enWiki.getTemplates("User:MER-C/monobook.js"));
+        String[] pages = 
+        {
+            "sdkf&hsdklj", // non-existent
+            // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/templates_test
+            "User:MER-C/UnitTests/templates_test",
+            // https://test.wikipedia.org/wiki/User:MER-C/monobook.js (no templates)
+            "User:MER-C/monobook.js",
+            "user:MER-C/UnitTests/templates test", // same as [1]
+        };
+        List<String>[] results = testWiki.getTemplates(pages);
+        assertTrue("getTemplates: non-existent page", results[0].isEmpty());
+        assertEquals("getTemplates", 1, results[1].size());
+        assertEquals("getTemplates", "Template:La", results[1].get(0));
+        assertTrue("getTemplates: page with no templates", results[2].isEmpty());
+        assertEquals("getTemplates: duplicate", results[1], results[3]);
+        
+        assertEquals("getTemplates: namespace filter", 0, testWiki.getTemplates(pages[1], Wiki.MAIN_NAMESPACE).length);
+        assertEquals("getTemplates: namespace filter", "Template:La", testWiki.getTemplates(pages[1], Wiki.TEMPLATE_NAMESPACE)[0]);
     }
     
     @Test
