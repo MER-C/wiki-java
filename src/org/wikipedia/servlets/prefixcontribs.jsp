@@ -73,7 +73,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
             enWiki.setMaxLag(-1);
             enWiki.setQueryLimit(1000);
             OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(time);
-            Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
+            Wiki.Revision[] revisions = enWiki.prefixContribs(prefix, cutoff, null);
             if (revisions.length == 0)
                 out.println("<p>\nNo contributions found.");
             else

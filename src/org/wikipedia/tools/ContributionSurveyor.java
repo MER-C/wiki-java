@@ -171,7 +171,7 @@ public class ContributionSurveyor
     
     /**
      *  Constructs a new ContributionSurveyor instance.
-     *  @param Wiki homewiki the wiki that has users we want to survey
+     *  @param homewiki the wiki that has users we want to survey
      *  @since 0.03
      */
     public ContributionSurveyor(Wiki homewiki)
@@ -201,28 +201,28 @@ public class ContributionSurveyor
     public void contributionSurvey(String[] users, File output, boolean userspace, boolean images) throws IOException
     {
         FileWriter out = new FileWriter(output);
-        for (String user : users)
+        List<Wiki.Revision>[] edits = wiki.contribs(users, "", null, null);
+        Map<String, Object>[] userinfo = wiki.getUserInfo(users);
+        for (int i = 0; i < users.length; i++)
         {
             // determine if user exists; if so, stats
-            Wiki.Revision[] contribs = wiki.contribs(user);
-            out.write("===" + user + "===\n");
-            out.write("*{{user5|" + user + "}}\n");
-            Wiki.User wpuser = wiki.getUser(user);
-            if (wpuser != null)
+            out.write("===" + users[i] + "===\n");
+            out.write("*{{user5|" + users[i] + "}}\n");
+            if (userinfo[i] != null)
             {
-                int editcount = wpuser.countEdits();
-                out.write("*Total edits: " + editcount + ", Live edits: " + contribs.length +
-                ", Deleted edits: " + (editcount - contribs.length) + "\n\n");
+                int editcount = (Integer)userinfo[i].get("editcount");
+                out.write("*Total edits: " + editcount + ", Live edits: " + edits[i].size() +
+                ", Deleted edits: " + (editcount - edits[i].size()) + "\n\n");
             }
             else
-                System.out.println(user + " is not a registered user.");
+                System.out.println(users[i] + " is not a registered user.");
 
             // survey mainspace edits
             if (images || userspace)
-                out.write("====Mainspace edits (" + user + ")====");
+                out.write("====Mainspace edits (" + users[i] + ")====");
             
             // this looks a lot like ArticleEditorIntersector.intersectEditors()...
-            Map<String, List<Wiki.Revision>> results = Arrays.stream(contribs)
+            Map<String, List<Wiki.Revision>> results = edits[i].stream()
                 .filter(rev -> wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() > 149)
                 .collect(Collectors.groupingBy(Wiki.Revision::getPage));
 
@@ -254,9 +254,9 @@ public class ContributionSurveyor
             // survey userspace
             if (userspace)
             {
-                out.write("====Userspace edits (" + user + ")====\n");
+                out.write("====Userspace edits (" + users[i] + ")====\n");
                 HashSet<String> temp = new HashSet(50);
-                for (Wiki.Revision revision : contribs)
+                for (Wiki.Revision revision : edits[i])
                 {
                     String title = revision.getPage();
                     // check only userspace edits
@@ -273,24 +273,24 @@ public class ContributionSurveyor
             }
 
             // survey images
-            if (images && wpuser != null)
+            if (images && userinfo[i] != null)
             {
-                String[][] survey = imageContributionSurvey(wpuser);
+                String[][] survey = imageContributionSurvey((Wiki.User)userinfo[i].get("user"));
                 if (survey[0].length > 0)
                 {
-                    out.write("====Local uploads (" + user + ")====\n");
+                    out.write("====Local uploads (" + users[i] + ")====\n");
                     out.write(ParserUtils.formatList(survey[0]));
                     out.write("\n");
                 }
                 if (survey[1].length > 0)
                 {
-                    out.write("====Commons uploads (" + user + ")====\n");
+                    out.write("====Commons uploads (" + users[i] + ")====\n");
                     out.write(ParserUtils.formatList(survey[1]));
                     out.write("\n");
                 }
                 if (survey[2].length > 0)
                 {
-                    out.write("====Transferred uploads (" + user + ")====\n");
+                    out.write("====Transferred uploads (" + users[i] + ")====\n");
                     out.write("WARNING: may be inaccurate, depending on username.");
                     out.write(ParserUtils.formatList(survey[2]));
                     out.write("\n");

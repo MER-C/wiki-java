@@ -91,29 +91,21 @@ public class UserLinkAdditionFinder
         
         // fetch and parse edits
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
-        Files.lines(fp, Charset.forName("UTF-8"))
-            .flatMap(user -> {
-                try 
-                {
-                    return Arrays.stream(enWiki.contribs(user, "", null, date, Wiki.MAIN_NAMESPACE));
-                }
-                catch (IOException ex)
-                {
-                    System.err.println("IOException for fetching contribs of user " + user);
-                    return Arrays.stream(new Wiki.Revision[0]);
-                }
-            }).forEach(revision -> {
-                try
-                {
-                    // remove all sets { revision, links... } where no links are added
-                    Map<Wiki.Revision, List<String>> temp = parseDiff(revision);
-                    if (!temp.get(revision).isEmpty())
-                        results.putAll(temp);
-                }
-                catch (IOException ex)
-                {
-                }
-            });
+        List<String> lines = Files.readAllLines(fp, Charset.forName("UTF-8"));
+        List<Wiki.Revision>[] revisions = enWiki.contribs(lines.toArray(new String[0]), "", null, null, Wiki.MAIN_NAMESPACE);
+        Arrays.stream(revisions).flatMap(List::stream).forEach(revision -> 
+        {
+            try
+            {
+                // remove all sets { revision, links... } where no links are added
+                Map<Wiki.Revision, List<String>> temp = parseDiff(revision);
+                if (!temp.get(revision).isEmpty())
+                    results.putAll(temp);
+            }
+            catch (IOException ex)
+            {
+            }
+        });
         if (results.isEmpty())
         {
             System.out.println("No links found.");
@@ -187,17 +179,17 @@ public class UserLinkAdditionFinder
         System.out.println();
         
         System.out.println("== Blacklist log ==");
-        for (Map.Entry<String, Set<String>> entry : domains.entrySet())
+        domains.forEach((key, value) ->
         {
-            String domain = entry.getKey().replace(".", "\\.");
+            String domain = key.replace(".", "\\.");
             System.out.print(" \\b" + domain + "\\b");
             for (int i = domain.length(); i < 35; i++)
                 System.out.print(' ');
             System.out.print(" # ");
-            for (String spammer : entry.getValue())
+            for (String spammer : value)
                 System.out.print("{{user|" + spammer + "}} ");
             System.out.println();
-        }
+        });
         System.out.flush();
     }
     

@@ -2254,19 +2254,14 @@ public class Wiki implements Serializable
         
         // merge and reorder
         List<String>[] out = new ArrayList[titles.length];
+        Arrays.setAll(out, ArrayList::new);
         stuff.forEach(entry ->
         {
             String parsedtitle = entry.keySet().iterator().next();
             List<String> templates = entry.get(parsedtitle);
             for (int i = 0; i < titles2.length; i++)
-            {
                 if (normalize(titles2[i]).equals(parsedtitle))
-                {
-                    if (out[i] == null)
-                        out[i] = new ArrayList<>();
                     out[i].addAll(templates);
-                }
-            }
         });
 
         log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + titles.length + " pages.");
@@ -4123,7 +4118,7 @@ public class Wiki implements Serializable
      */
     public User getUser(String username) throws IOException
     {
-        return userExists(username) ? new User(normalize(username)) : null;
+        return getUsers(new String[] { username })[0];
     }
     
     /**
@@ -4137,9 +4132,9 @@ public class Wiki implements Serializable
     public User[] getUsers(String[] usernames) throws IOException
     {
         User[] ret = new User[usernames.length];
-        boolean[] exists = userExists(usernames);
+        Map<String, Object>[] userinfo = getUserInfo(usernames);
         for (int i = 0; i < usernames.length; i++)
-            ret[i] = exists[i] ? new User(normalize(usernames[i])) : null;
+            ret[i] = userinfo[i] == null ? null : (User)userinfo[i].get("user");
         return ret;
     }
 
@@ -4149,6 +4144,7 @@ public class Wiki implements Serializable
      *  <ul>
      *  <li><b>inputname</b>: (String) the username supplied to this method
      *  <li><b>username</b>: (String) the normalized user name
+     *  <li><b>user</b>: (User) a user object representing this user
      *  <li><b>editcount</b>: (int) the user's edit count (see {@link 
      *    User#countEdits()})
      *  <li><b>groups</b>: (String[]) the groups the user is in (see
@@ -4189,6 +4185,7 @@ public class Wiki implements Serializable
                 String parsedname = parseAttribute(result, "name", 0);
 
                 ret.put("username", parsedname);
+                ret.put("user", new User(parsedname));
                 ret.put("blocked", result.contains("blockedby=\""));
                 ret.put("emailable", result.contains("emailable=\""));
                 ret.put("editcount", Integer.parseInt(parseAttribute(result, "editcount", 0)));
@@ -4254,14 +4251,14 @@ public class Wiki implements Serializable
      *
      *  @param user the user, IP or IP range to get contributions for
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return the contributions of the user, or a zero length array if the user
+     *  @return contributions of this user, or a zero-length array if the user
      *  does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
     public Revision[] contribs(String user, int... ns) throws IOException
     {
-        return contribs(user, "", null, null, ns);
+        return contribs(user, null, null, ns);
     }
 
     /**
@@ -4317,45 +4314,74 @@ public class Wiki implements Serializable
                     contribuser.append(".");
             }
         }
-        return contribs("", contribuser.toString(), null, null);
+        return prefixContribs(contribuser.toString(), null, null);
+    }
+    
+    /**
+     *  Gets contributions for all users starting with <var>prefix</var>. Be
+     *  careful when using this method on large wikis as
+     *  @param prefix a prefix of usernames. 
+     *  @param start fetch edits no newer than this date
+     *  @param end fetch edits no older than this date
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return contributions of users with this prefix
+     *  @throws IOException if a network error occurs
+     */
+    public Revision[] prefixContribs(String prefix, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
+    {
+        List<Revision> list = contribs(new String[0], prefix, end, start, ns)[0];
+        return list.toArray(new Revision[list.size()]);
     }
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. Equivalent to [[Special:Contributions]]. Be careful when 
-     *  using <var>prefix</var> and <var>user</var> on large wikis because more 
-     *  than 100000 edits may be returned for certain values of <var>user</var>.
+     *  addresses. Equivalent to [[Special:Contributions]]. Be 
+     *  careful when using this method on large wikis because more than 100000
+     *  edits may be returned for certain values of <var>user</var>.
      *
      *  @param user the user, IP address or IP range to get contributions for
      *  @param start fetch edits no newer than this date
      *  @param end fetch edits no older than this date
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param prefix a prefix of usernames. Overrides <var>user</var>. Use ""
-     *  to not specify one.
-     *  @return contributions of this user, or a zero length array if the user
+     *  @return contributions of this user, or a zero-length array if the user 
      *  does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
-    public Revision[] contribs(String user, String prefix, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
+    public Revision[] contribs(String user, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
     {
-        // prepare the url
-        StringBuilder temp = new StringBuilder(query);
-        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff&");
-        if (prefix.isEmpty())
-        {
-            temp.append("ucuser=");
-            temp.append(encode(user, true));
-        }
-        else
-        {
-            temp.append("ucuserprefix=");
-            temp.append(prefix);
-        }
-        constructNamespaceString(temp, "uc", ns);
+        List<Revision> list = contribs(new String[] { user }, "", end, start, ns)[0];
+        return list.toArray(new Revision[list.size()]);
+    }
+    
+    /**
+     *  Gets the contributions for a list of users, IP addresses or ranges of IP
+     *  addresses. Equivalent to [[Special:Contributions]]. Be careful when 
+     *  using <var>prefix</var> and <var>users</var> on large wikis because more 
+     *  than 100000 edits may be returned for certain values of <var>users</var>.
+     *
+     *  @param users a list of users, IP addresses or IP ranges to get 
+     *  contributions for
+     *  @param start fetch edits no newer than this date
+     *  @param end fetch edits no older than this date
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use ""
+     *  to not specify one.
+     *  @return contributions of <var>users</var> in the same order as 
+     *  <var>users</var>, or a zero-length array where the user does not exist
+     *  @throws IOException if a network error occurs
+     *  @since 0.34
+     */
+    public List<Revision>[] contribs(String[] users, String prefix, OffsetDateTime end, OffsetDateTime start, 
+        int... ns) throws IOException
+    {
         // end refers to the *oldest* allowable edit and vice versa
         if (start != null && end != null && start.isBefore(end))
             throw new IllegalArgumentException("Specified start date is before specified end date!");
+        
+        // prepare the url
+        StringBuilder temp = new StringBuilder(query);
+        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff");
         if (end != null)
         {
             temp.append("&ucend=");
@@ -4366,8 +4392,9 @@ public class Wiki implements Serializable
             temp.append("&ucstart=");
             temp.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
-
-        List<Revision> revisions = queryAPIResult("uc", temp, null, "contribs", (line, results) ->
+        constructNamespaceString(temp, "uc", ns);
+        
+        BiConsumer<String, List<Revision>> parser = (line, results) ->
         {
             // xml form: <item user="Wizardman" ... size="59460" />
             for (int a = line.indexOf("<item "); a > 0; a = line.indexOf("<item ", ++a))
@@ -4375,12 +4402,42 @@ public class Wiki implements Serializable
                 int b = line.indexOf(" />", a);
                 results.add(parseRevision(line.substring(a, b), ""));
             }
-        });
-
-        // clean up
-        int size = revisions.size();
-        log(Level.INFO, "contribs", "Successfully retrived contributions for " + (prefix.isEmpty() ? user : prefix) + " (" + size + " edits)");
-        return revisions.toArray(new Revision[size]);
+        };
+        
+        if (prefix.isEmpty())
+        {
+            Map<String, String> postparams = new HashMap<>();
+            List<Revision> revisions = new ArrayList<>();
+            for (String userstring : constructTitleString(users))
+            {
+                postparams.put("ucuser", userstring);
+                revisions.addAll(queryAPIResult("uc", temp, postparams, "contribs", parser));
+            }
+            // group and reorder
+            // implementation note: the API does not distinguish between users/IPs
+            // with zero edits and users that do not exist
+            List<Revision>[] ret = new ArrayList[users.length];
+            Arrays.setAll(ret, ArrayList::new);
+            revisions.forEach(revision ->
+            {
+                for (int i = 0; i < users.length; i++)
+                    if (normalize(users[i]).equals(revision.getUser()))
+                        ret[i].add(revision);    
+            });
+            log(Level.INFO, "contribs", "Successfully retrived contributions for " + Arrays.toString(users));
+            return ret;
+        }
+        else
+        {
+            temp.append("ucuserprefix=");
+            temp.append(prefix);
+            List<Revision> revisions = queryAPIResult("uc", temp, null, "contribs", parser);
+            int size = revisions.size();
+            log(Level.INFO, "prefixContribs", "Successfully retrived contributions for " + prefix + " (" + size + " edits)");
+            List<Revision>[] ret = new ArrayList[1];
+            ret[0] = revisions;
+            return ret;
+        }
     }
 
     /**

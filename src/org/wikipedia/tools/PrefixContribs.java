@@ -43,7 +43,7 @@ public class PrefixContribs
         if (prefix == null)
             System.exit(0);
         OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(7);
-        Wiki.Revision[] revisions = enWiki.contribs("", prefix, cutoff, null);
+        Wiki.Revision[] revisions = enWiki.prefixContribs(prefix, cutoff, null);
         if (revisions.length == 0)
             System.out.println("No contributions found.");
         else

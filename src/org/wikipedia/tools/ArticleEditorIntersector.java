@@ -294,7 +294,7 @@ public class ArticleEditorIntersector
             .filter(article -> wiki.namespace(article) >= 0) 
             .flatMap(article ->  
             {
-                Stream<Wiki.Revision> str = Arrays.stream(new Wiki.Revision[0]);
+                Stream<Wiki.Revision> str = Stream.empty();
                 try
                 {
                     str = Arrays.stream(wiki.getPageHistory(article));
@@ -379,28 +379,32 @@ public class ArticleEditorIntersector
      * 
      *  @param users the list of users to fetch contributions for
      *  @return a map with page &#8594; list of revisions made
+     *  @throws IOException if a network error occurs
      */
-    public Map<String, List<Wiki.Revision>> intersectEditors(String[] users)
+    public Map<String, List<Wiki.Revision>> intersectEditors(String[] users) throws IOException
     {
         // fetch the list of (deleted) edits
-        Stream<Wiki.Revision> revstream = Arrays.stream(users).flatMap(user -> 
+        List<Wiki.Revision>[] revisions = wiki.contribs(users, "", null, null);
+        Stream<Wiki.Revision> revstream = Arrays.stream(revisions).flatMap(List::stream);
+        
+        if (adminmode)
         {
-            Stream<Wiki.Revision> str = Arrays.stream(new Wiki.Revision[0]);
-            try
+            Stream<Wiki.Revision> revstream2 = Arrays.stream(users).flatMap(user -> 
             {
-                str = Arrays.stream(wiki.contribs(user));
-                if (adminmode)
-                    str = Stream.concat(str, Arrays.stream(wiki.deletedContribs(user)));
-            }
-            catch (IOException | CredentialNotFoundException ex)
-            {
-                // If a network error occurs when fetching live contributions,
-                // that user will be skipped. If a network or privilege error 
-                // occurs when fetching deleted contributions, that will be 
-                // skipped with live edits returned.
-            }
-            return str;
-        });
+                try
+                {
+                    return Arrays.stream(wiki.deletedContribs(user));
+                }
+                catch (IOException | CredentialNotFoundException ex)
+                {
+                    // If a network or privilege error occurs when fetching 
+                    // deleted contributions, that will be skipped with live 
+                    // edits returned.
+                    return Stream.empty();
+                }
+            });
+            revstream = Stream.concat(revstream, revstream2);
+        }
         // we cannot filter by sizediff here, the MediaWiki API does not return
         // this information for deleted revisions
         if (nominor)

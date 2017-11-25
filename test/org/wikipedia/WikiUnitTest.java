@@ -808,19 +808,24 @@ public class WikiUnitTest
     @Test
     public void contribs() throws Exception
     {
-        // should really be null, but the API returns zero
-        assertEquals("contribs: non-existent user", 0, testWiki.contribs("Dsdlgfkjsdlkfdjilgsujilvjcl").length);
-        
-        // RevisionDeleted content
-        Wiki.Revision[] contribs = enWiki.contribs("Allancake");
-        for (Wiki.Revision rev : contribs)
+        String[] users = new String[]
+        {
+            "Dsdlgfkjsdlkfdjilgsujilvjcl", // should not exist
+            "0.0.0.0", // IP address
+            "Allancake" // revision deleted
+        };
+        List<Wiki.Revision>[] edits = enWiki.contribs(users, "", null, null);
+
+        assertTrue("contribs: non-existent user", edits[0].isEmpty());
+        assertTrue("contribs: IP address with no edits", edits[1].isEmpty());
+        edits[2].forEach(rev ->
         {
             if (rev.getRevid() == 724989913L)
             {
                 assertTrue("contribs: summary deleted", rev.isSummaryDeleted());
                 assertTrue("contribs: content deleted", rev.isContentDeleted());
             }
-        }
+        });
     }
     
     @Test
