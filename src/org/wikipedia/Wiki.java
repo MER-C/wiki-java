@@ -1,6 +1,6 @@
 /**
- *  @(#)Wiki.java 0.33 10/08/2017
- *  Copyright (C) 2007 - 2017 MER-C and contributors
+ *  @(#)Wiki.java 0.34 13/01/2018
+ *  Copyright (C) 2007 - 2018 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -52,7 +52,7 @@ import javax.security.auth.login.*;
  * tracker</a>.
  *
  *  @author MER-C and contributors
- *  @version 0.33
+ *  @version 0.34
  */
 public class Wiki implements Serializable
 {
@@ -412,7 +412,7 @@ public class Wiki implements Serializable
         unknown;
     }
 
-    private static final String version = "0.33";
+    private static final String version = "0.34";
 
     // the domain of the wiki
     private String domain;
