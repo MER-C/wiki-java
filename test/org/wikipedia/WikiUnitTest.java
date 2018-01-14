@@ -934,6 +934,16 @@ public class WikiUnitTest
         rc = enWiki.recentChanges(10, new int[] { Wiki.TALK_NAMESPACE });
         for (Wiki.Revision rev : rc)
             assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getPage()));
+        // check options filtering
+        Map<String, Boolean> options = new HashMap();
+        options.put("minor", Boolean.FALSE);
+        options.put("bot", Boolean.TRUE);
+        rc = enWiki.recentChanges(10, options);
+        for (Wiki.Revision rev : rc)
+        {
+            assertTrue("recentchanges: options", rev.isBot());
+            assertFalse("recentchanges: options", rev.isMinor());
+        }
     }
     
     @Test

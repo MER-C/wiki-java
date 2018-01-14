@@ -329,35 +329,45 @@ public class Wiki implements Serializable
      *  In queries against the recent changes table, this would mean we don't
      *  fetch anonymous edits.
      *  @since 0.20
+     *  @deprecated Use rcoptions = a Map instead
      */
+    @Deprecated
     public static final int HIDE_ANON = 1;
 
     /**
      *  In queries against the recent changes table, this would mean we don't
      *  fetch edits made by bots.
      *  @since 0.20
+     *  @deprecated Use rcoptions = a Map instead
      */
+    @Deprecated
     public static final int HIDE_BOT = 2;
 
     /**
      *  In queries against the recent changes table, this would mean we don't
      *  fetch by the logged in user.
      *  @since 0.20
+     *  @deprecated Use rcoptions = a Map instead
      */
+    @Deprecated
     public static final int HIDE_SELF = 4;
 
     /**
      *  In queries against the recent changes table, this would mean we don't
      *  fetch minor edits.
      *  @since 0.20
+     *  @deprecated Use rcoptions = a Map instead
      */
+    @Deprecated
     public static final int HIDE_MINOR = 8;
 
     /**
      *  In queries against the recent changes table, this would mean we don't
      *  fetch patrolled edits.
      *  @since 0.20
+     *  @deprecated Use rcoptions = a Map instead
      */
+    @Deprecated
     public static final int HIDE_PATROLLED = 16;
 
     // REVISION OPTIONS
@@ -5675,7 +5685,7 @@ public class Wiki implements Serializable
      */
     public Revision[] newPages(int amount) throws IOException
     {
-        return recentChanges(amount, 0, true, MAIN_NAMESPACE);
+        return recentChanges(amount, null, true, MAIN_NAMESPACE);
     }
 
     /**
@@ -5696,8 +5706,55 @@ public class Wiki implements Serializable
      *  above
      *  @throws IOException if a network error occurs
      *  @since 0.20
+     *  @deprecated use rcoptions as a Map instead
      */
+    @Deprecated
     public Revision[] newPages(int amount, int rcoptions, int... ns) throws IOException
+    {
+        Map<String, Boolean> newoptions = new HashMap<>();
+        if (rcoptions > 0)
+        {
+            if ((rcoptions & HIDE_ANON) == HIDE_ANON)
+                newoptions.put("anon", false);
+            if ((rcoptions & HIDE_SELF) == HIDE_SELF)
+                newoptions.put("self", false);
+            if ((rcoptions & HIDE_MINOR) == HIDE_MINOR)
+                newoptions.put("minor", false);
+            if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED)
+                newoptions.put("patrolled", false);
+            if ((rcoptions & HIDE_BOT) == HIDE_BOT)
+                newoptions.put("bot", false);
+        }
+        return recentChanges(amount, newoptions, true, ns);
+    }
+    
+    /**
+     *  Fetches the <var>amount</var> most recently created pages in the main
+     *  namespace subject to the specified constraints. WARNING: The <a 
+     *  href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
+     *  table</a> stores new pages for a <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
+     *  time</a>; it is not possible to retrieve pages created before then. 
+     *  Equivalent to [[Special:Newpages]].
+     * 
+     *  <p>
+     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon", 
+     *  "redirect" and "patrolled" for vanilla MediaWiki (extensions may define 
+     *  their own). {@code <var>rcoptions</var> = { minor = true; anon = false; 
+     *  patrolled = false} returns all minor edits from logged in users that 
+     *  aren't patrolled.
+     *
+     *  @param rcoptions a Map dictating which pages to select. Key not present 
+     *  = don't care.
+     *  @param amount the amount of new pages to get (overrides global query
+     *  limits)
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return the revisions that created the pages satisfying the requirements
+     *  above
+     *  @throws IOException if a network error occurs
+     *  @since 0.35
+     */
+    public Revision[] newPages(int amount, Map<String, Boolean> rcoptions, int... ns) throws IOException
     {
         return recentChanges(amount, rcoptions, true, ns);
     }
@@ -5705,7 +5762,7 @@ public class Wiki implements Serializable
     /**
      *  Fetches the <var>amount</var> most recent changes in the main namespace.
      *  WARNING: The <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
-     *  recentchanges table</a> stores new pages for a <a
+     *  recentchanges table</a> stores edits for a <a
      *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
      *  time</a>; it is not possible to retrieve pages created before then.
      *  Equivalent to [[Special:Recentchanges]].
@@ -5720,13 +5777,15 @@ public class Wiki implements Serializable
      */
     public Revision[] recentChanges(int amount) throws IOException
     {
-        return recentChanges(amount, 0, false, MAIN_NAMESPACE);
+        return recentChanges(amount, null, false, MAIN_NAMESPACE);
     }
 
     /**
      *  Fetches the <tt>amount</tt> most recent changes in the specified
-     *  namespace. WARNING: The recent changes table only stores new pages for
-     *  about a month. It is not possible to retrieve changes before then.
+     *  namespace. WARNING: The <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
+     *  recentchanges table</a> stores edits for a <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
+     *  time</a>; it is not possible to retrieve pages created before then.
      *  Equivalent to [[Special:Recentchanges]].
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
@@ -5740,7 +5799,7 @@ public class Wiki implements Serializable
      */
     public Revision[] recentChanges(int amount, int[] ns) throws IOException
     {
-        return recentChanges(amount, 0, false, ns);
+        return recentChanges(amount, null, false, ns);
     }
 
     /**
@@ -5760,32 +5819,79 @@ public class Wiki implements Serializable
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.23
+     *  @deprecated use rcoptions as a Map instead
      */
+    @Deprecated
     public Revision[] recentChanges(int amount, int rcoptions, int... ns) throws IOException
+    {
+        Map<String, Boolean> newoptions = new HashMap<>();
+        if (rcoptions > 0)
+        {
+            if ((rcoptions & HIDE_ANON) == HIDE_ANON)
+                newoptions.put("anon", false);
+            if ((rcoptions & HIDE_SELF) == HIDE_SELF)
+                newoptions.put("self", false);
+            if ((rcoptions & HIDE_MINOR) == HIDE_MINOR)
+                newoptions.put("minor", false);
+            if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED)
+                newoptions.put("patrolled", false);
+            if ((rcoptions & HIDE_BOT) == HIDE_BOT)
+                newoptions.put("bot", false);
+        }
+        return recentChanges(amount, newoptions, false, ns);
+    }
+    
+    /**
+     *  Fetches the <var>amount</var> most recent changes in the specified
+     *  namespace subject to the specified constraints. WARNING: The 
+     *  <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
+     *  table</a> stores edits for a <a href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">
+     *  finite period of time</a>; it is not possible to retrieve pages created 
+     *  before then. Equivalent to [[Special:Recentchanges]].
+     *  <p>
+     *  Note: Log entries in recent changes have a revid of 0!
+     *
+     *  @param amount the number of entries to return (overrides global query
+     *  limits)
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @param rcoptions a Map dictating which revisions to return. Key not  
+     *  present = don't care.
+     *  @return the recent changes that satisfy these criteria
+     *  @throws IOException if a network error occurs
+     *  @since 0.23
+     */
+    public Revision[] recentChanges(int amount, Map<String, Boolean> rcoptions, int... ns) throws IOException
     {
         return recentChanges(amount, rcoptions, false, ns);
     }
-
+    
     /**
      *  Fetches the <var>amount</var> most recent changes in the specified
-     *  namespace subject to the specified constraints. WARNING: The recent
-     *  changes table only stores new pages for about a month. It is not
-     *  possible to retrieve changes before then. Equivalent to
-     *  [[Special:Recentchanges]].
+     *  namespace subject to the specified constraints. WARNING: The 
+     *  <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
+     *  table</a> stores edits for a <a href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">
+     *  finite period of time</a>; it is not possible to retrieve pages created 
+     *  before then. Equivalent to [[Special:Recentchanges]].
+     *  <p>
+     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon", 
+     *  "redirect", "patrolled" for vanilla MediaWiki (extensions may define 
+     *  their own). {@code <var>rcoptions</var> = { minor = true; anon = false; 
+     *  patrolled = false} returns all minor edits from logged in users that 
+     *  aren't patrolled.
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
      *  @param amount the number of entries to return (overrides global
      *  query limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param rcoptions a bitmask of HIDE_ANON etc that dictate which pages
-     *  we return.
+     *  @param rcoptions a Map dictating which revisions to return. Key not  
+     *  present = don't care.
      *  @param newpages show new pages only
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
-     *  @since 0.23
+     *  @since 0.35
      */
-    protected Revision[] recentChanges(int amount, int rcoptions, boolean newpages, int... ns) throws IOException
+    protected Revision[] recentChanges(int amount, Map<String, Boolean> rcoptions, boolean newpages, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
         url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
@@ -5793,19 +5899,16 @@ public class Wiki implements Serializable
         if (newpages)
             url.append("&rctype=new");
         // rc options
-        if (rcoptions > 0)
+        if (rcoptions != null)
         {
             url.append("&rcshow=");
-            if ((rcoptions & HIDE_ANON) == HIDE_ANON)
-                url.append("!anon%7C");
-            if ((rcoptions & HIDE_SELF) == HIDE_SELF)
-                url.append("!self%7C");
-            if ((rcoptions & HIDE_MINOR) == HIDE_MINOR)
-                url.append("!minor%7C");
-            if ((rcoptions & HIDE_PATROLLED) == HIDE_PATROLLED)
-                url.append("!patrolled%7C");
-            if ((rcoptions & HIDE_BOT) == HIDE_BOT)
-                url.append("!bot%7C");
+            rcoptions.forEach((key, value) -> 
+            {
+                if (!value)
+                    url.append('!');
+                url.append(key);
+                url.append("%7C");
+            });
             // chop off last |
             url.delete(url.length() - 3, url.length());
         }
