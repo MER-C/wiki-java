@@ -384,7 +384,7 @@ public class ArticleEditorIntersector
     public Map<String, List<Wiki.Revision>> intersectEditors(String[] users) throws IOException
     {
         // fetch the list of (deleted) edits
-        List<Wiki.Revision>[] revisions = wiki.contribs(users, "", null, null);
+        List<Wiki.Revision>[] revisions = wiki.contribs(users, "", null, null, null);
         Stream<Wiki.Revision> revstream = Arrays.stream(revisions).flatMap(List::stream);
         
         if (adminmode)

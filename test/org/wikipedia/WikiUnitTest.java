@@ -814,7 +814,7 @@ public class WikiUnitTest
             "0.0.0.0", // IP address
             "Allancake" // revision deleted
         };
-        List<Wiki.Revision>[] edits = enWiki.contribs(users, "", null, null);
+        List<Wiki.Revision>[] edits = enWiki.contribs(users, "", null, null, null);
 
         assertTrue("contribs: non-existent user", edits[0].isEmpty());
         assertTrue("contribs: IP address with no edits", edits[1].isEmpty());
@@ -825,6 +825,19 @@ public class WikiUnitTest
                 assertTrue("contribs: summary deleted", rev.isSummaryDeleted());
                 assertTrue("contribs: content deleted", rev.isContentDeleted());
             }
+        });
+        
+        // check rcoptions and namespace filter
+        // https://test.wikipedia.org/wiki/Blah_blah_2
+        users = new String[] { "MER-C" };
+        Map<String, Boolean> options = new HashMap<>();
+        options.put("new", Boolean.TRUE);
+        options.put("top", Boolean.TRUE);
+        edits = testWiki.contribs(users, "", null, null, options, Wiki.MAIN_NAMESPACE);
+        assertEquals("contribs: filtered", 120919L, edits[0].get(0).getRevid());
+        edits[0].forEach(rev ->
+        {
+            assertEquals("contribs: namespace", Wiki.MAIN_NAMESPACE, testWiki.namespace(rev.getPage()));
         });
     }
     
@@ -1028,5 +1041,13 @@ public class WikiUnitTest
         assertTrue("User.isA: true", me.isA("sysop"));
         assertFalse("User.isA: false", me.isA("templateeditor"));
         assertFalse("User.isA: nonsense input", me.isA("sdlkghsdlkgsd"));
+    }
+    
+    @Test
+    public void userCreatedPages() throws Exception
+    {
+        Wiki.User me = testWiki.getUser("MER-C");
+        String[] pages = me.createdPages(Wiki.MAIN_NAMESPACE);
+        assertEquals("createdPages", "Wiki.java Test Page", pages[pages.length - 1]);
     }
 }

@@ -92,7 +92,7 @@ public class UserLinkAdditionFinder
         // fetch and parse edits
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
         List<String> lines = Files.readAllLines(fp, Charset.forName("UTF-8"));
-        List<Wiki.Revision>[] revisions = enWiki.contribs(lines.toArray(new String[0]), "", null, null, Wiki.MAIN_NAMESPACE);
+        List<Wiki.Revision>[] revisions = enWiki.contribs(lines.toArray(new String[0]), "", null, null, null, Wiki.MAIN_NAMESPACE);
         Arrays.stream(revisions).flatMap(List::stream).forEach(revision -> 
         {
             try

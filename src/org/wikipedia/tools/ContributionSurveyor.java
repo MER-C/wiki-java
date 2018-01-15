@@ -201,7 +201,7 @@ public class ContributionSurveyor
     public void contributionSurvey(String[] users, File output, boolean userspace, boolean images) throws IOException
     {
         FileWriter out = new FileWriter(output);
-        List<Wiki.Revision>[] edits = wiki.contribs(users, "", null, null);
+        List<Wiki.Revision>[] edits = wiki.contribs(users, "", null, null, null);
         Map<String, Object>[] userinfo = wiki.getUserInfo(users);
         for (int i = 0; i < users.length; i++)
         {

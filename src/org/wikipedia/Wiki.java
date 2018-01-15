@@ -4339,7 +4339,7 @@ public class Wiki implements Serializable
      */
     public Revision[] prefixContribs(String prefix, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
     {
-        List<Revision> list = contribs(new String[0], prefix, end, start, ns)[0];
+        List<Revision> list = contribs(new String[0], prefix, end, start, null, ns)[0];
         return list.toArray(new Revision[list.size()]);
     }
 
@@ -4360,7 +4360,7 @@ public class Wiki implements Serializable
      */
     public Revision[] contribs(String user, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
     {
-        List<Revision> list = contribs(new String[] { user }, "", end, start, ns)[0];
+        List<Revision> list = contribs(new String[] { user }, "", end, start, null, ns)[0];
         return list.toArray(new Revision[list.size()]);
     }
     
@@ -4369,7 +4369,16 @@ public class Wiki implements Serializable
      *  addresses. Equivalent to [[Special:Contributions]]. Be careful when 
      *  using <var>prefix</var> and <var>users</var> on large wikis because more 
      *  than 100000 edits may be returned for certain values of <var>users</var>.
-     *
+     * 
+     *  <p>
+     *  Available keys for <var>options</var> include "minor", "top", "new"
+     *  and "patrolled" for vanilla MediaWiki (extensions may define 
+     *  their own). {@code <var>options</var> = { top = true; new = true; } 
+     *  returns all edits by a user that created pages which haven't been edited
+     *  since. Setting "patrolled" limits results to no older than <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in the <a 
+     *  href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges table</a>.
+     * 
      *  @param users a list of users, IP addresses or IP ranges to get 
      *  contributions for
      *  @param start fetch edits no newer than this date
@@ -4377,13 +4386,15 @@ public class Wiki implements Serializable
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use ""
      *  to not specify one.
+     *  @param options a Map dictating which revisions to select. Key not present 
+     *  = don't care.
      *  @return contributions of <var>users</var> in the same order as 
      *  <var>users</var>, or a zero-length array where the user does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.34
      */
     public List<Revision>[] contribs(String[] users, String prefix, OffsetDateTime end, OffsetDateTime start, 
-        int... ns) throws IOException
+        Map<String, Boolean> options, int... ns) throws IOException
     {
         // end refers to the *oldest* allowable edit and vice versa
         if (start != null && end != null && start.isBefore(end))
@@ -4403,6 +4414,18 @@ public class Wiki implements Serializable
             temp.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
         constructNamespaceString(temp, "uc", ns);
+        if (options != null && !options.isEmpty())
+        {
+            temp.append("&ucshow=");
+            options.forEach((key, value) ->
+            {
+                if (!value)
+                    temp.append('!');
+                temp.append(key);
+                temp.append("%7C");
+            });
+            temp.delete(temp.length() - 3, temp.length());
+        }
         
         BiConsumer<String, List<Revision>> parser = (line, results) ->
         {
@@ -4414,7 +4437,7 @@ public class Wiki implements Serializable
             }
         };
         
-        if (prefix.isEmpty())
+        if (prefix == null || prefix.isEmpty())
         {
             Map<String, String> postparams = new HashMap<>();
             List<Revision> revisions = new ArrayList<>();
@@ -5899,7 +5922,7 @@ public class Wiki implements Serializable
         if (newpages)
             url.append("&rctype=new");
         // rc options
-        if (rcoptions != null)
+        if (rcoptions != null && !rcoptions.isEmpty())
         {
             url.append("&rcshow=");
             rcoptions.forEach((key, value) -> 
@@ -6174,6 +6197,24 @@ public class Wiki implements Serializable
         public Revision[] contribs(int... ns) throws IOException
         {
             return Wiki.this.contribs(username, ns);
+        }
+        
+        /**
+         *  Returns a list of pages created by this user in the given namespaces.
+         *  @param ns a list of namespaces to filter by, empty = all namespaces
+         *  @return the list of pages created by this user
+         *  @throws IOException if a network error occurs
+         *  @since 0.35
+         */
+        public String[] createdPages(int... ns) throws IOException
+        {
+            Map<String, Boolean> options = new HashMap<>();
+            options.put("new", Boolean.TRUE);
+            List<Wiki.Revision>[] contribs = Wiki.this.contribs(new String[] { username }, "", null, null, options, ns);
+            String[] ret = new String[contribs[0].size()];
+            for (int i = 0; i < contribs[0].size(); i++)
+                ret[i] = contribs[0].get(i).getPage();
+            return ret;
         }
         
         /**
