@@ -4705,7 +4705,7 @@ public class Wiki implements Serializable
      */
     public Revision[] watchlist() throws IOException, CredentialNotFoundException
     {
-        return watchlist(false);
+        return watchlist(false, null);
     }
 
     /**
@@ -4714,16 +4714,23 @@ public class Wiki implements Serializable
      *  recentchanges table</a> and hence cannot be retrieved after <a
      *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">a certain amount
      *  of time</a>.
-     *
+     *  <p>
+     *  Available keys for <var>options</var> include "minor", "bot", "anon",
+     *  "patrolled" and "unread" for vanilla MediaWiki (extensions may define 
+     *  their own). {@code <var>options</var> = { minor = true; bot = false;} 
+     *  returns all minor edits not made by bots.
+     * 
      *  @param allrev show all revisions to the pages, instead of the top most
      *  change
+     *  @param options a Map dictating which revisions to select. Key not present 
+     *  = don't care.
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
      *  @since 0.27
      */
-    public Revision[] watchlist(boolean allrev, int... ns) throws IOException, CredentialNotFoundException
+    public Revision[] watchlist(boolean allrev, Map<String, Boolean> options, int... ns) throws IOException, CredentialNotFoundException
     {
         if (user == null)
             throw new CredentialNotFoundException("Not logged in");
@@ -4732,6 +4739,18 @@ public class Wiki implements Serializable
         if (allrev)
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
+        if (options != null && !options.isEmpty())
+        {
+            url.append("&wlshow=");
+            options.forEach((key, value) ->
+            {
+                if (!value)
+                    url.append('!');
+                url.append(key);
+                url.append("%7C");
+            });
+            url.delete(url.length() - 3, url.length());
+        }
 
         List<Revision> wl = queryAPIResult("wl", url, null, "watchlist", (line, results) ->
         {
