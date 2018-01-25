@@ -1,6 +1,6 @@
 /**
- *  @(#)ContributionSurveyor.java 0.03 11/03/2017
- *  Copyright (C) 2011-2017 MER-C
+ *  @(#)ContributionSurveyor.java 0.04 25/01/2018
+ *  Copyright (C) 2011-2018 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -33,11 +33,14 @@ import org.wikipedia.*;
  *  contribution surveyors when possible!
  *
  *  @author MER-C
- *  @version 0.03
+ *  @version 0.04
  */
 public class ContributionSurveyor
 {
-    private Wiki wiki;
+    private final Wiki wiki;
+    private OffsetDateTime startdate, enddate;
+    private boolean nominor = true;
+    private int minsizediff = 150;
     
     /**
      *  Runs this program.
@@ -47,7 +50,9 @@ public class ContributionSurveyor
     public static void main(String[] args) throws IOException
     {
         // placeholders
-        boolean images = false, userspace = false;
+        boolean images = false, userspace = false, nominor = true;
+        int minsize = 150;
+        OffsetDateTime start = null, end = null;
         Wiki homewiki = Wiki.createInstance("en.wikipedia.org");
         File out = null;
         String wikipage = null;
@@ -72,10 +77,14 @@ public class ContributionSurveyor
                             + "Default: en.wikipedia.org.\n"
                         + "\t--outfile file\n\t\tSave results to file, shows a filechooser if not specified.\n"
                         + "\t--wikipage 'Main Page'\n\t\tFetch a list of users at the wiki page Main Page.\n"
-                        + "\t--category 'A category'\n\t\tFetch a list of users from the given category (recursive)."
+                        + "\t--category 'A category'\n\t\tFetch a list of users from the given category (recursive).\n"
                         + "\t--user user\n\t\tSurvey the given user.\n"
-                        + "\t--userspace\n\t\tSurvey userspace as well.\n");
-
+                        + "\t--userspace\n\t\tSurvey userspace as well.\n"
+                        + "\t--includeminor\n\t\tInclude minor edits.\n"
+                        + "\t--minsize size\n\t\tOnly includes edits that add more than size bytes.\n\t\t"
+                            + "Default: 150\n"
+                        + "\t--start date\n\t\tInclude edits made after this date (ISO format)\n"
+                        + "\t--end date\n\t\tInclude edits made before this date (ISO format)\n");
                     System.exit(0);
                 case "--images":
                     images = true;
@@ -100,6 +109,18 @@ public class ContributionSurveyor
                     break;
                 case "--category":
                     category = args[++i];
+                    break;
+                case "--includeminor":
+                    nominor = false;
+                    break;
+                case "--minsize":
+                    minsize = Integer.parseInt(args[++i]);
+                    break;
+                case "--start":
+                    start = OffsetDateTime.parse(args[++i]);
+                    break;
+                case "--end":
+                    end = OffsetDateTime.parse(args[++i]);
                     break;
             }
         }
@@ -166,6 +187,10 @@ public class ContributionSurveyor
             }
         }
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
+        surveyor.setMinimumSizeDiff(minsize);
+        surveyor.setStartDate(start);
+        surveyor.setEndDate(end);
+        surveyor.setIgnoringMinorEdits(nominor);
         surveyor.contributionSurvey(users.toArray(new String[users.size()]), out, userspace, images);
     }
     
@@ -190,6 +215,97 @@ public class ContributionSurveyor
     }
     
     /**
+     *  Sets whether surveys ignore minor edits. Default = true.
+     *  @param ignoreminor (see above)
+     *  @see #isIgnoringMinorEdits() 
+     *  @since 0.04
+     */
+    public void setIgnoringMinorEdits(boolean ignoreminor)
+    {
+        nominor = ignoreminor;
+    }
+    
+    /**
+     *  Gets whether surveys ignore minor edits. Default = true.
+     *  @return (see above)
+     *  @see #setIgnoringMinorEdits(boolean) 
+     *  @since 0.04
+     */
+    public boolean isIgnoringMinorEdits()
+    {
+        return nominor;
+    }
+    
+    /**
+     *  Sets the date at which surveys start. Default = null, i.e. no lower 
+     *  bound.
+     *  @param start the desired start date/time
+     *  @see #getStartDate() 
+     *  @since 0.04
+     */
+    public void setStartDate(OffsetDateTime start)
+    {
+        startdate = start;
+    }
+    
+    /**
+     *  Gets the date at which surveys start. 
+     *  @return (see above)
+     *  @see #setStartDate(java.time.OffsetDateTime)  
+     *  @since 0.04
+     */
+    public OffsetDateTime getStartDate()
+    {
+        return startdate;
+    }
+    
+    /**
+     *  Sets the date at which surveys finish. Default = null, i.e. when 
+     *  contributions are fetched
+     *  @param end the desired end date/time
+     *  @see #getEndDate()
+     *  @since 0.04
+     */
+    public void setEndDate(OffsetDateTime end)
+    {
+        enddate = end;
+    }
+    
+    /**
+     *  Gets the date at which surveys finish. 
+     *  @return (see above)
+     *  @see #setEndDate(java.time.OffsetDateTime)  
+     *  @since 0.04
+     */
+    public OffsetDateTime getEndDate()
+    {
+        return enddate;
+    }
+    
+    /**
+     *  Sets the minimum change size (in bytes added) to include in surveys.  
+     *  Default is 150, set to {@code Integer.MIN_VALUE} to disable.
+     *  @param sizediff the minimum change size, in bytes added
+     *  @see #getMinimumSizeDiff() 
+     *  @since 0.04
+     */
+    public void setMinimumSizeDiff(int sizediff)
+    {
+        minsizediff = sizediff;
+    }
+    
+    /**
+     *  Gets the minimum change size to include in surveys. 
+     *  @return the minimum change size, in bytes
+     *  @see #setMinimumSizeDiff(int) 
+     *  @since 0.04
+     */
+    public int getMinimumSizeDiff()
+    {
+        return minsizediff;
+    }
+    
+    /**
      *  Performs a mass contribution survey.
      *  @param users the users to survey
      *  @param output the output file to write to
@@ -201,7 +317,10 @@ public class ContributionSurveyor
     public void contributionSurvey(String[] users, File output, boolean userspace, boolean images) throws IOException
     {
         FileWriter out = new FileWriter(output);
-        List<Wiki.Revision>[] edits = wiki.contribs(users, "", null, null, null);
+        Map<String, Boolean> options = new HashMap<>();
+        if (nominor)
+            options.put("minor", Boolean.FALSE);
+        List<Wiki.Revision>[] edits = wiki.contribs(users, "", startdate, enddate, options);
         Map<String, Object>[] userinfo = wiki.getUserInfo(users);
         for (int i = 0; i < users.length; i++)
         {
@@ -223,7 +342,7 @@ public class ContributionSurveyor
             
             // this looks a lot like ArticleEditorIntersector.intersectEditors()...
             Map<String, List<Wiki.Revision>> results = edits[i].stream()
-                .filter(rev -> wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() > 149)
+                .filter(rev -> wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() >= minsizediff)
                 .collect(Collectors.groupingBy(Wiki.Revision::getPage));
 
             if (results.isEmpty())
@@ -362,13 +481,15 @@ public class ContributionSurveyor
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
-        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, null, 
-            null, false, ns);
+        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, enddate, 
+            startdate, false, ns);
         LinkedHashMap<String, ArrayList<Wiki.Revision>> ret = new LinkedHashMap<>();
         
         // group contributions by page
         for (Wiki.Revision rev : delcontribs)
         {
+            if (nominor && rev.isMinor())
+                continue;
             String page = rev.getPage();
             if (!ret.containsKey(page))
                 ret.put(page, new ArrayList<Wiki.Revision>());

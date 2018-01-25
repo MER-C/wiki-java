@@ -2732,6 +2732,7 @@ public class Wiki implements Serializable
     public Revision[] deletedContribs(String username, OffsetDateTime end, OffsetDateTime start, boolean reverse, int... namespace)
         throws IOException, CredentialNotFoundException
     {
+        // FIXME: parameters are in the wrong order!
         // admin queries are annoying
         if (user == null || !user.isAllowedTo("deletedhistory"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
