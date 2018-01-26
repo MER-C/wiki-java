@@ -29,27 +29,31 @@
         homewiki = "en.wikipedia.org";
     else
         homewiki = ServletUtils.sanitizeForAttribute(homewiki);
-
+    Wiki.User wpuser = null;
+    
     if (user != null)
     {
-        // create download prompt
-        response.setContentType("text/plain");
-        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
-
-        // get results
         Wiki wiki = Wiki.createInstance(homewiki);
-        Wiki.User wpuser = wiki.getUser(user);
-        ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-        String[][] survey = surveyor.imageContributionSurvey(wpuser);
+        wpuser = wiki.getUser(user);
+        if (wpuser != null)
+        {
+            // create download prompt
+            response.setContentType("text/plain");
+            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
 
-        out.println(ParserUtils.generateUserLinksAsWikitext(username));
-        out.println(surveyor.formatImageSurveyAsWikitext(username, survey));
-        out.println(surveyor.generateWikitextFooter());
-        out.flush();
-        out.close();
+            // get results
+            ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
+            String[][] survey = surveyor.imageContributionSurvey(wpuser);
+
+            // write results
+            out.println(ParserUtils.generateUserLinksAsWikitext(user));
+            out.println(surveyor.formatImageSurveyAsWikitext(null, survey));
+            out.println(surveyor.generateWikitextFooter());
+            out.flush();
+            out.close();
+            return;
+        }
     }
-    else
-    {
 %>
 
 <!doctype html>
@@ -61,16 +65,15 @@
 
 <body>
 <p>
-This tool generates a listing of a user's image uploads (regardless of whether 
-they are deleted) for use at <a href="//en.wikipedia.org/wiki/WP:CCI">Contributor 
-copyright investigations.</a>
+This tool generates a listing of a user's image uploads for use at <a
+href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 
 <p>
 <form action="./imagecci.jsp" method=GET>
 <table>
 <tr>
     <td>User to survey:
-    <td><input type=text name=user required>
+    <td><input type=text name=user value="<%= user == null ? "" : ServletUtils.sanitizeForAttribute(user) %>" required>
 <tr>
     <td>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>
@@ -78,7 +81,13 @@ copyright investigations.</a>
 <input type=submit value="Survey user">
 </form>
 
-<%@ include file="footer.jsp" %>
+<%
+    if (user != null && wpuser == null)
+    {
+%>
+<hr>
+<span class="error">ERROR: User "<%= ServletUtils.sanitizeForHTML(user) %>" does not exist!</span>
 <%
     }
 %>
+<%@ include file="footer.jsp" %>

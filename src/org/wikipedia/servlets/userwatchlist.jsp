@@ -184,7 +184,7 @@ Someone # Spam
 
         // fetch and output contribs
         OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(5);
-        Wiki.Revision[] contribs = enWiki.contribs(user, "", cutoff, null);
+        Wiki.Revision[] contribs = enWiki.contribs(user, cutoff, null);
         if (contribs.length == 0)
             out.println("<p>No recent contributions or user does not exist.");
         else
