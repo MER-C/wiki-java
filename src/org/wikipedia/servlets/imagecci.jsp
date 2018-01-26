@@ -1,6 +1,6 @@
 <%--
     @(#)imagecci.jsp 0.02 26/01/2017
-    Copyright (C) 2011 - 2017 MER-C
+    Copyright (C) 2011 - 2018 MER-C
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -42,39 +42,11 @@
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         String[][] survey = surveyor.imageContributionSurvey(wpuser);
 
-        // output results
-        out.println("=== Uploads to " + wiki.getDomain() + " ===");
-        int i = 0;
-        for (String entry : survey[0])
-        {
-            i++;
-            if (i % 20 == 1)
-                out.println("==== Local files " + i + " to " + Math.min(i + 19, survey[0].length) + " ====");
-            out.println("*[[:" + entry + "]]");
-        }
-
-        out.println("=== Uploads to commons.wikimedia.org ===");
-        i = 0;
-        for (String entry : survey[1])
-        {
-            i++;
-            if (i % 20 == 1)
-                out.println("==== Commons files " + i + " to " + Math.min(i + 19, survey[1].length) + " ====");
-            out.println("*[[:" + entry + "]]");
-        }
-%>
-=== Transferred files on commons.wikimedia.org ===
-WARNING: may be inaccurate, depending on username.
-
-<%
-        i = 0;
-        for (String entry : survey[2])
-        {
-            i++;
-            if (i % 20 == 1)
-                out.println("==== Transferred files " + i + " to " + Math.min(i + 19, survey[2].length) + " ====");
-            out.println("*[[:" + entry + "]]");
-        }
+        out.println(ParserUtils.generateUserLinksAsWikitext(username));
+        out.println(surveyor.formatImageSurveyAsWikitext(username, survey));
+        out.println(surveyor.generateWikitextFooter());
+        out.flush();
+        out.close();
     }
     else
     {

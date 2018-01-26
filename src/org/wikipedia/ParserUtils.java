@@ -1,6 +1,6 @@
 /**
  *  @(#)ParserUtils.java 0.02 23/12/2016
- *  Copyright (C) 2012-2017 MER-C
+ *  Copyright (C) 2012-2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@ public class ParserUtils
      *  return value. Numbered lists are allowed. Nested lists are flattened. 
      *
      *  @param list a list of pages
-     *  @see #formatList
+     *  @see #formatList(java.lang.String[]) 
      *  @return an array of the page titles
      *  @since Wiki.java 0.11
      */
@@ -80,8 +80,9 @@ public class ParserUtils
     /**
      *  Formats a list of pages, say, generated from one of the query methods
      *  into something that would be editor-friendly. Does the exact opposite
-     *  of <tt>parseList()</tt>, i.e. { "Main Page", "Wikipedia:Featured
-     *  picture candidates", "File:Example.png" } becomes the string:
+     *  of {@link #parseList(java.lang.String) parselist()}, i.e. { "Main Page", 
+     *  "Wikipedia:Featured picture candidates", "File:Example.png" } becomes 
+     *  the string:
      *
      *  <pre>
      *  *[[:Main Page]]
@@ -91,7 +92,7 @@ public class ParserUtils
      *
      *  @param pages an array of page titles
      *  @return see above
-     *  @see #parseList
+     *  @see #parseList(java.lang.String) 
      *  @since Wiki.java 0.14
      */
     public static String formatList(String[] pages)
@@ -366,6 +367,7 @@ public class ParserUtils
      *  @param username the username, NOT sanitized for XSS
      *  @param wiki the wiki to build links for
      *  @return the generated HTML
+     *  @see #generateUserLinksAsWikitext(java.lang.String) 
      */
     public static String generateUserLinks(Wiki wiki, String username)
     {
@@ -375,8 +377,28 @@ public class ParserUtils
             +  "<a href=\"//" + domain + "/wiki/User_talk:" + userenc + "\">talk</a> | "
             +  "<a href=\"//" + domain + "/wiki/Special:Contributions/" + userenc + "\">contribs</a> | "
             +  "<a href=\"//" + domain + "/wiki/Special:DeletedContributions/" + userenc + "\">deleted contribs</a> | "
+            +  "<a href=\"//" + domain + "/w/index.php?title=Special:Log&user=" + userenc + "\">logs</a> | "
             +  "<a href=\"//" + domain + "/wiki/Special:Block/" + userenc + "\">block</a> | "
             +  "<a href=\"//" + domain + "/w/index.php?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
+    }
+    
+    /**
+     *  Creates user links in wikitext of the form <samp>User (talk | contribs | 
+     *  deletedcontribs | block | block log)</samp>
+     *  @param username the username
+     *  @return the generated wikitext
+     *  @see #generateUserLinks(org.wikipedia.Wiki, java.lang.String) 
+     */
+    public static String generateUserLinksAsWikitext(String username)
+    {
+        String userenc = ServletUtils.sanitizeForURL(username.replace(' ', '_'));
+        return "* [[User:" + username + "|" + username + "]] (" 
+            +  "[[User talk:" + username + "|talk]] | "
+            +  "[[Special:Contributions/" + username + "|contribs]] | "
+            +  "[[Special:DeletedContributions/" + username + "|deleted contribs]] | "
+            +  "[{{fullurl:Special:Log|user=" + userenc + "}} logs] | "
+            +  "[[Special:Block/" + username + "|block]] | "
+            +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
     }
     
     /**

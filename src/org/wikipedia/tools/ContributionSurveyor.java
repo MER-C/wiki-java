@@ -186,12 +186,18 @@ public class ContributionSurveyor
                 System.exit(0);
             }
         }
+        
+        int[] ns = userspace ? (new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE }) : (new int[] { Wiki.MAIN_NAMESPACE });
+        FileWriter outwriter = new FileWriter(out);
+        
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setMinimumSizeDiff(minsize);
         surveyor.setStartDate(start);
         surveyor.setEndDate(end);
         surveyor.setIgnoringMinorEdits(nominor);
-        surveyor.contributionSurvey(users.toArray(new String[users.size()]), out, userspace, images);
+        outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
+        outwriter.flush();
+        outwriter.close();
     }
     
     /**
@@ -306,163 +312,36 @@ public class ContributionSurveyor
     }
     
     /**
-     *  Performs a mass contribution survey.
-     *  @param users the users to survey
-     *  @param output the output file to write to
-     *  @param userspace whether to survey output
-     *  @param images whether to survey images (searches Commons as well)
+     *  Conducts a survey of edits by the given users. The output is in the form
+     *  username &#8594; page &#8594; edits, where usernames are in the same
+     *  order as <var>users</var>, edits are sorted to place the largest addition
+     *  first and pages are sorted by their largest addition. <var>ns</var> 
+     *  containing {@link org.wikipedia.Wiki#FILE_NAMESPACE Wiki.FILE_NAMESPACE} 
+     *  looks at additions of text to image description pages.
+     * 
+     *  @param users the list of users to survey
+     *  @param ns the namespaces to survey (not specified = all namespaces,)
+     *  @return the survey in the form username &#8594; page &#8594; edits
      *  @throws IOException if a network error occurs
-     *  @since 0.02
+     *  @since 0.04
      */
-    public void contributionSurvey(String[] users, File output, boolean userspace, boolean images) throws IOException
+    public Map<String, Map<String, List<Wiki.Revision>>> contributionSurvey(String[] users, int... ns) throws IOException
     {
-        FileWriter out = new FileWriter(output);
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
             options.put("minor", Boolean.FALSE);
-        List<Wiki.Revision>[] edits = wiki.contribs(users, "", startdate, enddate, options);
-        Map<String, Object>[] userinfo = wiki.getUserInfo(users);
+        List<Wiki.Revision>[] edits = wiki.contribs(users, "", enddate, startdate, options, ns);
+        Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
+        Comparator<Wiki.Revision> diffsorter = (rev1, rev2) -> rev2.getSizeDiff() - rev1.getSizeDiff();
         for (int i = 0; i < users.length; i++)
         {
-            // determine if user exists; if so, stats
-            out.write("===" + users[i] + "===\n");
-            out.write("*{{user5|" + users[i] + "}}\n");
-            if (userinfo[i] != null)
-            {
-                int editcount = (Integer)userinfo[i].get("editcount");
-                out.write("*Total edits: " + editcount + ", Live edits: " + edits[i].size() +
-                ", Deleted edits: " + (editcount - edits[i].size()) + "\n\n");
-            }
-            else
-                System.out.println(users[i] + " is not a registered user.");
-
-            // survey mainspace edits
-            if (images || userspace)
-                out.write("====Mainspace edits (" + users[i] + ")====");
-            
-            // this looks a lot like ArticleEditorIntersector.intersectEditors()...
             Map<String, List<Wiki.Revision>> results = edits[i].stream()
-                .filter(rev -> wiki.namespace(rev.getPage()) == Wiki.MAIN_NAMESPACE && rev.getSizeDiff() >= minsizediff)
-                .collect(Collectors.groupingBy(Wiki.Revision::getPage));
-
-            if (results.isEmpty())
-                out.write("\nNo major mainspace contributions.");
-            
-            // spit out the results of the survey
-            for (Map.Entry<String, List<Wiki.Revision>> result : results.entrySet())
-            {
-                // sort to put biggest changes first
-                result.getValue().sort((rev1, rev2) -> rev2.getSizeDiff() - rev1.getSizeDiff());
-                
-                StringBuilder temp = new StringBuilder(500);
-                temp.append("\n*[[:");
-                temp.append(result.getKey());
-                temp.append("]]: ");
-                for (Wiki.Revision rev : result.getValue())
-                {
-                    temp.append("[[Special:Diff/");
-                    temp.append(rev.getRevid());
-                    temp.append("|(+");
-                    temp.append(rev.getSizeDiff());
-                    temp.append(")]]");
-                }
-                out.write(temp.toString());
-            }
-            out.write("\n\n");
-
-            // survey userspace
-            if (userspace)
-            {
-                out.write("====Userspace edits (" + users[i] + ")====\n");
-                HashSet<String> temp = new HashSet(50);
-                for (Wiki.Revision revision : edits[i])
-                {
-                    String title = revision.getPage();
-                    // check only userspace edits
-                    int ns = wiki.namespace(title);
-                    if (ns != Wiki.USER_NAMESPACE)
-                        continue;
-                    temp.add(title);
-                }
-                if (temp.isEmpty())
-                    out.write("No userspace edits.\n");
-                else
-                    out.write(ParserUtils.formatList(temp.toArray(new String[temp.size()])));
-                out.write("\n");
-            }
-
-            // survey images
-            if (images && userinfo[i] != null)
-            {
-                String[][] survey = imageContributionSurvey((Wiki.User)userinfo[i].get("user"));
-                if (survey[0].length > 0)
-                {
-                    out.write("====Local uploads (" + users[i] + ")====\n");
-                    out.write(ParserUtils.formatList(survey[0]));
-                    out.write("\n");
-                }
-                if (survey[1].length > 0)
-                {
-                    out.write("====Commons uploads (" + users[i] + ")====\n");
-                    out.write(ParserUtils.formatList(survey[1]));
-                    out.write("\n");
-                }
-                if (survey[2].length > 0)
-                {
-                    out.write("====Transferred uploads (" + users[i] + ")====\n");
-                    out.write("WARNING: may be inaccurate, depending on username.");
-                    out.write(ParserUtils.formatList(survey[2]));
-                    out.write("\n");
-                }
-            }
+                .filter(rev -> rev.getSizeDiff() >= minsizediff)
+                .sorted(diffsorter)
+                .collect(Collectors.groupingBy(Wiki.Revision::getPage, LinkedHashMap::new, Collectors.toList()));
+            ret.put(users[i], results);
         }
-        // timestamp
-        OffsetDateTime now = OffsetDateTime.now(ZoneId.of("UTC"));
-        out.write("This report generated by [https://github.com/MER-C/wiki-java ContributionSurveyor.java] a "
-            + now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        out.flush();
-        out.close();
-    }
-    
-    /**
-     *  Performs an image contribution survey on a user.
-     *  @param user a user on the wiki
-     *  @return first element = local uploads, second element = uploads on Wikimedia
-     *  Commons by the user, third element = images transferred to Commons (may
-     *  be inaccurate depending on username).
-     *  @throws IOException if a network error occurs
-     */
-    public String[][] imageContributionSurvey(Wiki.User user) throws IOException
-    {
-        // fetch local uploads
-        HashSet<String> localuploads = new HashSet<>(10000);
-        for (Wiki.LogEntry upload : wiki.getUploads(user))
-            localuploads.add(upload.getTarget());
-        
-        // fetch commons uploads
-        Wiki commons = Wiki.createInstance("commons.wikimedia.org");
-        Wiki.User comuser = commons.getUser(user.getUsername());
-        HashSet<String> comuploads = new HashSet<>(10000);
-        if (comuser != null)
-            for (Wiki.LogEntry upload : commons.getUploads(user))
-                comuploads.add(upload.getTarget());
-        
-        // fetch transferred commons uploads
-        HashSet<String> commonsTransfer = new HashSet<>(10000);
-        String[][] temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
-        for (String[] x : temp)
-            commonsTransfer.add(x[0]);
-
-        // remove all files that have been reuploaded to Commons
-        localuploads.removeAll(comuploads);
-        localuploads.removeAll(commonsTransfer);
-        commonsTransfer.removeAll(comuploads);
-        
-        return new String[][] {
-            localuploads.toArray(new String[localuploads.size()]),
-            comuploads.toArray(new String[comuploads.size()]),
-            commonsTransfer.toArray(new String[commonsTransfer.size()])
-        };
+        return ret;
     }
     
     /**
@@ -496,5 +375,207 @@ public class ContributionSurveyor
             ret.get(page).add(rev);
         }
         return ret;
+    }
+    
+    /**
+     *  Performs an image contribution survey on a user.
+     *  @param user a user on the wiki
+     *  @return first element = local uploads, second element = uploads on Wikimedia
+     *  Commons by the user, third element = images transferred to Commons (may
+     *  be inaccurate depending on username).
+     *  @throws IOException if a network error occurs
+     */
+    public String[][] imageContributionSurvey(Wiki.User user) throws IOException
+    {
+        // fetch local uploads
+        HashSet<String> localuploads = new HashSet<>(10000);
+        for (Wiki.LogEntry upload : wiki.getUploads(user))
+            localuploads.add(upload.getTarget());
+        
+        // fetch commons uploads
+        Wiki commons = Wiki.createInstance("commons.wikimedia.org");
+        Wiki.User comuser = commons.getUser(user.getUsername());
+        HashSet<String> comuploads = new HashSet<>(10000);
+        if (comuser != null)
+            for (Wiki.LogEntry upload : commons.getUploads(user))
+                comuploads.add(upload.getTarget());
+        
+        // fetch transferred commons uploads
+        HashSet<String> commonsTransfer = new HashSet<>(10000);
+        String[][] temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
+        for (String[] x : temp)
+            commonsTransfer.add(x[0]);
+
+        // remove all files that have been reuploaded to Commons
+        localuploads.removeAll(comuploads);
+        localuploads.removeAll(commonsTransfer);
+        commonsTransfer.removeAll(comuploads);
+        
+        return new String[][] {
+            localuploads.toArray(new String[localuploads.size()]),
+            comuploads.toArray(new String[comuploads.size()]),
+            commonsTransfer.toArray(new String[commonsTransfer.size()])
+        };
+    }
+
+    /**
+     *  Formats a contribution survey for a single user as wikitext.
+     *  @param username the relevant username (use null to omit)
+     *  @param survey the survey, in form of page &#8594; edits
+     *  @return the formatted survey in wikitext
+     *  @see #contributionSurvey(java.lang.String..., int...) 
+     *  @since 0.04
+     */
+    public String formatTextSurveyAsWikitext(String username, Map<String, List<Wiki.Revision>> survey)
+    {
+        StringBuilder out = new StringBuilder();
+        Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = survey.entrySet().iterator();
+        int numarticles = 0;
+        int totalarticles = survey.size();
+        
+        while (iter.hasNext())
+        {
+            // add convenience breaks
+            numarticles++;
+            if (numarticles % 20 == 1)
+            {
+                if (username == null)
+                    out.append(String.format("\n=== Pages %d through %d ===\n", numarticles, Math.min(numarticles + 19, totalarticles)));
+                else
+                    out.append(String.format("\n=== %s: Pages %d through %d ===\n", username, numarticles, Math.min(numarticles + 19, totalarticles)));
+            }
+            
+            Map.Entry<String, List<Wiki.Revision>> entry = iter.next();
+            List<Wiki.Revision> edits = entry.getValue();
+            out.append("*");
+            
+            StringBuilder temp = new StringBuilder();
+            boolean newpage = false;
+            for (Wiki.Revision edit : edits)
+            {
+                // is this a new page?
+                if (edit.isNew() && !newpage)
+                {
+                    out.append("'''N''' ");
+                    newpage = true;
+                }
+                // generate the diff strings now to avoid a second iteration
+                temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getRevid(), edit.getSizeDiff()));
+            }
+            out.append(String.format("[[:%s]] (%d edits): ", entry.getKey(), edits.size()));
+            out.append(temp);
+            out.append("\n");
+        }
+        return out.toString();
+    }
+    
+    /**
+     *  Formats an image contribution survey for a single user as wikitext.
+     *  @param username the relevant username (use null to omit)
+     *  @param survey the survey
+     *  @return the formatted survey in wikitext
+     *  @see #imageContributionSurvey(org.wikipedia.Wiki.User) 
+     *  @since 0.04
+     */
+    public String formatImageSurveyAsWikitext(String username, String[][] survey)
+    {
+        StringBuilder out = new StringBuilder();
+        int numfiles = 0;
+        int totalfiles = survey[0].length;
+        for (String entry : survey[0])
+        {
+            numfiles++;
+            if (numfiles % 20 == 1)
+            {
+                if (username == null)
+                    out.append(String.format("\n=== Local files %d through %d ===\n", numfiles, Math.min(numfiles + 19, totalfiles)));
+                else
+                    out.append(String.format("\n=== %s: Local files %d through %d ===\n", username, numfiles, Math.min(numfiles + 19, totalfiles)));
+            }
+            out.append(String.format("*[[:%s]]\n", entry));
+        }
+
+        numfiles = 0;
+        totalfiles = survey[1].length;
+        for (String entry : survey[1])
+        {
+            numfiles++;
+            if (numfiles % 20 == 1)
+            {
+                if (username == null)
+                    out.append(String.format("\n=== Commons files %d through %d ===\n", numfiles, Math.min(numfiles + 19, totalfiles)));
+                else
+                    out.append(String.format("\n=== %s: Commons files %d through %d ===\n", username, numfiles, Math.min(numfiles + 19, totalfiles)));
+            }
+            out.append(String.format("*[[:%s]]\n", entry));
+        }
+
+        numfiles = 0;
+        totalfiles = survey[2].length;
+        for (String entry : survey[2])
+        {
+            numfiles++;
+            if (numfiles % 20 == 1)
+            {
+                if (username == null)
+                    out.append(String.format("\n=== Transferred files %d through %d ===\n", numfiles, Math.min(numfiles + 19, totalfiles)));
+                else
+                    out.append(String.format("\n=== %s: Transferred files %d through %d ===\n", username, numfiles, Math.min(numfiles + 19, totalfiles)));
+            }
+            out.append(String.format("*[[:%s]]\n", entry));
+        }
+        return out.toString();
+    }
+    
+    /**
+     *  Performs a mass contribution survey and returns wikitext output.
+     *  @param users the users to survey
+     *  @param ns the namespaces to survey
+     *  @param images whether to survey images (searches Commons as well)
+     *  @return the survey results as wikitext
+     *  @throws IOException if a network error occurs
+     *  @since 0.02
+     */
+    public String massContributionSurvey(String[] users, boolean images, int... ns) throws IOException
+    {
+        StringBuilder out = new StringBuilder();
+        Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(users, ns);
+        Map<String, Object>[] userinfo = wiki.getUserInfo(users);
+        
+        Iterator<Map.Entry<String, Map<String, List<Wiki.Revision>>>> iter = results.entrySet().iterator();
+        int userindex = 0;
+        
+        while (iter.hasNext())
+        {
+            Map.Entry<String, Map<String, List<Wiki.Revision>>> entry = iter.next();
+            String username = entry.getKey();
+            Map<String, List<Wiki.Revision>> survey = entry.getValue();
+            
+            out.append(String.format("== %s ==\n", username));
+            out.append(ParserUtils.generateUserLinksAsWikitext(username));
+            out.append(formatTextSurveyAsWikitext(username, survey));
+            
+            // survey images
+            if (images && userinfo[userindex] != null)
+            {
+                String[][] imagesurvey = imageContributionSurvey((Wiki.User)userinfo[userindex].get("user"));
+                out.append(formatImageSurveyAsWikitext(username, imagesurvey));
+            }
+            userindex++;
+        }
+        out.append(generateWikitextFooter());
+        return out.toString();
+    }
+    
+    /**
+     *  Generates a wikitext footer for contribution surveys.
+     *  @return (see above)
+     *  @since 0.04
+     */
+    public String generateWikitextFooter()
+    {
+        OffsetDateTime now = OffsetDateTime.now(ZoneId.of("UTC"));
+        return "\nThis report generated by [https://github.com/MER-C/wiki-java ContributionSurveyor.java] at "
+            + now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + ".";
     }
 }

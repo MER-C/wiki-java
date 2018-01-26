@@ -1,6 +1,6 @@
 /**
- *  @(#)ParserUtilsUnitTest.java 0.31 05/10/2017
- *  Copyright (C) 2017 MER-C
+ *  @(#)ParserUtilsUnitTest.java 0.02 23/12/2016
+ *  Copyright (C) 2017 - 2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -93,6 +93,7 @@ public class ParserUtilsUnitTest
             + "<a href=\"//test.wikipedia.org/wiki/User_talk:MER-C\">talk</a> | "
             + "<a href=\"//test.wikipedia.org/wiki/Special:Contributions/MER-C\">contribs</a> | "
             + "<a href=\"//test.wikipedia.org/wiki/Special:DeletedContributions/MER-C\">deleted contribs</a> | "
+            + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&user=MER-C\">logs</a> | "
             + "<a href=\"//test.wikipedia.org/wiki/Special:Block/MER-C\">block</a> | "
             + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&type=block&page=User:MER-C\">block log</a>)";
         assertEquals("generateUserLinks", expected, ParserUtils.generateUserLinks(testWiki, "MER-C"));
@@ -101,9 +102,31 @@ public class ParserUtilsUnitTest
             + "<a href=\"//test.wikipedia.org/wiki/User_talk:A_B_%E3%81%AE\">talk</a> | "
             + "<a href=\"//test.wikipedia.org/wiki/Special:Contributions/A_B_%E3%81%AE\">contribs</a> | "
             + "<a href=\"//test.wikipedia.org/wiki/Special:DeletedContributions/A_B_%E3%81%AE\">deleted contribs</a> | "
+            + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&user=A_B_%E3%81%AE\">logs</a> | "
             + "<a href=\"//test.wikipedia.org/wiki/Special:Block/A_B_%E3%81%AE\">block</a> | "
             + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&type=block&page=User:A_B_%E3%81%AE\">block log</a>)";
         assertEquals("generateUserLinks: special characters", expected, ParserUtils.generateUserLinks(testWiki, "A B の"));
     }
     
+    @Test
+    public void generateUserLinksAsWikitext() throws Exception
+    {
+        String expected = "* [[User:MER-C|MER-C]] ("
+            + "[[User talk:MER-C|talk]] | "
+            + "[[Special:Contributions/MER-C|contribs]] | "
+            + "[[Special:DeletedContributions/MER-C|deleted contribs]] | "
+            + "[{{fullurl:Special:Log|user=MER-C}} logs] | "
+            + "[[Special:Block/MER-C|block]] | "
+            + "[{{fullurl:Special:Log|type=block&page=User:MER-C}} block log])\n";
+        assertEquals("generateUserLinksAsWikitext", expected, ParserUtils.generateUserLinksAsWikitext("MER-C"));
+        
+        expected = "* [[User:A B の|A B の]] ("
+            + "[[User talk:A B の|talk]] | "
+            + "[[Special:Contributions/A B の|contribs]] | "
+            + "[[Special:DeletedContributions/A B の|deleted contribs]] | "
+            + "[{{fullurl:Special:Log|user=A_B_%E3%81%AE}} logs] | "
+            + "[[Special:Block/A B の|block]] | "
+            + "[{{fullurl:Special:Log|type=block&page=User:A_B_%E3%81%AE}} block log])\n";
+        assertEquals("generateUserLinksAsWikitext: special characters", expected, ParserUtils.generateUserLinksAsWikitext("A B の"));
+    }
 }
