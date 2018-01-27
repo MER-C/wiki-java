@@ -1,6 +1,6 @@
 /**
- *  @(#)WikiUnitTest.java 0.31 29/08/2015
- *  Copyright (C) 2014-2016 MER-C
+ *  @(#)WikiUnitTest.java 0.34 13/01/2018
+ *  Copyright (C) 2014-2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -761,13 +761,14 @@ public class WikiUnitTest
     @Test
     public void getRevision() throws Exception
     {
-        // https://en.wikipedia.org/w/index.php?title=Wikipedia_talk%3AWikiProject_Spam&diff=597454682&oldid=597399794
+        // https://en.wikipedia.org/w/index.php?title=Wikipedia_talk%3AWikiProject_Spam&oldid=597454682
         Wiki.Revision rev = enWiki.getRevision(597454682L);
         assertEquals("getRevision: page", "Wikipedia talk:WikiProject Spam", rev.getPage());
         assertEquals("getRevision: timestamp", "2014-02-28T00:40:31Z", rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getRevision: user", "Lowercase sigmabot III", rev.getUser());
         assertEquals("getRevision: summary", "Archiving 3 discussion(s) to [[Wikipedia talk:WikiProject Spam/2014 Archive Feb 1]]) (bot",
             rev.getSummary());
+        assertEquals("getRevision: sha1", "540a2b3501e4d15729ea25ec3238da9ad0dd6dc4", rev.getSha1());
         assertEquals("getRevision: size", 4286, rev.getSize());
         assertEquals("getRevision: revid", 597454682L, rev.getRevid());
         assertEquals("getRevision: previous", 597399794L, rev.getPrevious().getRevid());
@@ -785,6 +786,7 @@ public class WikiUnitTest
         rev = enWiki.getRevision(596714684L);
         assertNull("getRevision: summary revdeled", rev.getSummary());
         assertNull("getRevision: user revdeled", rev.getUser());
+        assertNull("getRevision: sha1/content revdeled", rev.getSha1());
         assertTrue("getRevision: user revdeled", rev.isUserDeleted());
         assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
         assertTrue("getRevision: content revdeled", rev.isContentDeleted());
@@ -835,6 +837,8 @@ public class WikiUnitTest
         options.put("top", Boolean.TRUE);
         edits = testWiki.contribs(users, "", null, null, options, Wiki.MAIN_NAMESPACE);
         assertEquals("contribs: filtered", 120919L, edits[0].get(0).getRevid());
+        // not implemented in MediaWiki API
+        // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits[0].get(0).getSha1());
         edits[0].forEach(rev ->
         {
             assertEquals("contribs: namespace", Wiki.MAIN_NAMESPACE, testWiki.namespace(rev.getPage()));

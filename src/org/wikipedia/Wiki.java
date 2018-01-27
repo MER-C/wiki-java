@@ -3397,7 +3397,12 @@ public class Wiki implements Serializable
         else if (xml.contains("len=\"")) // deletedrevs
             size = Integer.parseInt(parseAttribute(xml, "len", 0));
 
-        Revision revision = new Revision(oldid, timestamp, title, summary, user2, minor, bot, rvnew, size);
+        // sha1
+        String sha1 = null;
+        if (xml.contains("sha1=\""))
+            sha1 = parseAttribute(xml, "sha1", 0);
+        
+        Revision revision = new Revision(oldid, sha1, timestamp, title, summary, user2, minor, bot, rvnew, size);
         // set rcid
         if (xml.contains("rcid=\""))
             revision.setRcid(Long.parseLong(parseAttribute(xml, "rcid", 0)));
@@ -4403,7 +4408,7 @@ public class Wiki implements Serializable
         
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
-        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff");
+        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff&7Csha1");
         if (end != null)
         {
             temp.append("&ucend=");
@@ -6575,7 +6580,7 @@ public class Wiki implements Serializable
     public class Revision implements Comparable<Revision>
     {
         private boolean minor, bot, rvnew;
-        private String summary;
+        private String summary, sha1;
         private long revid, rcid = -1;
         private long previous = 0, next = 0;
         private OffsetDateTime timestamp;
@@ -6590,23 +6595,23 @@ public class Wiki implements Serializable
         /**
          *  Constructs a new Revision object.
          *  @param revid the id of the revision (this is a long since
-         *  {{NUMBEROFEDITS}} on en.wikipedia.org is now (January 2012) ~25%
-         *  of <tt>Integer.MAX_VALUE</tt>
+         *  {{NUMBEROFEDITS}} on en.wikipedia.org is now (January 2018) ~38%
+         *  of {@code Integer.MAX_VALUE}
          *  @param timestamp when this revision was made
          *  @param title the concerned article
          *  @param summary the edit summary
-         *  @param user the user making this revision (may be anonymous, if not
-         *  use <tt>User.getUsername()</tt>)
+         *  @param user the user making this revision (may be anonymous)
          *  @param minor whether this was a minor edit
          *  @param bot whether this was a bot edit
          *  @param rvnew whether this revision created a new page
          *  @param size the size of the revision
          *  @since 0.17
          */
-        public Revision(long revid, OffsetDateTime timestamp, String title, String summary, String user,
-            boolean minor, boolean bot, boolean rvnew, int size)
+        public Revision(long revid, String sha1, OffsetDateTime timestamp, String title, String summary, 
+            String user, boolean minor, boolean bot, boolean rvnew, int size)
         {
             this.revid = revid;
+            this.sha1 = sha1;
             this.timestamp = timestamp;
             this.summary = summary;
             this.minor = minor;
@@ -6679,6 +6684,19 @@ public class Wiki implements Serializable
             }
             log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
             return decode(temp);
+        }
+        
+        /**
+         *  Returns the SHA-1 hash (base 16, lower case) of the content of this 
+         *  revision, or {@code null} if the revision content is RevisionDeleted 
+         *  and we cannot access it. Warning: not accessible from watchlist or
+         *  contribs (blame the MediaWiki API for this).
+         *  @return (see above)
+         *  @since 0.35
+         */
+        public String getSha1()
+        {
+            return sha1;
         }
 
         /**
