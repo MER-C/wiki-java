@@ -75,7 +75,7 @@ Someone # Spam
         %>
         
 <tr><td>Skip:
-    <td><input type=text size=30 name=skip value="<%= skip %>">
+    <td><input type=number size=30 name=skip value="<%= skip %>">
 </table>
 <input type=submit value="Submit">
 </form>

@@ -56,7 +56,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
     <td><input type=text name=prefix required value="<%= prefix %>">
 <tr>
     <td>For last:
-    <td><input type=text name=time required value="<%= time %>"> days
+    <td><input type=number name=time required value="<%= time %>"> days
 </table>
 <input type=submit value="Search">
 </form>
