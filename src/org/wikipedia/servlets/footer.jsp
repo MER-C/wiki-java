@@ -36,6 +36,7 @@ the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
 <p><b>Tools:</b>
     <a href="./linksearch.jsp">Cross-wiki linksearch</a> |
     <a href="./masslinksearch.jsp">Mass linksearch</a> |
+    <a href="./contributionsurveyor.jsp">Contribution surveyor (beta)</a> |
     <a href="./imagecci.jsp">Image contribution surveyor</a> |
     <a href="./editorintersection.jsp">Article-editor intersection</a> |
     <a href="./spamarchivesearch.jsp">Spam blacklist archive search</a> |

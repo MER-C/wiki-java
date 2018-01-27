@@ -462,7 +462,11 @@ public class ContributionSurveyor
                 // generate the diff strings now to avoid a second iteration
                 temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getRevid(), edit.getSizeDiff()));
             }
-            out.append(String.format("[[:%s]] (%d edits): ", entry.getKey(), edits.size()));
+            int numedits = edits.size();
+            if (numedits == 1)
+                out.append(String.format("[[:%s]] (1 edit): ", entry.getKey()));
+            else
+                out.append(String.format("[[:%s]] (%d edits): ", entry.getKey(), numedits));
             out.append(temp);
             out.append("\n");
         }

@@ -1,5 +1,5 @@
 <%--
-    @(#)imagecci.jsp 0.02 26/01/2017
+    @(#)contributionsurveyor.jsp 0.01 27/01/2018
     Copyright (C) 2011 - 2018 MER-C
 
     This program is free software: you can redistribute it and/or modify
@@ -21,33 +21,45 @@
 <%@ page import="java.net.URLEncoder" %>
 
 <%
-    request.setAttribute("toolname", "Image contribution surveyor");
+    request.setAttribute("toolname", "Contribution surveyor (beta)");
 
     String user = request.getParameter("user");
+    boolean nominor = (request.getParameter("nominor") != null);
+    boolean noresults = false;
+
     String homewiki = request.getParameter("wiki");
     if (homewiki == null)
         homewiki = "en.wikipedia.org";
     else
         homewiki = ServletUtils.sanitizeForAttribute(homewiki);
-    Wiki.User wpuser = null;
+    
+    String bytefloor = request.getParameter("bytefloor");
+    if (bytefloor == null)
+        bytefloor = "150";
+    else
+        bytefloor = ServletUtils.sanitizeForAttribute(bytefloor);
     
     if (user != null)
     {
+        // get results
         Wiki wiki = Wiki.createInstance(homewiki);
-        wpuser = wiki.getUser(user);
-        if (wpuser != null)
+        wiki.setQueryLimit(30000); // 60 network requests
+        ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
+        surveyor.setIgnoringMinorEdits(nominor);
+        surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
+        Map<String, Map<String, List<Wiki.Revision>>> survey = surveyor.contributionSurvey(new String[] { user }, Wiki.MAIN_NAMESPACE);
+        Map<String, List<Wiki.Revision>> usersurvey = survey.entrySet().iterator().next().getValue();
+        noresults = usersurvey.isEmpty();
+
+        if (!noresults)
         {
             // create download prompt
             response.setContentType("text/plain;charset=UTF-8");
             response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
 
-            // get results
-            ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-            String[][] survey = surveyor.imageContributionSurvey(wpuser);
-
             // write results
             out.println(ParserUtils.generateUserLinksAsWikitext(user));
-            out.println(surveyor.formatImageSurveyAsWikitext(null, survey));
+            out.println(surveyor.formatTextSurveyAsWikitext(null, usersurvey));
             out.println(surveyor.generateWikitextFooter());
             out.flush();
             out.close();
@@ -65,11 +77,13 @@
 
 <body>
 <p>
-This tool generates a listing of a user's image uploads for use at <a
-href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
+This tool generates a listing of a user's edits for use at <a
+href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations</a>
+and other venues. It isolates and ranks major edits by size. A query limit of
+30000 edits applies.
 
 <p>
-<form action="./imagecci.jsp" method=GET>
+<form action="./contributionsurveyor.jsp" method=GET>
 <table>
 <tr>
     <td>User to survey:
@@ -77,16 +91,22 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 <tr>
     <td>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>
+<tr>
+    <td>Exclude:
+    <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits</input>
+<tr>
+    <td>Show changes that added at least:
+    <td><input type=number name=bytefloor value="<%= bytefloor %>"></input> bytes
 </table>
 <input type=submit value="Survey user">
 </form>
 
 <%
-    if (user != null && wpuser == null)
+    if (user != null && noresults)
     {
 %>
 <hr>
-<span class="error">ERROR: User "<%= ServletUtils.sanitizeForHTML(user) %>" does not exist!</span>
+<span class="error">No edits found!</span>
 <%
     }
 %>
