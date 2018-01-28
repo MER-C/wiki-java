@@ -1030,6 +1030,17 @@ public class WikiUnitTest
     }
     
     @Test
+    public void revisionCompareTo() throws Exception
+    {
+        // https://en.wikipedia.org/w/index.php?title=Azerbaijan&offset=20180125204500&action=history
+        long[] oldids = { 822342083L, 822341440L };
+        Wiki.Revision[] revisions = enWiki.getRevisions(oldids);
+        assertEquals("Revision.compareTo: self", 0, revisions[0].compareTo(revisions[0]));
+        assertTrue("Revision.compareTo: before", revisions[1].compareTo(revisions[0]) < 0);
+        assertTrue("Revision.compareTo: after",  revisions[0].compareTo(revisions[1]) > 0);
+    }
+    
+    @Test
     public void userIsAllowedTo() throws Exception
     {
         Wiki.User user = enWiki.getUser("LornaIln046035"); // spambot

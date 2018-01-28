@@ -7026,7 +7026,7 @@ public class Wiki implements Serializable
         @Override
         public int compareTo(Wiki.Revision other)
         {
-            return timestamp.compareTo(timestamp);
+            return timestamp.compareTo(other.getTimestamp());
         }
 
         /**
