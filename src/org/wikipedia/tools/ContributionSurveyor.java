@@ -38,7 +38,7 @@ import org.wikipedia.*;
 public class ContributionSurveyor
 {
     private final Wiki wiki;
-    private OffsetDateTime startdate, enddate;
+    private OffsetDateTime earliestdate, latestdate;
     private boolean nominor = true;
     private int minsizediff = 150;
     
@@ -192,8 +192,8 @@ public class ContributionSurveyor
         
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setMinimumSizeDiff(minsize);
-        surveyor.setStartDate(start);
-        surveyor.setEndDate(end);
+        surveyor.setEarliestDateTime(start);
+        surveyor.setLatestDateTime(end);
         surveyor.setIgnoringMinorEdits(nominor);
         outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
         outwriter.flush();
@@ -243,49 +243,50 @@ public class ContributionSurveyor
     }
     
     /**
-     *  Sets the date at which surveys start. Default = null, i.e. no lower 
-     *  bound.
-     *  @param start the desired start date/time
-     *  @see #getStartDate() 
+     *  Sets the date/time at which surveys start; no edits will be returned
+     *  before then. Defaults to {@code null}, i.e. no lower bound.
+     *  @param earliest the desired start date/time
+     *  @see #getEarliestDateTime() 
      *  @since 0.04
      */
-    public void setStartDate(OffsetDateTime start)
+    public void setEarliestDateTime(OffsetDateTime earliest)
     {
-        startdate = start;
+        earliestdate = earliest;
     }
     
     /**
-     *  Gets the date at which surveys start. 
+     *  Gets the date/time at which surveys start; no edits will be returned 
+     *  before then.
      *  @return (see above)
-     *  @see #setStartDate(java.time.OffsetDateTime)  
+     *  @see #setEarliestDateTime(java.time.OffsetDateTime)  
      *  @since 0.04
      */
-    public OffsetDateTime getStartDate()
+    public OffsetDateTime getEarliestDateTime()
     {
-        return startdate;
+        return earliestdate;
     }
     
     /**
-     *  Sets the date at which surveys finish. Default = null, i.e. when 
-     *  contributions are fetched
-     *  @param end the desired end date/time
-     *  @see #getEndDate()
+     *  Sets the date/time at which surveys finish; no edits will be returned
+     *  after then. Defaults to {@code null}, i.e. when the survey is performed
+     *  @param latest the desired end date/time
+     *  @see #getLatestDateTime()
      *  @since 0.04
      */
-    public void setEndDate(OffsetDateTime end)
+    public void setLatestDateTime(OffsetDateTime latest)
     {
-        enddate = end;
+        latestdate = latest;
     }
     
     /**
      *  Gets the date at which surveys finish. 
      *  @return (see above)
-     *  @see #setEndDate(java.time.OffsetDateTime)  
+     *  @see #setLatestDateTime(java.time.OffsetDateTime)  
      *  @since 0.04
      */
-    public OffsetDateTime getEndDate()
+    public OffsetDateTime getLatestDateTime()
     {
-        return enddate;
+        return latestdate;
     }
     
     /**
@@ -330,7 +331,7 @@ public class ContributionSurveyor
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
             options.put("minor", Boolean.FALSE);
-        List<Wiki.Revision>[] edits = wiki.contribs(users, "", enddate, startdate, options, ns);
+        List<Wiki.Revision>[] edits = wiki.contribs(users, "", earliestdate, latestdate, options, ns);
         Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
         Comparator<Wiki.Revision> diffsorter = (rev1, rev2) -> rev2.getSizeDiff() - rev1.getSizeDiff();
         for (int i = 0; i < users.length; i++)
@@ -360,8 +361,8 @@ public class ContributionSurveyor
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
-        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, enddate, 
-            startdate, false, ns);
+        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, latestdate, 
+            earliestdate, false, ns);
         LinkedHashMap<String, ArrayList<Wiki.Revision>> ret = new LinkedHashMap<>();
         
         // group contributions by page

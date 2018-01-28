@@ -25,27 +25,48 @@
 
     String user = request.getParameter("user");
     boolean nominor = (request.getParameter("nominor") != null);
-    boolean noresults = false;
 
     String homewiki = request.getParameter("wiki");
-    if (homewiki == null)
-        homewiki = "en.wikipedia.org";
+    homewiki = (homewiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(homewiki);
+
+    String earliest = request.getParameter("earliest");
+    OffsetDateTime earliestdate = null;
+    if (earliest != null)
+    {
+        earliest = ServletUtils.sanitizeForAttribute(earliest);
+        earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
+    }
     else
-        homewiki = ServletUtils.sanitizeForAttribute(homewiki);
-    
+        earliest = "";
+
+    String latest = request.getParameter("latest");
+    OffsetDateTime latestdate = null;
+    if (latest != null)
+    {
+        latest = ServletUtils.sanitizeForAttribute(latest);
+        latestdate = OffsetDateTime.parse(latest + "T23:59:59Z");
+    }
+    else
+        latest = "";
+
     String bytefloor = request.getParameter("bytefloor");
-    if (bytefloor == null)
-        bytefloor = "150";
-    else
-        bytefloor = ServletUtils.sanitizeForAttribute(bytefloor);
+    bytefloor = (bytefloor == null) ? "150" : ServletUtils.sanitizeForAttribute(bytefloor);
+
+    // error conditions
+    boolean noresults = false;
+    boolean baddate = (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate));
     
-    if (user != null)
+    if (user != null && !baddate)
     {
         // get results
         Wiki wiki = Wiki.createInstance(homewiki);
         wiki.setQueryLimit(30000); // 60 network requests
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setIgnoringMinorEdits(nominor);
+        if (!earliest.isEmpty())
+            surveyor.setEarliestDateTime(earliestdate);
+        if (!latest.isEmpty())
+            surveyor.setLatestDateTime(latestdate);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
         Map<String, Map<String, List<Wiki.Revision>>> survey = surveyor.contributionSurvey(new String[] { user }, Wiki.MAIN_NAMESPACE);
         Map<String, List<Wiki.Revision>> usersurvey = survey.entrySet().iterator().next().getValue();
@@ -95,6 +116,10 @@ and other venues. It isolates and ranks major edits by size. A query limit of
     <td>Exclude:
     <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits</input>
 <tr>
+    <td>Show changes from:
+    <td><input type=date name=earliest value="<%= earliest %>"></input> to 
+        <input type=date name=latest value="<%= latest %>"></input> (inclusive)
+<tr>
     <td>Show changes that added at least:
     <td><input type=number name=bytefloor value="<%= bytefloor %>"></input> bytes
 </table>
@@ -107,6 +132,13 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 %>
 <hr>
 <span class="error">No edits found!</span>
+<%
+    }
+    else if (baddate)
+    {
+%>
+<hr>
+<span class="error">Earliest date is after latest date!</span>
 <%
     }
 %>
