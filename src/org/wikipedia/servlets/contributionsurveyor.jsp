@@ -79,8 +79,9 @@
             response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
 
             // write results
-            out.println(ParserUtils.generateUserLinksAsWikitext(user));
-            out.println(surveyor.formatTextSurveyAsWikitext(null, usersurvey));
+            out.print(ParserUtils.generateUserLinksAsWikitext(user));
+            out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+            out.print(surveyor.formatTextSurveyAsWikitext(null, usersurvey));
             out.println(surveyor.generateWikitextFooter());
             out.flush();
             out.close();

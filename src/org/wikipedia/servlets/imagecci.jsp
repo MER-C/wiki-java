@@ -25,10 +25,7 @@
 
     String user = request.getParameter("user");
     String homewiki = request.getParameter("wiki");
-    if (homewiki == null)
-        homewiki = "en.wikipedia.org";
-    else
-        homewiki = ServletUtils.sanitizeForAttribute(homewiki);
+    homewiki = (homewiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(homewiki);
     Wiki.User wpuser = null;
     
     if (user != null)
@@ -46,8 +43,9 @@
             String[][] survey = surveyor.imageContributionSurvey(wpuser);
 
             // write results
-            out.println(ParserUtils.generateUserLinksAsWikitext(user));
-            out.println(surveyor.formatImageSurveyAsWikitext(null, survey));
+            out.print(ParserUtils.generateUserLinksAsWikitext(user));
+            out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+            out.print(surveyor.formatImageSurveyAsWikitext(null, survey));
             out.println(surveyor.generateWikitextFooter());
             out.flush();
             out.close();
