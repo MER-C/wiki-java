@@ -17,8 +17,7 @@
 -->
 
 <%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" 
-    trimDirectiveWhitespaces="true"%>
+<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true"%>
 
 <%
     request.setAttribute("toolname", "Mass linksearch");
@@ -26,10 +25,7 @@
     boolean https = (request.getParameter("https") != null);
 
     String wiki = request.getParameter("wiki");
-    if (wiki == null)
-        wiki = "";
-    else
-        wiki = ServletUtils.sanitizeForAttribute(wiki);
+    wiki = (wiki == null) ? "" : ServletUtils.sanitizeForAttribute(wiki);
 
     // parse inputdomains to pure list of domains
     String inputdomains = request.getParameter("domains");

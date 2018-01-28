@@ -17,8 +17,7 @@
 -->
 
 <%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" 
-    trimDirectiveWhitespaces="true" %>
+<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%
     request.setAttribute("toolname", "Spam archive search");

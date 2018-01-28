@@ -17,8 +17,7 @@
 -->
 
 <%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" 
-    trimDirectiveWhitespaces="true"%>
+<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true"%>
 
 <%
     request.setAttribute("toolname", "Cross-wiki linksearch");
@@ -28,11 +27,8 @@
         mode = "multi";
 
     String domain = request.getParameter("link");
-    if (domain != null)
-        domain = ServletUtils.sanitizeForAttribute(domain);
-    else
-        domain = "";
-
+    domain = (domain == null) ? "" : ServletUtils.sanitizeForAttribute(domain);
+    
     String set = request.getParameter("set");
     if (set == null)
         set = "top20";

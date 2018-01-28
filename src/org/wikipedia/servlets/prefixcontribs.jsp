@@ -17,17 +17,13 @@
 -->
 
 <%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" 
-    trimDirectiveWhitespaces="true" %>
+<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%
     request.setAttribute("toolname", "Prefix contributions");
 
     String prefix = request.getParameter("prefix");
-    if (prefix == null)
-        prefix = "";
-    else
-        prefix = ServletUtils.sanitizeForAttribute(prefix);
+    prefix = (prefix == null) ? "" : ServletUtils.sanitizeForAttribute(prefix);
 
     String temp = request.getParameter("time");
     int time = (temp == null) ? 7 : Integer.parseInt(temp);
