@@ -17,27 +17,20 @@
 -->
 
 <%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" 
-    trimDirectiveWhitespaces="true" %>
+<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%
     request.setAttribute("toolname", "Article/editor intersection (beta)");
 
     String wikiparam = request.getParameter("wiki");
-    if (wikiparam == null)
-        wikiparam = "en.wikipedia.org";
-    else
-        wikiparam = ServletUtils.sanitizeForAttribute(wikiparam);
+    wikiparam = (wikiparam == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wikiparam);
 
     String mode = request.getParameter("mode");
     if (mode == null)
         mode = "pages";
 
     String pages = request.getParameter("pages");
-    if (pages == null)
-        pages = "";
-    else
-        pages = ServletUtils.sanitizeForHTML(pages);
+    pages = (pages == null) ? "" : ServletUtils.sanitizeForHTML(pages);
 
     String category = request.getParameter("category");
     if (category != null)
@@ -46,6 +39,26 @@
     String user = request.getParameter("user");
     if (user != null)
         user = ServletUtils.sanitizeForAttribute(user);
+
+    String earliest = request.getParameter("earliest");
+    OffsetDateTime earliestdate = null;
+    if (earliest != null)
+    {
+        earliest = ServletUtils.sanitizeForAttribute(earliest);
+        earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
+    }
+    else
+        earliest = "";
+
+    String latest = request.getParameter("latest");
+    OffsetDateTime latestdate = null;
+    if (latest != null)
+    {
+        latest = ServletUtils.sanitizeForAttribute(latest);
+        latestdate = OffsetDateTime.parse(latest + "T23:59:59Z");
+    }
+    else
+        latest = "";
 
     boolean noadmin = (request.getParameter("noadmin") != null);
     boolean nobot = (request.getParameter("nobot") != null);
@@ -94,12 +107,26 @@ first in the GUI) apply.
         <input type=checkbox name=nobot value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>bots</input>
         <input type=checkbox name=noanon value=1<%= noanon ? " checked" : "" %>>IPs</input>
         <input type=checkbox name=nominor value=1<%= nominor ? " checked" : "" %>>minor edits</input>
+<tr>
+    <td colspan=2>Show changes from:
+    <td><input type=date name=earliest value="<%= earliest %>"></input> to 
+        <input type=date name=latest value="<%= latest %>"></input> (inclusive)
 </table>
 <br>
 <input type=submit value=Search>
 </form>
 
 <%
+    if (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate))
+    {
+%>
+    <hr>
+    <span class="error">Earliest date is after latest date!</span>
+<%@ include file="footer.jsp" %>
+<%
+        return;
+    }
+
     Wiki wiki = Wiki.createInstance(wikiparam);
     wiki.setMaxLag(-1);
     wiki.setQueryLimit(1500);
@@ -137,6 +164,10 @@ first in the GUI) apply.
     }
     ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
     aei.setIgnoringMinorEdits(nominor);
+    if (!earliest.isEmpty())
+        aei.setEarliestDateTime(earliestdate);
+    if (!latest.isEmpty())
+        aei.setLatestDateTime(latestdate);
     Map<String, List<Wiki.Revision>> results = aei.intersectArticles(pagesarray, noadmin, nobot, noanon);
     if (results.isEmpty())
     {

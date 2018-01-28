@@ -1,6 +1,6 @@
 /**
- *  @(#)AllWikiLinksearch.java 0.03 26/12/2016
- *  Copyright (C) 2011 - 2017 MER-C
+ *  @(#)ArticleEditorIntersector.java 0.02 28/01/2018
+ *  Copyright (C) 2011 - 2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@ package org.wikipedia.tools;
 
 import java.io.*;
 import java.nio.file.*;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.*;
 import javax.security.auth.login.*;
@@ -33,16 +34,15 @@ import org.wikipedia.Wiki;
  *  slightly limited functionality) is available <a 
  *  href="https://wikipediatools.appspot.com/editorintersection.jsp">here</a>.
  * 
- *  @version 0.01
+ *  @version 0.02
  *  @author MER-C
  */
 public class ArticleEditorIntersector
 {
     // TODO
     // 1) Make offline mode print out more than revids.
-    // 2) Date cut off.  (backend)
-    // 3) Require edits to more than X articles
-    // 4) Require more than X edits per article
+    // 2) Require edits to more than X articles
+    // 3) Require more than X edits per article
     
     // Worth thinking about:
     // 1) Start from multiple users see articlesEdited()
@@ -51,6 +51,7 @@ public class ArticleEditorIntersector
     
     private final Wiki wiki;
     private boolean adminmode, nominor;
+    private OffsetDateTime earliestdate, latestdate;
     
     /**
      *  Runs this program.
@@ -66,6 +67,7 @@ public class ArticleEditorIntersector
         boolean nobot = false, noadmin = false, noanon = false;
         boolean adminmode = false, nominor = false;
         List<String> articlelist = new ArrayList<>();
+        OffsetDateTime start = null, end = null;
         
         // parse command line arguments
         if (args.length == 0)
@@ -82,6 +84,8 @@ public class ArticleEditorIntersector
                         + "\t--wiki wiki\n\t\tFetch data from wiki (default: en.wikipedia.org).\n"
                         + "\t--adminmode\n\t\tFetch deleted edits (REQUIRES ADMIN LOGIN)\n"
                         + "\t--nominor\n\t\tIgnore minor edits.\n\n"
+                        + "\t--start date\n\t\tInclude edits made after this date (ISO format)\n"
+                        + "\t--end date\n\t\tInclude edits made before this date (ISO format)\n"
                         + "Options:\n"
                         + "\t--nobot\n\t\tExclude bots from the analysis.\n"
                         + "\t--noadmin\n\t\tExclude admins from the analysis.\n"
@@ -89,7 +93,7 @@ public class ArticleEditorIntersector
                         + "Sources of pages:\n"
                         + "\t--category category\n\t\tUse the members of the specified category as the list of articles.\n"
                         + "\t--contribs user\n\t\tUse the list of articles edited by the given user.\n"
-                        + "\t--file file\n\t\tRead in the list of articles from the given file.\n");
+                        + "\t--file file\n\t\tRead in the list of articles from the given file.\n");   
                     System.exit(0);
                 case "--wiki":
                     wikidomain = args[++i];
@@ -118,6 +122,12 @@ public class ArticleEditorIntersector
                 case "--nominor":
                     nominor = true;
                     break;
+                case "--start":
+                    start = OffsetDateTime.parse(args[++i]);
+                    break;
+                case "--end":
+                    end = OffsetDateTime.parse(args[++i]);
+                    break;
                 default:
                     articlelist.add(args[i]);
                     break;
@@ -131,6 +141,8 @@ public class ArticleEditorIntersector
         Wiki wiki = Wiki.createInstance(wikidomain);
         ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
         aei.setIgnoringMinorEdits(nominor);
+        aei.setEarliestDateTime(start);
+        aei.setLatestDateTime(end);
         if (adminmode)
         {
             // CLI login
@@ -150,12 +162,12 @@ public class ArticleEditorIntersector
         // grab user contributions
         if (user != null)
         {
-            Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user));
+            Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user, start, end, null));
             if (adminmode)
             {
                 try
                 {
-                    stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user)));
+                    stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user, start, end, false)));
                 }
                 catch (CredentialNotFoundException ex)
                 {
@@ -260,10 +272,58 @@ public class ArticleEditorIntersector
     }
     
     /**
-     *  Finds the set of common editors for a given set of <var>articles</var>.
+     *  Sets the date/time at which surveys start; no edits will be returned
+     *  before then. Defaults to {@code null}, i.e. no lower bound.
+     *  @param earliest the desired start date/time
+     *  @see #getEarliestDateTime() 
+     *  @since 0.02
+     */
+    public void setEarliestDateTime(OffsetDateTime earliest)
+    {
+        earliestdate = earliest;
+    }
+    
+    /**
+     *  Gets the date/time at which surveys start; no edits will be returned 
+     *  before then.
+     *  @return (see above)
+     *  @see #setEarliestDateTime(java.time.OffsetDateTime)  
+     *  @since 0.02
+     */
+    public OffsetDateTime getEarliestDateTime()
+    {
+        return earliestdate;
+    }
+    
+    /**
+     *  Sets the date/time at which surveys finish; no edits will be returned
+     *  after then. Defaults to {@code null}, i.e. when the survey is performed
+     *  @param latest the desired end date/time
+     *  @see #getLatestDateTime()
+     *  @since 0.02
+     */
+    public void setLatestDateTime(OffsetDateTime latest)
+    {
+        latestdate = latest;
+    }
+    
+    /**
+     *  Gets the date at which surveys finish. 
+     *  @return (see above)
+     *  @see #setLatestDateTime(java.time.OffsetDateTime)  
+     *  @since 0.02
+     */
+    public OffsetDateTime getLatestDateTime()
+    {
+        return latestdate;
+    }
+    
+    /**
+     *  Finds the set of common editors for a given set of <var>articles</var>
+     *  between {@link #getEarliestDateTime()} and {@link #getLatestDateTime()}.
      *  Includes deleted edits if {@link #isUsingAdminPrivileges()} is 
-     *  <code>true</code> and ignores minor edits if {@link #isIgnoringMinorEdits()}
-     *  is <code>true</code>.
+     *  {@code true} and ignores minor edits if {@link #isIgnoringMinorEdits()}
+     *  is {@code true}.
      * 
      *  @param articles a list of at least two unique pages to analyze for 
      *  common editors
@@ -276,8 +336,8 @@ public class ArticleEditorIntersector
      *  (deleted) history or are invalid (Special/Media namespaces) or there is
      *  no intersection, return an empty map.
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if <code><var>articles.length</var> &lt; 2</code>
-     *  after duplicates (as in <code>String.equals</code>) are removed
+     *  @throws IllegalArgumentException if {@code <var>articles.length</var> &lt; 2}
+     *  after duplicates (as in {@code String.equals}) are removed
      */
     public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
@@ -297,9 +357,9 @@ public class ArticleEditorIntersector
                 Stream<Wiki.Revision> str = Stream.empty();
                 try
                 {
-                    str = Arrays.stream(wiki.getPageHistory(article));
+                    str = Arrays.stream(wiki.getPageHistory(article, earliestdate, latestdate, false));
                     if (adminmode)
-                        str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article)));
+                        str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article, earliestdate, latestdate, false)));
                 }
                 catch (IOException | CredentialNotFoundException ignored)
                 {
@@ -373,9 +433,10 @@ public class ArticleEditorIntersector
     
     /**
      *  Given a set of <var>users</var>, find the list of articles they have 
-     *  edited. Includes deleted contributions if {@link #isUsingAdminPrivileges()}
-     *  is <code>true</code> and ignores minor edits if {@link #isIgnoringMinorEdits()}
-     *  is <code>true</code>.
+     *  edited between {@link #getEarliestDateTime()} and {@link #getLatestDateTime()}.
+     *  Includes deleted contributions if {@link #isUsingAdminPrivileges()} is 
+     *  {@code true} and ignores minor edits if {@link #isIgnoringMinorEdits()}
+     *  is {@code true}.
      * 
      *  @param users the list of users to fetch contributions for
      *  @return a map with page &#8594; list of revisions made
@@ -384,7 +445,10 @@ public class ArticleEditorIntersector
     public Map<String, List<Wiki.Revision>> intersectEditors(String[] users) throws IOException
     {
         // fetch the list of (deleted) edits
-        List<Wiki.Revision>[] revisions = wiki.contribs(users, "", null, null, null);
+        Map<String, Boolean> options = new HashMap<>();
+        if (nominor)
+            options.put("minor", Boolean.FALSE);
+        List<Wiki.Revision>[] revisions = wiki.contribs(users, "", earliestdate, latestdate, options);
         Stream<Wiki.Revision> revstream = Arrays.stream(revisions).flatMap(List::stream);
         
         if (adminmode)
