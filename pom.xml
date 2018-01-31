@@ -108,6 +108,7 @@
                             <include>**/ParserUtilsUnitTest.java</include>
                             <include>**/ArrayUtilsUnitTest.java</include>
                             <include>**/ArticleEditorIntersectorUnitTest.java</include>
+                            <include>**/ContributionSurveyorUnitTest.java</include>
                             <include>**/UserLinkAdditionFinderUnitTest.java</include>
                         </includes>
                     </configuration>

@@ -1,6 +1,6 @@
 /**
- *  @(#)ArrayUtilsUnitTest.java 0.01 02/11/2017
- *  Copyright (C) 2017 MER-C
+ *  @(#)ArticleEditorIntesectorUnitTest.java 0.02 28/01/2018
+ *  Copyright (C) 2017 - 2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -19,6 +19,7 @@
  */
 package org.wikipedia.tools;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -30,7 +31,7 @@ import org.wikipedia.Wiki;
  */
 public class ArticleEditorIntersectorUnitTest
 {
-    private static ArticleEditorIntersector intersector;
+    private static ArticleEditorIntersector intersector, intersector_enWiki;
     
     /**
      *  Initializes intersector object.
@@ -42,6 +43,17 @@ public class ArticleEditorIntersectorUnitTest
         Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
         intersector = new ArticleEditorIntersector(testWiki);
+        
+        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki.setMaxLag(-1);
+        intersector_enWiki = new ArticleEditorIntersector(enWiki);
+    }
+    
+    @Test
+    public void getWiki()
+    {
+        assertEquals("getWiki", "test.wikipedia.org", intersector.getWiki().getDomain());
+        assertEquals("getWiki", "en.wikipedia.org", intersector_enWiki.getWiki().getDomain());
     }
     
     @Test
@@ -107,5 +119,29 @@ public class ArticleEditorIntersectorUnitTest
         articles = new String[] { "User:MER-C/UnitTests/pagetext", "User:MER-C/UnitTests/Delete" };
         results = intersector.intersectArticles(articles, true, false, false);
         assertTrue("Check exclusion of admins", results.isEmpty());
+    }
+    
+    @Test
+    public void setDateRange() throws Exception
+    {
+        // first, verify get/set works
+        OffsetDateTime earliest = OffsetDateTime.parse("2010-01-01T00:00:00Z");
+        intersector_enWiki.setEarliestDateTime(earliest);
+        assertEquals("getEarliestDateTime", earliest, intersector_enWiki.getEarliestDateTime());
+        OffsetDateTime latest = OffsetDateTime.parse("2013-03-01T00:00:00Z");
+        intersector_enWiki.setLatestDateTime(latest);
+        assertEquals("getLatestDateTime", latest, intersector_enWiki.getLatestDateTime());
+        
+        // These articles have an intersection, but if we restrict the date range
+        // we can get zero results.
+        // https://en.wikipedia.org/w/index.php?title=Sainpasela&action=history
+        // https://en.wikipedia.org/w/index.php?title=Qihe_County&action=history
+        String[] articles = { "Sainpasela", "Qihe County" };
+        Map<String, List<Wiki.Revision>> results = intersector_enWiki.intersectArticles(articles, false, false, false);
+        assertTrue("Check date/time bounds", results.isEmpty());
+        
+        // reset state
+        intersector_enWiki.setEarliestDateTime(null);
+        intersector_enWiki.setLatestDateTime(null);
     }
 }

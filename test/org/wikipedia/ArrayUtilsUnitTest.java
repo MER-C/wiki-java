@@ -66,9 +66,8 @@ public class ArrayUtilsUnitTest
     public void removeReverts() throws Exception
     {
         // https://en.wikipedia.org/w/index.php?title=Azerbaijan&offset=20180125204500&action=history
-        Wiki.Revision[] revisions = enWiki.getPageHistory("Azerbaijan", OffsetDateTime.parse("2018-01-16T00:00:00Z"), OffsetDateTime.parse("2018-01-25T20:45:00Z"), false);
-        for (int i = 1; i < revisions.length; i++)
-            System.out.println(revisions[i].compareTo(revisions[i-1]));
+        Wiki.Revision[] revisions = enWiki.getPageHistory("Azerbaijan", OffsetDateTime.parse("2018-01-16T00:00:00Z"), 
+            OffsetDateTime.parse("2018-01-25T20:45:00Z"), false);
         long[] oldids = new long[] 
         {
             822342083L, //  0: state  3, reverts 822341440L
@@ -103,5 +102,13 @@ public class ArrayUtilsUnitTest
         };
         Wiki.Revision[] revertsremoved = ArrayUtils.removeReverts(revisions);
         assertArrayEquals("removereverts", expected, Arrays.stream(revertsremoved).mapToLong(Wiki.Revision::getRevid).toArray());
+        // two identical edits on different pages are not reverts
+        oldids = new long[]
+        {
+            823352879L, // https://en.wikipedia.org/w/index.php?oldid=823352879
+            823352525L  // https://en.wikipedia.org/w/index.php?oldid=823352525
+        };
+        revisions = enWiki.getRevisions(oldids);
+        assertArrayEquals("removereverts: different pages, same content", revisions, ArrayUtils.removeReverts(revisions));
     }
 }
