@@ -26,7 +26,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.*;
 import javax.security.auth.login.*;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  This tool finds the common set of editors and corresponding revisions of a 
@@ -50,7 +50,7 @@ public class ArticleEditorIntersector
     //    articlesEdited()
     
     private final Wiki wiki;
-    private boolean adminmode, nominor;
+    private boolean adminmode, nominor, noreverts;
     private OffsetDateTime earliestdate, latestdate;
     
     /**
@@ -65,7 +65,7 @@ public class ArticleEditorIntersector
         String user = null;
         String category = null;
         boolean nobot = false, noadmin = false, noanon = false;
-        boolean adminmode = false, nominor = false;
+        boolean adminmode = false, nominor = false, noreverts = false;
         List<String> articlelist = new ArrayList<>();
         OffsetDateTime start = null, end = null;
         
@@ -84,6 +84,7 @@ public class ArticleEditorIntersector
                         + "\t--wiki wiki\n\t\tFetch data from wiki (default: en.wikipedia.org).\n"
                         + "\t--adminmode\n\t\tFetch deleted edits (REQUIRES ADMIN LOGIN)\n"
                         + "\t--nominor\n\t\tIgnore minor edits.\n\n"
+                        + "\t--noreverts\n\t\tIgnore reverts.\n\n"
                         + "\t--start date\n\t\tInclude edits made after this date (ISO format)\n"
                         + "\t--end date\n\t\tInclude edits made before this date (ISO format)\n"
                         + "Options:\n"
@@ -122,6 +123,9 @@ public class ArticleEditorIntersector
                 case "--nominor":
                     nominor = true;
                     break;
+                case "--noreverts":
+                    noreverts = true;
+                    break;
                 case "--start":
                     start = OffsetDateTime.parse(args[++i]);
                     break;
@@ -143,6 +147,7 @@ public class ArticleEditorIntersector
         aei.setIgnoringMinorEdits(nominor);
         aei.setEarliestDateTime(start);
         aei.setLatestDateTime(end);
+        aei.setIgnoringReverts(noreverts);
         if (adminmode)
         {
             // CLI login
@@ -260,7 +265,7 @@ public class ArticleEditorIntersector
     {
         nominor = ignoreminor;
     }
-    
+       
     /**
      *  Checks whether minor edits are ignored.
      *  @return whether minor edits are ignored
@@ -269,6 +274,32 @@ public class ArticleEditorIntersector
     public boolean isIgnoringMinorEdits()
     {
         return nominor;
+    }
+    
+    /**
+     *  Checks whether reverts are ignored (a revert is defined as a revision
+     *  that has a SHA-1 equal to a previous revision on the same page).
+     *  @return whether reverts are ignored
+     *  @see #setIgnoringReverts(boolean) 
+     *  @see org.wikipedia.ArrayUtils#removeReverts(org.wikipedia.Wiki.Revision[])
+     *  @since 0.02
+     */
+    public boolean isIgnoringReverts()
+    {
+        return noreverts;
+    }
+    
+    /**
+     *  Sets whether reverts will be ignored (a revert is defined as a revision
+     *  that has a SHA-1 equal to a previous revision on the same page).
+     *  @param ignorereverts whether reverts will be ignored
+     *  @see #isIgnoringReverts()
+     *  @see org.wikipedia.ArrayUtils#removeReverts(org.wikipedia.Wiki.Revision[])
+     *  @since 0.02
+     */
+    public void setIgnoringReverts(boolean ignorereverts)
+    {
+        noreverts = ignorereverts;
     }
     
     /**
@@ -372,6 +403,8 @@ public class ArticleEditorIntersector
             }).filter(rev -> rev.getUser() != null); // remove deleted/suppressed usernames
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
+        if (noreverts)
+            revstream = Arrays.stream(ArrayUtils.removeReverts(revstream.toArray(x -> new Wiki.Revision[x])));
         Map<String, List<Wiki.Revision>> results = revstream.collect(Collectors.groupingBy(Wiki.Revision::getUser));
         
         Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = results.entrySet().iterator();

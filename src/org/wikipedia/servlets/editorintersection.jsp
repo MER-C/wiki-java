@@ -64,6 +64,7 @@
     boolean nobot = (request.getParameter("nobot") != null);
     boolean noanon = (request.getParameter("noanon") != null);
     boolean nominor = (request.getParameter("nominor") != null);
+    boolean noreverts = (request.getParameter("noreverts") != null);
 %>
 
 <!doctype html>
@@ -107,6 +108,7 @@ first in the GUI) apply.
         <input type=checkbox name=nobot value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>bots</input>
         <input type=checkbox name=noanon value=1<%= noanon ? " checked" : "" %>>IPs</input>
         <input type=checkbox name=nominor value=1<%= nominor ? " checked" : "" %>>minor edits</input>
+        <input type=checkbox name=noreverts value=1<%= noreverts ? " checked" : "" %>>reverts</input>
 <tr>
     <td colspan=2>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"></input> to 
@@ -164,6 +166,7 @@ first in the GUI) apply.
     }
     ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
     aei.setIgnoringMinorEdits(nominor);
+    aei.setIgnoringReverts(noreverts);
     if (!earliest.isEmpty())
         aei.setEarliestDateTime(earliestdate);
     if (!latest.isEmpty())
