@@ -56,7 +56,7 @@ public class ContributionSurveyorUnitTest
         };
         Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue("User with no edits", results.get("HilStev").isEmpty());
-        assertTrue("Check namespace filter", results.get("OfficialPankajPaditar").isEmpty());
+        assertTrue("Check namespace filter", results.get("OfficialPankajPatidar").isEmpty());
     }
     
     @Test
