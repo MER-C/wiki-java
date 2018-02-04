@@ -31,23 +31,15 @@
 
     String earliest = request.getParameter("earliest");
     OffsetDateTime earliestdate = null;
-    if (earliest != null)
-    {
-        earliest = ServletUtils.sanitizeForAttribute(earliest);
+    earliest = (earliest == null) ? "" : ServletUtils.sanitizeForAttribute(earliest);
+    if (!earliest.isEmpty())
         earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
-    }
-    else
-        earliest = "";
 
     String latest = request.getParameter("latest");
     OffsetDateTime latestdate = null;
-    if (latest != null)
-    {
-        latest = ServletUtils.sanitizeForAttribute(latest);
+    latest = (latest == null) ? "" : ServletUtils.sanitizeForAttribute(latest);
+    if (!latest.isEmpty())
         latestdate = OffsetDateTime.parse(latest + "T23:59:59Z");
-    }
-    else
-        latest = "";
 
     String bytefloor = request.getParameter("bytefloor");
     bytefloor = (bytefloor == null) ? "150" : ServletUtils.sanitizeForAttribute(bytefloor);
