@@ -674,9 +674,9 @@ public class Wiki implements Serializable
      *    <var>$wgCapitalLinks</var></a>
      *  <li><b>scriptpath</b>: (String) the <a 
      *    href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
-     *    $wgScriptPath</var> wiki variable</a>. Default = <code>/w</code>.
+     *    $wgScriptPath</var> wiki variable</a>. Default = {@code /w}.
      *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
-     *  <li><b>timezone</b>: (String) the timezone the wiki is in, default = UTC
+     *  <li><b>timezone</b>: (ZoneId) the timezone the wiki is in, default = UTC
      *  </ul>
      *
      *  @return (see above)
@@ -1308,7 +1308,7 @@ public class Wiki implements Serializable
     
     /**
      *  If a namespace supports subpages, return the top-most page -- e.g. 
-     *  {@code getRootPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa/Bbb" if  
+     *  {@code getParentPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa/Bbb" if  
      *  the talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. 
      *  See also the parser function <kbd>{{BASEPAGENAME}}</kbd>, though that 
      *  removes the namespace prefix.
@@ -1599,7 +1599,7 @@ public class Wiki implements Serializable
      *  to fetch an image.
      *
      *  @param title the title of the page.
-     *  @return the raw wikicode of a page, or null if the page doesn't exist
+     *  @return the raw wikicode of a page, or {@code null} if the page doesn't exist
      *  @throws UnsupportedOperationException if you try to retrieve the text of
      *  a Special: or Media: page
      *  @throws IOException or UncheckedIOException if a network error occurs
@@ -2376,13 +2376,13 @@ public class Wiki implements Serializable
      *  map pairs the section numbering as in the table of contents with the 
      *  section title, as in the following example:
      *
-     *  <samp>
+     *  <pre><samp>
      *  1 &#8594; How to nominate
      *  1.1 &#8594; Step 1 - Evaluate
      *  1.2 &#8594; Step 2 - Create subpage
      *  1.2.1 &#8594; Step 2.5 - Transclude and link
      *  1.3 &#8594; Step 3 - Update image
-     *  </samp>
+     *  </samp></pre>
      *
      *  @param page the page to get sections for
      *  @return the section map for that page
@@ -2407,8 +2407,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the most recent revision of a page, or <code>null</code> if the 
-     *  page does not exist.
+     *  Gets the most recent revision of a page, or {@code null} if the page 
+     *  does not exist.
      *  @param title a page
      *  @return the most recent revision of that page
      *  @throws IOException or UncheckedIOException if a network error occurs
@@ -2433,7 +2433,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Gets the first revision of a page, or null if the page does not exist.
+     *  Gets the first revision of a page, or {@code null} if the page does not
+     *  exist.
      *  @param title a page
      *  @return the oldest revision of that page
      *  @throws IOException or UncheckedIOException if a network error occurs
@@ -2461,7 +2462,7 @@ public class Wiki implements Serializable
      *  Gets the newest page name or the name of a page where the asked page
      *  redirects.
      *  @param title a title
-     *  @return the page redirected to or null if not a redirect
+     *  @return the page redirected to or {@code null} if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
      */
@@ -2499,7 +2500,7 @@ public class Wiki implements Serializable
     /**
      *  Parses the output of queries that resolve redirects (extracted to 
      *  separate method as requirement for all vectorized queries when 
-     *  {@link #isResolvingRedirects()} is <code>true</code>).
+     *  {@link #isResolvingRedirects()} is {@code true}).
      *
      *  @param inputpages the array of pages to resolve redirects for. Entries
      *  will be overwritten.
@@ -3186,12 +3187,12 @@ public class Wiki implements Serializable
      *  Deletes and undeletes revisions.
      *
      *  @param hidecontent hide the content of the revision (true/false
-     *  = hide/unhide, null = status quo)
+     *  = hide/unhide, {@code null} = status quo)
      *  @param hidereason hide the edit summary or the reason for an action
      *  @param hideuser hide who made the revision/action
      *  @param reason the reason why the (un)deletion was performed
      *  @param suppress [[Wikipedia:Oversight]] the information in question
-     *  (ignored if we cannot <tt>suppressrevision</tt>, null = status quo).
+     *  (ignored if we cannot {@code suppressrevision}, {@code null} = status quo).
      *  @param revisions the list of revisions to (un)delete
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if you do not have the rights to
@@ -3353,7 +3354,7 @@ public class Wiki implements Serializable
     /**
      *  Parses stuff of the form <tt>title="L. Sprague de Camp"
      *  timestamp="2006-08-28T23:48:08Z" minor="" comment="robot  Modifying:
-     *  [[bg:Blah]]"</tt> into useful revision objects. Used by
+     *  [[bg:Blah]]"</tt> into {@link Wiki#Revision} objects. Used by
      *  <tt>contribs()</tt>, <tt>watchlist()</tt>, <tt>getPageHistory()</tt>
      *  <tt>rangeContribs()</tt> and <tt>recentChanges()</tt>. NOTE: if
      *  RevisionDelete was used on a revision, the relevant values will be null.
@@ -3697,18 +3698,22 @@ public class Wiki implements Serializable
     /**
      *  Gets the (non-deleted) uploads of a user between the specified times.
      *  @param user the user to get uploads for
-     *  @param start the date to start enumeration (use null to not specify one)
-     *  @param end the date to end enumeration (use null to not specify one)
+     *  @param start the date to start enumeration (use {@code null} to not 
+     *  specify one)
+     *  @param end the date to end enumeration (use {@code null} to not specify one)
      *  @return a list of all live images the user has uploaded
+     *  @throws IllegalArgumentException if <var>start</var> and <var>end</var>
+     *  are present and {@code <var>start</var>.isAfter(<var>end</var>)}
      *  @throws IOException if a network error occurs
      */
     public LogEntry[] getUploads(User user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
+        if (start != null && end != null && start.isBefore(end))
+            throw new IllegalArgumentException("Specified start date is before specified end date!");
+        
         StringBuilder url = new StringBuilder(query);
         url.append("list=allimages&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser=");
         url.append(encode(user.getUsername(), false));
-        if (start != null && end != null && start.isBefore(end))
-            throw new IllegalArgumentException("Specified start date is before specified end date!");
         if (start != null)
         {
             url.append("&aistart=");
@@ -3742,7 +3747,7 @@ public class Wiki implements Serializable
      *  Uploads an image. Equivalent to [[Special:Upload]]. Supported
      *  extensions are (case-insensitive) "png", "jpg", "gif" and "svg". You
      *  need to be logged on to do this. Automatically breaks uploads into
-     *  2^<tt>LOG2_CHUNK_SIZE</tt> byte size chunks. This method is thread safe
+     *  2^{@link #LOG2_CHUNK_SIZE} byte size chunks. This method is thread safe
      *  and subject to the throttle.
      *
      *  @param file the image file
@@ -4528,6 +4533,71 @@ public class Wiki implements Serializable
             throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
         log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
     }
+    
+    /**
+     *  Blocks a user, IP address or IP address range. Overwrites existing
+     *  blocks. This method is throttled. Allowed keys for <var>blockoptions</var>
+     *  include:
+     *  
+     *  <ul>
+     *  <li><b>nocreate</b>: prevent account creation from the relevant IP 
+     *    addresses (includes IP addresses underlying user accounts)
+     *  <li><b>noemail</b>: prevent use of [[Special:Emailuser]]
+     *  <li><b>allowusertalk</b>: allow use of [[User talk:<var>usertoblock</var>]]
+     *    by the blocked user
+     *  <li><b>autoblock</b>: block IP addresses used by this user, includes a
+     *    a cookie (see {@linkplain https://mediawiki.org/wiki/Autoblock MediaWiki
+     *    documentation})
+     *  <li><b>anononly</b>: for IP addresses and ranges, allow the creation of
+     *    new accounts on that range
+     *  </ul>
+     * 
+     *  @param usertoblock the user to block
+     *  @param reason the reason for blocking
+     *  @param expiry when the block expires (use {@code null} for indefinite)
+     *  @param blockoptions (see above)
+     *  @throws IllegalArgumentException if <var>expiry</var> is in the past
+     *  @throws CredentialNotFoundException if not an admin
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if you have been blocked
+     *  @see #unblock(java.lang.String, java.lang.String)
+     *  @see <a href="https://mediawiki.org/wiki/API:Block">MediaWiki documentation</a>
+     *  @since 0.35
+     */
+    public synchronized void block(String usertoblock, String reason, OffsetDateTime expiry, Map<String, Boolean> blockoptions) throws IOException, LoginException
+    {
+        // Note: blockoptions is implemented as a Map because more might be added
+        // in the future.
+        
+        if (expiry != null && expiry.isBefore(OffsetDateTime.now()))
+            throw new IllegalArgumentException("Cannot set a block with a past expiry time!");
+        
+        throttle();
+        if (user == null || !user.isA("sysop"))
+            throw new CredentialNotFoundException("Cannot unblock: permission denied!");
+
+        // send request
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("user", encode(usertoblock, false));
+        postparams.put("token", encode(getToken("csrf"), false));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("reblock", "1");
+        if (blockoptions != null)
+        {
+            blockoptions.forEach((key, value) ->
+            {
+                if (value)
+                    postparams.put("&" + key, "1");
+            });
+        }
+        String response = fetch(query + "action=block", postparams, "block");
+        
+        // done
+        if (!response.contains("<block "))
+            checkErrorsAndUpdateStatus(response, "block");
+        log(Level.INFO, "unblock", "Successfully blocked " + user);
+    }
 
     /**
      *  Unblocks a user. This method is throttled.
@@ -4537,6 +4607,8 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
+     *  @see #block(java.lang.String, java.lang.String, java.time.OffsetDateTime, boolean, boolean, boolean, boolean, boolean) 
+     *  @see <a href="https://mediawiki.org/wiki/API:Block">MediaWiki documentation</a>
      *  @since 0.31
      */
     public synchronized void unblock(String blockeduser, String reason) throws IOException, LoginException
@@ -4723,7 +4795,7 @@ public class Wiki implements Serializable
      *  <p>
      *  Available keys for <var>options</var> include "minor", "bot", "anon",
      *  "patrolled" and "unread" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code <var>options</var> = { minor = true; bot = false;} 
+     *  their own). {@code <var>options</var> = { minor = true; bot = false;}} 
      *  returns all minor edits not made by bots.
      * 
      *  @param allrev show all revisions to the pages, instead of the top most
@@ -4779,11 +4851,12 @@ public class Wiki implements Serializable
      *  Performs a full text search of the wiki. Equivalent to
      *  [[Special:Search]], or that little textbox in the sidebar. Returns an
      *  array of search results, where:
-     *  <samp>
+     * 
+     *  <pre><samp>
      *  results[0] == <var>page name</var>
      *  results[1] == <var>parsed section name (may be "")</var>
      *  results[2] == <var>snippet of page text</var>
-     *  </samp>
+     *  </samp></pre>
      *
      *  @param search a search string
      *  @param namespaces the namespaces to search. If not present, search
@@ -5263,7 +5336,7 @@ public class Wiki implements Serializable
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use 
-     *  null to not specify one
+     *  {@code null} to not specify one
      *  @param amount the number of entries to get (overrides global limits)
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if the log type doesn't exist
@@ -5282,19 +5355,20 @@ public class Wiki implements Serializable
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use 
-     *  null to not specify one
-     *  @param user the user performing the action. Use null not to specify
+     *  {@code null} to not specify one
+     *  @param user the user performing the action. Use {@code null} not to specify
      *  one.
-     *  @param target the target of the action. Use null not to specify one.
-     *  @param start what timestamp to start. Use null to not specify one.
-     *  @param end what timestamp to end. Use null to not specify one.
+     *  @param target the target of the action. Use {@code null} not to specify one.
+     *  @param start what timestamp to start. Use {@code null} to not specify one.
+     *  @param end what timestamp to end. Use {@code null} to not specify one.
      *  @param amount the amount of log entries to get. If both start and
-     *  end are defined, this is ignored. Use Integer.MAX_VALUE to not
+     *  end are defined, this is ignored. Use {@code Integer.MAX_VALUE} to not
      *  specify one (overrides global limits)
      *  @param namespace filters by namespace. Returns empty if namespace
      *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if start &lt; end or amount &lt; 1
+     *  @throws IllegalArgumentException if {@code <var>start</var>.isAfter(<var>end</var>)}
+     *  or amount &lt; 1
      *  @return the specified log entries
      *  @since 0.08
      */
@@ -5379,7 +5453,7 @@ public class Wiki implements Serializable
 
     /**
      *  Parses xml generated by <tt>getLogEntries()</tt>,
-     *  <tt>getImageHistory()</tt> and <tt>getIPBlockList()</tt> into LogEntry
+     *  <tt>getImageHistory()</tt> and <tt>getIPBlockList()</tt> into {@link Wiki.LogEntry}
      *  objects. Override this if you want custom log types. NOTE: if
      *  RevisionDelete was used on a log entry, the relevant values will be
      *  null.
@@ -7418,7 +7492,7 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Checks for database lag and sleeps if lag &gt; maxlag.
+     *  Checks for database lag and sleeps if {@code lag &gt; {@link #getMaxLag()}}.
      *  @param connection the URL connection used in the request
      *  @return true if there was sufficient database lag.
      *  @since 0.32

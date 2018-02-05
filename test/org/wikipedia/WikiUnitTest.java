@@ -405,7 +405,7 @@ public class WikiUnitTest
         try
         {
             enWiki.getPageHistory("Media:Example.png");
-            fail("Attempted to get the page history of a special page.");
+            fail("Attempted to get the page history of a media page.");
         }
         catch (UnsupportedOperationException expected)
         {
@@ -451,6 +451,7 @@ public class WikiUnitTest
         try
         {
             enWiki.getDeletedHistory("Main Page");
+            fail("Attempted to view deleted revisions while logged out.");
         }
         catch (CredentialNotFoundException expected)
         {
@@ -501,6 +502,7 @@ public class WikiUnitTest
         try
         {
             enWiki.delete("User:MER-C", "Not a reason");
+            fail("Attempted to delete while logged out.");
         }
         catch (CredentialNotFoundException expected)
         {
@@ -530,6 +532,43 @@ public class WikiUnitTest
         try
         {
             enWiki.undelete("User:MER-C", "Not a reason");
+            fail("Attempted to undelete while logged out.");
+        }
+        catch (CredentialNotFoundException expected)
+        {
+        }
+    }
+    
+    @Test
+    public void block() throws Exception
+    {
+        try
+        {
+            enWiki.block("MER-C", "Not a reason", OffsetDateTime.MIN, null);
+            fail("Attempted to block with an expiry time in the past.");
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
+        // Test runs without logging in, therefore expect failure.
+        try
+        {
+            enWiki.block("MER-C", "Not a reason", null, null);
+            fail("Attempted to block while logged out.");
+        }
+        catch (CredentialNotFoundException expected)
+        {
+        }
+    }
+    
+    @Test
+    public void unblock() throws Exception
+    {
+        // Test runs without logging in, therefore expect failure.
+        try
+        {
+            enWiki.unblock("MER-C", "Not a reason");
+            fail("Attempted to unblock while logged out.");
         }
         catch (CredentialNotFoundException expected)
         {
