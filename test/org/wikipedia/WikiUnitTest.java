@@ -156,6 +156,16 @@ public class WikiUnitTest
     }
     
     @Test
+    public void removeNamespace() throws Exception
+    {
+        assertEquals("removeNamespace: main namespace", "Hello World", enWiki.removeNamespace("Hello World"));
+        assertEquals("removeNamespace: pretend namespace", "Hello:World", enWiki.removeNamespace("Hello:World"));
+        assertEquals("removeNamespace: custom namespace", "Hello", enWiki.removeNamespace("Portal:Hello"));
+        // something funky going on with RTL, can't tell whether it's Netbeans, Firefox or me failing at copy/paste
+        // assertEquals("removeNamespace: rtl fail", "صفحات للحذف السريع", arWiki.removeNamespace("تصنيف:صفحات_للحذف_السريع"));
+    }
+    
+    @Test
     public void supportsSubpages() throws Exception
     {
         assertFalse("supportsSubpages: main", enWiki.supportsSubpages(Wiki.MAIN_NAMESPACE));

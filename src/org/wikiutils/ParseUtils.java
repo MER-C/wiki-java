@@ -126,8 +126,9 @@ public class ParseUtils
 	 * @param wiki the home wiki
 	 * @return The String without a namespace identifier.
          * @throws IOException if a network error occurs (rare)
-	 * 
+	 * @deprecated replace with {@link org.wikipedia.Wiki#removeNamespace(java.lang.String)}
 	 */
+        @Deprecated
 	public static String namespaceStrip(String title, Wiki wiki) throws IOException
 	{
 		String ns = wiki.namespaceIdentifier(wiki.namespace(title));

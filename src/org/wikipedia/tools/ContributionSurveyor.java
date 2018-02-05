@@ -19,6 +19,8 @@
 package org.wikipedia.tools;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.*;
 import java.util.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -29,10 +31,16 @@ import javax.swing.JFileChooser;
 import org.wikipedia.*;
 
 /**
- *  Mass contribution surveyor for use at [[WP:CCI]]. Please use the dedicated
- *  contribution surveyors when possible!
+ *  This tool surveys the major edits and image uploads of a list of users so
+ *  that they may be triaged for problems.
  *
  *  @author MER-C
+ *  @see <a href="https://wikipediatools.appspot.com/contributionsurveyor.jsp">
+ *  Text contribution surveyor</a> (online version)
+ *  @see <a href="https://wikipediatools.appspot.com/imagecci.jsp">Image
+ *  contribution surveyor</a> (online version)
+ *  @see <a href="https://en.wikipedia.org/wiki/WP:CCI">Contributor Copyright
+ *  Investigations</a>
  *  @version 0.04
  */
 public class ContributionSurveyor
@@ -60,7 +68,7 @@ public class ContributionSurveyor
         String category = null;
 
         // parse arguments
-        ArrayList<String> users = new ArrayList<>(1500);
+        List<String> users = new ArrayList<>(1500);
         for (int i = 0; i < args.length; i++)
         {
             String arg = args[i];
@@ -135,23 +143,18 @@ public class ContributionSurveyor
         {
             String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
             for (String temp : list)
-            {
                 if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
-                {
-                    temp = temp.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
-                    users.add(temp);
-                }
-            }
+                    users.add(homewiki.removeNamespace(temp));
         }
         else // file IO
         {
-            BufferedReader in = null;
+            Path path = null;
             if (infile == null)
             {
                 JFileChooser fc = new JFileChooser();
                 fc.setDialogTitle("Select user list");
                 if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
-                    in = new BufferedReader(new FileReader(fc.getSelectedFile()));
+                    path = fc.getSelectedFile().toPath();
                 else
                 {
                     System.out.println("Error: No input file selected.");
@@ -159,16 +162,15 @@ public class ContributionSurveyor
                 }
             }
             else
-                in = new BufferedReader(new FileReader(infile));
-            String line;
-            while ((line = in.readLine()) != null)
+                path = Paths.get(infile);
+            List<String> templist = Files.readAllLines(path, Charset.forName("UTF-8"));
+            for (String line : templist)
             {
                 if (homewiki.namespace(line) == Wiki.USER_NAMESPACE)
                 {
                     // line = line.replace("[*#]\\s?\\[\\[:?", "");
                     // line = line.replace("\\]\\]", "");
-                    line = line.replaceFirst("^" + homewiki.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":", "");
-                    users.add(line);
+                    users.add(homewiki.removeNamespace(line));
                 }
             }
         }
@@ -188,16 +190,16 @@ public class ContributionSurveyor
         }
         
         int[] ns = userspace ? (new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE }) : (new int[] { Wiki.MAIN_NAMESPACE });
-        FileWriter outwriter = new FileWriter(out);
         
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setMinimumSizeDiff(minsize);
         surveyor.setEarliestDateTime(start);
         surveyor.setLatestDateTime(end);
         surveyor.setIgnoringMinorEdits(nominor);
-        outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
-        outwriter.flush();
-        outwriter.close();
+        try (FileWriter outwriter = new FileWriter(out))
+        {
+            outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
+        }
     }
     
     /**

@@ -152,7 +152,7 @@ public class WikiUtils
 	{
 		try
 		{
-			return wiki.getCategoryMembers(ParseUtils.namespaceStrip(cat, wiki)).length == 0;
+			return wiki.getCategoryMembers(wiki.removeNamespace(cat)).length == 0;
 		}
 		catch (Throwable e)
 		{

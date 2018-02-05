@@ -1289,8 +1289,8 @@ public class Wiki implements Serializable
      *  If a namespace supports subpages, return the top-most page -- e.g. 
      *  {@code getRootPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa" if the talk
      *  namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See 
-     *  also the parser function <kbd>{{ROOTPAGENAME}}</kbd>, though that 
-     *  removes the namespace prefix.
+     *  also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic word</a>
+     *  <kbd>{{ROOTPAGENAME}}</kbd>, though that removes the namespace prefix.
      * 
      *  @param page a page
      *  @return (see above)
@@ -1310,8 +1310,9 @@ public class Wiki implements Serializable
      *  If a namespace supports subpages, return the top-most page -- e.g. 
      *  {@code getParentPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa/Bbb" if  
      *  the talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. 
-     *  See also the parser function <kbd>{{BASEPAGENAME}}</kbd>, though that 
-     *  removes the namespace prefix.
+     *  See also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic 
+     *  word</a> <kbd>{{BASEPAGENAME}}</kbd>, though that removes the namespace
+     *  prefix.
      * 
      *  @param page a page
      *  @return (see above)
@@ -1325,6 +1326,26 @@ public class Wiki implements Serializable
             return page.substring(0, page.lastIndexOf("/"));
         else
             return page;
+    }
+    
+    /**
+     *  Removes the namespace identifier from a page title. Equivalent to the
+     *  <a href="https://mediawiki.org/wiki/Help:Magic_words">magic word</a>
+     *  <kbd>{{PAGENAME}}</kbd>.
+     * 
+     *  @param page a page
+     *  @return (see above)
+     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  populated, and a network error occurs when populating it
+     *  @see #namespace(java.lang.String) 
+     *  @see #namespaceIdentifier(int) 
+     *  @since 0.35
+     */
+    public String removeNamespace(String page)
+    {
+        if (namespace(page) == 0)
+            return page;
+        return page.substring(page.indexOf(':') + 1);
     }
 
     /**
@@ -1509,12 +1530,7 @@ public class Wiki implements Serializable
             return MAIN_NAMESPACE;
         title = title.replace("_", " ");
         String namespace = title.substring(0, 1).toUpperCase() + title.substring(1, title.indexOf(':'));
-
-        // look up the namespace of the page in the namespace cache
-        if (!namespaces.containsKey(namespace))
-            return MAIN_NAMESPACE; // For titles like UN:NRV
-        else
-            return namespaces.get(namespace);
+        return namespaces.getOrDefault(namespace, MAIN_NAMESPACE);
     }
 
     /**
@@ -1571,7 +1587,7 @@ public class Wiki implements Serializable
     public boolean supportsSubpages(int ns)
     {
         ensureNamespaceCache();
-        if (namespaces.values().contains(ns))
+        if (namespaces.containsValue(ns))
             return ns_subpages.contains(ns);
         throw new IllegalArgumentException("Invalid namespace " + ns);
     }
@@ -3476,7 +3492,7 @@ public class Wiki implements Serializable
     public boolean getImage(String title, int width, int height, File file) throws FileNotFoundException, IOException
     {
         // this is a two step process - first we fetch the image url
-        title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        title = removeNamespace(title);
         StringBuilder url = new StringBuilder(query);
         url.append("prop=imageinfo&iiprop=url&titles=");
         url.append(encode("File:" + title, true));
@@ -3523,7 +3539,7 @@ public class Wiki implements Serializable
         // This seems a good candidate for bulk queries.
         // Support for videos is blocked on https://phabricator.wikimedia.org/T89971
         // fetch
-        file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        file = removeNamespace(file);
         String url = query + "prop=imageinfo&iiprop=size%7Csha1%7Cmime%7Cmetadata&titles="
             + encode("File:" + file, true);
         String line = fetch(url, null, "getFileMetadata");
@@ -3564,7 +3580,7 @@ public class Wiki implements Serializable
      */
     public String[] getDuplicates(String file) throws IOException
     {
-        file = file.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        file = removeNamespace(file);
         StringBuilder url = new StringBuilder(query);
         url.append("prop=duplicatefiles&titles=");
         url.append(encode("File:" + file, true));
@@ -3597,7 +3613,7 @@ public class Wiki implements Serializable
      */
     public LogEntry[] getImageHistory(String title) throws IOException
     {
-        title = title.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        title = removeNamespace(title);
         StringBuilder url = new StringBuilder(query);
         url.append("prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&titles=");
         url.append(encode("File:" + title, true));
@@ -3776,7 +3792,7 @@ public class Wiki implements Serializable
             log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
-        filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        filename = removeNamespace(filename);
 
         // protection
         Map info = getPageInfo("File:" + filename);
@@ -3903,7 +3919,7 @@ public class Wiki implements Serializable
             log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
-        filename = filename.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        filename = removeNamespace(filename);
 
         // protection
         Map info = getPageInfo("File:" + filename);
@@ -4910,7 +4926,7 @@ public class Wiki implements Serializable
     public String[] imageUsage(String image, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        image = image.replaceFirst("^(File|Image|" + namespaceIdentifier(FILE_NAMESPACE) + "):", "");
+        image = removeNamespace(image);
         url.append("list=imageusage&iutitle=");
         url.append(encode("File:" + image, true));
         constructNamespaceString(url, "iu", ns);
@@ -5068,7 +5084,7 @@ public class Wiki implements Serializable
     protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories, 
         boolean sorttimestamp, int... ns) throws IOException
     {
-        name = name.replaceFirst("^(Category|" + namespaceIdentifier(CATEGORY_NAMESPACE) + "):", "");
+        name = removeNamespace(name);
         StringBuilder url = new StringBuilder(query);
         url.append("list=categorymembers&cmprop=title&cmtitle=");
         url.append(encode("Category:" + name, true));
