@@ -381,7 +381,8 @@ public class ContributionSurveyor
     }
     
     /**
-     *  Performs an image contribution survey on a user.
+     *  Performs an image contribution survey on a user. (Date/time limits do
+     *  not apply for transferred images.)
      *  @param user a user on the wiki
      *  @return first element = local uploads, second element = uploads on Wikimedia
      *  Commons by the user, third element = images transferred to Commons (may
@@ -392,7 +393,7 @@ public class ContributionSurveyor
     {
         // fetch local uploads
         HashSet<String> localuploads = new HashSet<>(10000);
-        for (Wiki.LogEntry upload : wiki.getUploads(user))
+        for (Wiki.LogEntry upload : wiki.getUploads(user, earliestdate, latestdate))
             localuploads.add(upload.getTarget());
         
         // fetch commons uploads
@@ -400,7 +401,7 @@ public class ContributionSurveyor
         Wiki.User comuser = commons.getUser(user.getUsername());
         HashSet<String> comuploads = new HashSet<>(10000);
         if (comuser != null)
-            for (Wiki.LogEntry upload : commons.getUploads(user))
+            for (Wiki.LogEntry upload : commons.getUploads(user, earliestdate, latestdate))
                 comuploads.add(upload.getTarget());
         
         // fetch transferred commons uploads

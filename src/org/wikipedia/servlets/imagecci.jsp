@@ -1,5 +1,5 @@
 <%--
-    @(#)imagecci.jsp 0.02 26/01/2017
+    @(#)imagecci.jsp 0.03 07/02/2018
     Copyright (C) 2011 - 2018 MER-C
 
     This program is free software: you can redistribute it and/or modify
@@ -23,6 +23,18 @@
 <%
     request.setAttribute("toolname", "Image contribution surveyor");
 
+    String earliest = request.getParameter("earliest");
+    OffsetDateTime earliestdate = null;
+    earliest = (earliest == null) ? "" : ServletUtils.sanitizeForAttribute(earliest);
+    if (!earliest.isEmpty())
+        earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
+
+    String latest = request.getParameter("latest");
+    OffsetDateTime latestdate = null;
+    latest = (latest == null) ? "" : ServletUtils.sanitizeForAttribute(latest);
+    if (!latest.isEmpty())
+        latestdate = OffsetDateTime.parse(latest + "T23:59:59Z");
+
     String user = request.getParameter("user");
     String homewiki = request.getParameter("wiki");
     homewiki = (homewiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(homewiki);
@@ -40,6 +52,10 @@
 
             // get results
             ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
+            if (!earliest.isEmpty())
+                surveyor.setEarliestDateTime(earliestdate);
+            if (!latest.isEmpty())
+                surveyor.setLatestDateTime(latestdate);
             String[][] survey = surveyor.imageContributionSurvey(wpuser);
 
             // write results
@@ -75,6 +91,10 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 <tr>
     <td>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>
+<tr>
+    <td>Include uploads from:
+    <td><input type=date name=earliest value="<%= earliest %>"></input> to 
+        <input type=date name=latest value="<%= latest %>"></input> (inclusive)
 </table>
 <input type=submit value="Survey user">
 </form>
