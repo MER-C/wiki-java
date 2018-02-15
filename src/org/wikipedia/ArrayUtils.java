@@ -35,7 +35,7 @@ public class ArrayUtils
      *  number of lists of articles <var>b</var>. Such lists might be generated
      *  from the various list methods below. Examples from the English Wikipedia:
      *
-     *  <code>
+     *  <pre>{@code 
      *  // find all orphaned and unwikified articles
      *  String[] articles = ArrayUtils.intersection(wikipedia.getCategoryMembers("All orphaned articles", {@link Wiki#MAIN_NAMESPACE}),
      *      wikipedia.getCategoryMembers("All pages needing to be wikified", {@link Wiki#MAIN_NAMESPACE}));
@@ -43,7 +43,7 @@ public class ArrayUtils
      *  // find all (notable) living people who are related to Barack Obama
      *  String[] people = ArrayUtils.intersection(wikipedia.getCategoryMembers("Living people", {@link Wiki#MAIN_NAMESPACE}),
      *      wikipedia.whatLinksHere("Barack Obama", {@link Wiki#MAIN_NAMESPACE}));
-     *  </code>
+     *  }</pre>
      *
      *  @param a a list of pages
      *  @param b at least one other list of pages 
@@ -65,7 +65,7 @@ public class ArrayUtils
      *  generated from the various lists below. Some examples from the English 
      *  Wikipedia:
      *
-     *  <code>
+     *  <pre>{@code
      *  // find all Martian crater articles that do not have an infobox
      *  String[] articles = ArrayUtils.relativeComplement(wikipedia.getCategoryMembers("Craters on Mars"),
      *      wikipedia.whatTranscludesHere("Template:MarsGeo-Crater", {@link Wiki#MAIN_NAMESPACE}));
@@ -73,7 +73,7 @@ public class ArrayUtils
      *  // find all images without a description that haven't been tagged "no license"
      *  String[] images = ArrayUtils.relativeComplement(wikipedia.getCategoryMembers("Images lacking a description"),
      *      wikipedia.getCategoryMembers("All images with unknown copyright status"));
-     *  </code>
+     *  }</pre>
      *
      *  @param a a list of pages
      *  @param b another list of pages

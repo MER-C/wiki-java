@@ -30,11 +30,11 @@ import org.wikipedia.*;
 
 /**
  *  This tool finds the common set of editors and corresponding revisions of a 
- *  set of wiki pages. Useful for sockpuppet analysis. Servlet version (with 
- *  slightly limited functionality) is available <a 
- *  href="https://wikipediatools.appspot.com/editorintersection.jsp">here</a>.
+ *  set of wiki pages. Useful for sockpuppet analysis.
  * 
  *  @version 0.02
+ *  @see <a href="https://wikipediatools.appspot.com/editorintersection.jsp">
+ *  Article-editor intersection</a> (online version)
  *  @author MER-C
  */
 public class ArticleEditorIntersector

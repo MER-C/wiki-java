@@ -4604,7 +4604,7 @@ public class Wiki implements Serializable
             blockoptions.forEach((key, value) ->
             {
                 if (value)
-                    postparams.put("&" + key, "1");
+                    postparams.put(key, "1");
             });
         }
         String response = fetch(query + "action=block", postparams, "block");

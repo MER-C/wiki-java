@@ -308,7 +308,6 @@ public class ParserUtils
     public static String linksearchResultsToWikitext(List<String[]> results, String domain)
     {
         StringBuilder builder = new StringBuilder(100);
-        int linknumber = results.size();
         for (String[] result : results)
         {
             builder.append("# [[");
@@ -317,10 +316,6 @@ public class ParserUtils
             builder.append(result[1]);
             builder.append("]\n");
         }
-        builder.append(linknumber);
-        builder.append(" links found. ([[Special:Linksearch/*.");
-        builder.append(domain);
-        builder.append("|Linksearch]])");
         return builder.toString();
     }
     
@@ -351,13 +346,7 @@ public class ParserUtils
             buffer.append(result[1]);
             buffer.append("</a>\n");
         }
-        buffer.append("</ol>\n<p>");
-        buffer.append(results.size());
-        buffer.append(" links found. (<a href=\"//");
-        buffer.append(wiki.getDomain());
-        buffer.append("/wiki/Special:Linksearch/*.");
-        buffer.append(domain);
-        buffer.append("\">Linksearch</a>)\n");
+        buffer.append("</ol>");
         return buffer.toString();
     }
     

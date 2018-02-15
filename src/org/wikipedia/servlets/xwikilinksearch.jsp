@@ -57,7 +57,8 @@
 <p>
 This tool searches various Wikimedia projects for a specific link. Enter a 
 domain name (example.com, not *.example.com or http://example.com) below. A 
-timeout is more likely when searching for more wikis or protocols.
+timeout is more likely when searching for more wikis or protocols. For performance
+reasons, results are limited to between 500 and 1000 links per wiki.
 
 <form name="spamform" action="./linksearch.jsp" method=GET>
 <table>
@@ -139,8 +140,18 @@ timeout is more likely when searching for more wikis or protocols.
     for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
     {
         Wiki wiki = entry.getKey();
+        List<String[]> value = entry.getValue();
         out.println("<h3>" + wiki.getDomain() + "</h3>");
-        out.println(ParserUtils.linksearchResultsToHTML(entry.getValue(), wiki, domain));
+        out.println(ParserUtils.linksearchResultsToHTML(value, wiki, domain));
+        out.println("<p>");
+        if (value.size() > 500)
+            out.print("At least ");
+        out.print(value.size());
+        out.print(" links found ");
+        out.print("(<a href=\"//" + wiki.getDomain() + "/wiki/Special:Linksearch/*."
+            + domain + "\">HTTP linksearch</a> | ");
+        out.println("<a href=\"//" + wiki.getDomain() + "/wiki/Special:Linksearch/https://*."
+            + domain + "\">HTTPS linksearch</a>).");
     }
 %>
 <%@ include file="footer.jsp" %>
