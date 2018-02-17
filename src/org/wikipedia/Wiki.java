@@ -273,14 +273,14 @@ public class Wiki implements Serializable
     public static final String NO_PROTECTION = "all";
 
     /**
-     *  Denotes semi-protection (i.e. only autoconfirmed users can perform a
-     *  particular action).
+     *  Denotes semi-protection (only autoconfirmed users can perform a 
+     *  action).
      *  @since 0.09
      */
     public static final String SEMI_PROTECTION = "autoconfirmed";
 
     /**
-     *  Denotes full protection (i.e. only admins can perfom a particular action).
+     *  Denotes full protection (only admins can perfom a particular action).
      *  @since 0.09
      */
     public static final String FULL_PROTECTION = "sysop";
@@ -288,21 +288,21 @@ public class Wiki implements Serializable
     // ASSERTION MODES
 
     /**
-     *  Use no assertions (i.e. 0).
+     *  Use no assertions.
      *  @see #setAssertionMode
      *  @since 0.11
      */
     public static final int ASSERT_NONE = 0;
 
     /**
-     *  Assert that we are logged in (i.e. 1). This is checked every action.
+     *  Assert that we are logged in. This is checked every action.
      *  @see #setAssertionMode
      *  @since 0.30
      */
     public static final int ASSERT_USER = 1;
 
     /**
-     *  Assert that we have a bot flag (i.e. 2). This is checked every action.
+     *  Assert that we have a bot flag. This is checked every action.
      *  @see #setAssertionMode
      *  @since 0.11
      */
@@ -317,7 +317,7 @@ public class Wiki implements Serializable
     public static final int ASSERT_NO_MESSAGES = 4;
 
     /**
-     *  Assert that we have a sysop flag (i.e. 8). This is checked intermittently.
+     *  Assert that we have a sysop flag. This is checked intermittently.
      *  @see #setAssertionMode
      *  @since 0.30
      */
@@ -373,22 +373,25 @@ public class Wiki implements Serializable
     // REVISION OPTIONS
 
     /**
-     *  In <code>Revision.diff()</code>, denotes the next revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()}, 
+     *  denotes the next revision.
+     *  @see org.wikipedia.Wiki.Revision#diff(long) 
      *  @since 0.21
      */
     public static final long NEXT_REVISION = -1L;
 
     /**
-     *  In <code>Revision.diff()</code>, denotes the current revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()}, 
+     *  denotes the current revision.
+     *  @see org.wikipedia.Wiki.Revision#diff(long) 
      *  @since 0.21
      */
     public static final long CURRENT_REVISION = -2L;
 
     /**
-     *  In <code>Revision.diff()</code>, denotes the previous revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(org.wikipedia.Wiki.Revision)
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()}, 
+     *  denotes the previous revision.
+     *  @see org.wikipedia.Wiki.Revision#diff(long) 
      *  @since 0.21
      */
     public static final long PREVIOUS_REVISION = -3L;
@@ -424,10 +427,44 @@ public class Wiki implements Serializable
 
     private static final String version = "0.34";
 
-    // the domain of the wiki
-    private String domain;
-    protected String query, base, apiUrl;
+    // URL strings
+    private String protocol = "https://";
     protected String scriptPath = "/w";
+    private String domain;
+    
+    /**
+     *  URL for index.php. (Needs to be accessible to subclasses.)
+     *  @see #initVars()
+     *  @see #apiUrl
+     *  @see #query
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Index.php">MediaWiki
+     *  documentation</a>
+     */
+    protected String base;
+    
+    /**
+     *  URL entrypoint for the MediaWiki API.  (Needs to be accessible to 
+     *  subclasses.)
+     *  @see #initVars()
+     *  @see #base
+     *  @see #query
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Api.php">MediaWiki
+     *  documentation</a>
+     */
+    protected String apiUrl;
+    
+    /**
+     *  Base URL for action=query type requests from the API.  (Needs to be 
+     *  accessible to subclasses.)
+     *  @see #initVars() 
+     *  @see #base
+     *  @see #apiUrl
+     *  @see <a href="https://www.mediawiki.org/wiki/API:Query">MediaWiki
+     *  documentation</a>
+     */
+    protected String query;
+    
+    // wiki properties
     private boolean wgCapitalLinks = true;
     private ZoneId timezone = ZoneId.of("UTC");
 
@@ -453,7 +490,6 @@ public class Wiki implements Serializable
     private boolean zipped = true;
     private boolean markminor = false, markbot = false;
     private boolean resolveredirect = false;
-    private String protocol = "https://";
     private Level loglevel = Level.ALL;
     private static final Logger logger = Logger.getLogger("wiki");
 
@@ -1035,6 +1071,8 @@ public class Wiki implements Serializable
      *  username or password, the requirement for an interactive login (not
      *  supported, use [[Special:BotPasswords]]) or some other reason
      *  @see #logout
+     *  @see <a href="https://mediawiki.org/wiki/API:Login">MediaWiki 
+     *  documentation</a>
      */
     public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
     {
@@ -1110,6 +1148,8 @@ public class Wiki implements Serializable
      *  @since 0.14
      *  @see #login
      *  @see #logout
+     *  @see <a href="https://mediawiki.org/wiki/API:Logout">MediaWiki
+     *  documentation</a>
      */
     public synchronized void logoutServerSide() throws IOException
     {
@@ -1286,7 +1326,7 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  If a namespace supports subpages, return the top-most page -- e.g. 
+     *  If a namespace supports subpages, return the top-most page -- 
      *  {@code getRootPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa" if the talk
      *  namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See 
      *  also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic word</a>
@@ -1307,7 +1347,7 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  If a namespace supports subpages, return the top-most page -- e.g. 
+     *  If a namespace supports subpages, return the top-most page -- 
      *  {@code getParentPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa/Bbb" if  
      *  the talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. 
      *  See also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic 
@@ -1509,8 +1549,8 @@ public class Wiki implements Serializable
     /**
      *  Returns the namespace a page is in. There is no need to override this to
      *  add custom namespaces, though you may want to define static fields e.g.
-     *  {@code public static final int <var>PORTAL_NAMESPACE</var> = 100;}
-     *  for the Portal namespace on the English Wikipedia.
+     *  {@code public static final int PORTAL_NAMESPACE = 100;} for the Portal
+     *  namespace on the English Wikipedia.
      *
      *  @param title any valid page name
      *  @return an integer representing the namespace of <var>title</var>
@@ -2966,7 +3006,8 @@ public class Wiki implements Serializable
      *  Protects a page. Structure of <var>protectionstate</var> (everything is
      *  optional, if a value is not present, then the corresponding values will
      *  be left untouched):
-     *  <samp>
+     *  
+     *  <pre><samp>
      *  {
      *     edit: one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
      *     editexpiry: OffsetDateTime, // expiry time for edit protection, null = indefinite
@@ -2976,7 +3017,7 @@ public class Wiki implements Serializable
      *     cascade: Boolean, // Enables cascading protection (requires edit=FULL_PROTECTION). Default: false.
      *     cascadesource: String // souce of cascading protection (here ignored)
      *  };
-     *  </samp>
+     *  </samp></pre>
      *
      *  @param page the page
      *  @param protectionstate (see above)
@@ -3370,7 +3411,7 @@ public class Wiki implements Serializable
     /**
      *  Parses stuff of the form <tt>title="L. Sprague de Camp"
      *  timestamp="2006-08-28T23:48:08Z" minor="" comment="robot  Modifying:
-     *  [[bg:Blah]]"</tt> into {@link Wiki#Revision} objects. Used by
+     *  [[bg:Blah]]"</tt> into {@link Wiki.Revision} objects. Used by
      *  <tt>contribs()</tt>, <tt>watchlist()</tt>, <tt>getPageHistory()</tt>
      *  <tt>rangeContribs()</tt> and <tt>recentChanges()</tt>. NOTE: if
      *  RevisionDelete was used on a revision, the relevant values will be null.
@@ -3602,8 +3643,8 @@ public class Wiki implements Serializable
 
     /**
      *  Returns the upload history of an image. This is not the same as
-     *  {@code getLogEntries(null, null, Integer.MAX_VALUE, {@link #UPLOAD_LOG},
-     *  title, {@link #FILE_NAMESPACE})}, as the image may have been deleted.
+     *  {@code getLogEntries(null, null, Integer.MAX_VALUE, Wiki.UPLOAD_LOG,
+     *  title, Wiki.FILE_NAMESPACE)}, as the image may have been deleted.
      *  This returns only the live history of an image.
      *
      *  @param title the title of the image (may contain File)
@@ -3719,7 +3760,7 @@ public class Wiki implements Serializable
      *  @param end the date to end enumeration (use {@code null} to not specify one)
      *  @return a list of all live images the user has uploaded
      *  @throws IllegalArgumentException if <var>start</var> and <var>end</var>
-     *  are present and {@code <var>start</var>.isAfter(<var>end</var>)}
+     *  are present and {@code start.isAfter(end)}
      *  @throws IOException if a network error occurs
      */
     public LogEntry[] getUploads(User user, OffsetDateTime start, OffsetDateTime end) throws IOException
@@ -4398,13 +4439,14 @@ public class Wiki implements Serializable
      *  than 100000 edits may be returned for certain values of <var>users</var>.
      * 
      *  <p>
-     *  Available keys for <var>options</var> include "minor", "top", "new"
-     *  and "patrolled" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code <var>options</var> = { top = true; new = true; } 
-     *  returns all edits by a user that created pages which haven't been edited
-     *  since. Setting "patrolled" limits results to no older than <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in the <a 
-     *  href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges table</a>.
+     *  Available keys for <var>options</var> include "minor", "top", "new" and
+     *  "patrolled" for vanilla MediaWiki (extensions may define their own).their own).
+     *  For example, {@code options = { top = true, new = true }} returns all
+     *  edits by a user that created pages which haven't been edited since.
+     *  Setting "patrolled" limits results to no older than <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in  
+     *  the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
+     *  table</a>.
      * 
      *  @param users a list of users, IP addresses or IP ranges to get 
      *  contributions for
@@ -4562,8 +4604,8 @@ public class Wiki implements Serializable
      *  <li><b>allowusertalk</b>: allow use of [[User talk:<var>usertoblock</var>]]
      *    by the blocked user
      *  <li><b>autoblock</b>: block IP addresses used by this user, includes a
-     *    a cookie (see {@linkplain https://mediawiki.org/wiki/Autoblock MediaWiki
-     *    documentation})
+     *    a cookie (see <a href="https://mediawiki.org/wiki/Autoblock">MediaWiki
+     *    documentation</a>)
      *  <li><b>anononly</b>: for IP addresses and ranges, allow the creation of
      *    new accounts on that range
      *  </ul>
@@ -4623,7 +4665,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
-     *  @see #block(java.lang.String, java.lang.String, java.time.OffsetDateTime, boolean, boolean, boolean, boolean, boolean) 
+     *  @see #block(java.lang.String, java.lang.String, java.time.OffsetDateTime, java.util.Map) 
      *  @see <a href="https://mediawiki.org/wiki/API:Block">MediaWiki documentation</a>
      *  @since 0.31
      */
@@ -4811,8 +4853,8 @@ public class Wiki implements Serializable
      *  <p>
      *  Available keys for <var>options</var> include "minor", "bot", "anon",
      *  "patrolled" and "unread" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code <var>options</var> = { minor = true; bot = false;}} 
-     *  returns all minor edits not made by bots.
+     *  their own). {@code options = { minor = true;, bot = false }} returns all
+     *  minor edits not made by bots.
      * 
      *  @param allrev show all revisions to the pages, instead of the top most
      *  change
@@ -5383,7 +5425,7 @@ public class Wiki implements Serializable
      *  @param namespace filters by namespace. Returns empty if namespace
      *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if {@code <var>start</var>.isAfter(<var>end</var>)}
+     *  @throws IllegalArgumentException if {@code start.isAfter(end)}
      *  or amount &lt; 1
      *  @return the specified log entries
      *  @since 0.08
@@ -5878,9 +5920,9 @@ public class Wiki implements Serializable
      *  <p>
      *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon", 
      *  "redirect" and "patrolled" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code <var>rcoptions</var> = { minor = true; anon = false; 
-     *  patrolled = false} returns all minor edits from logged in users that 
-     *  aren't patrolled.
+     *  their own). {@code rcoptions = { minor = true, anon = false, patrolled
+     *  = false }} returns all minor edits from logged in users that aren't
+     *  patrolled.
      *
      *  @param rcoptions a Map dictating which pages to select. Key not present 
      *  = don't care.
@@ -6013,9 +6055,9 @@ public class Wiki implements Serializable
      *  <p>
      *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon", 
      *  "redirect", "patrolled" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code <var>rcoptions</var> = { minor = true; anon = false; 
-     *  patrolled = false} returns all minor edits from logged in users that 
-     *  aren't patrolled.
+     *  their own). {@code rcoptions = { minor = true, anon = false, patrolled 
+     *  = false}} returns all minor edits from logged in users that aren't
+     *  patrolled.
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
@@ -6687,6 +6729,7 @@ public class Wiki implements Serializable
          *  @param revid the id of the revision (this is a long since
          *  {{NUMBEROFEDITS}} on en.wikipedia.org is now (January 2018) ~38%
          *  of {@code Integer.MAX_VALUE}
+         *  @param sha1 the SHA-1 hash of the revision
          *  @param timestamp when this revision was made
          *  @param title the concerned article
          *  @param summary the edit summary
@@ -6749,7 +6792,7 @@ public class Wiki implements Serializable
         /**
          *  Gets the rendered text of this revision.
          *  @return the rendered contents of the appropriate article at
-         *  <tt>timestamp</tt>
+         *  <var>timestamp</var>
          *  @throws IOException if a network error occurs
          *  @throws IllegalArgumentException if page == Special:Log/xxx.
          *  @since 0.17
@@ -7169,7 +7212,7 @@ public class Wiki implements Serializable
          *  Sets a rollback token for this revision.
          *  @param token a rollback token
          *  @since 0.24
-         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")</code>
+         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")}</code>
          */
         @Deprecated
         public void setRollbackToken(String token)
@@ -7182,7 +7225,7 @@ public class Wiki implements Serializable
          *  for good reasons: cannot rollback or not top revision.
          *  @return the rollback token
          *  @since 0.24
-         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")</code>
+         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")}</code>
          */
         @Deprecated
         public String getRollbackToken()
@@ -7400,7 +7443,7 @@ public class Wiki implements Serializable
      *  @param caller the caller of this method
      *  @return the server response
      *  @throws IOException if a network error occurs
-     *  @see #post(java.lang.String, java.lang.String, java.lang.String)
+     *  @see #fetch(java.lang.String, java.util.Map, java.lang.String) 
      *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
      *  @since 0.27
      */
@@ -7508,9 +7551,12 @@ public class Wiki implements Serializable
     }
     
     /**
-     *  Checks for database lag and sleeps if {@code lag &gt; {@link #getMaxLag()}}.
+     *  Checks for database lag and sleeps if {@code lag < getMaxLag()}.
      *  @param connection the URL connection used in the request
      *  @return true if there was sufficient database lag.
+     *  @see #getMaxLag() 
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
+     *  MediaWiki documentation</a>
      *  @since 0.32
      */
     protected synchronized boolean checkLag(URLConnection connection)

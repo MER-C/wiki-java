@@ -9,7 +9,6 @@ import org.wikipedia.ArrayUtils;
  * 
  * @author Fastily
  * 
- * @see org.wikiutils.DateUtils
  * @see org.wikiutils.IOUtils
  * @see org.wikiutils.LoginUtils
  * @see org.wikiutils.ParseUtils

@@ -24,8 +24,8 @@ import java.util.*;
 import org.wikipedia.servlets.ServletUtils;
 
 /**
- *  Various parsing methods that e.g. turning Wiki.java objects into wikitext 
- *  and HTML and vice versa.
+ *  Various parsing methods that turn Wiki.java objects into wikitext and HTML
+ *  and vice versa.
  *  @author MER-C
  *  @version 0.02
  */

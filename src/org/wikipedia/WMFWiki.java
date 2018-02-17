@@ -139,6 +139,7 @@ public class WMFWiki extends Wiki
      *  regex differences (requires extension SpamBlacklist).
      *  @param site the site to check
      *  @throws IOException if a network error occurs
+     *  @return whether a site is on the spam blacklist
      */
     public boolean isSpamBlacklisted(String site) throws IOException
     {

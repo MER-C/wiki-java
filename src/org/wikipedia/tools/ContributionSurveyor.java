@@ -36,9 +36,9 @@ import org.wikipedia.*;
  *
  *  @author MER-C
  *  @see <a href="https://wikipediatools.appspot.com/contributionsurveyor.jsp">
- *  Text contribution surveyor</a> (online version)
+ *  Text contribution surveyor (online version)</a>
  *  @see <a href="https://wikipediatools.appspot.com/imagecci.jsp">Image
- *  contribution surveyor</a> (online version)
+ *  contribution surveyor (online version)</a>
  *  @see <a href="https://en.wikipedia.org/wiki/WP:CCI">Contributor Copyright
  *  Investigations</a>
  *  @version 0.04
@@ -427,7 +427,7 @@ public class ContributionSurveyor
      *  @param username the relevant username (use null to omit)
      *  @param survey the survey, in form of page &#8594; edits
      *  @return the formatted survey in wikitext
-     *  @see #contributionSurvey(java.lang.String..., int...) 
+     *  @see #contributionSurvey(java.lang.String[], int...) 
      *  @since 0.04
      */
     public String formatTextSurveyAsWikitext(String username, Map<String, List<Wiki.Revision>> survey)

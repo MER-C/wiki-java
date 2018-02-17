@@ -63,7 +63,7 @@ public class SpamArchiveSearch
 
     /**
      *  Searches the following spam-related discussion archives for the given 
-     *  query string:
+     *  query string.
      * 
      *  <ul>
      *  <li><a href="//meta.wikimedia.org/wiki/WM:SBL">Global spam blacklist</a>

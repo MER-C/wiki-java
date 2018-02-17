@@ -37,12 +37,12 @@ public class ArrayUtils
      *
      *  <pre>{@code 
      *  // find all orphaned and unwikified articles
-     *  String[] articles = ArrayUtils.intersection(wikipedia.getCategoryMembers("All orphaned articles", {@link Wiki#MAIN_NAMESPACE}),
-     *      wikipedia.getCategoryMembers("All pages needing to be wikified", {@link Wiki#MAIN_NAMESPACE}));
+     *  String[] articles = ArrayUtils.intersection(wikipedia.getCategoryMembers("All orphaned articles", Wiki.MAIN_NAMESPACE),
+     *      wikipedia.getCategoryMembers("All pages needing to be wikified", Wiki.MAIN_NAMESPACE));
      *
      *  // find all (notable) living people who are related to Barack Obama
-     *  String[] people = ArrayUtils.intersection(wikipedia.getCategoryMembers("Living people", {@link Wiki#MAIN_NAMESPACE}),
-     *      wikipedia.whatLinksHere("Barack Obama", {@link Wiki#MAIN_NAMESPACE}));
+     *  String[] people = ArrayUtils.intersection(wikipedia.getCategoryMembers("Living people", Wiki.MAIN_NAMESPACE),
+     *      wikipedia.whatLinksHere("Barack Obama", Wiki.MAIN_NAMESPACE));
      *  }</pre>
      *
      *  @param a a list of pages
@@ -68,7 +68,7 @@ public class ArrayUtils
      *  <pre>{@code
      *  // find all Martian crater articles that do not have an infobox
      *  String[] articles = ArrayUtils.relativeComplement(wikipedia.getCategoryMembers("Craters on Mars"),
-     *      wikipedia.whatTranscludesHere("Template:MarsGeo-Crater", {@link Wiki#MAIN_NAMESPACE}));
+     *      wikipedia.whatTranscludesHere("Template:MarsGeo-Crater", Wiki.MAIN_NAMESPACE));
      *
      *  // find all images without a description that haven't been tagged "no license"
      *  String[] images = ArrayUtils.relativeComplement(wikipedia.getCategoryMembers("Images lacking a description"),

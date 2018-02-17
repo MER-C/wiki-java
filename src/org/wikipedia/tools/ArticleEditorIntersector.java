@@ -34,7 +34,7 @@ import org.wikipedia.*;
  * 
  *  @version 0.02
  *  @see <a href="https://wikipediatools.appspot.com/editorintersection.jsp">
- *  Article-editor intersection</a> (online version)
+ *  Article-editor intersection (online version)</a> 
  *  @author MER-C
  */
 public class ArticleEditorIntersector
@@ -367,8 +367,8 @@ public class ArticleEditorIntersector
      *  (deleted) history or are invalid (Special/Media namespaces) or there is
      *  no intersection, return an empty map.
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if {@code <var>articles.length</var> &lt; 2}
-     *  after duplicates (as in {@code String.equals}) are removed
+     *  @throws IllegalArgumentException if {@code articles.length < 2} after
+     *  duplicates (as in {@code String.equals}) are removed
      */
     public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
