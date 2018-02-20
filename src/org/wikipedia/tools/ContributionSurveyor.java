@@ -52,91 +52,53 @@ public class ContributionSurveyor
     
     /**
      *  Runs this program.
-     *  @param args command line arguments (see --help below)
-     *  @throws IOException 
+     *  @param args command line arguments (see code for documentation)
+     *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {
-        // placeholders
-        boolean images = false, userspace = false, nominor = true;
-        int minsize = 150;
-        OffsetDateTime start = null, end = null;
-        Wiki homewiki = Wiki.createInstance("en.wikipedia.org");
-        File out = null;
-        String wikipage = null;
-        String infile = null;
-        String category = null;
-
         // parse arguments
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.ContributionSurveyor", "[options]")
+            .description("Survey the contributions of a large number of wiki editors.")
+            .addHelp()
+            .addVersion("ContributionSurveyor v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addSingleArgumentFlag("--infile", "file", "Use file as the list of users, shows a filechooser if not specified.")
+            .addSingleArgumentFlag("--outfile", "file", "Save results to file, shows a filechooser if not specified.")
+            .addSection("Users to scan:")
+            .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
+            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the wiki page [[Main Page]].")
+            .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
+            .addSingleArgumentFlag("--user", "user", "Survey the given user.")
+            .addSection("Survey options:")
+            .addBooleanFlag("--images", "Survey images both on the home wiki and Commons.")
+            .addBooleanFlag("--userspace", "Survey userspace as well.")
+            .addBooleanFlag("--includeminor", "Include minor edits.")
+            .addSingleArgumentFlag("--minsize", "size", "Only includes edits that add more than size bytes (default: 150).")
+            .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
+            .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
+            .parse(args);
+        
+        Wiki homewiki = Wiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        String infile = parsedargs.get("--infile");
+        String outfile = parsedargs.get("--outfile");
+        String wikipage = parsedargs.get("--wikipage");
+        String category = parsedargs.get("--category");
+        String user = parsedargs.get("--user");
+        boolean images = parsedargs.containsKey("--images");
+        boolean userspace = parsedargs.containsKey("--userspace");
+        boolean nominor = !parsedargs.containsKey("--includeminor");
+        int minsize = Integer.parseInt(parsedargs.getOrDefault("--minsize", "150"));
+        String earliestdatestring = parsedargs.get("--editsafter");
+        String latestdatestring = parsedargs.get("--editsbefore");
+        
         List<String> users = new ArrayList<>(1500);
-        for (int i = 0; i < args.length; i++)
-        {
-            String arg = args[i];
-            switch (arg)
-            {
-                case "--help":
-                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.ContributionSurveyor [options]\n\n"
-                        + "DESCRIPTION:\n\tSurvey the contributions of a large number of wiki editors.\n\n"
-                        + "\t--help\n\t\tPrints this screen and exits.\n"
-                        + "\t--images\n\t\tSurvey images both on the home wiki and Commons.\n"
-                        + "\t--infile file\n\t\tUse file as the list of users, shows a filechooser if not "
-                            + "specified.\n"
-                        + "\t--wiki example.wikipedia.org\n\t\tUse example.wikipedia.org as the home wiki. \n\t\t"
-                            + "Default: en.wikipedia.org.\n"
-                        + "\t--outfile file\n\t\tSave results to file, shows a filechooser if not specified.\n"
-                        + "\t--wikipage 'Main Page'\n\t\tFetch a list of users at the wiki page Main Page.\n"
-                        + "\t--category 'A category'\n\t\tFetch a list of users from the given category (recursive).\n"
-                        + "\t--user user\n\t\tSurvey the given user.\n"
-                        + "\t--userspace\n\t\tSurvey userspace as well.\n"
-                        + "\t--includeminor\n\t\tInclude minor edits.\n"
-                        + "\t--minsize size\n\t\tOnly includes edits that add more than size bytes.\n\t\t"
-                            + "Default: 150\n"
-                        + "\t--start date\n\t\tInclude edits made after this date (ISO format)\n"
-                        + "\t--end date\n\t\tInclude edits made before this date (ISO format)\n");
-                    System.exit(0);
-                case "--images":
-                    images = true;
-                    break;
-                case "--infile":
-                    infile = args[++i];
-                    break;
-                case "--user":
-                    users.add(args[++i]);
-                    break;
-                case "--userspace":
-                    userspace = true;
-                    break;
-                case "--wiki":
-                    homewiki = Wiki.createInstance(args[++i]);
-                    break;
-                case "--outfile":
-                    out = new File(args[++i]);
-                    break;
-                case "--wikipage":
-                    wikipage = args[++i];
-                    break;
-                case "--category":
-                    category = args[++i];
-                    break;
-                case "--includeminor":
-                    nominor = false;
-                    break;
-                case "--minsize":
-                    minsize = Integer.parseInt(args[++i]);
-                    break;
-                case "--start":
-                    start = OffsetDateTime.parse(args[++i]);
-                    break;
-                case "--end":
-                    end = OffsetDateTime.parse(args[++i]);
-                    break;
-            }
-        }
+        OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
+        OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
         
         // fetch user list
-        if (!users.isEmpty())
-        {
-        }
+        if (user != null)
+            users.add(user);
         else if (category != null)
             users.addAll(Arrays.asList(homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE)));
         else if (wikipage != null)
@@ -176,7 +138,8 @@ public class ContributionSurveyor
         }
 
         // output file
-        if (out == null)
+        File out = null;
+        if (outfile == null)
         {
             JFileChooser fc = new JFileChooser();
             fc.setDialogTitle("Select output file");
@@ -188,13 +151,15 @@ public class ContributionSurveyor
                 System.exit(0);
             }
         }
+        else
+            out = new File(outfile);
         
         int[] ns = userspace ? (new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE }) : (new int[] { Wiki.MAIN_NAMESPACE });
         
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setMinimumSizeDiff(minsize);
-        surveyor.setEarliestDateTime(start);
-        surveyor.setLatestDateTime(end);
+        surveyor.setEarliestDateTime(editsafter);
+        surveyor.setLatestDateTime(editsbefore);
         surveyor.setIgnoringMinorEdits(nominor);
         try (FileWriter outwriter = new FileWriter(out))
         {

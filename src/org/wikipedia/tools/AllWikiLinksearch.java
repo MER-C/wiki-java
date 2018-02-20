@@ -106,38 +106,26 @@ public class AllWikiLinksearch
     
     /**
      *  Runs this program. In offline mode, this searches all wikis.
-     *  @param args command line arguments (see case "--help" below).
+     *  @param args command line arguments (see code for documentation).
      *  @throws IOException if a filesystem error occurs
      */
     public static void main(String[] args) throws IOException
     {
         // parse command line options
-        String domain = null;
-        boolean httponly = false;
-        int threads = 3;
-        for (int i = 0; i < args.length; i++)
-        {
-            switch (args[i])
-            {
-                case "--help":
-                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.AllWikiLinksearch [options] domain\n\n"
-                        + "DESCRIPTION:\n\tSearches Wikimedia projects for links.\n\n"
-                        + "\t--help\n\t\tPrints this screen and exits.\n"
-                        + "\t--httponly\n\t\tSearch for non-secure links only.\n"
-                        + "\t--numthreads n\n\t\tUse n threads.\n"
-                        + "A dialog box will pop up if domain is not specified.");
-                    System.exit(0);
-                case "--httponly":
-                    httponly = true;
-                    break;
-                case "--numthreads":
-                    threads = Integer.parseInt(args[++i]);
-                    break;
-                default:
-                    domain = args[i];
-                    break;
-            }
-        }
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.AllWikiLinksearch", "[options] domain")
+            .description("Searches Wikimedia projects for links.")
+            .addHelp()
+            .addVersion("AllWikiLinksearch v0.03\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addBooleanFlag("--httponly", "Search for non-secure links only.")
+            .addSingleArgumentFlag("--numthreads", "n", "Use n threads.")
+            .addSection("A dialog box will pop up if domain is not specified.")
+            .parse(args);
+        
+        String domain = parsedargs.get("default");
+        boolean httponly = parsedargs.containsKey("--httponly");
+        int threads = Integer.parseInt(parsedargs.getOrDefault("--numthreads", "3"));
+        
         if (!GraphicsEnvironment.isHeadless() && domain == null)
             domain = JOptionPane.showInputDialog(null, "Enter domain to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
         if (domain == null)

@@ -37,7 +37,7 @@ public class UserLinkAdditionFinder
 {
     /**
      *  Runs this program.
-     *  @param args the command line arguments (see "--help" below)
+     *  @param args the command line arguments (see code for documentation)
      *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
@@ -46,36 +46,22 @@ public class UserLinkAdditionFinder
         enWiki.setQueryLimit(500);
         
         // parse command line args
-        boolean linksearch = false, removeblacklisted = false;
-        String filename = null;
-        String datestring = null;
-        for (int i = 0; i < args.length; i++)
-        {
-            switch (args[i])
-            {
-                case "--help":
-                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.UserLinkAdditionFinder [options] [file]\n\n"
-                        + "DESCRIPTION:\n\tFinds the set of links added by a list of users.\n\n"
-                        + "\t--help\n\t\tPrints this screen and exits.\n"
-                        + "\t--linksearch\n\t\tConduct a linksearch to filter commonly used links.\n"
-                        + "\t--fetchafter\n\t\tFetch only edits after this date.\n"
-                        + "If a file is not specified, a dialog box will prompt for one.");
-                    System.exit(0);
-                case "--linksearch":
-                    linksearch = true;
-                    break;
-                case "--removeblacklisted":
-                    removeblacklisted = true;
-                    break;
-                case "--fetchafter":
-                    datestring = args[++i];
-                    break;
-                default:
-                    filename = args[i];
-                    break;
-            }
-        }
-        final OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.UserLinkAdditionFinder", "[options] [file]")
+            .description("Finds the set of links added by a list of users.")
+            .addHelp()
+            .addVersion("UserLinkAdditionFinder v0.02\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addBooleanFlag("--linksearch", "Conduct a linksearch to filter commonly used links.")
+            .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
+            .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
+            .addSection("If a file is not specified, a dialog box will prompt for one.")
+            .parse(args);
+        
+        boolean linksearch = parsedargs.containsKey("--linksearch");
+        boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
+        String datestring = parsedargs.get("--fetchafter");
+        String filename = parsedargs.get("default");
+        OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
         
         // read in from file
         Path fp = null;

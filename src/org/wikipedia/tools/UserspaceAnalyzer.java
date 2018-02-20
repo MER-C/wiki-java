@@ -39,17 +39,16 @@ public class UserspaceAnalyzer
      */
     public static void main(String[] args) throws Exception
     {
-        // check command line arguments
+        // parse command line arguments
         if (args.length == 0)
             args = new String[] { "--help" };
-        if (args[0].equals("--help"))
-        {
-            System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.UserspaceAnalyzer [search term]\n\n"
-                    + "DESCRIPTION:\n\tSearches userspace for pages eligible for deletion per [[WP:CSD#U5]].\n\n"
-                    + "\t--help\n\t\tPrints this screen and exits.");
-            System.exit(0);
-        }
-
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.UserspaceAnalyzer", "[search term]")
+            .description("Searches userspace for pages eligible for deletion per [[WP:CSD#U5]]")
+            .addHelp()
+            .addVersion("UserspaceAnalyzer v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
+            .parse(args);
+        
         Wiki wiki = Wiki.createInstance("en.wikipedia.org");
         String[][] results = wiki.search(args[0], Wiki.USER_NAMESPACE);
         HashSet<String> users = new HashSet<>(500);

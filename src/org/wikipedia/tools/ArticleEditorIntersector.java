@@ -55,98 +55,62 @@ public class ArticleEditorIntersector
     
     /**
      *  Runs this program.
-     *  @param args the command line arguments (see --help below for 
-     *  documentation).
+     *  @param args the command line arguments (see code for documentation)
      *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
     {
-        String wikidomain = "en.wikipedia.org";
-        String user = null;
-        String category = null;
-        boolean nobot = false, noadmin = false, noanon = false;
-        boolean adminmode = false, nominor = false, noreverts = false;
-        List<String> articlelist = new ArrayList<>();
-        OffsetDateTime start = null, end = null;
-        
         // parse command line arguments
         if (args.length == 0)
             args = new String[] { "--help" };
-        for (int i = 0; i < args.length; i++)
-        {
-            switch (args[i])
-            {
-                case "--help":
-                    System.out.println("SYNOPSIS:\n\t java org.wikipedia.tools.ArticleEditorIntersector [options] [source] [pages]\n\n"
-                        + "DESCRIPTION:\n\tFor a given set of pages, finds the common set of editors and lists the edits made.\n\n"
-                        + "\t--help\n\t\tPrints this screen and exits.\n\n"
-                        + "Global options:\n"
-                        + "\t--wiki wiki\n\t\tFetch data from wiki (default: en.wikipedia.org).\n"
-                        + "\t--adminmode\n\t\tFetch deleted edits (REQUIRES ADMIN LOGIN)\n"
-                        + "\t--nominor\n\t\tIgnore minor edits.\n\n"
-                        + "\t--noreverts\n\t\tIgnore reverts.\n\n"
-                        + "\t--start date\n\t\tInclude edits made after this date (ISO format)\n"
-                        + "\t--end date\n\t\tInclude edits made before this date (ISO format)\n"
-                        + "Options:\n"
-                        + "\t--nobot\n\t\tExclude bots from the analysis.\n"
-                        + "\t--noadmin\n\t\tExclude admins from the analysis.\n"
-                        + "\t--noanon\n\t\tExclude IPs from the analysis.\n"
-                        + "Sources of pages:\n"
-                        + "\t--category category\n\t\tUse the members of the specified category as the list of articles.\n"
-                        + "\t--contribs user\n\t\tUse the list of articles edited by the given user.\n"
-                        + "\t--file file\n\t\tRead in the list of articles from the given file.\n");   
-                    System.exit(0);
-                case "--wiki":
-                    wikidomain = args[++i];
-                    break;
-                case "--category":
-                    category = args[++i];
-                    break;
-                case "--file":
-                    articlelist = Files.readAllLines(new File(args[++i]).toPath());
-                    break;
-                case "--contribs":
-                    user = args[++i];
-                    break;
-                case "--nobot":
-                    nobot = true;
-                    break;
-                case "--noadmin":
-                    noadmin = true;
-                    break;
-                case "--noanon":
-                    noanon = true;
-                    break;
-                case "--adminmode":
-                    adminmode = true;
-                    break;
-                case "--nominor":
-                    nominor = true;
-                    break;
-                case "--noreverts":
-                    noreverts = true;
-                    break;
-                case "--start":
-                    start = OffsetDateTime.parse(args[++i]);
-                    break;
-                case "--end":
-                    end = OffsetDateTime.parse(args[++i]);
-                    break;
-                default:
-                    articlelist.add(args[i]);
-                    break;
-            }
-        }
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.ArticleEditorIntersector", "[options] [source] [pages]")
+            .description("For a given set of pages, finds the common set of editors and lists the edits made.")
+            .addHelp()
+            .addVersion("ArticleEditorIntersector v0.02\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addSection("Global options:")
+            .addSingleArgumentFlag("--wiki", "wiki", "Fetch data from wiki (default: en.wikipedia.org).")
+            .addBooleanFlag("--adminmode", "Fetch deleted edits (REQUIRES ADMIN LOGIN).")
+            .addBooleanFlag("--nominor", "Ignore minor edits.")
+            .addBooleanFlag("--noreverts", "Ignore reverts.")
+            .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
+            .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
+            .addSection("Options:")
+            .addBooleanFlag("--nobot", "Exclude bots from the analysis.")
+            .addBooleanFlag("--noadmin", "Exclude admins from the analysis.")
+            .addBooleanFlag("--noanon", "Exclude IPs from the analysis.")
+            .addSection("Sources of pages:")
+            .addSingleArgumentFlag("--category", "category", "Use the members of the specified category as the list of articles.")
+            .addSingleArgumentFlag("--contribs", "user", "Use the list of articles edited by the given user.")
+            .addSingleArgumentFlag("--file", "file", "Read in the list of articles from the given file.")
+            .parse(args);
         
+        Wiki wiki = Wiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        String category = parsedargs.get("--category");
+        String user = parsedargs.get("--contribs");
+        boolean adminmode = parsedargs.containsKey("--adminmode");
+        boolean nominor = parsedargs.containsKey("--nominor");
+        boolean noreverts = parsedargs.containsKey("--noreverts");
+        boolean nobot = parsedargs.containsKey("--nobot");
+        boolean noadmin = parsedargs.containsKey("--noadmin");
+        boolean noanon = parsedargs.containsKey("--noanon");
+        String defaultstring = parsedargs.get("default");
+        String earliestdatestring = parsedargs.get("--editsafter");
+        String latestdatestring = parsedargs.get("--editsbefore");
+        String filename = parsedargs.get("--file");
+        
+        OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
+        OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
         String[] articles = null;
-        if (articlelist.size() > 0)
-            articles = articlelist.toArray(new String[articlelist.size()]);
+        if (defaultstring != null)
+            articles = defaultstring.split("\\s");
+        if (filename != null)
+            articles = Files.readAllLines(Paths.get(filename)).toArray(new String[0]);
         
-        Wiki wiki = Wiki.createInstance(wikidomain);
         ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
         aei.setIgnoringMinorEdits(nominor);
-        aei.setEarliestDateTime(start);
-        aei.setLatestDateTime(end);
+        aei.setEarliestDateTime(editsafter);
+        aei.setLatestDateTime(editsbefore);
         aei.setIgnoringReverts(noreverts);
         if (adminmode)
         {
@@ -167,12 +131,12 @@ public class ArticleEditorIntersector
         // grab user contributions
         if (user != null)
         {
-            Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user, start, end, null));
+            Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user, editsafter, editsbefore, null));
             if (adminmode)
             {
                 try
                 {
-                    stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user, start, end, false)));
+                    stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user, editsafter, editsbefore, false)));
                 }
                 catch (CredentialNotFoundException ex)
                 {
