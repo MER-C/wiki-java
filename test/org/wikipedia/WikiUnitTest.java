@@ -849,11 +849,22 @@ public class WikiUnitTest
     public void diff() throws Exception
     {
         // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
-        assertNull("diff: dummy edit", enWiki.getRevision(738178354L).diff(Wiki.PREVIOUS_REVISION));
+        String actual = enWiki.diff(null, 738178354L, null, -1, null, Wiki.PREVIOUS_REVISION, null, -1);
+        assertEquals("diff: dummy edit", "", actual);
         // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343
-        // should be empty string, but the MediaWiki API does not distinguish 
-        // between a dummy edit and no difference
-        assertNull("diff: no difference", enWiki.getRevision(803731343L).diff(804972897L));
+        // The MediaWiki API does not distinguish between a dummy edit and no 
+        // difference. Both are now set to the empty string.
+        actual = enWiki.diff(null, 803731343L, null, -1, null, 804972897L, null, -1);
+        assertEquals("diff: no difference", "", actual);
+        // no deleted pages allowed
+        // FIXME: broken because fetch() swallows the API error
+        // actual = enWiki.diff("Create a page", 0L, null, -1, null, 804972897L, null, -1);
+        // assertNull("diff: to deleted", actual);
+        // actual = enWiki.diff(null, 804972897L, null, -1, "Create a page", 0L, null, -1);
+        // no RevisionDeleted revisions allowed (also broken)
+        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
+        // actual = enWiki.diff(null, 596714684L, null, -1, null, Wiki.NEXT_REVISION, null, -1);
+        // assertNull("diff: from deleted revision", actual);
     }
     
     @Test

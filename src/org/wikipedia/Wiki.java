@@ -1749,7 +1749,7 @@ public class Wiki implements Serializable
         url.append("&rvsection=");
         url.append(number);
         String text = fetch(url.toString(), null, "getSectionText");
-        // This is currently broken because fetch() intercepts the API error.
+        // FIXME: This is currently broken because fetch() intercepts the API error.
         // if (text.contains("code=\"rvnosuchsection\""))
         //    throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
         // if the section does not contain any text, <rev xml:space=\"preserve\">
@@ -3255,6 +3255,11 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if you do not have the rights to
      *  delete revisions or log entries
      *  @throws AccountLockedException if the user is blocked
+     *  @see <a href="https://mediawiki.org/wiki/Help:RevisionDelete">MediaWiki 
+     *  help page</a>
+     *  @see <a href="https://mediawiki.org/wiki/API:Revisiondelete">MediaWiki 
+     *  documentation</a>
+     *  @since 0.30
      */
     public synchronized void revisionDelete(Boolean hidecontent, Boolean hideuser, Boolean hidereason, String reason, Boolean suppress,
         Revision[] revisions) throws IOException, LoginException
@@ -3406,6 +3411,107 @@ public class Wiki implements Serializable
         if (to != null)
             log += (" - " + to.getRevid());
         log(Level.INFO, "undo", log);
+    }
+    
+    /**
+     *  Fetches a HTML rendered diff table; see the table at the <a
+     *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+     *  Returns the empty string for moves, protections and similar dummy edits
+     *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
+     *  and pairs of revisions where there is no difference. Deleted pages, 
+     *  revisions to deleted pages and RevisionDeleted revisions if you don't 
+     *  have the rights to see them are all not allowed.
+     * 
+     *  <p>
+     *  The parameters fromXXX refer to the left side of the diff table while
+     *  the toXXX parameters refer to the right side. Only one of 
+     *  <var>fromtitle</var>, <var>fromrev</var> and <var>fromtext</var> needs 
+     *  to be specified. Likewise, only one of <var>totitle</var>,  
+     *  <var>torev</var> and <var>totext</var> need be specified. XXXtitle takes
+     *  precedence over XXXrev, which in turn takes precedence over XXXtext. The
+     *  XXXrev parameters refer to {@linkplain Revision#getRevid() the unique
+     *  ID for the revision}. 
+     * 
+     *  @param fromtitle a title of a page to compare from (left side, use null
+     *  to skip)
+     *  @param fromrev the {@link Revision#getRevid() revid} of a revision to 
+     *  compare from (left side, use 0 to skip)
+     *  @param fromtext the wikitext to compare from (left side, use null to 
+     *  skip)
+     *  @param fromsection diff only this section of the fromXXX content  
+     *  (optional, use -1 to skip)
+     *  @param totitle a title of a page to compare to (right side, use null to
+     *  skip)
+     *  @param torev the {@link Revision#getRevid() revid} of a revision to 
+     *  compare to (right side, use 0 to skip). {@link Wiki#NEXT_REVISION}, 
+     *  {@link Wiki#PREVIOUS_REVISION} and {@link Wiki#CURRENT_REVISION} can be 
+     *  used here for obvious effect. 
+     *  @param totext the wikitext to compare to (right side, use null to skip)
+     *  @param tosection diff only this section of the toXXX content  
+     *  (optional, use -1 to skip)
+     *  @return a HTML difference table between the two texts or "" for dummy 
+     *  edits
+     *  @throws IllegalArgumentException if none of the fromXXX or toXXX 
+     *  parameters are specified
+     *  @throws IOException if a network error occurs
+     *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
+     *  @since 0.35
+     */
+    public String diff(String fromtitle, long fromrev, String fromtext, int fromsection, 
+        String totitle, long torev, String totext, int tosection) throws IOException
+    {
+        HashMap<String, String> postparams = new HashMap<>();
+        if (fromtitle != null)
+            postparams.put("fromtitle", encode(fromtitle, true));
+        else if (fromrev > 0)
+            postparams.put("fromrev", String.valueOf(fromrev));
+        else if (fromtext != null)
+            postparams.put("fromtext", encode(fromtext, false));
+        else
+            throw new IllegalArgumentException("From content not specified!");
+        if (fromsection > 0)
+            postparams.put("fromsection", String.valueOf(fromsection));
+        
+        if (totitle != null)
+            postparams.put("totitle", encode(totitle, true));
+        else if (torev == NEXT_REVISION)
+            postparams.put("torelative", "next");
+        else if (torev == CURRENT_REVISION)
+            postparams.put("torelative", "cur");
+        else if (torev == PREVIOUS_REVISION)
+            postparams.put("torelative", "prev");
+        else if (torev > 0L)
+            postparams.put("torev", String.valueOf(torev));
+        else if (totext != null)
+            postparams.put("totext", totext);
+        else
+            throw new IllegalArgumentException("To content not specified!");
+        if (tosection > 0)
+            postparams.put("tosection", String.valueOf(tosection));
+        
+        String line = fetch(apiUrl + "action=compare", postparams, "diff");
+
+        // strip extraneous information
+        if (line.contains("</compare>"))
+        {
+            int a = line.indexOf("<compare");
+            a = line.indexOf(">", a) + 1;
+            int b = line.indexOf("</compare>", a);
+            return decode(line.substring(a, b));
+        }
+        else if (line.contains("<compare "))
+            // <compare> tag has no content if there is no diff or the two
+            // revisions are identical. In particular, the API does not
+            // distinguish between:
+            // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343 (no difference)
+            // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
+            return "";
+        else
+            // Deleted pages, RevisionDeleted revisions and the like where getting
+            // the diff is invalid.
+            // FIXME: This is currently unreachable because fetch() swallows the
+            // API error to throw an UnknownError instead.
+            return null;
     }
 
     /**
@@ -6843,11 +6949,13 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns a HTML rendered diff table; see the table at the <a
-         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns null for page creations, moves, protections and similar 
-         *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
-         *  example</a>).
+         *  Returns a HTML rendered diff table of this revision to <var>other</var>; 
+         *  see the table at the <a href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         *  Returns the empty string for moves, protections and similar dummy 
+         *  edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>) 
+         *  and pairs of revisions where there is no difference. Revisions to 
+         *  deleted pages and RevisionDeleted revisions if you don't have the 
+         *  rights to see them are both not allowed.
          * 
          *  @param other another revision on the same page.
          *  @return the difference between this and the other revision
@@ -6856,14 +6964,15 @@ public class Wiki implements Serializable
          */
         public String diff(Revision other) throws IOException
         {
-            return diff(other.revid, "");
+            return Wiki.this.diff(null, revid, null, -1, null, other.getRevid(), null, -1);
         }
 
         /**
-         *  Returns a HTML rendered diff table between this revision and the
-         *  given text. Useful for emulating the "show changes" functionality.
-         *  See the table at the <a
+         *  Returns a HTML rendered diff table from this revision to the given
+         *  <var>text</var>. Useful for emulating the "show changes" 
+         *  functionality. See the table at the <a 
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
+         * 
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
@@ -6871,73 +6980,29 @@ public class Wiki implements Serializable
          */
         public String diff(String text) throws IOException
         {
-            return diff(0L, text);
+            return Wiki.this.diff(null, revid, null, -1, null, 0, text, -1);
         }
 
         /**
-         *  Returns a HTML rendered diff table; see the table at the <a
+         *  Returns a HTML rendered diff table from this revision to the given
+         *  <var>oldid</var>; see the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns <code>null</code> for page creations, moves, protections and 
-         *  similar dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
-         *  and pairs of revisions where there is no difference.
+         *  Returns the empty string for moves, protections and similar dummy edits 
+         *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
+         *  and pairs of revisions where there is no difference. Revisions to 
+         *  deleted pages and RevisionDeleted revisions if you don't have the 
+         *  rights to see them are both not allowed.
          * 
-         *  @param oldid the oldid of a revision on the same page. {@link Wiki#NEXT_REVISION},
-         *  {@link Wiki#PREVIOUS_REVISION} and {@link Wiki#CURRENT_REVISION} can 
-         *  be used here for obvious effect. 
+         *  @param oldid the oldid of a revision on the same page. {@link 
+         *  Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION} and {@link 
+         *  Wiki#CURRENT_REVISION} can be used here for obvious effect. 
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @since 0.26
          */
         public String diff(long oldid) throws IOException
         {
-            return diff(oldid, "");
-        }
-
-        /**
-         *  Fetches a HTML rendered diff table; see the table at the <a
-         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns null for page creations, moves, protections and similar 
-         *  dummy edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">
-         *  example</a>) and pairs of revisions where there is no difference.
-         * 
-         *  @param oldid the id of another revision; (exclusive) or
-         *  @param text some wikitext to compare against
-         *  @return a difference between oldid or text or null if there is no
-         *  diff.
-         *  @throws IOException if a network error occurs
-         *  @since 0.21
-         */
-        protected String diff(long oldid, String text) throws IOException
-        {
-            HashMap<String, String> postparams = new HashMap<>();
-            if (oldid == NEXT_REVISION)
-                postparams.put("torelative", "next");
-            else if (oldid == CURRENT_REVISION)
-                postparams.put("torelative", "cur");
-            else if (oldid == PREVIOUS_REVISION)
-                postparams.put("torelative", "prev");
-            else if (oldid == 0L)
-                postparams.put("totext", text);
-            else
-                postparams.put("torev", String.valueOf(oldid));
-            
-            String line = fetch(apiUrl + "action=compare&fromrev=" + getRevid(), postparams, "Revision.diff");
-
-            // strip extraneous information
-            if (line.contains("</compare>"))
-            {
-                int a = line.indexOf("<compare");
-                a = line.indexOf(">", a) + 1;
-                int b = line.indexOf("</compare>", a);
-                return decode(line.substring(a, b));
-            }
-            else 
-                // <compare> tag has no content if there is no diff or the two
-                // revisions are identical. In particular, the API does not
-                // distinguish between:
-                // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343 (no difference)
-                // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
-                return null;
+            return Wiki.this.diff(null, revid, null, -1, null, oldid, null, -1);
         }
 
         /**
@@ -7003,8 +7068,8 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns the edit summary for this revision, or null if the summary
-         *  was RevisionDeleted and you lack the necessary privileges.
+         *  Returns the edit summary for this revision, or {@code null} if the 
+         *  summary was RevisionDeleted and you lack the necessary privileges.
          *  @return the edit summary
          *  @since 0.17
          */
@@ -7014,7 +7079,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns true if the edit summary is RevisionDeleted.
+         *  Returns {@code true} if the edit summary is RevisionDeleted.
          *  @return (see above)
          *  @since 0.30
          */
@@ -7025,9 +7090,9 @@ public class Wiki implements Serializable
 
         /**
          *  Returns the user or anon who created this revision. You should
-         *  pass this (if not an IP) to <tt>getUser(String)</tt> to obtain a
-         *  User object. Returns null if the user was RevisionDeleted and you
-         *  lack the necessary privileges.
+         *  pass this (if not an IP) to {@link #getUser(java.lang.String)} to
+         *  obtain a {@link Wiki.User} object. Returns {@code null} if the user 
+         *  was RevisionDeleted and you lack the necessary privileges.
          *  @return the user or anon
          *  @since 0.17
          */
@@ -7037,7 +7102,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns true if the user is RevisionDeleted.
+         *  Returns {@code true} if the user is RevisionDeleted.
          *  @return (see above)
          *  @since 0.30
          */
@@ -7047,7 +7112,8 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns true if this revision is deleted (different from revdeleted).
+         *  Returns {@code true} if this revision is deleted (not the same as
+         *  RevisionDeleted).
          *  @return (see above)
          *  @since 0.31
          */
@@ -7067,7 +7133,8 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Returns the oldid of this revision. Don't confuse this with
+         *  Returns the unique ID of this revision (also referred to as 
+         *  <var>oldid</var> on the live website). Don't confuse this with
          *  <var>rcid</var>
          *  @return the oldid (long)
          *  @since 0.17
@@ -7234,14 +7301,14 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Reverts this revision using the rollback method. See
-         *  {@link Wiki#rollback(org.wikipedia.Wiki.Revision)}.
+         *  Reverts this revision using the rollback method. 
          * 
          *  @throws IOException if a network error occurs
          *  @throws CredentialNotFoundException if not logged in or user is not
          *  an admin
          *  @throws CredentialExpiredException if cookies have expired
          *  @throws AccountLockedException if the user is blocked
+         *  @see Wiki#rollback(org.wikipedia.Wiki.Revision)
          *  @since 0.19
          */
         public void rollback() throws IOException, LoginException
@@ -7250,8 +7317,7 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Reverts this revision using the rollback method. See
-         *  {@link Wiki#rollback(org.wikipedia.Wiki.Revision)}.
+         *  Reverts this revision using the rollback method. 
          * 
          *  @param bot mark this and the reverted revision(s) as bot edits
          *  @param reason (optional) a custom reason
@@ -7260,6 +7326,7 @@ public class Wiki implements Serializable
          *  an admin
          *  @throws CredentialExpiredException if cookies have expired
          *  @throws AccountLockedException if the user is blocked
+         *  @see Wiki#rollback(org.wikipedia.Wiki.Revision)
          *  @since 0.19
          */
         public void rollback(boolean bot, String reason) throws IOException, LoginException

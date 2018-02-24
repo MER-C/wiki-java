@@ -196,7 +196,7 @@ public class UserLinkAdditionFinder
         else
             diff = revision.diff(Wiki.PREVIOUS_REVISION);
         // filter dummy edits
-        if (diff == null)
+        if (diff == null || !diff.isEmpty())
         {
             ret.put(revision, links);
             return ret;

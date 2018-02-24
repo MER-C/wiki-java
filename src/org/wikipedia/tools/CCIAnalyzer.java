@@ -21,8 +21,6 @@ package org.wikipedia.tools;
 
 import java.io.*;
 import java.util.*;
-import java.net.*;
-import java.util.zip.*;
 import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
 
@@ -89,11 +87,10 @@ public class CCIAnalyzer
 
             // Fetch diff. No plain text diffs for performance reasons, see
             // https://phabricator.wikimedia.org/T15209
-            // We don't use the Wiki.java method here, this avoids an extra query.
             String diff = "";
             try 
             {
-                diff = fetch("https://en.wikipedia.org/w/api.php?format=xml&action=query&prop=revisions&rvdiffto=prev&revids=" + oldid);
+                diff = enWiki.diff(null, Long.parseLong(oldid), null, -1, null, Wiki.PREVIOUS_REVISION, null, -1);
                 exception = false;
             }
             catch (IOException ex)
@@ -238,35 +235,5 @@ public class CCIAnalyzer
                 return true;
         }
         return false;
-    }
-    
-    private static String fetch(String url) throws IOException
-    {
-        // connect
-        URLConnection connection = new URL(url).openConnection();
-        connection.setConnectTimeout(60000);
-        connection.setReadTimeout(60000);
-        connection.setRequestProperty("Accept-encoding", "gzip");
-        connection.connect();
-
-        // get the text
-        StringBuilder text = new StringBuilder(100000);
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(
-            new GZIPInputStream(connection.getInputStream()))))
-        {
-            String line;
-            while ((line = in.readLine()) != null)
-            {
-                text.append(line);
-                text.append("\n");
-            }
-        }
-        String temp = text.toString();
-        if (temp.contains("<error code="))
-            // Something *really* bad happened. Most of these are self-explanatory
-            // and are indicative of bugs (not necessarily in this framework) or 
-            // can be avoided entirely.
-            throw new UnknownError("MW API error. Server response was: " + temp);
-        return temp;
     }
 }
