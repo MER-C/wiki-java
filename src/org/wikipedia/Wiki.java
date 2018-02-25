@@ -1470,12 +1470,12 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public Map[] getPageInfo(String[] pages) throws IOException
+    public Map<String, Object>[] getPageInfo(String[] pages) throws IOException
     {
-        Map[] info = new HashMap[pages.length];
         StringBuilder url = new StringBuilder(query);
         url.append("prop=info&inprop=protection%7Cdisplaytitle%7Cwatchers");
         Map<String, String> postparams = new HashMap<>();
+        Map<String, Map<String, Object>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
         String[] pages2 = Arrays.copyOf(pages, pages.length); 
         for (String temp : constructTitleString(pages))
@@ -1551,18 +1551,21 @@ public class Wiki implements Serializable
                 if (item.contains("watchers=\""))
                     tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
 
-                // Reorder. Make a new HashMap so that identity mapping does not overwrite.
-                for (int i = 0; i < pages2.length; i++)
-                {
-                    if (normalize(pages2[i]).equals(parsedtitle))
-                    {
-                        info[i] = new HashMap(tempmap);
-                        info[i].put("inputpagename", pages[i]);
-                    }
-                }
+                metamap.put(parsedtitle, tempmap);
             }
         }
-
+        
+        Map[] info = new HashMap[pages.length];
+        // Reorder. Make a new HashMap so that inputpagename remains unique.
+        for (int i = 0; i < pages2.length; i++)
+        {
+            Map<String, Object> tempmap = metamap.get(normalize(pages2[i]));
+            if (tempmap != null)
+            {
+                info[i] = new HashMap(tempmap);
+                info[i].put("inputpagename", pages[i]);
+            }
+        }    
         log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + Arrays.toString(pages));
         return info;
     }
@@ -4397,9 +4400,9 @@ public class Wiki implements Serializable
      */
     public Map<String, Object>[] getUserInfo(String... usernames) throws IOException
     {
-        Map[] info = new HashMap[usernames.length];
         String url = query + "list=users&usprop=editcount%7Cgroups%7Crights%7Cemailable%7Cblockinfo%7Cgender%7Cregistration";
         Map<String, String> postparams = new HashMap<>();
+        Map<String, Map<String, Object>> metamap = new HashMap<>();
         for (String fragment : constructTitleString(usernames))
         {
             postparams.put("ususers", fragment);
@@ -4447,18 +4450,21 @@ public class Wiki implements Serializable
                 String[] rights = temp.toArray(new String[temp.size()]);
                 ret.put("rights", rights);
 
-                // place the result into the return array
-                for (int j = 0; j < usernames.length; j++)
-                {
-                    if (normalize(usernames[j]).equals(parsedname))
-                    {
-                        info[j] = new HashMap(ret);
-                        info[j].put("inputname", usernames[j]);
-                    }
-                }
+                metamap.put(parsedname, ret);
             }
         }
-
+        
+        // Reorder. Make a new map to ensure that inputname remains unique.
+        Map<String, Object>[] info = new HashMap[usernames.length];
+        for (int i = 0; i < usernames.length; i++)
+        {
+            Map<String, Object> ret = metamap.get(normalize(usernames[i]));
+            if (ret != null)
+            {
+                info[i] = new HashMap(ret);
+                info[i].put("inputname", usernames[i]);
+            }
+        }
         log(Level.INFO, "getUserInfo", "Successfully retrieved user info for " + Arrays.toString(usernames));
         return info;
     }
