@@ -734,18 +734,15 @@ public class WikiUnitTest
         assertEquals("getSectionText(): section 0", "This is section 0.", testWiki.getSectionText("User:MER-C/UnitTests/SectionTest", 0));
         assertEquals("getSectionText(): section 2", "===Section 3===\nThis is section 2.", 
             testWiki.getSectionText("User:MER-C/UnitTests/SectionTest", 2));
-        /*
+        assertNull("getSectionText(): non-existent section", enWiki.getSectionText("User:MER-C/monobook.css", 4920));
         try
         {
-            enWiki.getSectionText("User:MER-C/monobook.css", 4920);
-            fail("getSectionText: non-existent section, should have thrown an exception.");
+            enWiki.getSectionText("User:MER-C/monobook.css", -50);
+            fail("getSectionText: negative section number, should have thrown an exception.");
         }
-        catch (IllegalArgumentException ex)
+        catch (IllegalArgumentException expected)
         {
-            // the expected result. This is currently broken because fetch
-            // intercepts the API error.
         }
-        */
     }
     
     @Test
@@ -843,6 +840,8 @@ public class WikiUnitTest
         // Revision has been deleted (not RevisionDeleted)
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         assertNull("getRevision: page deleted", testWiki.getRevision(217078L));
+        
+        assertNull("getRevision: large revid", testWiki.getRevision(1L << 62));
     }
     
     @Test
@@ -865,6 +864,17 @@ public class WikiUnitTest
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         // actual = enWiki.diff(null, 596714684L, null, -1, null, Wiki.NEXT_REVISION, null, -1);
         // assertNull("diff: from deleted revision", actual);
+        
+        // check for sections that don't exist
+        actual = enWiki.diff(null, 803731343L, null, 4920, null, 804972897L, null, -1);
+        assertNull("diff: no such from section", actual);
+        actual = enWiki.diff(null, 803731343L, null, -1, null, 804972897L, null, 4920);
+        assertNull("diff: no such to section", actual);
+        // bad revids
+        actual = enWiki.diff(null, 1L << 62, null, -1, null, 803731343L, null, -1);
+        assertNull("diff: bad from revid", actual);
+        actual = enWiki.diff(null, 803731343L, null, -1, null, 1L << 62, null, -1);
+        assertNull("diff: bad to revid", actual);
     }
     
     @Test
@@ -994,6 +1004,25 @@ public class WikiUnitTest
             "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;");
         assertNull("getPageText: non-existent page", text[2]);
         assertEquals("getPageText: empty page", text[3], "");
+    }
+    
+    @Test
+    public void parse() throws Exception
+    {
+        assertNull("parse: no such section", enWiki.parse(-1, "Hello", null, 50));
+        assertNull("parse: bad revid", enWiki.parse(1L << 62, null, null, -1));
+        // FIXME: currently broken because fetch swallows the API error
+        // assertNull("parse: deleted page", enWiki.parse(-1L, "Create a page", null, -1));
+        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
+        // assertNull("parse: revisiondeleted revision", enWiki.parse(596714684L, null, null, -1));
+        try
+        {
+            enWiki.parse(-1, null, null, -1);
+            fail("Parse: did not specify content to parse.");
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
     }
     
     @Test

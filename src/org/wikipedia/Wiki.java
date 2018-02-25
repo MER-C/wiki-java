@@ -1213,11 +1213,9 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Renders the specified wiki markup by passing it to the MediaWiki
-     *  parser through the API. (Note: this isn't implemented locally because
-     *  I can't be stuffed porting Parser.php). One use of this method is to
-     *  emulate the previewing functionality of the MediaWiki software.
-     *
+     *  Renders the specified wiki markup as HTML by passing it to the MediaWiki
+     *  parser through the API. 
+     * 
      *  @param markup the markup to parse
      *  @return the parsed markup as HTML
      *  @throws IOException if a network error occurs
@@ -1225,11 +1223,54 @@ public class Wiki implements Serializable
      */
     public String parse(String markup) throws IOException
     {
-        // This is POST because markup can be arbitrarily large, as in the size
-        // of an article (over 10kb).
+        return parse(-1, null, markup, -1);
+    }
+    
+    /**
+     *  Parses wikitext, revisions or pages. Only one of <var>revid</var>, 
+     *  <var>title</var> or <var>text</var> needs to be specified. Returns 
+     *  {@code null} for bad section numbers and <var>revid</var>s. Deleted 
+     *  pages, revisions to deleted pages and RevisionDeleted revisions are not 
+     *  allowed if you don't have the rights to view them.
+     * 
+     *  @param revid the {@link Revision#getRevid() revid} of a revision to 
+     *  parse (overrides all other parameters, use -1 to skip)
+     *  @param title the title to parse (overrides text, use null to skip)
+     *  @param text the wikimarkup to parse (use null to skip)
+     *  @param section the section to parse (optional, use -1 to skip)
+     *  @return the parsed wikitext
+     *  @throws IllegalArgumentException if none of <var>oldid</var>, 
+     *  <var>title</var> or <var>text</var> was specified
+     *  @throws IOException if a network error occurs
+     *  @see #parse(java.lang.String) 
+     *  @see #getRenderedText(java.lang.String) 
+     *  @see Wiki.Revision#getRenderedText()
+     *  @see <a href="https://mediawiki.org/wiki/API:Parsing_wikitext">MediaWiki
+     *  documentation</a>
+     *  @since 0.35
+     */
+    protected String parse(long revid, String title, String text, int section) throws IOException
+    {
         Map<String, String> postparams = new HashMap<>();
-        postparams.put("text", encode(markup, false));
+        if (revid > 0)
+            postparams.put("oldid", String.valueOf(revid));
+        else if (title != null)
+            postparams.put("page", title);
+        else if (text != null)
+            postparams.put("text", encode(text, false));
+        else
+            throw new IllegalArgumentException("No content was specified to parse!");
+        if (section >= 0)
+            postparams.put("section", String.valueOf(section));
+        
         String response = fetch(apiUrl + "action=parse&prop=text", postparams, "parse");
+        if (response.contains("error code=\""))
+            // Bad section numbers, revids, deleted pages, RevisionDeleted
+            // revisions should all end up here.
+            // FIXME: fetch() swallows the API errors "missingtitle" (deleted 
+            // pages) and "permissiondenied" (fetching deleted content) to throw
+            // an UnknownError instead.
+            return null;
         int y = response.indexOf('>', response.indexOf("<text")) + 1;
         int z = response.indexOf("</text>");
         return decode(response.substring(y, z));
@@ -1733,25 +1774,26 @@ public class Wiki implements Serializable
     /**
      *  Gets the text of a specific section. Useful for section editing.
      *  @param title the title of the relevant page
-     *  @param number the section number of the section to retrieve text for
-     *  @return the text of the given section
+     *  @param section the section number of the section to retrieve text for
+     *  @return the text of the given section, or {@code null} if the page doesn't
+     *  have that many sections
      *  @throws IOException if a network error occurs
-     *  @throws UnknownError if the page has less than <var>number</var> 
-     *  sections
-     *  sections
+     *  @throws IllegalArgumentException if {@code section < 0}
      *  @since 0.24
      */
-    public String getSectionText(String title, int number) throws IOException
+    public String getSectionText(String title, int section) throws IOException
     {
+        if (section < 0)
+            throw new IllegalArgumentException("Section numbers must be positive!");
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=content&titles=");
         url.append(encode(title, true));
         url.append("&rvsection=");
-        url.append(number);
+        url.append(section);
         String text = fetch(url.toString(), null, "getSectionText");
-        // FIXME: This is currently broken because fetch() intercepts the API error.
-        // if (text.contains("code=\"rvnosuchsection\""))
-        //    throw new IllegalArgumentException("There is no section " + number + " in the page " + title);
+        // section doesn't exist
+        if (text.contains("code=\"nosuchsection\""))
+            return null;
         // if the section does not contain any text, <rev xml:space=\"preserve\">
         // will not have a separate closing tag
         if (!text.contains("</rev>"))
@@ -1779,8 +1821,11 @@ public class Wiki implements Serializable
      */
     public String getRenderedText(String title) throws IOException
     {
-        // @revised 0.13 genericised to parse any wikitext
-        return parse("{{:" + title + "}}");
+        if (namespace(title) == SPECIAL_NAMESPACE)
+            // not guaranteed to succeed...
+            return parse(-1, null, "{{:" + title + "}}", -1);
+        else
+            return parse(-1, title, null, -1);
     }
 
     /**
@@ -3112,8 +3157,8 @@ public class Wiki implements Serializable
      *  attributes of that revision except <var>rcid</var> and <var>rollbacktoken</var>.
      *
      *  @param oldid an oldid
-     *  @return the revision corresponding to <var>oldid</var>, or <code>null</code> 
-     *  if it has been deleted
+     *  @return the revision corresponding to <var>oldid</var>, or {@code null} 
+     *  if it has been deleted or the ID is bad.
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
@@ -3128,8 +3173,8 @@ public class Wiki implements Serializable
      *
      *  @param oldids a list of oldids
      *  @return the revisions corresponding to <var>oldids</var>, in the order 
-     *  of the input array. If a particular revision has been deleted, the 
-     *  corresponding index is <code>null</code>.
+     *  of the input array. If a particular revision has been deleted or the ID
+     *  is bad, the corresponding index is {@code null}.
      *  @throws IOException if a network error occurs
      *  @since 0.29
      */
@@ -3171,7 +3216,7 @@ public class Wiki implements Serializable
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
      *  is not the case, then this method does nothing. The edit and reverted 
-     *  edits will be marked as bot if {@link #isMarkBot()} is <code>true</code>
+     *  edits will be marked as bot if {@link #isMarkBot()} is {@code true}.
      *  
      *
      *  @param revision the revision to revert. All subsequent revisions to
@@ -3418,9 +3463,10 @@ public class Wiki implements Serializable
      *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
      *  Returns the empty string for moves, protections and similar dummy edits
      *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
-     *  and pairs of revisions where there is no difference. Deleted pages, 
-     *  revisions to deleted pages and RevisionDeleted revisions if you don't 
-     *  have the rights to see them are all not allowed.
+     *  and pairs of revisions where there is no difference. Returns 
+     *  {@code null} for bad section numbers and revision IDs. Deleted pages,   
+     *  revisions to deleted pages and RevisionDeleted revisions are all not
+     *  allowed if you don't have the rights to see them.
      * 
      *  <p>
      *  The parameters fromXXX refer to the left side of the diff table while
@@ -3449,8 +3495,8 @@ public class Wiki implements Serializable
      *  @param totext the wikitext to compare to (right side, use null to skip)
      *  @param tosection diff only this section of the toXXX content  
      *  (optional, use -1 to skip)
-     *  @return a HTML difference table between the two texts or "" for dummy 
-     *  edits
+     *  @return a HTML difference table between the two texts, "" for dummy
+     *  edits or null as described above
      *  @throws IllegalArgumentException if none of the fromXXX or toXXX 
      *  parameters are specified
      *  @throws IOException if a network error occurs
@@ -3469,7 +3515,7 @@ public class Wiki implements Serializable
             postparams.put("fromtext", encode(fromtext, false));
         else
             throw new IllegalArgumentException("From content not specified!");
-        if (fromsection > 0)
+        if (fromsection >= 0)
             postparams.put("fromsection", String.valueOf(fromsection));
         
         if (totitle != null)
@@ -3486,7 +3532,7 @@ public class Wiki implements Serializable
             postparams.put("totext", totext);
         else
             throw new IllegalArgumentException("To content not specified!");
-        if (tosection > 0)
+        if (tosection >= 0)
             postparams.put("tosection", String.valueOf(tosection));
         
         String line = fetch(apiUrl + "action=compare", postparams, "diff");
@@ -3507,10 +3553,11 @@ public class Wiki implements Serializable
             // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
             return "";
         else
-            // Deleted pages, RevisionDeleted revisions and the like where getting
-            // the diff is invalid.
-            // FIXME: This is currently unreachable because fetch() swallows the
-            // API error to throw an UnknownError instead.
+            // Bad section numbers, revids, deleted pages, RevisionDeleted
+            // revisions should all end up here.
+            // FIXME: fetch() swallows the API errors "missingtitle" (deleted 
+            // pages) and "permissiondenied" (fetching deleted content) to throw
+            // an UnknownError instead.
             return null;
     }
 
@@ -6905,24 +6952,9 @@ public class Wiki implements Serializable
          */
         public String getRenderedText() throws IOException
         {
-            // logs have no content
             if (revid < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
-
-            String temp;
-            if (pageDeleted)
-            {
-                String url = query + "prop=deletedrevisions&drvprop=content&drvparse=1&revids=" + revid;
-                temp = fetch(url, null, "Revision.getRenderedText");
-                // TODO
-            }
-            else
-            {
-                String url = base + "&action=render&oldid=" + revid;
-                temp = fetch(url, null, "Revision.getRenderedText");
-            }
-            log(Level.INFO, "Revision.getRenderedText", "Successfully retrieved rendered text of revision " + revid);
-            return decode(temp);
+            return Wiki.this.parse(revid, null, null, -1);
         }
         
         /**
@@ -7358,13 +7390,11 @@ public class Wiki implements Serializable
     {
         List<T> results = new ArrayList<>(1333);
         StringBuilder xxcontinue = new StringBuilder();
-        url.append("&");
-        url.append(queryPrefix);
-        url.append("limit=");
+        String limitstring = "&" + queryPrefix + "limit=";
         do
         {
             int limit = Math.min(querylimit - results.size(), max);
-            String tempurl = url.toString() + limit;
+            String tempurl = url.toString() + limitstring + limit;
             String line = fetch(tempurl + xxcontinue.toString(), postparams, caller);
             xxcontinue.setLength(0);
             
@@ -7486,18 +7516,25 @@ public class Wiki implements Serializable
         while (temp == null);
         if (temp.contains("<error code="))
         {
-            // assertions
-            if ((assertion & ASSERT_BOT) == ASSERT_BOT && temp.contains("error code=\"assertbotfailed\""))
-                // assert !temp.contains("error code=\"assertbotfailed\"") : "Bot privileges missing or revoked, or session expired.";
-                throw new AssertionError("Bot privileges missing or revoked, or session expired.");
-            if ((assertion & ASSERT_USER) == ASSERT_USER && temp.contains("error code=\"assertuserfailed\""))
-                // assert !temp.contains("error code=\"assertuserfailed\"") : "Session expired.";
-                throw new AssertionError("Session expired.");
-            // Something *really* bad happened. Most of these are self-explanatory
-            // and are indicative of bugs (not necessarily in this framework) or
-            // can be avoided entirely.
-            if (!temp.matches("code=\"(rvnosuchsection)")) // list "good" errors here
-                throw new UnknownError("MW API error. Server response was: " + temp);
+            String error = parseAttribute(temp, "code", 0);
+            switch (error)
+            {
+                case "assertbotfailed":
+                    throw new AssertionError("Bot privileges missing or revoked, or session expired.");
+                case "assertuserfailed":
+                    throw new AssertionError("Session expired.");
+                // harmless, pass error to calling method
+                case "nosuchsection":     // getSectionText(), parse()
+                case "nosuchfromsection": // diff()
+                case "nosuchtosection":   // diff()
+                case "nosuchrevid":       // parse(), diff()
+                    break; 
+                // Something *really* bad happened. Most of these are self-explanatory
+                // and are indicative of bugs (not necessarily in this framework) or
+                // can be avoided entirely.
+                default:
+                    throw new UnknownError("MW API error. Server response was: " + temp);
+            }   
         }
         return temp;
     }
@@ -7705,29 +7742,36 @@ public class Wiki implements Serializable
         // empty response from server
         if (line.isEmpty())
             throw new UnknownError("Received empty response from server!");
-        // assertions
-        if ((assertion & ASSERT_BOT) == ASSERT_BOT && line.contains("error code=\"assertbotfailed\""))
-            // assert !line.contains("error code=\"assertbotfailed\"") : "Bot privileges missing or revoked, or session expired.";
-            throw new AssertionError("Bot privileges missing or revoked, or session expired.");
-        if ((assertion & ASSERT_USER) == ASSERT_USER && line.contains("error code=\"assertuserfailed\""))
-            // assert !line.contains("error code=\"assertuserfailed\"") : "Session expired.";
-            throw new AssertionError("Session expired.");
-        // protected page errors
-        if (line.matches("(protectednamespace|customcssjsprotected|cascadeprotected|protectedpage|protectedtitle)"))
-            throw new CredentialNotFoundException("Page is protected.");
-        if (line.contains("error code=\"permissiondenied\""))
-            throw new CredentialNotFoundException("Permission denied."); // session expired or stupidity
-        // blocked! (note here the \" in blocked is deliberately missing for emailUser()
-        if (line.contains("error code=\"blocked") || line.contains("error code=\"autoblocked\""))
+        String error = parseAttribute(line, "code", 0);
+        switch (error)
         {
-            log(Level.SEVERE, caller, "Cannot " + caller + " - user is blocked!.");
-            throw new AccountLockedException("Current user is blocked!");
+            // These assertions still need to be here because of multipartPost.
+            case "assertbotfailed":
+                throw new AssertionError("Bot privileges missing or revoked, or session expired.");
+            case "assertuserfailed":
+                throw new AssertionError("Session expired.");
+            // protected pages
+            case "protectedpage":
+            case "protectedtitle":
+            case "protectednamespace":
+            case "protectednamespace-interface":
+            case "immobilenamespace":
+            case "customcssprotected":
+            case "customjsprotected":
+            case "customcssjsprotected":
+            case "cascadeprotected":
+                throw new CredentialNotFoundException("Page is protected.");
+            // banned accounts
+            case "blocked":
+            case "blockedfrommail":
+            case "autoblocked":
+                log(Level.SEVERE, caller, "Cannot " + caller + " - user is blocked!.");
+                throw new AccountLockedException("Current user is blocked!");
+            case "unknownerror":
+                throw new UnknownError("Unknown MediaWiki API error, response was " + line);
+            default:
+                throw new IOException("MediaWiki error, response was " + line);
         }
-        // unknown error
-        if (line.contains("error code=\"unknownerror\""))
-            throw new UnknownError("Unknown MediaWiki API error, response was " + line);
-        // generic (automatic retry)
-        throw new IOException("MediaWiki error, response was " + line);
     }
 
     /**
