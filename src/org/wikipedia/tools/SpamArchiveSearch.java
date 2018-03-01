@@ -41,20 +41,21 @@ public class SpamArchiveSearch
         if (query == null)
             System.exit(0);
         StringBuilder buffer = new StringBuilder(10000);
-        ArrayList<String[]> results = archiveSearch(query);
+        ArrayList<Map<String, Object>> results = archiveSearch(query);
         buffer.append("<h2>Searching for \"");
         buffer.append(query);
         buffer.append("\".</h2>\n<ul>\n");
-        for (String[] result : results)
+        results.forEach(result ->
         {
+            String page = (String)result.get("title");
             buffer.append("<li><a href=\"//");
-            buffer.append(result[0].contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia");
+            buffer.append(page.contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia");
             buffer.append(".org/wiki/");
-            buffer.append(result[0]);
+            buffer.append(page);
             buffer.append("\">");
-            buffer.append(result[0]);
+            buffer.append(page);
             buffer.append("</a>\n");
-        }
+        });
         buffer.append("</ul>\n<p>");
         buffer.append(results.size());
         buffer.append(" results.\n");
@@ -80,7 +81,7 @@ public class SpamArchiveSearch
      *  @return the spam archive search results for that query
      *  @throws IOException if a network error occurs
      */
-    public static ArrayList<String[]> archiveSearch(String query) throws IOException
+    public static ArrayList<Map<String, Object>> archiveSearch(String query) throws IOException
     {
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         Wiki meta = Wiki.createInstance("meta.wikimedia.org");
@@ -88,7 +89,7 @@ public class SpamArchiveSearch
         meta.setMaxLag(-1);
         
         // there's some silly api bugs
-        ArrayList<String[]> results = new ArrayList<>(20);
+        ArrayList<Map<String, Object>> results = new ArrayList<>(20);
         results.addAll(Arrays.asList(meta.search(query + " \"spam blacklist\"", Wiki.TALK_NAMESPACE)));
         results.addAll(Arrays.asList(enWiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
         results.addAll(Arrays.asList(enWiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));

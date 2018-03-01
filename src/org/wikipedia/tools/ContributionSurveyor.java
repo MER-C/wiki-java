@@ -347,7 +347,7 @@ public class ContributionSurveyor
     
     /**
      *  Performs an image contribution survey on a user. (Date/time limits do
-     *  not apply for transferred images.)
+     *  not apply to, nor do they make sense for transferred images.)
      *  @param user a user on the wiki
      *  @return first element = local uploads, second element = uploads on Wikimedia
      *  Commons by the user, third element = images transferred to Commons (may
@@ -371,9 +371,9 @@ public class ContributionSurveyor
         
         // fetch transferred commons uploads
         HashSet<String> commonsTransfer = new HashSet<>(10000);
-        String[][] temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
-        for (String[] x : temp)
-            commonsTransfer.add(x[0]);
+        Map<String, Object>[] temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
+        for (Map<String, Object> x : temp)
+            commonsTransfer.add((String)x.get("title"));
 
         // remove all files that have been reuploaded to Commons
         localuploads.removeAll(comuploads);

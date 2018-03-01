@@ -50,11 +50,11 @@ public class UserspaceAnalyzer
             .parse(args);
         
         Wiki wiki = Wiki.createInstance("en.wikipedia.org");
-        String[][] results = wiki.search(args[0], Wiki.USER_NAMESPACE);
+        Map<String, Object>[] results = wiki.search(args[0], Wiki.USER_NAMESPACE);
         HashSet<String> users = new HashSet<>(500);
-        for (String[] result : results)
+        for (Map<String, Object> result : results)
         {
-            String username = result[0];
+            String username = (String)result.get("title");
             if (username.contains("/Books/"))
                 continue;
             username = wiki.getRootPage(username);

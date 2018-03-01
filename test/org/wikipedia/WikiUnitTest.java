@@ -1026,6 +1026,22 @@ public class WikiUnitTest
     }
     
     @Test
+    public void search() throws Exception
+    {
+        Map<String, Object>[] results = testWiki.search("dlgsjdglsjdgljsgljsdlg", Wiki.MEDIAWIKI_NAMESPACE);
+        assertEquals("search: no results", 0, results.length);
+        // https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User%3AMER-C%2FUnitTests%2FDelete
+        results = testWiki.search("User:MER-C/UnitTests/Delete", Wiki.USER_NAMESPACE);
+        assertEquals("search: results", 1, results.length);
+        Map<String, Object> result = results[0];
+        assertEquals("search: title", "User:MER-C/UnitTests/Delete", result.get("title"));
+        assertEquals("search: snippet", "This revision is not <span class=\"searchmatch\">deleted</span>!", result.get("snippet"));
+        assertEquals("search: size", 29, result.get("size"));
+        assertEquals("search: word count", 5, result.get("wordcount"));
+        assertEquals("search: lastedittime", OffsetDateTime.parse("2016-06-16T08:40:17Z"), result.get("lastedittime"));
+    }
+    
+    @Test
     public void recentChanges() throws Exception
     {
         // The results of this query will never be known in advance, so this is

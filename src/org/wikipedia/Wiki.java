@@ -5067,52 +5067,61 @@ public class Wiki implements Serializable
     /**
      *  Performs a full text search of the wiki. Equivalent to
      *  [[Special:Search]], or that little textbox in the sidebar. Returns an
-     *  array of search results, where:
+     *  array of search results in decreasing order of relevance, where each 
+     *  result has the form:
      * 
-     *  <pre><samp>
-     *  results[0] == <var>page name</var>
-     *  results[1] == <var>parsed section name (may be "")</var>
-     *  results[2] == <var>snippet of page text</var>
-     *  </samp></pre>
+     *  <ul>
+     *  <li><b>title</b>: (String) the page name
+     *  <li><b>sectiontitle</b>: (String) the matching section title, may not be
+     *    present
+     *  <li><b>snippet</b>: (String) a snippet of the matching text
+     *  <li><b>size</b>: (Integer) the size of the page in bytes
+     *  <li><b>wordcount</b>: (Integer) the number of words in the matching page
+     *  <li><b>lastedittime</b>: (OffsetDateTime) when the page was last edited
+     *  </ul>
      *
      *  @param search a search string
      *  @param namespaces the namespaces to search. If not present, search
      *  {@link #MAIN_NAMESPACE} only.
-     *  @return the search results
+     *  @return the search results as detailed above
      *  @throws IOException if a network error occurs
      *  @since 0.14
+     *  @see <a href="https://mediawiki.org/wiki/API:Search">MediaWiki 
+     *  documentation</a>
      */
-    public String[][] search(String search, int... namespaces) throws IOException
+    public Map<String, Object>[] search(String search, int... namespaces) throws IOException
     {
         // default to main namespace
         if (namespaces.length == 0)
             namespaces = new int[] { MAIN_NAMESPACE };
         StringBuilder url = new StringBuilder(query);
-        url.append("list=search&srwhat=text&srprop=snippet%7Csectionsnippet&srsearch=");
+        url.append("list=search&srwhat=text&srprop=snippet%7Csectionsnippet%7Cwordcount%7Csize%7Ctimestamp&srsearch=");
         url.append(encode(search, false));
         constructNamespaceString(url, "sr", namespaces);
 
-        List<String[]> results = queryAPIResult("sr", url, null, "search", (line, list) ->
+        List<Map<String, Object>> results = queryAPIResult("sr", url, null, "search", (line, list) ->
         {
             // xml form: <p ns="0" title="Main Page" snippet="Blah blah blah" sectiontitle="Section"/>
             for (int x = line.indexOf("<p "); x > 0; x = line.indexOf("<p ", ++x))
             {
-                String[] result = new String[3];
-                result[0] = parseAttribute(line, "title", x);
-
+                Map<String, Object> result = new HashMap<>();
+                result.put("title", parseAttribute(line, "title", x));
+                result.put("snippet", parseAttribute(line, "snippet", x));
+                result.put("wordcount", Integer.parseInt(parseAttribute(line, "wordcount", x)));
+                result.put("size", Integer.parseInt(parseAttribute(line, "size", x)));
+                result.put("lastedittime", OffsetDateTime.parse(parseAttribute(line, "timestamp", x)));
+                
                 // section title (if available). Stupid API documentation is misleading.
                 if (line.contains("sectionsnippet=\""))
-                    result[1] = parseAttribute(line, "sectionsnippet", x);
-                else
-                    result[1] = "";
-
-                result[2] = parseAttribute(line, "snippet", x);
+                    result.put("sectiontitle", parseAttribute(line, "sectionsnippet", x));
+              
                 list.add(result);
             }
         });
         
-        log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + results.size() + " items found)");
-        return results.toArray(new String[0][0]);
+        int size = results.size();
+        log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + size + " items found)");
+        return results.toArray(new Map[0]);
     }
 
     /**
