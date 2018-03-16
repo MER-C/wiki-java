@@ -4720,11 +4720,9 @@ public class Wiki implements Serializable
      */
     public synchronized void emailUser(User user, String message, String subject, boolean emailme) throws IOException, LoginException
     {
-        throttle();
-
-        // check if blocked, logged in
         if (this.user == null || !this.user.isAllowedTo("sendemail"))
             throw new CredentialNotFoundException("Permission denied: cannot email.");
+        throttle();
 
         // is this user emailable?
         if (!(Boolean)user.getUserInfo().get("emailable"))
@@ -4789,11 +4787,10 @@ public class Wiki implements Serializable
         
         if (expiry != null && expiry.isBefore(OffsetDateTime.now()))
             throw new IllegalArgumentException("Cannot set a block with a past expiry time!");
-        
-        throttle();
         if (user == null || !user.isA("sysop"))
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
-
+        throttle();
+        
         // send request
         Map<String, String> postparams = new HashMap<>();
         postparams.put("user", encode(usertoblock, false));
@@ -4830,9 +4827,9 @@ public class Wiki implements Serializable
      */
     public synchronized void unblock(String blockeduser, String reason) throws IOException, LoginException
     {
-        throttle();
         if (user == null || !user.isA("sysop"))
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
+        throttle();
 
         // send request
         Map<String, String> postparams = new HashMap<>();
@@ -4852,6 +4849,62 @@ public class Wiki implements Serializable
             return; // throw exception?
         }
         log(Level.INFO, "unblock", "Successfully unblocked " + blockeduser);
+    }
+    
+    /**
+     *  Changes the privilege level of the given user. Permissions that you 
+     *  don't have the ability to add or remove are silently ignored. {@code 
+     *  expiry.length} must be either of 0 (add all permissions indefinitely),
+     *  1 (add all permissions until this time) or {@code addedgroups.length}
+     *  (add each permission for the time given by the index in <var>expiry</var>). 
+     *  See [[Special:Listgrouprights]] for the permissions you can add or
+     *  remove and what they do. Equivalent to [[Special:UserRights]].
+     * 
+     *  @param u the user to change permissions for
+     *  @param addedgroups a list of groups to add
+     *  @param expiry the expiry time of these rights
+     *  @param removedgroups a list of 
+     *  @param reason the reason for granting and/or removal
+     *  @throws IllegalArgumentException if expiry.length != 0, 1 or 
+     *  addedgroups.length or if any expiry time is in the past
+     *  @throws IOException if a network error occurs
+     *  @throws CredentialNotFoundException if you are not logged in
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if you have been blocked
+     *  @since 0.35
+     *  @see <a href="https://www.mediawiki.org/wiki/API:User_group_membership">MediaWiki
+     *  documentation</a>
+     */
+    public synchronized void changeUserPrivileges(User u, String[] addedgroups, OffsetDateTime[] expiry, 
+        String[] removedgroups, String reason) throws IOException, LoginException
+    {
+        // validate parameters
+        int numexpirydates = expiry.length;
+        if (numexpirydates > 1 && numexpirydates != addedgroups.length)
+            throw new IllegalArgumentException("Expiry array length must be 0, 1 or addedgroups.length");
+        final OffsetDateTime now = OffsetDateTime.now();
+        if (Arrays.stream(expiry).anyMatch(date -> date.isBefore(now)))
+            throw new IllegalArgumentException("Supplied dates must be in the future!");
+        if (user == null)
+            throw new CredentialNotFoundException("You need to be logged in to change user privileges.");
+        throttle();
+        
+        Map<String, String> postparams = new HashMap<>();
+        postparams.put("user", encode(u.getUsername(), true));
+        postparams.put("reason", encode(reason, false));
+        postparams.put("token", encode(getToken("userrights"), false));
+        postparams.put("add", Arrays.stream(addedgroups).collect(Collectors.joining("%7C")));
+        if (numexpirydates == 0)
+            postparams.put("expiry", "indefinite");
+        else
+            postparams.put("expiry", Arrays.stream(expiry)
+                .map(date -> date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+                .collect(Collectors.joining("%7C")));
+        postparams.put("remove", Arrays.stream(removedgroups).collect(Collectors.joining("%7C")));
+        String response = fetch(apiUrl + "action=userrights", postparams, "changeUserPrivileges");
+        if (!response.contains("<userrights "))
+            checkErrorsAndUpdateStatus(response, "changeUserPrivileges");
+        log(Level.INFO, "changeUserPrivileges", "Successfully changed privileges of user " + u.getUsername());
     }
 
     // WATCHLIST METHODS
@@ -5909,8 +5962,7 @@ public class Wiki implements Serializable
         {
             // cull the namespace prefix
             namespace = namespace(prefix);
-            if (prefix.contains(":") && namespace != MAIN_NAMESPACE)
-                prefix = prefix.substring(prefix.indexOf(':') + 1);
+            prefix = removeNamespace(prefix);
             url.append("&apprefix=");
             url.append(encode(prefix, true));
         }
@@ -7858,7 +7910,7 @@ public class Wiki implements Serializable
      *  @return the revisions ready for insertion into a URL
      *  @since 0.32
      */
-    protected String[] constructRevisionString(long[] ids)
+    protected List<String> constructRevisionString(long[] ids)
     {
         // sort and remove duplicates per https://mediawiki.org/wiki/API
         String[] sortedids = Arrays.stream(ids)
@@ -7869,7 +7921,7 @@ public class Wiki implements Serializable
             .toArray(String[]::new);
         
         StringBuilder buffer = new StringBuilder();
-        ArrayList<String> chunks = new ArrayList<>();
+        List<String> chunks = new ArrayList<>();
         for (int i = 0; i < sortedids.length; i++)
         {
             buffer.append(sortedids[i]);
@@ -7881,7 +7933,7 @@ public class Wiki implements Serializable
             else
                 buffer.append("%7C");
         }
-        return chunks.toArray(new String[chunks.size()]);
+        return chunks;
     }
 
     /**
@@ -7892,7 +7944,7 @@ public class Wiki implements Serializable
      *  populated, and a network error occurs when populating it
      *  @since 0.29
      */
-    protected String[] constructTitleString(String[] titles)
+    protected List<String> constructTitleString(String[] titles)
     {
         // sort and remove duplicates per https://mediawiki.org/wiki/API
         String[] titlesEnc = Arrays.stream(titles)
@@ -7915,7 +7967,7 @@ public class Wiki implements Serializable
             else
                 buffer.append("%7C");
         }
-        return ret.toArray(new String[ret.size()]);
+        return ret;
     }
 
     /**
