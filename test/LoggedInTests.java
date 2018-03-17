@@ -1,6 +1,6 @@
 /**
  *  @(#)LoggedInTests.java
- *  Copyright (C) 2011 - 2014 MER-C
+ *  Copyright (C) 2011 - 2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -56,9 +56,6 @@ public class LoggedInTests
         // watchlist
         for (Wiki.Revision item : wiki.watchlist(false))
             System.out.println(item);
-        
-        // upload
-        wiki.upload(new File("~/Pictures/marsface.jpg"), "Wiki.java test4.jpg", "Test image. Source: [[:File:Face on Mars with Inset.jpg]]. ∑∑ƒ∂ß", "hello ∑∑ƒ∂ß");
      
         ///////////////////////
         // ADMIN STUFF

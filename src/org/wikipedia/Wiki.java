@@ -722,7 +722,7 @@ public class Wiki implements Serializable
     public Map<String, Object> getSiteInfo() throws IOException
     {
         Map<String, Object> ret = new HashMap<>();
-        String line = fetch(query + "action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", null, "getSiteInfo");
+        String line = makeHTTPRequest(query + "action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", null, "getSiteInfo");
         
         // general site info
         String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
@@ -1080,7 +1080,7 @@ public class Wiki implements Serializable
         postparams.put("lgname", encode(username, false));
         postparams.put("lgpassword", encode(new String(password), false));
         postparams.put("lgtoken", encode(getToken("login"), false));
-        String line = fetch(apiUrl + "action=login", postparams, "login");
+        String line = makeHTTPRequest(apiUrl + "action=login", postparams, "login");
         Arrays.fill(password, '0');
 
         // check for success
@@ -1153,7 +1153,7 @@ public class Wiki implements Serializable
      */
     public synchronized void logoutServerSide() throws IOException
     {
-        fetch(apiUrl + "action=logout", null, "logoutServerSide");
+        makeHTTPRequest(apiUrl + "action=logout", null, "logoutServerSide");
         logout(); // destroy local cookies
     }
 
@@ -1167,7 +1167,7 @@ public class Wiki implements Serializable
     public boolean hasNewMessages() throws IOException
     {
         String url = query + "meta=userinfo&uiprop=hasmsg";
-        return fetch(url, null, "hasNewMessages").contains("messages=\"\"");
+        return makeHTTPRequest(url, null, "hasNewMessages").contains("messages=\"\"");
     }
 
     /**
@@ -1182,7 +1182,7 @@ public class Wiki implements Serializable
      */
     public int getCurrentDatabaseLag() throws IOException
     {
-        String line = fetch(query + "meta=siteinfo&siprop=dbrepllag", null, "getCurrentDatabaseLag");
+        String line = makeHTTPRequest(query + "meta=siteinfo&siprop=dbrepllag", null, "getCurrentDatabaseLag");
         String lag = parseAttribute(line, "lag", 0);
         log(Level.INFO, "getCurrentDatabaseLag", "Current database replication lag is " + lag + " seconds");
         return Integer.parseInt(lag);
@@ -1200,7 +1200,7 @@ public class Wiki implements Serializable
      */
     public Map<String, Integer> getSiteStatistics() throws IOException
     {
-        String text = fetch(query + "meta=siteinfo&siprop=statistics", null, "getSiteStatistics");
+        String text = makeHTTPRequest(query + "meta=siteinfo&siprop=statistics", null, "getSiteStatistics");
         Map<String, Integer> ret = new HashMap<>(20);
         ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
         ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
@@ -1263,7 +1263,7 @@ public class Wiki implements Serializable
         if (section >= 0)
             postparams.put("section", String.valueOf(section));
         
-        String response = fetch(apiUrl + "action=parse&prop=text", postparams, "parse");
+        String response = makeHTTPRequest(apiUrl + "action=parse&prop=text", postparams, "parse");
         if (response.contains("error code=\""))
             // Bad section numbers, revids, deleted pages, RevisionDeleted
             // revisions should all end up here.
@@ -1320,7 +1320,7 @@ public class Wiki implements Serializable
         url.append("list=random");
         if (ns[0] != ALL_NAMESPACES)
             constructNamespaceString(url, "rn", ns);
-        String line = fetch(url.toString(), null, "random");
+        String line = makeHTTPRequest(url.toString(), null, "random");
         return parseAttribute(line, "title", 0);
     }
     
@@ -1334,7 +1334,7 @@ public class Wiki implements Serializable
      */
     public String getToken(String type) throws IOException
     {
-        String content = fetch(query + "meta=tokens&type=" + type, null, "getToken");
+        String content = makeHTTPRequest(query + "meta=tokens&type=" + type, null, "getToken");
         return parseAttribute(content, type + "token", 0);
     }
     
@@ -1481,7 +1481,7 @@ public class Wiki implements Serializable
         for (String temp : constructTitleString(pages))
         {
             postparams.put("titles", temp);
-            String line = fetch(url.toString(), postparams, "getPageInfo");
+            String line = makeHTTPRequest(url.toString(), postparams, "getPageInfo");
             if (resolveredirect)
                 resolveRedirectParser(pages2, line);
             
@@ -1741,7 +1741,7 @@ public class Wiki implements Serializable
         for (String chunk : constructTitleString(titles))
         {
             postparams.put("titles", chunk);
-            String[] results = fetch(url, postparams, "getPageText").split("<page ");
+            String[] results = makeHTTPRequest(url, postparams, "getPageText").split("<page ");
             if (resolveredirect)
                 resolveRedirectParser(titles2, results[0]);
 
@@ -1793,7 +1793,7 @@ public class Wiki implements Serializable
         url.append(encode(title, true));
         url.append("&rvsection=");
         url.append(section);
-        String text = fetch(url.toString(), null, "getSectionText");
+        String text = makeHTTPRequest(url.toString(), null, "getSectionText");
         // section doesn't exist
         if (text.contains("code=\"nosuchsection\""))
             return null;
@@ -2008,7 +2008,7 @@ public class Wiki implements Serializable
         }
         else if (section != -2)
             postparams.put("section", String.valueOf(section));
-        String response = fetch(apiUrl + "action=edit", postparams, "edit");
+        String response = makeHTTPRequest(apiUrl + "action=edit", postparams, "edit");
 
         // done
         if (response.contains("error code=\"editconflict\""))
@@ -2103,7 +2103,7 @@ public class Wiki implements Serializable
         postparams.put("title", encode(title, true));
         postparams.put("reason", encode(reason, false));
         postparams.put("token", encode(getToken("csrf"), false));
-        String response = fetch(apiUrl + "action=delete", postparams, "delete");
+        String response = makeHTTPRequest(apiUrl + "action=delete", postparams, "delete");
 
         // done
         if (!response.contains("<delete title="))
@@ -2144,7 +2144,7 @@ public class Wiki implements Serializable
                 sj.add(revision.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             postparams.put("timestamps", sj.toString());
         }
-        String response = fetch(apiUrl + "action=undelete", postparams, "undelete");
+        String response = makeHTTPRequest(apiUrl + "action=undelete", postparams, "undelete");
 
         // done
         checkErrorsAndUpdateStatus(response, "undelete");
@@ -2172,7 +2172,7 @@ public class Wiki implements Serializable
         for (String x : constructTitleString(titles))
         {
             postparams.put("title", x);
-            fetch(url.toString(), postparams, "purge");
+            makeHTTPRequest(url.toString(), postparams, "purge");
         }
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
@@ -2496,7 +2496,7 @@ public class Wiki implements Serializable
     public LinkedHashMap<String, String> getSectionMap(String page) throws IOException
     {
         String url = apiUrl + "action=parse&text={{:" + encode(page, true) + "}}__TOC__&prop=sections";
-        String line = fetch(url, null, "getSectionMap");
+        String line = makeHTTPRequest(url, null, "getSectionMap");
 
         // xml form: <s toclevel="1" level="2" line="How to nominate" number="1" />
         LinkedHashMap<String, String> map = new LinkedHashMap<>(30);
@@ -2528,7 +2528,7 @@ public class Wiki implements Serializable
         url.append("prop=revisions&rvlimit=1&meta=tokens&type=rollback&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        String line = fetch(url.toString(), null, "getTopRevision");
+        String line = makeHTTPRequest(url.toString(), null, "getTopRevision");
         int a = line.indexOf("<rev "); // important space
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
@@ -2554,7 +2554,7 @@ public class Wiki implements Serializable
         url.append("prop=revisions&rvlimit=1&rvdir=newer&titles=");
         url.append(encode(title, true));
         url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
-        String line = fetch(url.toString(), null, "getFirstRevision");
+        String line = makeHTTPRequest(url.toString(), null, "getFirstRevision");
         int a = line.indexOf("<rev "); // important space!
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
@@ -2595,7 +2595,7 @@ public class Wiki implements Serializable
         for (String blah : constructTitleString(titles))
         {
             postparams.put("titles", blah);
-            String line = fetch(url.toString(), postparams, "resolveRedirects");
+            String line = makeHTTPRequest(url.toString(), postparams, "resolveRedirects");
             resolveRedirectParser(ret, line);
         }
         return ret;
@@ -2948,7 +2948,7 @@ public class Wiki implements Serializable
         url.append(encode(page, true));
 
         // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
-        String line = fetch(url.toString(), null, "getDeletedText");
+        String line = makeHTTPRequest(url.toString(), null, "getDeletedText");
         int a = line.indexOf("<rev ");
         if (a < 0)
             return null;
@@ -3042,7 +3042,7 @@ public class Wiki implements Serializable
             postparams.put("noredirect", "1");
         if (movesubpages && user.isAllowedTo("move-subpages"))
             postparams.put("movesubpages", "1");
-        String response = fetch(apiUrl + "action=move", postparams, "move");
+        String response = makeHTTPRequest(apiUrl + "action=move", postparams, "move");
 
         // done
         if (!response.contains("move from"))
@@ -3111,7 +3111,7 @@ public class Wiki implements Serializable
         exp.delete(exp.length() - 3, exp.length());
         postparams.put("protections", pro.toString());
         postparams.put("expiry", exp.toString());
-        String response = fetch(apiUrl + "action=protect", postparams, "protect");
+        String response = makeHTTPRequest(apiUrl + "action=protect", postparams, "protect");
 
         // done
         if (!response.contains("<protect "))
@@ -3150,7 +3150,7 @@ public class Wiki implements Serializable
      */
     public String export(String title) throws IOException
     {
-        return fetch(query + "export&exportnowrap&titles=" + encode(title, true), null, "export");
+        return makeHTTPRequest(query + "export&exportnowrap&titles=" + encode(title, true), null, "export");
     }
 
     // REVISION METHODS
@@ -3191,7 +3191,7 @@ public class Wiki implements Serializable
         // fetch and parse
         for (String chunk : constructRevisionString(oldids))
         {
-            String line = fetch(url.toString() + chunk, null, "getRevision");
+            String line = makeHTTPRequest(url.toString() + chunk, null, "getRevision");
 
             for (int i = line.indexOf("<page "); i > 0; i = line.indexOf("<page ", ++i))
             {
@@ -3273,7 +3273,7 @@ public class Wiki implements Serializable
             postparams.put("markbot", "1");
         if (!reason.isEmpty())
             postparams.put("summary", reason);
-        String response = fetch(apiUrl + "action=rollback", postparams, "rollback");
+        String response = makeHTTPRequest(apiUrl + "action=rollback", postparams, "rollback");
 
         // done
         // ignorable errors
@@ -3362,7 +3362,7 @@ public class Wiki implements Serializable
         {
             postparams.put("token", encode(getToken("csrf"), false));
             postparams.put("ids", revstring);
-            String response = fetch(apiUrl + "action=revisiondelete", postparams, "revisionDelete");
+            String response = makeHTTPRequest(apiUrl + "action=revisiondelete", postparams, "revisionDelete");
             
             if (!response.contains("<revisiondelete "))
                 checkErrorsAndUpdateStatus(response, "move");
@@ -3448,7 +3448,7 @@ public class Wiki implements Serializable
         if (bot)
             postparams.put("bot", "1");
         postparams.put("token", encode(getToken("csrf"), false));
-        String response = fetch(apiUrl + "action=edit", postparams, "undo");
+        String response = makeHTTPRequest(apiUrl + "action=edit", postparams, "undo");
 
         // done
         if (response.contains("error code=\"editconflict\""))
@@ -3538,7 +3538,7 @@ public class Wiki implements Serializable
         if (tosection >= 0)
             postparams.put("tosection", String.valueOf(tosection));
         
-        String line = fetch(apiUrl + "action=compare", postparams, "diff");
+        String line = makeHTTPRequest(apiUrl + "action=compare", postparams, "diff");
 
         // strip extraneous information
         if (line.contains("</compare>"))
@@ -3697,7 +3697,7 @@ public class Wiki implements Serializable
         url.append(width);
         url.append("&iiurlheight=");
         url.append(height);
-        String line = fetch(url.toString(), null, "getImage");
+        String line = makeHTTPRequest(url.toString(), null, "getImage");
         if (!line.contains("<imageinfo>"))
             return false;
         String url2 = parseAttribute(line, "url", 0);
@@ -3739,7 +3739,7 @@ public class Wiki implements Serializable
         file = removeNamespace(file);
         String url = query + "prop=imageinfo&iiprop=size%7Csha1%7Cmime%7Cmetadata&titles="
             + encode("File:" + file, true);
-        String line = fetch(url, null, "getFileMetadata");
+        String line = makeHTTPRequest(url, null, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
         Map<String, Object> metadata = new HashMap<>(30);
@@ -3865,7 +3865,7 @@ public class Wiki implements Serializable
         // no thumbnails for image history, sorry.
         String title = entry.getTarget();
         String url = query + "prop=imageinfo&iilimit=max&iiprop=timestamp%7Curl%7Carchivename&titles=" + encode(title, true);
-        String line = fetch(url, null, "getOldImage");
+        String line = makeHTTPRequest(url, null, "getOldImage");
 
         // find the correct log entry by comparing timestamps
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
@@ -4042,7 +4042,7 @@ public class Wiki implements Serializable
                 }
 
                 // done
-                String response = multipartPost(apiUrl + "action=upload", params, "upload");
+                String response = makeHTTPRequest(apiUrl + "action=upload", params, "upload");
 
                 // look for filekey
                 if (chunks > 1)
@@ -4070,14 +4070,14 @@ public class Wiki implements Serializable
         if (chunks > 1)
         {
             Map<String, Object> params = new HashMap<>(50);
-            params.put("filename", filename);
-            params.put("token", getToken("csrf"));
-            params.put("text", contents);
+            params.put("filename", encode(filename, true));
+            params.put("token", encode(getToken("csrf"), false));
+            params.put("text", encode(contents, false));
             if (!reason.isEmpty())
-                params.put("comment", reason);
+                params.put("comment", encode(reason, false));
             params.put("ignorewarnings", "true");
             params.put("filekey", filekey);
-            String response = multipartPost(apiUrl + "action=upload", params, "upload");
+            String response = makeHTTPRequest(apiUrl + "action=upload", params, "upload");
             checkErrorsAndUpdateStatus(response, "upload");
         }
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
@@ -4135,7 +4135,7 @@ public class Wiki implements Serializable
         postparams.put("text", encode(contents, false));
         postparams.put("comment", encode(reason, false));
         postparams.put("url", encode(url.toExternalForm(), false));
-        String response = fetch(apiUrl + "action=upload", postparams, "upload");
+        String response = makeHTTPRequest(apiUrl + "action=upload", postparams, "upload");
         
         if (response.contains("error code=\"fileexists-shared-forbidden\""))
         {
@@ -4318,7 +4318,7 @@ public class Wiki implements Serializable
             String temp = url.toString();
             if (!next.isEmpty())
                 temp += ("&aufrom=" + encode(next, false));
-            String line = fetch(temp, null, "allUsers");
+            String line = makeHTTPRequest(temp, null, "allUsers");
             
             // bail if nonsense groups/rights
             if (line.contains("Unrecognized values for parameter"))
@@ -4406,7 +4406,7 @@ public class Wiki implements Serializable
         for (String fragment : constructTitleString(usernames))
         {
             postparams.put("ususers", fragment);
-            String line = fetch(url, postparams, "getUserInfo");
+            String line = makeHTTPRequest(url, postparams, "getUserInfo");
             String[] results = line.split("<user ");
             for (int i = 1; i < results.length; i++)
             {
@@ -4740,7 +4740,7 @@ public class Wiki implements Serializable
             postparams.put("ccme", "1");
         postparams.put("text", encode(message, false));
         postparams.put("subject", encode(subject, false));
-        String response = fetch(apiUrl + "action=emailuser", postparams, "emailUser");
+        String response = makeHTTPRequest(apiUrl + "action=emailuser", postparams, "emailUser");
 
         // check for errors
         checkErrorsAndUpdateStatus(response, "email");
@@ -4805,7 +4805,7 @@ public class Wiki implements Serializable
                     postparams.put(key, "1");
             });
         }
-        String response = fetch(query + "action=block", postparams, "block");
+        String response = makeHTTPRequest(query + "action=block", postparams, "block");
         
         // done
         if (!response.contains("<block "))
@@ -4836,7 +4836,7 @@ public class Wiki implements Serializable
         postparams.put("user", encode(blockeduser, false));
         postparams.put("reason", encode(reason, false));
         postparams.put("token", encode(getToken("csrf"), false));
-        String response = fetch(query + "action=unblock", postparams, "unblock");
+        String response = makeHTTPRequest(query + "action=unblock", postparams, "unblock");
 
         // done
         if (!response.contains("<unblock "))
@@ -4901,7 +4901,7 @@ public class Wiki implements Serializable
                 .map(date -> date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
                 .collect(Collectors.joining("%7C")));
         postparams.put("remove", Arrays.stream(removedgroups).collect(Collectors.joining("%7C")));
-        String response = fetch(apiUrl + "action=userrights", postparams, "changeUserPrivileges");
+        String response = makeHTTPRequest(apiUrl + "action=userrights", postparams, "changeUserPrivileges");
         if (!response.contains("<userrights "))
             checkErrorsAndUpdateStatus(response, "changeUserPrivileges");
         log(Level.INFO, "changeUserPrivileges", "Successfully changed privileges of user " + u.getUsername());
@@ -4964,7 +4964,7 @@ public class Wiki implements Serializable
         {
             postparams.put("titles", titlestring);
             postparams.put("token", getToken("watch"));
-            fetch(apiUrl + "action=watch", postparams, state);
+            makeHTTPRequest(apiUrl + "action=watch", postparams, state);
         }
         log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
     }
@@ -6993,7 +6993,7 @@ public class Wiki implements Serializable
             if (pageDeleted) // FIXME: broken if a page is live, but has deleted revisions
             {
                 String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
-                String temp = fetch(url, null, "Revision.getText");
+                String temp = makeHTTPRequest(url, null, "Revision.getText");
                 int a = temp.indexOf("<rev ");
                 a = temp.indexOf(">", a) + 1;
                 int b = temp.indexOf("</rev>", a); // tag not present if revision has no content
@@ -7003,7 +7003,7 @@ public class Wiki implements Serializable
             else
             {
                 String url = base + encode(title, true) + "&oldid=" + revid + "&action=raw";
-                String temp = fetch(url, null, "Revision.getText");
+                String temp = makeHTTPRequest(url, null, "Revision.getText");
                 log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
                 return temp;
             }
@@ -7444,7 +7444,7 @@ public class Wiki implements Serializable
      *  @param queryPrefix the request type prefix (e.g. "pl" for prop=links)
      *  @param url the query URL, without the limit and XXcontinue parameters
      *  @param postparams if not null, send these parameters via POST (see
-     *  {@link #fetch(java.lang.String, java.util.Map, java.lang.String) }).
+     *  {@link #makeHTTPRequest(java.lang.String, java.util.Map, java.lang.String) }).
      *  @param caller the name of the calling method
      *  @param parser a BiConsumer that parses the XML returned by the MediaWiki
      *  API into things we want, dumping them into the given List
@@ -7462,7 +7462,7 @@ public class Wiki implements Serializable
         {
             int limit = Math.min(querylimit - results.size(), max);
             String tempurl = url.toString() + limitstring + limit;
-            String line = fetch(tempurl + xxcontinue.toString(), postparams, caller);
+            String line = makeHTTPRequest(tempurl + xxcontinue.toString(), postparams, caller);
             xxcontinue.setLength(0);
             
             // Continuation parameter has form:
@@ -7488,29 +7488,94 @@ public class Wiki implements Serializable
     // miscellany
 
     /**
-     *  A generic URL content fetcher. If <var>postparams</var> is not null, 
-     *  the request is sent using HTTP GET, otherwise it is sent using HTTP 
-     *  POST. Might be useful for subclasses.
-     *
+     *  Constructs, sends and receives HTTP requests. May be useful for 
+     *  subclasses.
+     * 
+     *  <p>
+     *  If <var>postparams</var> is not {@code null}, the request is sent using 
+     *  HTTP GET, otherwise it is sent using HTTP POST. Allowable data types
+     *  for <var>postparams</var> are:
+     *  
+     *  <ul>
+     *  <li>String
+     *  <li>byte[] -- causes the request to be sent as a multipart post
+     *  </ul>
+     *  
      *  Here we also check the database lag and wait if it exceeds
      *  <var>maxlag</var>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
      *  here</a> for how this works.
      *
-     *  @param url the url to fetch
+     *  @param url the url to connect to
      *  @param postparams if null, send the request using POST otherwise use GET
      *  @param caller the caller of this method
      *  @return the server response
      *  @throws IOException if a network error occurs
      *  @throws AssertionError if assert=user|bot fails
+     *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
      *  @since 0.18
      */
-    protected String fetch(String url, Map<String, String> postparams, String caller) throws IOException
+    protected String makeHTTPRequest(String url, Map<String, ?> postparams, String caller) throws IOException
     {
-        StringJoiner postbody = new StringJoiner("&");
-        if (postparams != null)
-            postparams.forEach((key, value) -> postbody.add(key + "=" + value));
+        boolean isPOST = postparams != null;
+        StringJoiner stringPostBody = new StringJoiner("&");
+        boolean multipart = false;
+        byte[] multipartPostBody = null;
+        String boundary = "----------NEXT PART----------";
+        if (isPOST)
+        {
+            // determine whether this is a multipart post and convert any values
+            // to String if necessary
+            for (Object obj : postparams.values())
+            {
+                // TODO:
+                // * Replace with type switch in JDK 11/12
+                // * We can support additional Java objects such as OffsetDateTime
+                //   by converting them to Strings via the appropriate means
+                if (obj instanceof byte[])
+                    multipart = true;
+                else if (!(obj instanceof String))
+                    throw new UnsupportedOperationException("Unrecognized data type");
+            }
+            
+            // now we know how we're sending it, construct the post body
+            if (multipart)
+            {
+                String nextpart = "--" + boundary + "\r\n";
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                try (DataOutputStream out = new DataOutputStream(bout))
+                {
+                    out.writeBytes(nextpart);
 
-        String temp = null;
+                    // write params
+                    for (Map.Entry<String, ?> entry : postparams.entrySet())
+                    {
+                        String name = entry.getKey();
+                        Object value = entry.getValue();
+                        out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
+                        if (value instanceof String)
+                        {
+                            out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
+                            out.write(((String)value).getBytes("UTF-8"));
+                        }
+                        else if (value instanceof byte[])
+                        {
+                            out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
+                            out.write((byte[])value);
+                        }
+                        out.writeBytes("\r\n");
+                        out.writeBytes(nextpart);
+                    }
+                    out.writeBytes("--\r\n");
+                }
+                multipartPostBody = bout.toByteArray();
+            }
+            else
+                // TODO: Move URL encoding to here to make it consistent with multipart
+                postparams.forEach((key, value) -> stringPostBody.add(key + "=" + value));
+        }
+
+        // main fetch/retry loop
+        String response = null;
         int tries = maxtries;
         do
         {
@@ -7518,72 +7583,83 @@ public class Wiki implements Serializable
             tries--;
             try
             {
-                // connect
+                // actually make the request
                 URLConnection connection = makeConnection(url);
-                if (postparams != null)
-                    connection.setDoOutput(true);
-                connection.connect();
-                if (postparams != null)
+                if (isPOST)
                 {
-                    try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
+                    connection.setDoOutput(true);
+                    if (multipart)
+                        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+                }
+                connection.connect();
+                if (isPOST)
+                {
+                    // send the post body
+                    if (multipart)
                     {
-                        out.write(postbody.toString());
+                        try (OutputStream uout = connection.getOutputStream())
+                        {
+                            uout.write(multipartPostBody);
+                        }
+                    }
+                    else
+                    {
+                        try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
+                        {
+                            out.write(stringPostBody.toString());
+                        }
                     }
                 }
 
-                // check lag and retry
+                // Check database lag and retry if necessary. These retries
+                // don't count.
                 if (checkLag(connection))
                 {
                     tries++;
-                    continue;
+                    throw new HttpRetryException("Database lagged.", 503);
                 }
 
-                // get the text
-                String line;
-                StringBuilder text = new StringBuilder(100000);
+                // get the response from the server
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
                     zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
                 {
-                    while ((line = in.readLine()) != null)
-                    {
-                        text.append(line);
-                        text.append("\n");
-                    }
+                    response = in.lines().collect(Collectors.joining("\n"));
                 }
-                temp = text.toString();
                 
-                // check for recoverable errors
-                
-                // rate limit (though might be a long one e.g. email)
-                if (temp.contains("error code=\"ratelimited\""))
+                // Check for rate limit (though might be a long one e.g. email)
+                if (response.contains("error code=\"ratelimited\""))
                 {
+                    // the Retry-After header field is useless here
+                    // see https://phabricator.wikimedia.org/T172293
                     log(Level.WARNING, caller, "Server-side throttle hit.");
+                    Thread.sleep(10000);
                     throw new HttpRetryException("Action throttled.", 503);
                 }
-                // database lock
-                if (temp.contains("error code=\"readonly\""))
+                // Check for database lock
+                if (response.contains("error code=\"readonly\""))
                 {
                     log(Level.WARNING, caller, "Database locked!");
+                    Thread.sleep(10000);
                     throw new HttpRetryException("Database locked!", 503);
                 }
+                
+                // No need to retry anymore, success or unrecoverable failure.
+                tries = 0;
             }
             catch (IOException ex)
             {
+                // Exception deliberately ignored until retries are depleted.
                 if (tries == 0)
                     throw ex;
-                try
-                {
-                    Thread.sleep(10000);
-                }
-                catch (InterruptedException ignored)
-                {
-                }
+            }
+            catch (InterruptedException ignored)
+            {
             }
         }
-        while (temp == null);
-        if (temp.contains("<error code="))
+        while (tries != 0);
+        if (response.contains("<error code="))
         {
-            String error = parseAttribute(temp, "code", 0);
+            String error = parseAttribute(response, "code", 0);
             switch (error)
             {
                 case "assertbotfailed":
@@ -7600,127 +7676,12 @@ public class Wiki implements Serializable
                 // and are indicative of bugs (not necessarily in this framework) or
                 // can be avoided entirely.
                 default:
-                    throw new UnknownError("MW API error. Server response was: " + temp);
+                    throw new UnknownError("MW API error. Server response was: " + response);
             }   
         }
-        return temp;
+        return response;
     }
 
-    /**
-     *  Performs a multi-part HTTP POST.
-     *  @param url the url to post to
-     *  @param params the POST parameters. Supported types: UTF-8 text, byte[].
-     *  Text and parameter names must NOT be URL encoded.
-     *  @param caller the caller of this method
-     *  @return the server response
-     *  @throws IOException if a network error occurs
-     *  @see #fetch(java.lang.String, java.util.Map, java.lang.String) 
-     *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
-     *  @since 0.27
-     */
-    protected String multipartPost(String url, Map<String, ?> params, String caller) throws IOException
-    {
-        String temp = "";
-        int tries = maxtries;
-        do
-        {
-            logurl(url, caller);
-            tries--;
-            try
-            {
-                URLConnection connection = makeConnection(url);
-                String boundary = "----------NEXT PART----------";
-                connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-                connection.setDoOutput(true);
-                connection.connect();
-
-                // write stuff to a local buffer
-                boundary = "--" + boundary + "\r\n";
-                ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                try (DataOutputStream out = new DataOutputStream(bout))
-                {
-                    out.writeBytes(boundary);
-
-                    // write params
-                    for (Map.Entry<String, ?> entry : params.entrySet())
-                    {
-                        String name = entry.getKey();
-                        Object value = entry.getValue();
-                        out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
-                        if (value instanceof String)
-                        {
-                            out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-                            out.write(((String)value).getBytes("UTF-8"));
-                        }
-                        else if (value instanceof byte[])
-                        {
-                            out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
-                            out.write((byte[])value);
-                        }
-                        else
-                            throw new UnsupportedOperationException("Unrecognized data type");
-                        out.writeBytes("\r\n");
-                        out.writeBytes(boundary);
-                    }
-                    out.writeBytes("--\r\n");
-                }
-                try (OutputStream uout = connection.getOutputStream())
-                {
-                    // write the buffer to the URLConnection
-                    uout.write(bout.toByteArray());
-                }
-
-                // check lag and retry
-                if (checkLag(connection))
-                    return multipartPost(url, params, caller);
-
-                // done, read the response
-                String line;
-                StringBuilder buffer = new StringBuilder(100000);
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                    zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
-                {
-                    while ((line = in.readLine()) != null)
-                    {
-                        buffer.append(line);
-                        buffer.append("\n");
-                    }
-                }
-                temp = buffer.toString();
-                
-                // check for recoverable errors
-                
-                // rate limit (though might be a long one e.g. email)
-                if (temp.contains("error code=\"ratelimited\""))
-                {
-                    log(Level.WARNING, caller, "Server-side throttle hit.");
-                    throw new HttpRetryException("Action throttled.", 503);
-                }
-                // database lock
-                if (temp.contains("error code=\"readonly\""))
-                {
-                    log(Level.WARNING, caller, "Database locked!");
-                    throw new HttpRetryException("Database locked!", 503);
-                }
-                return temp;
-            }
-            catch (IOException ex)
-            {
-                if (tries == 0)
-                    throw ex;
-                try
-                {
-                    Thread.sleep(10000);
-                }
-                catch (InterruptedException ignored)
-                {
-                }
-            }
-        }
-        while (temp.isEmpty());
-        throw new AssertionError("Unreachable.");
-    }
-    
     /**
      *  Checks for database lag and sleeps if {@code lag < getMaxLag()}.
      *  @param connection the URL connection used in the request
@@ -7812,11 +7773,6 @@ public class Wiki implements Serializable
         String error = parseAttribute(line, "code", 0);
         switch (error)
         {
-            // These assertions still need to be here because of multipartPost.
-            case "assertbotfailed":
-                throw new AssertionError("Bot privileges missing or revoked, or session expired.");
-            case "assertuserfailed":
-                throw new AssertionError("Session expired.");
             // protected pages
             case "protectedpage":
             case "protectedtitle":
@@ -7834,8 +7790,6 @@ public class Wiki implements Serializable
             case "autoblocked":
                 log(Level.SEVERE, caller, "Cannot " + caller + " - user is blocked!.");
                 throw new AccountLockedException("Current user is blocked!");
-            case "unknownerror":
-                throw new UnknownError("Unknown MediaWiki API error, response was " + line);
             default:
                 throw new IOException("MediaWiki error, response was " + line);
         }

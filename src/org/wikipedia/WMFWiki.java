@@ -79,7 +79,7 @@ public class WMFWiki extends Wiki
     {
         WMFWiki wiki = createInstance("en.wikipedia.org");
         wiki.setMaxLag(0);
-        String line = wiki.fetch("https://en.wikipedia.org/w/api.php?format=xml&action=sitematrix", null, "WMFWiki.getSiteMatrix");
+        String line = wiki.makeHTTPRequest(wiki.apiUrl + "action=sitematrix", null, "WMFWiki.getSiteMatrix");
         ArrayList<WMFWiki> wikis = new ArrayList<WMFWiki>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />

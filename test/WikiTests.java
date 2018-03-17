@@ -104,23 +104,6 @@ public class WikiTests
         for (String image : Wiki.createInstance("wiki.eclipse.org", "").getImagesOnPage("Main Page"))
             System.out.println(image);
 
-        // getImage()
-        byte[] image = enWiki.getImage("File:HellenicArmySeal.svg");
-        FileOutputStream out = new FileOutputStream("File:HellenicArmySeal.svg");
-        out.write(image);
-        out.close();
-
-        // User.getUserInfo()
-        Wiki.User user = enWiki.getUser("Jimbo Wales");
-        for(Map.Entry<String, Object> entry : user.getUserInfo().entrySet())
-        {
-            System.out.print(entry.getKey());
-            System.out.print(" => ");
-            Object temp = entry.getValue();
-            System.out.println(temp instanceof Object[] ? Arrays.toString((Object[])temp) : temp);
-        }
-        System.out.println();
-
         // getLogEntries()
         for(Wiki.LogEntry entry : enWiki.getLogEntries(null, null, 5, Wiki.USER_RIGHTS_LOG, "", null, "User:Jimbo Wales", Wiki.ALL_NAMESPACES))
             System.out.println(entry);
@@ -207,11 +190,6 @@ public class WikiTests
         protect.put("edit", Wiki.FULL_PROTECTION);
         for (String page : enWiki.listPages("", protect, Wiki.FILE_NAMESPACE, -1, -1, null))
             System.out.println(page);
-
-        // getRevisions
-        Wiki.Revision[] temp = enWiki.getRevisions(new long[] { 500000000L, 579126972L, 500000000L, 500000003L, 40000000L } );
-        for (Wiki.Revision blah3 : temp)
-            System.out.println(blah3);
 
         // getExternalLinksOnPage
         for (String url : enWiki.getExternalLinksOnPage("Albert Einstein"))

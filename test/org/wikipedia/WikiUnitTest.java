@@ -892,7 +892,7 @@ public class WikiUnitTest
         actual = enWiki.diff(null, 803731343L, null, -1, null, 804972897L, null, -1);
         assertEquals("diff: no difference", "", actual);
         // no deleted pages allowed
-        // FIXME: broken because fetch() swallows the API error
+        // FIXME: broken because makeHTTPRequest() swallows the API error
         // actual = enWiki.diff("Create a page", 0L, null, -1, null, 804972897L, null, -1);
         // assertNull("diff: to deleted", actual);
         // actual = enWiki.diff(null, 804972897L, null, -1, "Create a page", 0L, null, -1);
@@ -1047,7 +1047,7 @@ public class WikiUnitTest
     {
         assertNull("parse: no such section", enWiki.parse(-1, "Hello", null, 50));
         assertNull("parse: bad revid", enWiki.parse(1L << 62, null, null, -1));
-        // FIXME: currently broken because fetch swallows the API error
+        // FIXME: currently broken because makeHTTPRequest swallows the API error
         // assertNull("parse: deleted page", enWiki.parse(-1L, "Create a page", null, -1));
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         // assertNull("parse: revisiondeleted revision", enWiki.parse(596714684L, null, null, -1));
@@ -1155,7 +1155,7 @@ public class WikiUnitTest
         Wiki.Revision rev = testWiki.getRevision(230472L);
         String text = rev.getText();
         assertEquals("revision text: decoding", "&#039;&#039;italic&#039;&#039;" +
-            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;\n", text);
+            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;", text);
         
         // RevisionDeleted content (returns 404)
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
