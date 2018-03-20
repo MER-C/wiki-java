@@ -87,7 +87,7 @@ public class ArrayUtilsUnitTest
             821171155L, // 14: state  2
             821170526L  // 15: state  1
         };
-        assertArrayEquals("removereverts: setup", oldids, Arrays.stream(revisions).mapToLong(Wiki.Revision::getRevid).toArray());
+        assertArrayEquals("removereverts: setup", oldids, Arrays.stream(revisions).mapToLong(Wiki.Revision::getID).toArray());
         long[] expected = new long[] 
         {
             821170526L, // 14: state  1
@@ -101,7 +101,7 @@ public class ArrayUtilsUnitTest
             822338691L  //  3: state  7
         };
         Wiki.Revision[] revertsremoved = ArrayUtils.removeReverts(revisions);
-        assertArrayEquals("removereverts", expected, Arrays.stream(revertsremoved).mapToLong(Wiki.Revision::getRevid).toArray());
+        assertArrayEquals("removereverts", expected, Arrays.stream(revertsremoved).mapToLong(Wiki.Revision::getID).toArray());
         // two identical edits on different pages are not reverts
         oldids = new long[]
         {

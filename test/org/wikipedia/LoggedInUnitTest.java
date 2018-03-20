@@ -60,7 +60,7 @@ public class LoggedInUnitTest
         assertArrayEquals("upload: image", Files.readAllBytes(expected.toPath()), 
             Files.readAllBytes(actual.toPath()));
         assertEquals("upload: description", description, testWiki.getPageText("File:" + uploadDest));
-        assertEquals("upload: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getSummary());
+        assertEquals("upload: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getComment());
         
         // upload via URL
         // target: https://test.wikipedia.org/wiki/File:Wiki.java_test5.jpg
@@ -79,7 +79,7 @@ public class LoggedInUnitTest
         assertArrayEquals("upload via url: image", Files.readAllBytes(expected.toPath()), 
             Files.readAllBytes(actual.toPath()));
         assertEquals("upload via url: description", description, testWiki.getPageText("File:" + uploadDest));
-        assertEquals("upload via url: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getSummary());
+        assertEquals("upload via url: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getComment());
     }
     
     @Test
@@ -90,7 +90,7 @@ public class LoggedInUnitTest
         String summary = "Test edit " + Math.random();
         testWiki.edit(page, text, summary);
         assertEquals("edit: page text", text, testWiki.getPageText(page));
-        assertEquals("edit: summary", summary, testWiki.getTopRevision(page).getSummary());
+        assertEquals("edit: summary", summary, testWiki.getTopRevision(page).getComment());
     }
     
     @AfterClass

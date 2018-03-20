@@ -408,10 +408,17 @@ public class ContributionSurveyor
             numarticles++;
             if (numarticles % 20 == 1)
             {
-                if (username == null)
-                    out.append(String.format("\n=== Pages %d through %d ===\n", numarticles, Math.min(numarticles + 19, totalarticles)));
-                else
-                    out.append(String.format("\n=== %s: Pages %d through %d ===\n", username, numarticles, Math.min(numarticles + 19, totalarticles)));
+                out.append("\n=== ");
+                if (username != null)
+                {
+                    out.append(username);
+                    out.append(": ");
+                }
+                out.append("Pages ");
+                out.append(numarticles);
+                out.append(" through ");
+                out.append(Math.min(numarticles + 19, totalarticles));
+                out.append(" ===\n");
             }
             
             Map.Entry<String, List<Wiki.Revision>> entry = iter.next();
@@ -429,13 +436,19 @@ public class ContributionSurveyor
                     newpage = true;
                 }
                 // generate the diff strings now to avoid a second iteration
-                temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getRevid(), edit.getSizeDiff()));
+                temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getID(), edit.getSizeDiff()));
             }
             int numedits = edits.size();
+            out.append("[[:");
+            out.append(entry.getKey());
+            out.append("]] (");
             if (numedits == 1)
-                out.append(String.format("[[:%s]] (1 edit): ", entry.getKey()));
+                out.append("]] (1 edit): ");
             else
-                out.append(String.format("[[:%s]] (%d edits): ", entry.getKey(), numedits));
+            {
+                out.append(numedits);
+                out.append("): ");
+            }
             out.append(temp);
             out.append("\n");
         }

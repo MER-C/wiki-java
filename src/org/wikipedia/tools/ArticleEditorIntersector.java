@@ -328,25 +328,23 @@ public class ArticleEditorIntersector
      *  @return a map with user &#8594; list of revisions made. If the total
      *  number of pages does not exceed one after applying all exclusions and 
      *  removing revisions with deleted/suppressed usernames and pages with no
-     *  (deleted) history or are invalid (Special/Media namespaces) or there is
-     *  no intersection, return an empty map.
+     *  (deleted) history or there is no intersection, return an empty map.
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if {@code articles.length < 2} after
-     *  duplicates (as in {@code String.equals}) are removed
+     *  duplicates (as in {@code String.equals}) and Special/Media pages are removed
      */
     public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
     {
         // remove duplicates and fail quickly if less than two pages
-        Set<String> pageset = new HashSet<>(2 * articles.length);
-        pageset.addAll(Arrays.asList(articles));
+        Set<String> pageset = Arrays.stream(articles)
+            .filter(article -> wiki.namespace(article) >= 0) // remove Special: and Media: pages
+            .collect(Collectors.toSet());
         if (pageset.size() < 2)
             throw new IllegalArgumentException("At least two articles are needed to derive a meaningful intersection.");
         
         // fetch histories and group by user
         Stream<Wiki.Revision> revstream = pageset.stream()
-            // remove Special: and Media: pages
-            .filter(article -> wiki.namespace(article) >= 0) 
             .flatMap(article ->  
             {
                 Stream<Wiki.Revision> str = Stream.empty();

@@ -325,7 +325,7 @@ public class WikiUnitTest
         assertNull("getFirstRevision: Non-existent page", enWiki.getFirstRevision("dgfhdf&jklg"));
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         Wiki.Revision first = testWiki.getFirstRevision("User:MER-C/UnitTests/Delete");
-        assertEquals("getFirstRevision", 217080L, first.getRevid());
+        assertEquals("getFirstRevision", 217080L, first.getID());
     }
     
     @Test
@@ -463,11 +463,11 @@ public class WikiUnitTest
         Wiki.Revision[] history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete");
         for (Wiki.Revision rev : history)
         {
-            if (rev.getRevid() == 275553L)
+            if (rev.getID() == 275553L)
             {
                 assertTrue("revdeled history: content", rev.isContentDeleted());
                 assertTrue("revdeled history: user", rev.isUserDeleted());
-                assertTrue("revdeled history: summary", rev.isSummaryDeleted());
+                assertTrue("revdeled history: summary", rev.isCommentDeleted());
                 break;
             }
         }
@@ -626,13 +626,13 @@ public class WikiUnitTest
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
         // see also getLogEntries() below
         Wiki.LogEntry[] le = enWiki.getBlockList("Nimimaan");
-        assertEquals("getIPBlockList: ID not available", -1, le[0].getLogID());
+        assertEquals("getIPBlockList: ID not available", -1, le[0].getID());
         assertEquals("getIPBlockList: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertEquals("getIPBlockList: user", "MER-C", le[0].getUser().getUsername());
+        assertEquals("getIPBlockList: user", "MER-C", le[0].getUser());
         assertEquals("getIPBlockList: log", Wiki.BLOCK_LOG, le[0].getType());
         assertEquals("getIPBlockList: action", "block", le[0].getAction());
         assertEquals("getIPBlockList: target", "User:Nimimaan", le[0].getTarget());
-        assertEquals("getIPBlockList: reason", "spambot", le[0].getReason());
+        assertEquals("getIPBlockList: reason", "spambot", le[0].getComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
 //            false, true, // autoblock enabled, email disabled
@@ -653,13 +653,13 @@ public class WikiUnitTest
         OffsetDateTime c = OffsetDateTime.parse("2016-06-30T23:59:59Z");
         Wiki.LogEntry[] le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:Nimimaan", c, 
             null, 5, Wiki.ALL_NAMESPACES);
-        assertEquals("getLogEntries: ID", 75695806L, le[0].getLogID());
+        assertEquals("getLogEntries: ID", 75695806L, le[0].getID());
         assertEquals("getLogEntries: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser().getUsername());
+        assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser());
         assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
         assertEquals("getLogEntries/block: action", "block", le[0].getAction());
         assertEquals("getLogEntries: target", "User:Nimimaan", le[0].getTarget());
-        assertEquals("getLogEntries: reason", "spambot", le[0].getReason());
+        assertEquals("getLogEntries: reason", "spambot", le[0].getComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
 //            false, true, // autoblock enabled, email disabled
@@ -667,10 +667,10 @@ public class WikiUnitTest
 //        }, le[0].getDetails());
         
         // New user log
-        assertEquals("getLogEntries/newusers: user", "Nimimaan", le[1].getUser().getUsername());
+        assertEquals("getLogEntries/newusers: user", "Nimimaan", le[1].getUser());
         assertEquals("getLogEntries/newusers: log", Wiki.USER_CREATION_LOG, le[1].getType());
         assertEquals("getLogEntries/newusers: action", "create", le[1].getAction());
-        assertEquals("getLogEntries/newusers: reason", "", le[1].getReason());
+        assertEquals("getLogEntries/newusers: reason", "", le[1].getComment());
 //        assertNull("getLogEntries/newusers: parameters", le[1].getDetails());
         
         // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp&format=xmlfm
@@ -689,8 +689,8 @@ public class WikiUnitTest
         // RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&letitle=User%3AMER-C%2FTest
         le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:MER-C/Test");
-        assertNull("getLogEntries: reason hidden", le[0].getReason());
-        assertTrue("getLogEntries: reason hidden", le[0].isReasonDeleted());
+        assertNull("getLogEntries: reason hidden", le[0].getComment());
+        assertTrue("getLogEntries: reason hidden", le[0].isCommentDeleted());
         assertNull("getLogEntries: user hidden", le[0].getUser());
         assertTrue("getLogEntries: user hidden", le[0].isUserDeleted());
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&leuser=MER-C
@@ -700,7 +700,7 @@ public class WikiUnitTest
             OffsetDateTime.parse("2016-10-02T05:00:00Z"), 
             Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
         assertNull("getLogEntries: action hidden", le[0].getTarget());
-        assertTrue("getLogEntries: action hidden", le[0].isTargetDeleted());
+        assertTrue("getLogEntries: action hidden", le[0].isContentDeleted());
     }
     
     @Test
@@ -848,28 +848,28 @@ public class WikiUnitTest
         assertEquals("getRevision: timestamp", "2014-02-28T00:40:31Z", rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getRevision: user", "Lowercase sigmabot III", rev.getUser());
         assertEquals("getRevision: summary", "Archiving 3 discussion(s) to [[Wikipedia talk:WikiProject Spam/2014 Archive Feb 1]]) (bot",
-            rev.getSummary());
+            rev.getComment());
         assertEquals("getRevision: sha1", "540a2b3501e4d15729ea25ec3238da9ad0dd6dc4", rev.getSha1());
         assertEquals("getRevision: size", 4286, rev.getSize());
-        assertEquals("getRevision: revid", 597454682L, rev.getRevid());
-        assertEquals("getRevision: previous", 597399794L, rev.getPrevious().getRevid());
+        assertEquals("getRevision: revid", 597454682L, rev.getID());
+        assertEquals("getRevision: previous", 597399794L, rev.getPrevious().getID());
         // assertEquals("getRevision: next", 597553957L, rev.getNext().getRevid());
         assertTrue("getRevision: minor", rev.isMinor());
         assertFalse("getRevision: new", rev.isNew());
         assertFalse("getRevison: bot", rev.isBot());
         assertFalse("getRevision: user not revdeled", rev.isUserDeleted());
-        assertFalse("getRevision: summary not revdeled", rev.isSummaryDeleted());
+        assertFalse("getRevision: summary not revdeled", rev.isCommentDeleted());
         assertFalse("getRevision: content not deleted", rev.isContentDeleted());
         assertFalse("getRevision: page not deleted", rev.isPageDeleted());
         
         // revdel, logged out
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         rev = enWiki.getRevision(596714684L);
-        assertNull("getRevision: summary revdeled", rev.getSummary());
+        assertNull("getRevision: summary revdeled", rev.getComment());
         assertNull("getRevision: user revdeled", rev.getUser());
         assertNull("getRevision: sha1/content revdeled", rev.getSha1());
         assertTrue("getRevision: user revdeled", rev.isUserDeleted());
-        assertTrue("getRevision: summary revdeled", rev.isSummaryDeleted());
+        assertTrue("getRevision: summary revdeled", rev.isCommentDeleted());
         assertTrue("getRevision: content revdeled", rev.isContentDeleted());
         
         // Revision has been deleted (not RevisionDeleted)
@@ -927,9 +927,9 @@ public class WikiUnitTest
         assertTrue("contribs: IP address with no edits", edits[1].isEmpty());
         edits[2].forEach(rev ->
         {
-            if (rev.getRevid() == 724989913L)
+            if (rev.getID() == 724989913L)
             {
-                assertTrue("contribs: summary deleted", rev.isSummaryDeleted());
+                assertTrue("contribs: summary deleted", rev.isContentDeleted());
                 assertTrue("contribs: content deleted", rev.isContentDeleted());
             }
         });
@@ -941,7 +941,7 @@ public class WikiUnitTest
         options.put("new", Boolean.TRUE);
         options.put("top", Boolean.TRUE);
         edits = testWiki.contribs(users, "", null, null, options, Wiki.MAIN_NAMESPACE);
-        assertEquals("contribs: filtered", 120919L, edits[0].get(0).getRevid());
+        assertEquals("contribs: filtered", 120919L, edits[0].get(0).getID());
         // not implemented in MediaWiki API
         // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits[0].get(0).getSha1());
         edits[0].forEach(rev ->

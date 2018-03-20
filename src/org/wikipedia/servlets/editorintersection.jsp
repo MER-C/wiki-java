@@ -147,7 +147,11 @@ first in the GUI) apply.
         pagestream = Arrays.stream(pages.split("\r\n")).map(String::trim);
     }
     out.println("<hr>");
-    String[] pagesarray = pagestream.distinct().limit(25).toArray(String[]::new);
+    String[] pagesarray = pagestream
+        .distinct()
+        .filter(wiki.namespace(page) >= 0)
+        .limit(25)
+        .toArray(String[]::new);
     if (pagesarray.length < 2)
     {
 %>

@@ -103,7 +103,7 @@ public class UserLinkAdditionFinder
         results.forEach((revision, links) ->
         {
             StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
-            temp.append(revision.getRevid());
+            temp.append(revision.getID());
             temp.append("]]\n|| ");
             for (int i = 0; i < links.size(); i++)
             {

@@ -88,6 +88,16 @@ public class ArticleEditorIntersectorUnitTest
         catch (IllegalArgumentException expected)
         {
         }
+        // check if Special: and Media: pages are removed
+        articles = new String[] { "Special:Recentchanges", "Media:Example.png", "Main Page" };
+        try
+        {
+            intersector.intersectArticles(articles, false, false, false);
+            fail("Special/Media pages are not removed before going online.");
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
         
         // non-existing pages
         articles = new String[] { "This page does not exist", "This page also does not exist" };
@@ -95,11 +105,6 @@ public class ArticleEditorIntersectorUnitTest
         assertTrue("Intersection of non-existing pages", results.isEmpty());
         results = intersector.intersectArticles(articles, true, true, true);
         assertTrue("Intersection of non-existing pages with noadmin/bot/IP flags", results.isEmpty());
-        
-        // exclude Special: and Media: pages
-        articles = new String[] { "Special:Recentchanges", "Media:Example.png", "Main Page" };
-        results = intersector.intersectArticles(articles, false, false, false);
-        assertTrue("Intersection of Special/Media pages", results.isEmpty());
         
         // no intersection
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext

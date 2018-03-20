@@ -2703,7 +2703,7 @@ public class Wiki implements Serializable
                 else
                     temp[i].sizediff = temp[i].size - temp[i - 1].size;
                 if (i != size - 1)
-                    temp[i].next = temp[i + 1].revid;
+                    temp[i].next = temp[i + 1].getID();
             }
         }
         else
@@ -2715,7 +2715,7 @@ public class Wiki implements Serializable
                 else
                     temp[i].sizediff = temp[i].size - temp[i + 1].size;
                 if (i != 0)
-                    temp[i].next = temp[i - 1].revid;
+                    temp[i].next = temp[i - 1].getID();
             }
         }
         log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
@@ -3202,7 +3202,7 @@ public class Wiki implements Serializable
                     int y = line.indexOf("/>", j);
                     String blah = line.substring(j, y);
                     Revision rev = parseRevision(blah, title);
-                    revs.put(rev.getRevid(), rev);
+                    revs.put(rev.getID(), rev);
                 }
             }
         }
@@ -3355,7 +3355,7 @@ public class Wiki implements Serializable
         
         long[] revids = new long[revisions.length];
         for (int i = 0; i < revisions.length; i++)
-            revids[i] = revisions[i].getRevid();
+            revids[i] = revisions[i].getID();
         
         // send/read response
         for (String revstring : constructRevisionString(revids))
@@ -3369,11 +3369,11 @@ public class Wiki implements Serializable
             for (Revision rev : revisions)
             {
                 if (hideuser != null)
-                    rev.userDeleted = hideuser;
+                    rev.setUserDeleted(hideuser);
                 if (hidereason != null)
-                    rev.summaryDeleted = hidereason;
+                    rev.setCommentDeleted(hidereason);
                 if (hidecontent != null)
-                    rev.contentDeleted = hidecontent;
+                    rev.setContentDeleted(hidecontent);
             }
         }
         
@@ -3440,9 +3440,9 @@ public class Wiki implements Serializable
         postparams.put("title", rev.getPage());
         if (!reason.isEmpty())
             postparams.put("summary", reason);
-        postparams.put("undo", rev.getRevid());
+        postparams.put("undo", rev.getID());
         if (to != null)
-            postparams.put("undoafter", to.getRevid());
+            postparams.put("undoafter", to.getID());
         if (minor)
             postparams.put("minor", "1");
         if (bot)
@@ -3455,9 +3455,9 @@ public class Wiki implements Serializable
             throw new ConcurrentModificationException("Edit conflict on " + rev.getPage());
         checkErrorsAndUpdateStatus(response, "undo");
         
-        String log = "Successfully undid revision(s) " + rev.getRevid();
+        String log = "Successfully undid revision(s) " + rev.getID();
         if (to != null)
-            log += (" - " + to.getRevid());
+            log += (" - " + to.getID());
         log(Level.INFO, "undo", log);
     }
     
@@ -3638,16 +3638,16 @@ public class Wiki implements Serializable
             revision.sizediff = Integer.parseInt(parseAttribute(xml, "sizediff", 0));
 
         // revisiondelete
-        revision.summaryDeleted = xml.contains("commenthidden=\"");
-        revision.userDeleted = xml.contains("userhidden=\"");
+        revision.setCommentDeleted(xml.contains("commenthidden=\""));
+        revision.setUserDeleted(xml.contains("userhidden=\""));
         // Silly workaround: prop=revisions, prop=deletedrevisions, 
         // list=recentchanges and list=alldeletedrevisions all don't tell you 
         // whether content has been revision deleted until you fetch the content. 
         // Instead, fetch the SHA-1 of the content to minimize data transfer.
-        revision.contentDeleted = xml.contains("sha1hidden=\"");
+        revision.setContentDeleted(xml.contains("sha1hidden=\""));
         // list=usercontribs does tell you
         if (xml.contains("texthidden=\""))
-            revision.contentDeleted = true;
+            revision.setContentDeleted(true);
         return revision;
     }
 
@@ -3825,10 +3825,8 @@ public class Wiki implements Serializable
             for (int a = line.indexOf("<ii "); a > 0; a = line.indexOf("<ii ", ++a))
             {
                 int b = line.indexOf('>', a);
-                LogEntry le = parseLogEntry(line.substring(a, b));
-                le.target = prefixtitle;
-                le.type = UPLOAD_LOG;
-                le.action = "overwrite";
+                String temp = line.substring(a, b);
+                LogEntry le = parseLogEntry(temp, null, UPLOAD_LOG, "overwrite", prefixtitle);
                 results.add(le);
             }
         });
@@ -3943,10 +3941,8 @@ public class Wiki implements Serializable
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
                 int b = line.indexOf("/>", i);
-                LogEntry le = parseLogEntry(line.substring(i, b));
-                le.type = UPLOAD_LOG;
-                le.action = "upload"; // unless it's an overwrite?
-                le.user = user;
+                String temp = line.substring(i, b);
+                LogEntry le = parseLogEntry(temp, user.getUsername(), UPLOAD_LOG, "upload", null);
                 results.add(le);
             }
         });
@@ -5545,17 +5541,16 @@ public class Wiki implements Serializable
                 // find entry
                 int b = line.indexOf("/>", a);
                 String temp = line.substring(a, b);
-                LogEntry le = parseLogEntry(temp);
-                le.type = BLOCK_LOG;
-                le.action = "block";
-                // parseLogEntries parses block target into le.user due to mw.api
-                // attribute name
-                if (le.user == null) // autoblock
-                    le.target = "#" + parseAttribute(temp, "id", 0);
+                
+                String blocker = parseAttribute(temp, "by", 0);
+                String blockeduser = parseAttribute(temp, "user", 0);
+                String target;
+                if (blockeduser == null) // autoblock
+                    target = "#" + parseAttribute(temp, "id", 0);
                 else
-                    le.target = namespaceIdentifier(USER_NAMESPACE) + ":" + le.user.username;
-                // parse blocker for real
-                le.user = new User(parseAttribute(temp, "by", 0));
+                    target = namespaceIdentifier(USER_NAMESPACE) + ":" + blockeduser;
+                
+                LogEntry le = parseLogEntry(temp, blocker, BLOCK_LOG, "block", target);
                 results.add(le);
             }
         });
@@ -5707,8 +5702,7 @@ public class Wiki implements Serializable
             String[] items = line.split("<item ");
             for (int i = 1; i < items.length; i++)
             {
-                LogEntry le = parseLogEntry(items[i]);
-                le.logid = Long.parseLong(parseAttribute(items[i], "logid", 0));
+                LogEntry le = parseLogEntry(items[i], null, null, null, null);
                 results.add(le);
             }
         });
@@ -5733,15 +5727,22 @@ public class Wiki implements Serializable
      *  null.
      *
      *  @param xml the xml to parse
+     *  @param user null, or use this value for the performer of the log entry
+     *  @param type null, or use this value for the type of the log entry
+     *  @param action null, or use this value for the action of the log entry
+     *  @param target null, or user this value for the target of the log entry
      *  @return the parsed log entry
      *  @since 0.18
      */
-    protected LogEntry parseLogEntry(String xml)
+    protected LogEntry parseLogEntry(String xml, String user, String type, String action, String target)
     {
-        // note that we can override these in the calling method
-        String type = "", action = "";
+        // ID (getLogEntries only)
+        long id = -1;
+        if (xml.contains("logid=\""))
+            id = Long.parseLong(parseAttribute(xml, "logid", 0));
+        
         boolean actionhidden = xml.contains("actionhidden=\"");
-        if (xml.contains("type=\"")) // only getLogEntries
+        if (type == null && xml.contains("type=\"")) // only getLogEntries
         {
             type = parseAttribute(xml, "type", 0);
             action = parseAttribute(xml, "action", 0);
@@ -5757,15 +5758,14 @@ public class Wiki implements Serializable
         else
             reason = parseAttribute(xml, "comment", 0);
 
-        // generic performer name (won't work for ipblocklist, overridden there)
+        // generic performer name
         boolean userhidden = xml.contains("userhidden=\"\"");
-        User performer = null;
-        if (xml.contains("user=\""))
-            performer = new User(parseAttribute(xml, "user", 0));
+        if (user == null && xml.contains("user=\""))
+            user = parseAttribute(xml, "user", 0);
 
         // generic target name
-        String target = null;
-        if (xml.contains(" title=\"")) // space is important -- commons.getImageHistory("File:Chief1.gif");
+        // space is important -- commons.getImageHistory("File:Chief1.gif");
+        if (target == null && xml.contains(" title=\"")) 
             target = parseAttribute(xml, "title", 0);
 
         OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(xml, "timestamp", 0));
@@ -5824,10 +5824,10 @@ public class Wiki implements Serializable
             details = temp.toArray(new String[temp.size()]);
         }
 
-        LogEntry le = new LogEntry(type, action, reason, performer, target, timestamp, details);
-        le.userDeleted = userhidden;
-        le.reasonDeleted = reasonhidden;
-        le.targetDeleted = actionhidden;
+        LogEntry le = new LogEntry(id, type, action, reason, user, target, timestamp, details);
+        le.setUserDeleted(userhidden);
+        le.setCommentDeleted(reasonhidden);
+        le.setContentDeleted(actionhidden);
         return le;
     }
 
@@ -6661,6 +6661,206 @@ public class Wiki implements Serializable
             return username.hashCode() * 2 + 1;
         }
     }
+    
+    /**
+     *  A data super class for an event happening on a wiki such as a {@link
+     *  Wiki.Revision} or a {@link Wiki.LogEntry}.
+     *  @since 0.35
+     */
+    public abstract class Event implements Comparable<Event>
+    {
+        private long id = -1;
+        private final OffsetDateTime timestamp;
+        private String user;
+        private final String comment;
+        private boolean commentDeleted = false, userDeleted = false, 
+            contentDeleted = false;
+        
+        /**
+         *  Creates a new Event record.
+         *  @param id the unique ID of the event
+         *  @param timestamp the timestamp at which it occurred
+         *  @param user the user or IP address performing the event
+         *  @param comment the comment left by the user when performing the 
+         *  event (e.g. an edit summary)
+         */
+        protected Event(long id, OffsetDateTime timestamp, String user, String comment)
+        {
+            this.id = id;
+            this.timestamp = timestamp;
+            this.user = user;
+            this.comment = comment;
+        }
+        
+        /**
+         *  Gets the unique ID of this event. For a {@link Wiki.Revision}, this
+         *  number is referred to as the "oldid" or "revid" and should not be
+         *  confused with "rcid" (which is the ID in the recentchanges table).
+         *  For a {@link Wiki.LogEntry}, this value only makes sense if the
+         *  record was obtained through {@link Wiki#getLogEntries(java.lang.String, java.lang.String, int)}
+         *  and overloads (other methods return pseudo-LogEntries).
+         *  @return the ID of this revision
+         */
+        public long getID()
+        {
+            return id;
+        }
+        
+        /**
+         *  Gets the timestamp of this event.
+         *  @return the timestamp of this event
+         */
+        public OffsetDateTime getTimestamp()
+        {
+            return timestamp;
+        }
+        
+        /**
+         *  Returns the user or anon who performed this event. You should pass 
+         *  this (if not an IP) to {@link #getUser(java.lang.String)} to obtain 
+         *  a {@link Wiki.User} object. Returns {@code null} if the user was 
+         *  RevisionDeleted and you lack the necessary privileges.
+         *  @return the user or anon
+         */
+        public String getUser()
+        {
+            return user;
+        }
+        
+        /**
+         *  Sets a boolean flag that the user triggering this event has been
+         *  RevisionDeleted in on-wiki records.
+         *  @param deleted (see above)
+         *  @see #isUserDeleted()
+         *  @see #getUser()
+         */
+        protected void setUserDeleted(boolean deleted)
+        {
+            userDeleted = deleted;
+        }
+        
+        /**
+         *  Returns {@code true} if the user triggering this event is 
+         *  RevisionDeleted.
+         *  @return (see above)
+         *  @see #getUser() 
+         */
+        public boolean isUserDeleted()
+        {
+            return userDeleted;
+        }
+        
+        /**
+         *  Gets the comment for this event. If this is a {@link Wiki.Revision},
+         *  this is the edit summary. If this is a {@link Wiki.LogEntry}, this
+         *  is the reason for the logged action. WARNING: returns {@code null} 
+         *  if the reason was RevisionDeleted and you lack the necessary 
+         *  privileges.
+         *  @return the comment associated with the event
+         */
+        public String getComment()
+        {
+            return comment;
+        }
+        
+        /**
+         *  Sets a boolean flag that the comment associated with this event has 
+         *  been RevisionDeleted in on-wiki records.
+         *  @param deleted (see above)
+         *  @see #getComment
+         *  @see #isCommentDeleted() 
+         */
+        protected void setCommentDeleted(boolean deleted)
+        {
+            commentDeleted = deleted;
+        }
+        
+        /**
+         *  Returns {@code true} if the comment is RevisionDeleted.
+         *  @return (see above)
+         *  @see #getComment
+         */
+        public boolean isCommentDeleted()
+        {
+            return commentDeleted;
+        }
+        
+        /**
+         *  Sets a boolean flag that the content of this event has been 
+         *  RevisionDeleted.
+         *  @param deleted (see above)
+         *  @see #isContentDeleted() 
+         */
+        protected void setContentDeleted(boolean deleted)
+        {
+            contentDeleted = deleted;
+        }
+        
+        /**
+         *  Returns {@code true} if the content of this event has been 
+         *  RevisionDeleted. For a {@link Wiki.LogEntry}, this refers to the
+         *  target of the logged action and the logged action performed (e.g.
+         *  "unblock" or "delete").
+         *  @return (see above)
+         */
+        public boolean isContentDeleted()
+        {
+            return contentDeleted;
+        }
+        
+        /**
+         *  Returns a String representation of this Event. Subclasses only need
+         *  to lop off the trailing "]" and add their own fields when overriding
+         *  this method.
+         *  @return (see above)
+         */
+        @Override
+        public String toString()
+        {
+            return getClass().getName() + '['
+               + "id=" + id + ','
+               + "timestamp=" + timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + ','
+               + "user=\"" + ((user == null) ? "[DELETED]" : user) + "\","
+               + "userDeleted=" + userDeleted + ','
+               + "comment=\"" + ((comment == null) ? "[DELETED]" : comment) + "\","
+               + "commentDeleted=" + commentDeleted + ','
+               + "contentDeleted=" + contentDeleted + ']';
+        }
+        
+        /**
+         *  Determines whether this Event is equal to some other object. This 
+         *  method checks the timestamp, user, comment and ID.
+         *  @param other the other object to compare to
+         *  @return whether this instance is equal to that object
+         */
+        @Override
+        public boolean equals(Object other)
+        {
+            if (!(other instanceof Event))
+                return false;
+            Event event = (Event)other;
+            return id == event.getID() &&
+                timestamp.equals(event.getTimestamp()) &&
+                user.equals(event.getUser()) && 
+                comment.equals(event.getComment());
+        }
+        
+        /**
+         *  Compares this event to another one based on the recentness of their
+         *  timestamps (more recent = positive return value), then  
+         *  alphabetically by user.
+         *  @param other the event to compare to
+         *  @return the comparator value, negative if less, positive if greater
+         */
+        @Override
+        public int compareTo(Wiki.Event other)
+        {
+            int result = getTimestamp().compareTo(other.getTimestamp());
+            if (result == 0)
+                result = getUser().compareTo(other.getUser());
+            return result;
+        }
+    }
 
     /**
      *  A wrapper class for an entry in a wiki log, which represents an action
@@ -6669,24 +6869,16 @@ public class Wiki implements Serializable
      *  @see #getLogEntries
      *  @since 0.08
      */
-    public class LogEntry implements Comparable<LogEntry>
+    public class LogEntry extends Event
     {
-        // internal data storage
-        private long logid = -1;
-        private String type;
-        private String action;
-        private final String reason;
-        private User user;
-        private String target;
-        private final OffsetDateTime timestamp;
+        private String type, action, target;
         private Object details;
-        private boolean reasonDeleted = false, userDeleted = false, 
-            targetDeleted = false;
 
         /**
          *  Creates a new log entry. WARNING: does not perform the action
          *  implied. Use Wiki.class methods to achieve this.
          *
+         *  @param id the unique of this log entry
          *  @param type the type of log entry, one of {@link #USER_CREATION_LOG},
          *  {@link #DELETION_LOG}, {@link #BLOCK_LOG}, etc.
          *  @param action the type of action that was performed e.g. "delete",
@@ -6699,15 +6891,13 @@ public class Wiki implements Serializable
          *  the page after a move was performed).
          *  @since 0.08
          */
-        protected LogEntry(String type, String action, String reason, User user, 
+        protected LogEntry(long id, String type, String action, String reason, String user, 
             String target, OffsetDateTime timestamp, Object details)
         {
+            super(id, timestamp, user, reason);
             this.type = type;
             this.action = action;
-            this.reason = reason;
-            this.user = user;
             this.target = target;
-            this.timestamp = timestamp;
             this.details = details;
         }
         
@@ -6716,10 +6906,12 @@ public class Wiki implements Serializable
          *  {@link Wiki#getLogEntries}, otherwise returns -1.
          *  @return (see above)
          *  @since 0.33
+         *  @deprecated renamed to getID()
          */
+        @Deprecated
         public long getLogID()
         {
-            return logid;
+            return getID();
         }
 
         /**
@@ -6749,10 +6941,12 @@ public class Wiki implements Serializable
          *  in the GUI but retrievable by the API).
          *  @return (see above)
          *  @since 0.32
+         *  @deprecated renamed to isContentDeleted()
          */
+        @Deprecated
         public boolean isTargetDeleted()
         {
-            return targetDeleted;
+            return isContentDeleted();
         }
 
         /**
@@ -6761,43 +6955,24 @@ public class Wiki implements Serializable
          *  RevisionDeleted and one does not have access to the content.
          *  @return the reason the action was performed
          *  @since 0.08
+         *  @deprecated renamed to getComment
          */
+        @Deprecated
         public String getReason()
         {
-            return reason;
+            return getComment();
         }
         
         /**
          *  Returns true if the reason is RevisionDeleted.
          *  @return (see above)
          *  @since 0.32
+         *  @deprecated renamed to isCommentDeleted
          */
+        @Deprecated
         public boolean isReasonDeleted()
         {
-            return reasonDeleted;
-        }
-
-        /**
-         *  Gets the user object representing who performed the action.
-         *  WARNING: returns null if the user was RevisionDeleted and one does
-         *  not have access to the content.
-         *  @return the user who performed the action.
-         *  @since 0.08
-         */
-        public User getUser()
-        {
-            return user;
-        }
-        
-        /**
-         *  Returns true if the user who performed this LogEntry is
-         *  RevisionDeleted.
-         *  @return (see above)
-         *  @since 0.32
-         */
-        public boolean isUserDeleted()
-        {
-            return userDeleted;
+            return isCommentDeleted();
         }
 
         /**
@@ -6810,16 +6985,6 @@ public class Wiki implements Serializable
         public String getTarget()
         {
             return target;
-        }
-
-        /**
-         *  Gets the timestamp of this log entry.
-         *  @return the timestamp of this log entry
-         *  @since 0.08
-         */
-        public OffsetDateTime getTimestamp()
-        {
-            return timestamp;
         }
 
         /**
@@ -6866,20 +7031,14 @@ public class Wiki implements Serializable
         @Override
         public String toString()
         {
-            StringBuilder s = new StringBuilder("LogEntry[logid=");
-            s.append(logid);
+            StringBuilder s = new StringBuilder(super.toString());
+            s.deleteCharAt(s.length() - 1);
             s.append(",type=");
             s.append(type);
             s.append(",action=");
-            s.append(action == null ? "[hidden]" : action);
-            s.append(",user=");
-            s.append(user == null ? "[hidden]" : user.getUsername());
-            s.append(",timestamp=");
-            s.append(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            s.append(action == null ? "[DELETED]" : action);
             s.append(",target=");
-            s.append(target == null ? "[hidden]" : target);
-            s.append(",reason=\"");
-            s.append(reason == null ? "[hidden]" : reason);
+            s.append(target == null ? "[DELETED]" : target);
             s.append("\",details=");
             if (details instanceof Object[])
                 s.append(Arrays.asList((Object[])details)); // crude formatting hack
@@ -6890,19 +7049,6 @@ public class Wiki implements Serializable
         }
 
         /**
-         *  Compares this log entry to another one based on the recentness
-         *  of their timestamps.
-         *  @param other the log entry to compare
-         *  @return whether this object is equal to
-         *  @since 0.18
-         */
-        @Override
-        public int compareTo(Wiki.LogEntry other)
-        {
-            return timestamp.compareTo(other.timestamp);
-        }
-        
-        /**
          *  Determines whether two LogEntries refer to the same event.
          *  @param other some object to compare to
          *  @return (see above)
@@ -6911,12 +7057,13 @@ public class Wiki implements Serializable
         @Override
         public boolean equals(Object other)
         {
+            if (!super.equals(other))
+                return false;
             if (!(other instanceof LogEntry))
                 return false;
             LogEntry le = (LogEntry)other;
             return type.equals(le.type) && action.equals(le.action) && 
-                user.equals(le.user) && target.equals(le.target) && 
-                reason.equals(le.reason) && timestamp.equals(le.timestamp);
+                target.equals(le.target);
         }
     }
 
@@ -6924,19 +7071,15 @@ public class Wiki implements Serializable
      *  Represents a contribution and/or a revision to a page.
      *  @since 0.17
      */
-    public class Revision implements Comparable<Revision>
+    public class Revision extends Event
     {
         private boolean minor, bot, rvnew;
-        private String summary, sha1;
-        private long revid, rcid = -1;
+        private String sha1;
+        private long rcid = -1;
         private long previous = 0, next = 0;
-        private OffsetDateTime timestamp;
-        private String user;
         private String title;
         private String rollbacktoken = null;
-        private int size = 0;
-        private int sizediff = 0;
-        private boolean summaryDeleted = false, userDeleted = false, contentDeleted = false;
+        private int size = 0, sizediff = 0;
         private boolean pageDeleted = false;
 
         /**
@@ -6958,12 +7101,9 @@ public class Wiki implements Serializable
         public Revision(long revid, String sha1, OffsetDateTime timestamp, String title, String summary, 
             String user, boolean minor, boolean bot, boolean rvnew, int size)
         {
-            this.revid = revid;
+            super(revid, timestamp, user, summary);
             this.sha1 = sha1;
-            this.timestamp = timestamp;
-            this.summary = summary;
             this.minor = minor;
-            this.user = user;
             this.title = title;
             this.bot = bot;
             this.rvnew = rvnew;
@@ -6980,26 +7120,26 @@ public class Wiki implements Serializable
         public String getText() throws IOException
         {
             // logs have no content
-            if (revid < 1L)
+            if (getID() < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
 
             // TODO: returning a 404 here when revision content has been deleted
             // is not a good idea.
             if (pageDeleted) // FIXME: broken if a page is live, but has deleted revisions
             {
-                String url = query + "prop=deletedrevisions&drvprop=content&revids=" + revid;
+                String url = query + "prop=deletedrevisions&drvprop=content&revids=" + getID();
                 String temp = makeHTTPRequest(url, null, "Revision.getText");
                 int a = temp.indexOf("<rev ");
                 a = temp.indexOf(">", a) + 1;
                 int b = temp.indexOf("</rev>", a); // tag not present if revision has no content
-                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
+                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + getID());
                 return (b < 0) ? "" : temp.substring(a, b);
             }
             else
             {
-                String url = base + encode(title, true) + "&oldid=" + revid + "&action=raw";
+                String url = base + encode(title, true) + "&oldid=" + getID() + "&action=raw";
                 String temp = makeHTTPRequest(url, null, "Revision.getText");
-                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + revid);
+                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + getID());
                 return temp;
             }
         }
@@ -7014,9 +7154,9 @@ public class Wiki implements Serializable
          */
         public String getRenderedText() throws IOException
         {
-            if (revid < 1L)
+            if (getID() < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
-            return Wiki.this.parse(revid, null, null, -1);
+            return Wiki.this.parse(getID(), null, null, -1);
         }
         
         /**
@@ -7030,16 +7170,6 @@ public class Wiki implements Serializable
         public String getSha1()
         {
             return sha1;
-        }
-
-        /**
-         *  Returns true if the revision content is RevisionDeleted. 
-         *  @return (see above)
-         *  @since 0.31
-         */
-        public boolean isContentDeleted()
-        {
-            return contentDeleted;
         }
 
         /**
@@ -7058,7 +7188,7 @@ public class Wiki implements Serializable
          */
         public String diff(Revision other) throws IOException
         {
-            return Wiki.this.diff(null, revid, null, -1, null, other.getRevid(), null, -1);
+            return Wiki.this.diff(null, getID(), null, -1, null, other.getID(), null, -1);
         }
 
         /**
@@ -7074,7 +7204,7 @@ public class Wiki implements Serializable
          */
         public String diff(String text) throws IOException
         {
-            return Wiki.this.diff(null, revid, null, -1, null, 0, text, -1);
+            return Wiki.this.diff(null, getID(), null, -1, null, 0, text, -1);
         }
 
         /**
@@ -7096,7 +7226,7 @@ public class Wiki implements Serializable
          */
         public String diff(long oldid) throws IOException
         {
-            return Wiki.this.diff(null, revid, null, -1, null, oldid, null, -1);
+            return Wiki.this.diff(null, getID(), null, -1, null, oldid, null, -1);
         }
 
         /**
@@ -7110,7 +7240,7 @@ public class Wiki implements Serializable
         {
             if (!(o instanceof Revision))
                 return false;
-            return revid == ((Revision)o).revid;
+            return super.equals(o);
         }
 
         /**
@@ -7121,7 +7251,7 @@ public class Wiki implements Serializable
         @Override
         public int hashCode()
         {
-            return (int)revid * 2 - Wiki.this.hashCode();
+            return (int)getID() * 2 - Wiki.this.hashCode();
         }
 
         /**
@@ -7166,43 +7296,24 @@ public class Wiki implements Serializable
          *  summary was RevisionDeleted and you lack the necessary privileges.
          *  @return the edit summary
          *  @since 0.17
+         *  @deprecated renamed to getComment
          */
+        @Deprecated
         public String getSummary()
         {
-            return summary;
+            return getComment();
         }
 
         /**
          *  Returns {@code true} if the edit summary is RevisionDeleted.
          *  @return (see above)
          *  @since 0.30
+         *  @deprecated renamed to isCommentDeleted()
          */
+        @Deprecated
         public boolean isSummaryDeleted()
         {
-            return summaryDeleted;
-        }
-
-        /**
-         *  Returns the user or anon who created this revision. You should
-         *  pass this (if not an IP) to {@link #getUser(java.lang.String)} to
-         *  obtain a {@link Wiki.User} object. Returns {@code null} if the user 
-         *  was RevisionDeleted and you lack the necessary privileges.
-         *  @return the user or anon
-         *  @since 0.17
-         */
-        public String getUser()
-        {
-            return user;
-        }
-
-        /**
-         *  Returns {@code true} if the user is RevisionDeleted.
-         *  @return (see above)
-         *  @since 0.30
-         */
-        public boolean isUserDeleted()
-        {
-            return userDeleted;
+            return isCommentDeleted();
         }
 
         /**
@@ -7232,20 +7343,12 @@ public class Wiki implements Serializable
          *  <var>rcid</var>
          *  @return the oldid (long)
          *  @since 0.17
+         *  @deprecated renamed to getID()
          */
+        @Deprecated
         public long getRevid()
         {
-            return revid;
-        }
-
-        /**
-         *  Gets the time that this revision was made.
-         *  @return the timestamp
-         *  @since 0.17
-         */
-        public OffsetDateTime getTimestamp()
-        {
-            return timestamp;
+            return getID();
         }
 
         /**
@@ -7276,22 +7379,10 @@ public class Wiki implements Serializable
         @Override
         public String toString()
         {
-            StringBuilder sb = new StringBuilder("Revision[oldid=");
-            sb.append(revid);
+            StringBuilder sb = new StringBuilder(super.toString());
+            sb.deleteCharAt(sb.length() - 1);
             sb.append(",page=\"");
             sb.append(title);
-            sb.append("\",user=");
-            sb.append(user == null ? "[hidden]" : user);
-            sb.append(",userdeleted=");
-            sb.append(userDeleted);
-            sb.append(",timestamp=");
-            sb.append(timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-            sb.append(",summary=\"");
-            sb.append(summary == null ? "[hidden]" : summary);
-            sb.append("\",summarydeleted=");
-            sb.append(summaryDeleted);
-            sb.append(",contentDeleted=");
-            sb.append(contentDeleted);
             sb.append(",minor=");
             sb.append(minor);
             sb.append(",bot=");
@@ -7308,19 +7399,6 @@ public class Wiki implements Serializable
             sb.append(rollbacktoken == null ? "null" : rollbacktoken);
             sb.append("]");
             return sb.toString();
-        }
-
-        /**
-         *  Compares this revision to another revision based on the recentness
-         *  of their timestamps.
-         *  @param other the revision to compare
-         *  @return whether this object is equal to
-         *  @since 0.18
-         */
-        @Override
-        public int compareTo(Wiki.Revision other)
-        {
-            return timestamp.compareTo(other.getTimestamp());
         }
 
         /**

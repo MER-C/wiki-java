@@ -127,14 +127,14 @@ public class ParserUtils
             // timestamp, link to oldid
             buffer.append("*");
             buffer.append("[[Special:Permanentlink/");
-            buffer.append(rev.getRevid());
+            buffer.append(rev.getID());
             buffer.append("|");
             buffer.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()));
             buffer.append("]] ");
             
             // diff link
             buffer.append("([[Special:Diff/");
-            buffer.append(rev.getRevid());
+            buffer.append(rev.getID());
             buffer.append("|diff]]) ");
             
             if (rev.isNew())
@@ -179,7 +179,7 @@ public class ParserUtils
             
             // edit summary
             buffer.append(") .. (");
-            String summary = rev.getSummary();
+            String summary = rev.getComment();
             if (summary == null)
                 buffer.append(DELETED);
             // kill wikimarkup
@@ -219,7 +219,7 @@ public class ParserUtils
             temp2.append(wiki.base);
             temp2.append(page.replace(' ', '_'));
             temp2.append("&oldid=");
-            temp2.append(rev.getRevid());
+            temp2.append(rev.getID());
             buffer.append(temp2);
             buffer.append("&diff=prev\">prev</a>) ");
             
@@ -288,8 +288,8 @@ public class ParserUtils
             
             // edit summary
             buffer.append(") .. (");
-            if (rev.getSummary() != null)
-                buffer.append(recode(rev.getSummary()));
+            if (rev.getComment() != null)
+                buffer.append(recode(rev.getComment()));
             else
                 buffer.append(DELETED);
             buffer.append(")\n");
