@@ -621,6 +621,37 @@ public class WikiUnitTest
     }
     
     @Test
+    public void revisionDelete() throws Exception
+    {
+        Wiki.Revision revision = testWiki.getRevision(349877L);
+        Wiki.LogEntry[] logs = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
+            "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"), 
+            OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
+        try
+        {
+            List<Wiki.Event> events = new ArrayList<>();
+            events.add(revision);
+            events.add(logs[0]);
+            testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Not a reason", Boolean.FALSE, events);
+            fail("Can't mix revisions and log entries in RevisionDelete.");
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
+        // Test runs without logging in, therefore expect failure.
+        try
+        {
+            List<Wiki.Revision> revisions = new ArrayList<>();
+            revisions.add(revision);
+            testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Not a reason", Boolean.FALSE, revisions);
+            fail("Attempted to RevisionDelete while logged out.");
+        }
+        catch (CredentialNotFoundException expected)
+        {
+        }
+    }
+    
+    @Test
     public void getIPBlockList() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
@@ -1067,7 +1098,7 @@ public class WikiUnitTest
         assertEquals("search: no results", 0, results.length);
         // https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User%3AMER-C%2FUnitTests%2FDelete
         results = testWiki.search("User:MER-C/UnitTests/Delete", Wiki.USER_NAMESPACE);
-        assertEquals("search: results", 1, results.length);
+        assertEquals("search: results", 2, results.length);
         Map<String, Object> result = results[0];
         assertEquals("search: title", "User:MER-C/UnitTests/Delete", result.get("title"));
         assertEquals("search: snippet", "This revision is not <span class=\"searchmatch\">deleted</span>!", result.get("snippet"));

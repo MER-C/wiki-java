@@ -3289,7 +3289,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Deletes and undeletes revisions.
+     *  Deletes and undeletes revisions or log entries.
      *
      *  @param hidecontent hide the content of the revision (true/false
      *  = hide/unhide, {@code null} = status quo)
@@ -3298,7 +3298,9 @@ public class Wiki implements Serializable
      *  @param reason the reason why the (un)deletion was performed
      *  @param suppress [[Wikipedia:Oversight]] the information in question
      *  (ignored if we cannot {@code suppressrevision}, {@code null} = status quo).
-     *  @param revisions the list of revisions to (un)delete
+     *  @param events the list of Events to (un)delete. All Events must be of
+     *  the same type (no mixing Revisions or LogEntries). Pseudo-LogEntries and 
+     *  revisions to deleted pages are currently not allowed.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if you do not have the rights to
      *  delete revisions or log entries
@@ -3310,18 +3312,41 @@ public class Wiki implements Serializable
      *  @since 0.30
      */
     public synchronized void revisionDelete(Boolean hidecontent, Boolean hideuser, Boolean hidereason, String reason, Boolean suppress,
-        Revision[] revisions) throws IOException, LoginException
+        List<? extends Event> events) throws IOException, LoginException
     {
-        throttle();
-
+        long[] ids = new long[events.size()];
+        Event first = events.get(0);
+        Class<? extends Event> clazz = first.getClass();
+        for (int i = 0; i < events.size(); i++)
+        {
+            // all events submitted must be of the same type
+            Event temp = events.get(i);
+            if (!temp.getClass().equals(clazz))
+                throw new IllegalArgumentException("All Events to be RevisionDeleted must be of the same type.");
+            // TODO: Apparently you can RevisionDelete old files (i.e. 
+            // pseudo-LogEntries from getImageHistory and the file archive, but  
+            // I have no idea how to get the necessary ID parameter.
+            // You can also RevisionDelete deleted revisions, but I need to
+            // test this first.
+            if (temp.getID() < 0)
+                throw new UnsupportedOperationException("RevisionDeletion of pseudo-LogEntries is not supported.");
+            ids[i] = temp.getID();
+        }
         if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
+        throttle();
 
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("reason", reason);
-        postparams.put("type", "revision"); // FIXME: allow log entry deletion
         if (user.isAllowedTo("suppressrevision") && suppress != null)
             postparams.put("suppress", suppress ? "yes" : "no");
+        // So, what do we have here?
+        if (first instanceof Revision)
+            postparams.put("type", "revision");
+        else if (first instanceof LogEntry)
+            postparams.put("type", "logging");
+        else // unreachable... for now. 
+            throw new UnsupportedOperationException("Unsupported Event type in RevisionDelete.");
         // this is really stupid... I'm open to suggestions
         StringBuilder hide = new StringBuilder();
         StringBuilder show = new StringBuilder();
@@ -3353,31 +3378,27 @@ public class Wiki implements Serializable
         postparams.put("hide", hide);
         postparams.put("show", show);
         
-        long[] revids = new long[revisions.length];
-        for (int i = 0; i < revisions.length; i++)
-            revids[i] = revisions[i].getID();
-        
         // send/read response
-        for (String revstring : constructRevisionString(revids))
+        for (String revstring : constructRevisionString(ids))
         {
             postparams.put("token", getToken("csrf"));
             postparams.put("ids", revstring);
             String response = makeHTTPRequest(apiUrl + "action=revisiondelete", postparams, "revisionDelete");
             
             if (!response.contains("<revisiondelete "))
-                checkErrorsAndUpdateStatus(response, "move");
-            for (Revision rev : revisions)
+                checkErrorsAndUpdateStatus(response, "revisionDelete");
+            for (Event event : events)
             {
                 if (hideuser != null)
-                    rev.setUserDeleted(hideuser);
+                    event.setUserDeleted(hideuser);
                 if (hidereason != null)
-                    rev.setCommentDeleted(hidereason);
+                    event.setCommentDeleted(hidereason);
                 if (hidecontent != null)
-                    rev.setContentDeleted(hidecontent);
+                    event.setContentDeleted(hidecontent);
             }
         }
         
-        log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + revisions.length + " revisions.");
+        log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + events.size() + " events.");
     }
 
     /**
@@ -5634,7 +5655,8 @@ public class Wiki implements Serializable
      *  end are defined, this is ignored. Use {@code Integer.MAX_VALUE} to not
      *  specify one (overrides global limits)
      *  @param namespace filters by namespace. Returns empty if namespace
-     *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one.
+     *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one. Must not
+     *  be used with target.
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if {@code start.isAfter(end)}
      *  or amount &lt; 1
