@@ -272,10 +272,13 @@ public class WikiUnitTest
     {
         // check expiry
         Wiki.User user = enWiki.getUser("Example");
+        List<String> granted = new ArrayList<>();
+        granted.add("autopatrolled");
         try
         {
-            enWiki.changeUserPrivileges(user, new String[] { "autopatrolled" }, 
-                new OffsetDateTime[] { OffsetDateTime.MIN }, new String[0], "dummy reason");
+            List<OffsetDateTime> pastexpiry = new ArrayList<>();
+            pastexpiry.add(OffsetDateTime.MIN);
+            enWiki.changeUserPrivileges(user, granted, pastexpiry, Collections.emptyList(), "dummy reason");
             fail("Attempted to set user privilege expiry in the past.");
         }
         catch (IllegalArgumentException expected)
@@ -285,8 +288,10 @@ public class WikiUnitTest
         try
         {
             OffsetDateTime now = OffsetDateTime.now();
-            enWiki.changeUserPrivileges(user, new String[] { "autopatrolled" }, 
-                new OffsetDateTime[] { now.plusYears(1), now.plusYears(2) }, new String[0], "dummy reason");
+            List<OffsetDateTime> expiries = new ArrayList<>();
+            expiries.add(now.plusYears(1));
+            expiries.add(now.plusYears(2));
+            enWiki.changeUserPrivileges(user, granted, expiries, Collections.emptyList(), "dummy reason");
             fail("Attempted to set too many expiry dates.");
         }
         catch (IllegalArgumentException expected)
@@ -295,7 +300,7 @@ public class WikiUnitTest
         // Test runs without logging in, therefore expect failure.
         try
         {
-            enWiki.changeUserPrivileges(user, new String[] { "autopatrolled" }, new OffsetDateTime[0], new String[0], "dummy reason");
+            enWiki.changeUserPrivileges(user, granted, Collections.emptyList(), Collections.emptyList(), "dummy reason");
             fail("Attempted to set user privileges when logged out.");
         }
         catch (CredentialNotFoundException expected)
@@ -913,14 +918,43 @@ public class WikiUnitTest
     @Test
     public void diff() throws Exception
     {
+        // must specify from/to content
+        Map<String, Object> from = new HashMap<>();
+        Map<String, Object> to = new HashMap<>();
+        try
+        {
+            from.put("xxx", "yyy");
+            to.put("revid", 738178354L);
+            enWiki.diff(from, to);
+            fail("Failed to specify from content.");
+        }
+        catch (IllegalArgumentException | NoSuchElementException expected)
+        {
+        }
+        from.clear();
+        to.clear();
+        try
+        {
+            from.put("revid", 738178354L);
+            to.put("xxx", "yyy");
+            enWiki.diff(from, to);
+            fail("Failed to specify to content.");
+        }
+        catch (IllegalArgumentException | NoSuchElementException expected)
+        {
+            to.clear();
+        }
+        
         // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
-        String actual = enWiki.diff(null, 738178354L, null, -1, null, Wiki.PREVIOUS_REVISION, null, -1);
-        assertEquals("diff: dummy edit", "", actual);
+        from.put("revid", 738178354L);
+        to.put("revid", Wiki.PREVIOUS_REVISION);
+        assertEquals("diff: dummy edit", "", enWiki.diff(from, to));
         // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343
         // The MediaWiki API does not distinguish between a dummy edit and no 
         // difference. Both are now set to the empty string.
-        actual = enWiki.diff(null, 803731343L, null, -1, null, 804972897L, null, -1);
-        assertEquals("diff: no difference", "", actual);
+        from.put("revid", 803731343L);
+        to.put("revid", 804972897L);
+        assertEquals("diff: no difference", "", enWiki.diff(from, to));
         // no deleted pages allowed
         // FIXME: broken because makeHTTPRequest() swallows the API error
         // actual = enWiki.diff("Create a page", 0L, null, -1, null, 804972897L, null, -1);
@@ -932,15 +966,21 @@ public class WikiUnitTest
         // assertNull("diff: from deleted revision", actual);
         
         // check for sections that don't exist
-        actual = enWiki.diff(null, 803731343L, null, 4920, null, 804972897L, null, -1);
-        assertNull("diff: no such from section", actual);
-        actual = enWiki.diff(null, 803731343L, null, -1, null, 804972897L, null, 4920);
-        assertNull("diff: no such to section", actual);
+        from.put("revid", 803731343L);
+        from.put("section", 4920);
+        to.put("revid", 804972897L);
+        assertNull("diff: no such from section", enWiki.diff(from, to));
+        from.remove("section");
+        to.put("section", 4920);
+        assertNull("diff: no such to section", enWiki.diff(from, to));
         // bad revids
-        actual = enWiki.diff(null, 1L << 62, null, -1, null, 803731343L, null, -1);
-        assertNull("diff: bad from revid", actual);
-        actual = enWiki.diff(null, 803731343L, null, -1, null, 1L << 62, null, -1);
-        assertNull("diff: bad to revid", actual);
+        from.put("revid", 1L << 62);
+        to.remove("section");
+        to.put("revid", 803731343L);
+        assertNull("diff: bad from revid", enWiki.diff(from, to));
+        from.put("revid", 803731343L);
+        to.put("revid", 1L << 62);
+        assertNull("diff: bad to revid", enWiki.diff(from, to));
     }
     
     @Test
@@ -1075,18 +1115,23 @@ public class WikiUnitTest
     @Test
     public void parse() throws Exception
     {
-        assertNull("parse: no such section", enWiki.parse(-1, "Hello", null, 50));
-        assertNull("parse: bad revid", enWiki.parse(1L << 62, null, null, -1));
+        HashMap<String, Object> content = new HashMap<>();
+        content.put("title", "Hello");
+        content.put("section", 50);
+        assertNull("parse: no such section", enWiki.parse(content));
+        content.clear();
+        content.put("revid", 1L << 62);
+        assertNull("parse: bad revid", enWiki.parse(content));
         // FIXME: currently broken because makeHTTPRequest swallows the API error
         // assertNull("parse: deleted page", enWiki.parse(-1L, "Create a page", null, -1));
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         // assertNull("parse: revisiondeleted revision", enWiki.parse(596714684L, null, null, -1));
         try
         {
-            enWiki.parse(-1, null, null, -1);
+            enWiki.parse(Collections.emptyMap());
             fail("Parse: did not specify content to parse.");
         }
-        catch (IllegalArgumentException expected)
+        catch (IllegalArgumentException | NoSuchElementException expected)
         {
         }
     }

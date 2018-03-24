@@ -1223,24 +1223,21 @@ public class Wiki implements Serializable
      */
     public String parse(String markup) throws IOException
     {
-        return parse(-1, null, markup, -1);
+        Map<String, Object> content = new HashMap<>();
+        content.put("text", markup);
+        return parse(content);
     }
     
     /**
-     *  Parses wikitext, revisions or pages. Only one of <var>revid</var>, 
-     *  <var>title</var> or <var>text</var> needs to be specified. Returns 
-     *  {@code null} for bad section numbers and <var>revid</var>s. Deleted 
-     *  pages, revisions to deleted pages and RevisionDeleted revisions are not 
-     *  allowed if you don't have the rights to view them.
+     *  Parses wikitext, revisions or pages.  Deleted pages, revisions to 
+     *  deleted pages and RevisionDeleted revisions are not allowed if you 
+     *  don't have the rights to view them.
      * 
-     *  @param revid the {@link Revision#getRevid() revid} of a revision to 
-     *  parse (overrides all other parameters, use -1 to skip)
-     *  @param title the title to parse (overrides text, use null to skip)
-     *  @param text the wikimarkup to parse (use null to skip)
-     *  @param section the section to parse (optional, use -1 to skip)
+     *  @param content a Map following the same scheme as specified by
+     *  {@link #diff(java.util.Map, java.util.Map)}
      *  @return the parsed wikitext
-     *  @throws IllegalArgumentException if none of <var>oldid</var>, 
-     *  <var>title</var> or <var>text</var> was specified
+     *  @throws NoSuchElementException/IllegalArgumentException if no content 
+     *  was supplied for parsing
      *  @throws IOException if a network error occurs
      *  @see #parse(java.lang.String) 
      *  @see #getRenderedText(java.lang.String) 
@@ -1249,19 +1246,33 @@ public class Wiki implements Serializable
      *  documentation</a>
      *  @since 0.35
      */
-    protected String parse(long revid, String title, String text, int section) throws IOException
+    protected String parse(Map<String, Object> content) throws IOException
     {
         Map<String, Object> postparams = new HashMap<>();
-        if (revid > 0)
-            postparams.put("oldid", revid);
-        else if (title != null)
-            postparams.put("page", normalize(title));
-        else if (text != null)
-            postparams.put("text", text);
-        else
-            throw new IllegalArgumentException("No content was specified to parse!");
-        if (section >= 0)
+        
+        Integer section = (Integer)content.remove("section");
+        if (section != null && section >= 0)
             postparams.put("section", section);
+        
+        Map.Entry<String, Object> entry = content.entrySet().iterator().next();
+        Object value = entry.getValue();
+        switch (entry.getKey())
+        {
+            case "title":
+                postparams.put("page", normalize((String)value));
+                break;
+            case "revid":
+                postparams.put("oldid", value);
+                break;
+            case "revision":
+                postparams.put("oldid", ((Revision)value).getID());
+                break;
+            case "text":
+                postparams.put("text", value);
+                break;
+            default:
+                throw new IllegalArgumentException("No content was specified to parse!");
+        }
         
         String response = makeHTTPRequest(apiUrl + "action=parse&prop=text", postparams, "parse");
         if (response.contains("error code=\""))
@@ -1824,11 +1835,13 @@ public class Wiki implements Serializable
      */
     public String getRenderedText(String title) throws IOException
     {
+        Map<String, Object> content = new HashMap<>();
         if (namespace(title) == SPECIAL_NAMESPACE)
             // not guaranteed to succeed...
-            return parse(-1, null, "{{:" + title + "}}", -1);
+            content.put("text", "{{:" + title + "}}");
         else
-            return parse(-1, title, null, -1);
+            content.put("title", title);
+        return parse(content);
     }
 
     /**
@@ -3493,71 +3506,88 @@ public class Wiki implements Serializable
      *  allowed if you don't have the rights to see them.
      * 
      *  <p>
-     *  The parameters fromXXX refer to the left side of the diff table while
-     *  the toXXX parameters refer to the right side. Only one of 
-     *  <var>fromtitle</var>, <var>fromrev</var> and <var>fromtext</var> needs 
-     *  to be specified. Likewise, only one of <var>totitle</var>,  
-     *  <var>torev</var> and <var>totext</var> need be specified. XXXtitle takes
-     *  precedence over XXXrev, which in turn takes precedence over XXXtext. The
-     *  XXXrev parameters refer to {@linkplain Revision#getRevid() the unique
-     *  ID for the revision}. 
+     *  <var>from</var> refers to content on the left side of the diff table 
+     *  while <var>to</var> refers to content on the right side. Only one of the 
+     *  following keys representing content sources must be specified for each:
+     *  
+     *  <ul>
+     *  <li><b>title</b> (String) -- a page title
+     *  <li><b>revid</b> (long) -- a {@linkplain Revision#getID() unique ID for
+     *  a revision}. {@link Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION}
+     *  and {@link Wiki#CURRENT_REVISION} can be used in <var>to</var> for 
+     *  obvious effect.
+     *  <li><b>revision</b> ({@link Wiki.Revision}) -- a Revision
+     *  <li><b>text</b> (String) -- some wikitext
+     *  <li><b>section</b> (Integer) -- diff against this section number
+     *    (optional additional parameter)
+     *  </ul>
      * 
-     *  @param fromtitle a title of a page to compare from (left side, use null
-     *  to skip)
-     *  @param fromrev the {@link Revision#getRevid() revid} of a revision to 
-     *  compare from (left side, use 0 to skip)
-     *  @param fromtext the wikitext to compare from (left side, use null to 
-     *  skip)
-     *  @param fromsection diff only this section of the fromXXX content  
-     *  (optional, use -1 to skip)
-     *  @param totitle a title of a page to compare to (right side, use null to
-     *  skip)
-     *  @param torev the {@link Revision#getRevid() revid} of a revision to 
-     *  compare to (right side, use 0 to skip). {@link Wiki#NEXT_REVISION}, 
-     *  {@link Wiki#PREVIOUS_REVISION} and {@link Wiki#CURRENT_REVISION} can be 
-     *  used here for obvious effect. 
-     *  @param totext the wikitext to compare to (right side, use null to skip)
-     *  @param tosection diff only this section of the toXXX content  
-     *  (optional, use -1 to skip)
+     *  @param from the content on the left hand side of the diff
+     *  @param to the content on the right hand side of the diff
      *  @return a HTML difference table between the two texts, "" for dummy
      *  edits or null as described above
-     *  @throws IllegalArgumentException if none of the fromXXX or toXXX 
-     *  parameters are specified
+     *  @throws NoSuchElementException/IllegalArgumentException if no from or 
+     *  to content is specified
      *  @throws IOException if a network error occurs
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
      *  @since 0.35
      */
-    public String diff(String fromtitle, long fromrev, String fromtext, int fromsection, 
-        String totitle, long torev, String totext, int tosection) throws IOException
+    public String diff(Map<String, Object> from, Map<String, Object> to) throws IOException
     {
         HashMap<String, Object> postparams = new HashMap<>();
-        if (fromtitle != null)
-            postparams.put("fromtitle", normalize(fromtitle));
-        else if (fromrev > 0)
-            postparams.put("fromrev", fromrev);
-        else if (fromtext != null)
-            postparams.put("fromtext", fromtext);
-        else
-            throw new IllegalArgumentException("From content not specified!");
-        if (fromsection >= 0)
-            postparams.put("fromsection", fromsection);
         
-        if (totitle != null)
-            postparams.put("totitle", normalize(totitle));
-        else if (torev == NEXT_REVISION)
-            postparams.put("torelative", "next");
-        else if (torev == CURRENT_REVISION)
-            postparams.put("torelative", "cur");
-        else if (torev == PREVIOUS_REVISION)
-            postparams.put("torelative", "prev");
-        else if (torev > 0L)
-            postparams.put("torev", torev);
-        else if (totext != null)
-            postparams.put("totext", totext);
-        else
-            throw new IllegalArgumentException("To content not specified!");
-        if (tosection >= 0)
-            postparams.put("tosection", tosection);
+        Integer section = (Integer)from.remove("section");
+        if (section != null && section >= 0)
+            postparams.put("fromsection", section);
+        section = (Integer)to.remove("section");
+        if (section != null && section >= 0)
+            postparams.put("tosection", section);
+        
+        Map.Entry<String, Object> entry = from.entrySet().iterator().next();
+        Object value = entry.getValue();
+        switch (entry.getKey())
+        {
+            case "title":
+                postparams.put("fromtitle", normalize((String)value));
+                break;
+            case "revid":
+                postparams.put("fromrev", value);
+                break;
+            case "revision":
+                postparams.put("fromrev", ((Revision)value).getID());
+                break;
+            case "text":
+                postparams.put("fromtext", value);
+                break;
+            default:
+                throw new IllegalArgumentException("From content not specified!");
+        }
+        entry = to.entrySet().iterator().next();
+        value = entry.getValue();
+        switch (entry.getKey())
+        {
+            case "title":
+                postparams.put("totitle", normalize((String)value));
+                break;
+            case "revid":
+                if (value.equals(PREVIOUS_REVISION))
+                    postparams.put("torelative", "prev");
+                else if (value.equals(CURRENT_REVISION))
+                    postparams.put("torelative", "cur");
+                else if (value.equals(NEXT_REVISION))
+                    postparams.put("torelative", "next");
+                else
+                    postparams.put("torev", value);
+                break;
+            case "revision":
+                postparams.put("torev", ((Revision)value).getID());
+                break;
+            case "text":
+                postparams.put("totext", value);
+                break;
+            default:
+                throw new IllegalArgumentException("To content not specified!");
+        }
         
         String line = makeHTTPRequest(apiUrl + "action=compare", postparams, "diff");
 
@@ -3684,7 +3714,7 @@ public class Wiki implements Serializable
      *  @return true or false if the image doesn't exist
      *  @throws FileNotFoundException if the file is a directory, cannot be 
      *  created or opened
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException/UncheckedIOException if a network error occurs
      *  @since 0.30
      */
     public boolean getImage(String title, File file) throws FileNotFoundException, IOException
@@ -3704,7 +3734,7 @@ public class Wiki implements Serializable
      *  @return true or false if the image doesn't exist
      *  @throws FileNotFoundException if the file is a directory, cannot be 
      *  created or opened
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException/UncheckedIOException if a network error occurs
      *  @since 0.30
      */
     public boolean getImage(String title, int width, int height, File file) throws FileNotFoundException, IOException
@@ -3749,7 +3779,7 @@ public class Wiki implements Serializable
      *
      *  @param file the image to get metadata for (may contain "File")
      *  @return the metadata for the image or null if it doesn't exist
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException/UncheckedIOException if a network error occurs
      *  @since 0.20
      */
     public Map<String, Object> getFileMetadata(String file) throws IOException
@@ -3793,7 +3823,7 @@ public class Wiki implements Serializable
      *
      *  @param file the file for checking duplicates (may contain "File")
      *  @return the duplicates of that file
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException/UncheckedIOException if a network error occurs
      *  @since 0.18
      */
     public String[] getDuplicates(String file) throws IOException
@@ -3826,7 +3856,7 @@ public class Wiki implements Serializable
      *
      *  @param title the title of the image (may contain File)
      *  @return the image history of the image
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException/UncheckedIOException if a network error occurs
      *  @since 0.20
      */
     public LogEntry[] getImageHistory(String title) throws IOException
@@ -3990,7 +4020,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws IOException or UncheckedIOException if a network or local 
+     *  @throws IOException/UncheckedIOException if a network or local 
      *  filesystem error occurs
      *  @throws AccountLockedException if user is blocked
      *  @since 0.21
@@ -4116,7 +4146,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException/UncheckedIOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws AccessDeniedException if the wiki does not permit us to upload
      *  from this URL
@@ -4813,6 +4843,7 @@ public class Wiki implements Serializable
         postparams.put("user", usertoblock);
         postparams.put("token", getToken("csrf"));
         postparams.put("reason", reason);
+        postparams.put("expiry", expiry == null ? "indefinite" : expiry);
         postparams.put("reblock", "1");
         if (blockoptions != null)
         {
@@ -4878,9 +4909,9 @@ public class Wiki implements Serializable
      *  remove and what they do. Equivalent to [[Special:UserRights]].
      * 
      *  @param u the user to change permissions for
-     *  @param addedgroups a list of groups to add
+     *  @param granted a list of groups to add
      *  @param expiry the expiry time of these rights
-     *  @param removedgroups a list of 
+     *  @param revoked a list of 
      *  @param reason the reason for granting and/or removal
      *  @throws IllegalArgumentException if expiry.length != 0, 1 or 
      *  addedgroups.length or if any expiry time is in the past
@@ -4892,15 +4923,15 @@ public class Wiki implements Serializable
      *  @see <a href="https://www.mediawiki.org/wiki/API:User_group_membership">MediaWiki
      *  documentation</a>
      */
-    public synchronized void changeUserPrivileges(User u, String[] addedgroups, OffsetDateTime[] expiry, 
-        String[] removedgroups, String reason) throws IOException, LoginException
+    public synchronized void changeUserPrivileges(User u, List<String> granted, List<OffsetDateTime> expiry, 
+        List<String> revoked, String reason) throws IOException, LoginException
     {
         // validate parameters
-        int numexpirydates = expiry.length;
-        if (numexpirydates > 1 && numexpirydates != addedgroups.length)
+        int numexpirydates = expiry.size();
+        if (numexpirydates > 1 && numexpirydates != granted.size())
             throw new IllegalArgumentException("Expiry array length must be 0, 1 or addedgroups.length");
         final OffsetDateTime now = OffsetDateTime.now();
-        if (Arrays.stream(expiry).anyMatch(date -> date.isBefore(now)))
+        if (expiry.stream().anyMatch(date -> date.isBefore(now)))
             throw new IllegalArgumentException("Supplied dates must be in the future!");
         if (user == null)
             throw new CredentialNotFoundException("You need to be logged in to change user privileges.");
@@ -4910,9 +4941,9 @@ public class Wiki implements Serializable
         postparams.put("user", u.getUsername());
         postparams.put("reason", reason);
         postparams.put("token", getToken("userrights"));
-        postparams.put("add", addedgroups);
+        postparams.put("add", granted);
         postparams.put("expiry", numexpirydates == 0 ? "indefinite" : expiry);
-        postparams.put("remove", removedgroups);
+        postparams.put("remove", revoked);
         String response = makeHTTPRequest(apiUrl + "action=userrights", postparams, "changeUserPrivileges");
         if (!response.contains("<userrights "))
             checkErrorsAndUpdateStatus(response, "changeUserPrivileges");
@@ -5065,7 +5096,7 @@ public class Wiki implements Serializable
      */
     public Revision[] watchlist() throws IOException, CredentialNotFoundException
     {
-        return watchlist(false, null);
+        return watchlist(null);
     }
 
     /**
@@ -5076,12 +5107,10 @@ public class Wiki implements Serializable
      *  of time</a>.
      *  <p>
      *  Available keys for <var>options</var> include "minor", "bot", "anon",
-     *  "patrolled" and "unread" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code options = { minor = true;, bot = false }} returns all
-     *  minor edits not made by bots.
+     *  "patrolled", "top" and "unread" for vanilla MediaWiki (extensions may 
+     *  define their own). {@code options = { minor = true;, bot = false }} 
+     *  returns all minor edits not made by bots.
      * 
-     *  @param allrev show all revisions to the pages, instead of the top most
-     *  change
      *  @param options a Map dictating which revisions to select. Key not present 
      *  = don't care.
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -5090,13 +5119,14 @@ public class Wiki implements Serializable
      *  @throws CredentialNotFoundException if not logged in
      *  @since 0.27
      */
-    public Revision[] watchlist(boolean allrev, Map<String, Boolean> options, int... ns) throws IOException, CredentialNotFoundException
+    public Revision[] watchlist(Map<String, Boolean> options, int... ns) throws IOException, CredentialNotFoundException
     {
         if (user == null)
             throw new CredentialNotFoundException("Not logged in");
         StringBuilder url = new StringBuilder(query);
         url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes");
-        if (allrev)
+        Boolean top = options.remove("top");
+        if (top != null && top)
             url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
         if (options != null && !options.isEmpty())
@@ -7178,7 +7208,9 @@ public class Wiki implements Serializable
         {
             if (getID() < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
-            return Wiki.this.parse(getID(), null, null, -1);
+            Map<String, Object> content = new HashMap<String, Object>();
+            content.put("revision", this);
+            return Wiki.this.parse(content);
         }
         
         /**
@@ -7210,7 +7242,11 @@ public class Wiki implements Serializable
          */
         public String diff(Revision other) throws IOException
         {
-            return Wiki.this.diff(null, getID(), null, -1, null, other.getID(), null, -1);
+            Map<String, Object> from = new HashMap<>();
+            from.put("revision", this);
+            Map<String, Object> to = new HashMap<>();
+            to.put("revision", other);
+            return Wiki.this.diff(from, to);
         }
 
         /**
@@ -7226,7 +7262,11 @@ public class Wiki implements Serializable
          */
         public String diff(String text) throws IOException
         {
-            return Wiki.this.diff(null, getID(), null, -1, null, 0, text, -1);
+            Map<String, Object> from = new HashMap<>();
+            from.put("revision", this);
+            Map<String, Object> to = new HashMap<>();
+            to.put("text", text);
+            return Wiki.this.diff(from, to);
         }
 
         /**
@@ -7248,7 +7288,11 @@ public class Wiki implements Serializable
          */
         public String diff(long oldid) throws IOException
         {
-            return Wiki.this.diff(null, getID(), null, -1, null, oldid, null, -1);
+            Map<String, Object> from = new HashMap<>();
+            from.put("revision", this);
+            Map<String, Object> to = new HashMap<>();
+            to.put("revid", oldid);
+            return Wiki.this.diff(from, to);
         }
 
         /**
@@ -7598,8 +7642,8 @@ public class Wiki implements Serializable
      *  <li>StringBuilder -- {@code sb.toString()}
      *  <li>Number -- {@code num.toString()}
      *  <li>OffsetDateTime -- {@code date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)}
-     *  <li>OffsetDateTime[] -- {@code Arrays.stream()
-     *      .map(date -> date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+     *  <li>{@code Collection<?>} -- {@code coll.stream()
+     *      .map(item -> convertToString(item)) // using the above rules
      *      .collect(Collectors.joining("|"))}
      *  </ul>
      * 
@@ -7817,11 +7861,11 @@ public class Wiki implements Serializable
             OffsetDateTime date = (OffsetDateTime)param;
             return date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         }
-        else if (param instanceof OffsetDateTime[])
+        else if (param instanceof Collection)
         {
-            OffsetDateTime[] dates = (OffsetDateTime[])param;
-            return Arrays.stream(dates)
-                .map(date -> date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+            Collection<?> coll = (Collection)param;
+            return coll.stream()
+                .map(item -> convertToString(item))
                 .collect(Collectors.joining("|"));
         }
         else
