@@ -1094,14 +1094,10 @@ public class WikiUnitTest
         
         String[] text = testWiki.getPageText(new String[]
         {
-            // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-            "User:MER-C/UnitTests/Delete", 
-            // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
-            "User:MER-C/UnitTests/pagetext",
-            // non-existent -- https://test.wikipedia.org/wiki/Gsgdksgjdsg
-            "Gsgdksgjdsg",
-            // empty -- https://test.wikipedia.org/wiki/User:NikiWiki/EmptyPage
-            "User:NikiWiki/EmptyPage"
+            "User:MER-C/UnitTests/Delete", // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
+            "User:MER-C/UnitTests/pagetext", // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
+            "Gsgdksgjdsg", // https://test.wikipedia.org/wiki/Gsgdksgjdsg (does not exist)
+            "User:NikiWiki/EmptyPage" // https://test.wikipedia.org/wiki/User:NikiWiki/EmptyPage (empty)
             
         });
         // API result does not include the terminating new line
@@ -1110,6 +1106,26 @@ public class WikiUnitTest
             "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;");
         assertNull("getPageText: non-existent page", text[2]);
         assertEquals("getPageText: empty page", text[3], "");
+    }
+    
+    @Test
+    public void getText() throws Exception
+    {
+        long[] ids =
+        {
+            230472L, // https://test.wikipedia.org/w/index.php?oldid=230472 (decoding test)
+            322889L, // https://test.wikipedia.org/w/index.php?oldid=322889 (empty revision)
+            275553L, // https://test.wikipedia.org/w/index.php?oldid=275553 (RevisionDeleted)
+            316531L, // https://test.wikipedia.org/w/index.php?oldid=316531 (first revision on same page)
+            316533L  // https://test.wikipedia.org/w/index.php?oldid=316533 (second revision on same page)
+        };
+        String[] text = testWiki.getText(null, ids, -1);
+        assertEquals("revision text: decoding", "&#039;&#039;italic&#039;&#039;" +
+            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;", text[0]);
+        assertEquals("revision text: empty revision", text[1], "");
+        assertNull("revision text: content deleted", text[2]);
+        assertEquals("revision text: same page", "Testing 0.2786153173518522", text[3]);
+        assertEquals("revision text: same page", "Testing 0.28713760508426645", text[4]);
     }
     
     @Test
@@ -1222,26 +1238,6 @@ public class WikiUnitTest
     }
 
     // INNER CLASS TESTS
-    
-    @Test
-    public void revisionGetText() throws Exception
-    {
-        // https://test.wikipedia.org/w/index.php?oldid=230472
-        Wiki.Revision rev = testWiki.getRevision(230472L);
-        String text = rev.getText();
-        assertEquals("revision text: decoding", "&#039;&#039;italic&#039;&#039;" +
-            "\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;", text);
-        
-        // RevisionDeleted content (returns 404)
-        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
-        // rev = enWiki.getRevision(596714684L);
-        // text = rev.getText();
-        // assertEquals("revision text: content deleted", null, text);
-        
-        // https://test.wikipedia.org/w/index.php?oldid=322889
-        rev = testWiki.getRevision(322889L);
-        assertEquals("revision text: empty revision", rev.getText(), "");
-    }
     
     @Test
     public void revisionCompareTo() throws Exception

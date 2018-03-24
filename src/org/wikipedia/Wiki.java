@@ -1739,49 +1739,95 @@ public class Wiki implements Serializable
      */
     public String[] getPageText(String[] titles) throws IOException
     {
-        // setup
-        for (String title : titles)
-            if (namespace(title) < 0)
-                throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
-        HashMap<String, String> pageTexts = new HashMap<>(2 * titles.length);
-        String url = query + "prop=revisions&rvprop=content";
-        Map<String, Object> postparams = new HashMap<>();
-        // copy because redirect resolver overwrites
-        String[] titles2 = Arrays.copyOf(titles, titles.length); 
-        
-        for (String chunk : constructTitleString(titles))
+        return getText(titles, null, -1);
+    }
+    
+    /**
+     *  Gets the wikitext of a list of titles or revisions. If a page or
+     *  revision doesn't exist or is deleted, return {@code null}. 
+     *  RevisionDeleted revisions are not allowed.
+     * 
+     *  @param titles a list of titles (use null or zero length to skip, 
+     *  overrides revids).
+     *  @param revids a list of revids (use null or zero length to skip)
+     *  @param section a section number. This section number must exist in all
+     *  titles or revids otherwise you will get vast swathes of your results 
+     *  being erroneously null. Optional, use -1 to skip.
+     *  @return the raw wikicode of those titles, in the same order as the input
+     *  array
+     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @since 0.35
+     */
+    public String[] getText(String[] titles, long[] revids, int section) throws IOException
+    {
+        // determine what type of request we have. Cannot mix the two.
+        boolean isrevisions;
+        int count = 0;
+        String[] titles2 = null;
+        if (titles != null && titles.length > 0)
         {
-            postparams.put("titles", chunk);
-            String[] results = makeHTTPRequest(url, postparams, "getPageText").split("<page ");
-            if (resolveredirect)
+            // validate titles
+            for (String title : titles)
+                if (namespace(title) < 0)
+                    throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
+            isrevisions = false;
+            count = titles.length;
+            // copy because redirect resolver overwrites
+            titles2 = Arrays.copyOf(titles, count);
+        }
+        else if (revids != null && revids.length > 0)
+        {
+            isrevisions = true;
+            count = revids.length;
+        }
+        else
+            throw new IllegalArgumentException("Either titles or revids must be specified!");
+        
+        HashMap<String, String> pageTexts = new HashMap<>(2 * count);
+        StringBuilder url = new StringBuilder(query);
+        url.append("prop=revisions&rvprop=ids%7Ccontent");
+        if (section >= 0)
+        {
+            url.append("&rvsection=");
+            url.append(section);
+        }
+        Map<String, Object> postparams = new HashMap<>();
+        
+        List<String> chunks = isrevisions ? constructRevisionString(revids) : constructTitleString(titles);
+        for (String chunk : chunks)
+        {
+            postparams.put(isrevisions ? "revids" : "titles", chunk);
+            String temp = makeHTTPRequest(url.toString(), postparams, "getPageText");
+            String[] results = temp.split(isrevisions ? "<rev " : "<page ");
+            if (!isrevisions && resolveredirect)
                 resolveRedirectParser(titles2, results[0]);
 
             // skip first element to remove front crud
             for (int i = 1; i < results.length; i++)
             {
                 // determine existance, then locate and extract content
-                String parsedtitle = parseAttribute(results[i], "title", 0);
-                String text = null;
-                if (!results[i].contains("missing=\"\""))
+                String key = parseAttribute(results[i], isrevisions ? "revid" : "title", 0);
+                if (!results[i].contains("missing=\"\"") && !results[i].contains("texthidden=\"\""))
                 {
                     int x = results[i].indexOf("<rev ", i);
                     int y = results[i].indexOf(">", x) + 1;
-                    // this </rev> tag is not present for empty pages
+                    // this </rev> tag is not present for empty pages/revisions
                     int z = results[i].indexOf("</rev>", y);
-                    text = (z < 0) ? "" : decode(results[i].substring(y, z));
+                    // store result for later
+                    String text = (z < 0) ? "" : decode(results[i].substring(y, z));
+                    pageTexts.put(key, text);
                 }
-                
-                // store result for later
-                pageTexts.put(parsedtitle, text);
             }
         }
 
-        String[] ret = new String[titles2.length];
         // returned array is in the same order as input array
-        for (int j = 0; j < titles2.length; j++)
-            ret[j] = pageTexts.get(normalize(titles2[j]));
-
-        log(Level.INFO, "getPageText", "Successfully retrieved text of " + titles2.length + " pages.");
+        String[] ret = new String[count];
+        for (int i = 0; i < count; i++)
+        {
+            String key = isrevisions ? String.valueOf(revids[i]) : normalize(titles2[i]);
+            ret[i] = pageTexts.get(key);
+        }
+        log(Level.INFO, "getPageText", "Successfully retrieved text of " + count + (isrevisions ? " revisions." : " pages."));
         return ret;
     }
 
@@ -1799,23 +1845,7 @@ public class Wiki implements Serializable
     {
         if (section < 0)
             throw new IllegalArgumentException("Section numbers must be positive!");
-        StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvprop=content&titles=");
-        url.append(encode(title, true));
-        url.append("&rvsection=");
-        url.append(section);
-        String text = makeHTTPRequest(url.toString(), null, "getSectionText");
-        // section doesn't exist
-        if (text.contains("code=\"nosuchsection\""))
-            return null;
-        // if the section does not contain any text, <rev xml:space=\"preserve\">
-        // will not have a separate closing tag
-        if (!text.contains("</rev>"))
-            return "";
-        int a = text.indexOf("<rev ");
-        a = text.indexOf("xml:space=\"preserve\">", a) + 21;
-        int b = text.indexOf("</rev>", a);
-        return decode(text.substring(a, b));
+        return getText(new String[] { title }, null, section)[0];
     }
 
     /**
@@ -7188,12 +7218,7 @@ public class Wiki implements Serializable
                 return (b < 0) ? "" : temp.substring(a, b);
             }
             else
-            {
-                String url = base + encode(title, true) + "&oldid=" + getID() + "&action=raw";
-                String temp = makeHTTPRequest(url, null, "Revision.getText");
-                log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + getID());
-                return temp;
-            }
+                return Wiki.this.getText(null, new long[] { getID() }, -1)[0];
         }
 
         /**
