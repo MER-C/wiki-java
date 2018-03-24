@@ -439,7 +439,9 @@ public class Wiki implements Serializable
      *  @see #query
      *  @see <a href="https://mediawiki.org/wiki/Manual:Index.php">MediaWiki
      *  documentation</a>
+     *  @deprecated replace with getIndexPHPURL(). Will be made private.
      */
+    @Deprecated
     protected String base;
     
     /**
@@ -654,7 +656,7 @@ public class Wiki implements Serializable
         else
             basegen.append("/index.php?title=");
         base = basegen.toString();
-        // the native API supports assertions as of MW 1.23
+        // use inbuilt assertions
         if ((assertion & ASSERT_BOT) == ASSERT_BOT)
             apigen.append("assert=bot&");
         else if ((assertion & ASSERT_USER) == ASSERT_USER)
@@ -674,6 +676,19 @@ public class Wiki implements Serializable
     public String getDomain()
     {
         return domain;
+    }
+    
+    /**
+     *  Gets the URL of index.php.
+     *  @return (see above)
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Parameters_to_index.php">
+     *  MediaWiki documentation</a>
+     *  @since 0.35
+     */
+    public String getIndexPHPURL()
+    {
+        // TODO: replace with base once it is made private and stripped of junk
+        return protocol + domain + scriptPath + "/index.php";
     }
 
     /**
@@ -1418,6 +1433,26 @@ public class Wiki implements Serializable
             return page.substring(0, page.lastIndexOf("/"));
         else
             return page;
+    }
+    
+    /**
+     *  Returns a URL to the human readable version of <var>page</var>. Example:
+     *  https://en.wikipedia.org/wiki/Create_a_page 
+     *  @param page a title
+     *  @return (see above)
+     *  @since 0.35
+     */
+    public String getPageURL(String page)
+    {
+        try
+        {
+            page = normalize(page).replace(' ', '_');
+            return protocol + domain + "/wiki/" + URLEncoder.encode(page, "UTF-8");
+        }
+        catch (IOException ex)
+        {
+            throw new UncheckedIOException(ex); // seriously?
+        }
     }
     
     /**
@@ -7561,6 +7596,16 @@ public class Wiki implements Serializable
         public String getRollbackToken()
         {
             return rollbacktoken;
+        }
+        
+        /**
+         *  Gets a permanent URL to the human-readable version of this Revision.
+         *  @return (see above)
+         *  @since 0.35
+         */
+        public String permanentURL()
+        {
+            return getIndexPHPURL() + "?oldid=" + getID();
         }
 
         /**

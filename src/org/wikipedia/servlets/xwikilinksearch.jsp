@@ -148,10 +148,10 @@ reasons, results are limited to between 500 and 1000 links per wiki.
             out.print("At least ");
         out.print(value.size());
         out.print(" links found ");
-        out.print("(<a href=\"//" + wiki.getDomain() + "/wiki/Special:Linksearch/*."
-            + domain + "\">HTTP linksearch</a> | ");
-        out.println("<a href=\"//" + wiki.getDomain() + "/wiki/Special:Linksearch/https://*."
-            + domain + "\">HTTPS linksearch</a>).");
+        out.print("(<a href=\"" + wiki.getPageURL("Special:Linksearch/*." + domain)
+            + "\">HTTP linksearch</a> | ");
+        out.println("<a href=\"" + wiki.getPageURL("Special:Linksearch/https://*." + domain)
+            + "\">HTTPS linksearch</a>).");
     }
 %>
 <%@ include file="footer.jsp" %>

@@ -68,6 +68,12 @@ public class WikiUnitTest
     }
     
     @Test
+    public void getIndexPHPURL()
+    {
+        assertEquals("getIndexPHPURL", "https://en.wikipedia.org/w/index.php", enWiki.getIndexPHPURL());
+    }
+    
+    @Test
     public void assertionMode() throws Exception
     {
         enWiki.setAssertionMode(Wiki.ASSERT_USER);
@@ -254,6 +260,13 @@ public class WikiUnitTest
         assertEquals("getRootPage: talk ns, already root", "Talk:Aaa", enWiki.getParentPage("Talk:Aaa"));
         assertEquals("getParentPage: rtl", "ويكيبيديا:نقاش الحذف",
             arWiki.getParentPage("ويكيبيديا:نقاش الحذف/كأس الخليج العربي لكرة القدم 2014 المجموعة ب"));
+    }
+    
+    @Test
+    public void getPageURL() throws Exception
+    {
+        assertEquals("getPageURL", "https://en.wikipedia.org/wiki/Hello_World", enWiki.getPageURL("Hello_World"));
+        assertEquals("getPageURL", "https://en.wikipedia.org/wiki/Hello_World", enWiki.getPageURL("Hello World"));
     }
     
     @Test
@@ -1248,6 +1261,13 @@ public class WikiUnitTest
         assertEquals("Revision.compareTo: self", 0, revisions[0].compareTo(revisions[0]));
         assertTrue("Revision.compareTo: before", revisions[1].compareTo(revisions[0]) < 0);
         assertTrue("Revision.compareTo: after",  revisions[0].compareTo(revisions[1]) > 0);
+    }
+    
+    @Test
+    public void revisionPermanentURL() throws Exception
+    {
+        Wiki.Revision rev = enWiki.getRevision(822342083L);
+        assertEquals("Revision.permanentURL", "https://en.wikipedia.org/w/index.php?oldid=822342083", rev.permanentURL());
     }
     
     @Test

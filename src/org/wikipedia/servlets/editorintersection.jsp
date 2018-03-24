@@ -201,15 +201,13 @@ first in the GUI) apply.
         for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
         {
             List<Wiki.Revision> revs = entry2.getValue();
-            StringBuilder title = new StringBuilder("<a href=\"//");
-            title.append(wiki.getDomain());
-            title.append("/wiki/");
-            title.append(entry2.getKey());
+            StringBuilder title = new StringBuilder("<a href=\"");
+            title.append(wiki.getPageURL(entry2.getKey()));
             title.append("\">");
             title.append(entry2.getKey());
-            title.append("</a> (<a href=\"//");
-            title.append(wiki.getDomain());
-            title.append("/w/index.php?title=");
+            title.append("</a> (<a href=\"");
+            title.append(wiki.getIndexPHPURL());
+            title.append("?title=");
             title.append(entry2.getKey());
             title.append("&action=history\">history</a>) &ndash; ");
             title.append(revs.size());

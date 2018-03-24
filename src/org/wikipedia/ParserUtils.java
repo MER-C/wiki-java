@@ -19,9 +19,10 @@
  */
 package org.wikipedia;
 
+import java.io.*;
+import java.net.URLEncoder;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import org.wikipedia.servlets.ServletUtils;
 
 /**
  *  Various parsing methods that turn Wiki.java objects into wikitext and HTML
@@ -215,16 +216,12 @@ public class ParserUtils
             
             // diff link
             String page = recode(rev.getPage());
-            StringBuilder temp2 = new StringBuilder("<a href=\"");
-            temp2.append(wiki.base);
-            temp2.append(page.replace(' ', '_'));
-            temp2.append("&oldid=");
-            temp2.append(rev.getID());
-            buffer.append(temp2);
+            String revurl = "<a href=\"" + rev.permanentURL();
+            buffer.append(revurl);
             buffer.append("&diff=prev\">prev</a>) ");
             
             // date
-            buffer.append(temp2);
+            buffer.append(revurl);
             buffer.append("\">");
             buffer.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()));
             buffer.append("</a> ");
@@ -242,33 +239,25 @@ public class ParserUtils
             else
                 buffer.append(". ");
             
-            // pages never contain XSS characters
-            buffer.append("<a href=\"//");
-            buffer.append(wiki.getDomain());
-            buffer.append("/wiki/");
-            buffer.append(page.replace(' ', '_'));
+            // page name
+            buffer.append("<a href=\"");
+            buffer.append(wiki.getPageURL(page));
             buffer.append("\" class=\"pagename\">");
             buffer.append(page);
             buffer.append("</a> .. ");
             
-            // usernames never contain XSS characters
+            // user links
             String temp = recode(rev.getUser());
             if (temp != null)
             {
-                buffer.append("<a href=\"//");
-                buffer.append(wiki.getDomain());
-                buffer.append("/wiki/User:");
-                buffer.append(temp);
+                buffer.append("<a href=\"");
+                buffer.append(wiki.getPageURL("User:" + temp));
                 buffer.append("\">");
                 buffer.append(temp);
-                buffer.append("</a> (<a href=\"//");
-                buffer.append(wiki.getDomain());
-                buffer.append("/wiki/User talk:");
-                buffer.append(temp);
-                buffer.append("\">talk</a> | <a href=\"//");
-                buffer.append(wiki.getDomain());
-                buffer.append("/wiki/Special:Contributions/");
-                buffer.append(temp);
+                buffer.append("</a> (<a href=\"");
+                buffer.append(wiki.getPageURL("User talk:" + temp));
+                buffer.append("\">talk</a> | <a href=\"");
+                buffer.append(wiki.getPageURL("Special:Contributions/" + temp));
                 buffer.append("\">contribs</a>)");
             }
             else
@@ -322,8 +311,7 @@ public class ParserUtils
     /**
      *  Renders output of {@link Wiki#linksearch} in HTML.
      *  @param results the results to render
-     *  @param domain the domain that was searched (should already be sanitized
-     *  for XSS)
+     *  @param domain the domain that was searched
      *  @param wiki the wiki that was searched
      *  @return the rendered HTML
      *  @since 0.02
@@ -332,12 +320,10 @@ public class ParserUtils
     {
         StringBuilder buffer = new StringBuilder(1000);
         buffer.append("<p>\n<ol>\n");
-        for (String[] result : results)
+        results.forEach(result ->
         {
-            buffer.append("\t<li><a href=\"//");
-            buffer.append(wiki.getDomain());
-            buffer.append("/wiki/");
-            buffer.append(result[0]);
+            buffer.append("\t<li><a href=\"");
+            buffer.append(wiki.getPageURL(result[0]));
             buffer.append("\">");
             buffer.append(result[0]);
             buffer.append("</a> uses link <a href=\"");
@@ -345,7 +331,7 @@ public class ParserUtils
             buffer.append("\">");
             buffer.append(result[1]);
             buffer.append("</a>\n");
-        }
+        });
         buffer.append("</ol>");
         return buffer.toString();
     }
@@ -353,22 +339,29 @@ public class ParserUtils
     /**
      *  Creates user links in HTML of the form <samp>User (talk | contribs | 
      *  deletedcontribs | block | block log)</samp>
-     *  @param username the username, NOT sanitized for XSS
+     *  @param username the username
      *  @param wiki the wiki to build links for
      *  @return the generated HTML
      *  @see #generateUserLinksAsWikitext(java.lang.String) 
      */
     public static String generateUserLinks(Wiki wiki, String username)
     {
-        String domain = wiki.getDomain();
-        String userenc = ServletUtils.sanitizeForURL(username.replace(' ', '_'));
-        return "<a href=\"//" + domain + "/wiki/User:" + userenc + "\">" + username + "</a> ("
-            +  "<a href=\"//" + domain + "/wiki/User_talk:" + userenc + "\">talk</a> | "
-            +  "<a href=\"//" + domain + "/wiki/Special:Contributions/" + userenc + "\">contribs</a> | "
-            +  "<a href=\"//" + domain + "/wiki/Special:DeletedContributions/" + userenc + "\">deleted contribs</a> | "
-            +  "<a href=\"//" + domain + "/w/index.php?title=Special:Log&user=" + userenc + "\">logs</a> | "
-            +  "<a href=\"//" + domain + "/wiki/Special:Block/" + userenc + "\">block</a> | "
-            +  "<a href=\"//" + domain + "/w/index.php?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
+        try
+        {
+            String indexPHPURL = wiki.getIndexPHPURL();
+            String userenc = URLEncoder.encode(username, "UTF-8");
+            return "<a href=\"" + wiki.getPageURL("User:" + username) + "\">" + username + "</a> ("
+                +  "<a href=\"" + wiki.getPageURL("User talk:" + username) + "\">talk</a> | "
+                +  "<a href=\"" + wiki.getPageURL("Special:Contributions/" + username) + "\">contribs</a> | "
+                +  "<a href=\"" + wiki.getPageURL("Special:DeletedContributions/" + username) + "\">deleted contribs</a> | "
+                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
+                +  "<a href=\"" + wiki.getPageURL("Special:Block/" + username) + "\">block</a> | "
+                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
+        }
+        catch (IOException ex)
+        {
+            throw new UncheckedIOException(ex); // seriously?
+        }
     }
     
     /**
@@ -380,14 +373,21 @@ public class ParserUtils
      */
     public static String generateUserLinksAsWikitext(String username)
     {
-        String userenc = ServletUtils.sanitizeForURL(username.replace(' ', '_'));
-        return "* [[User:" + username + "|" + username + "]] (" 
-            +  "[[User talk:" + username + "|talk]] | "
-            +  "[[Special:Contributions/" + username + "|contribs]] | "
-            +  "[[Special:DeletedContributions/" + username + "|deleted contribs]] | "
-            +  "[{{fullurl:Special:Log|user=" + userenc + "}} logs] | "
-            +  "[[Special:Block/" + username + "|block]] | "
-            +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
+        try
+        {
+            String userenc = URLEncoder.encode(username, "UTF-8");
+            return "* [[User:" + username + "|" + username + "]] (" 
+                +  "[[User talk:" + username + "|talk]] | "
+                +  "[[Special:Contributions/" + username + "|contribs]] | "
+                +  "[[Special:DeletedContributions/" + username + "|deleted contribs]] | "
+                +  "[{{fullurl:Special:Log|user=" + userenc + "}} logs] | "
+                +  "[[Special:Block/" + username + "|block]] | "
+                +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
+        }
+        catch (IOException ex)
+        {
+            throw new UncheckedIOException(ex); // seriously?
+        }
     }
     
     /**

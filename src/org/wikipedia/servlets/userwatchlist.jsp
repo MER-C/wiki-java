@@ -67,8 +67,8 @@ Someone # Spam
         if (inputpage != null)
         {
         %>
-        <a href="//en.wikipedia.org/wiki/<%= inputpage_url %>">visit</a> |
-        <a href="//en.wikipedia.org/w/index.php?action=edit&title=<%= inputpage_url %>">edit</a>
+        <a href="<%= wiki.getPageURL(inputpage) %>">visit</a> |
+        <a href="<%= wiki.getIndexPHPURL() + "?action=edit&title=" + inputpage_url %>">edit</a>
         <%
         }
         %>

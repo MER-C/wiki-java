@@ -88,23 +88,24 @@ public class ParserUtilsUnitTest
     @Test
     public void generateUserLinks() throws Exception
     {
+        String indexPHPURL = testWiki.getIndexPHPURL();
         String expected = 
-              "<a href=\"//test.wikipedia.org/wiki/User:MER-C\">MER-C</a> ("
-            + "<a href=\"//test.wikipedia.org/wiki/User_talk:MER-C\">talk</a> | "
-            + "<a href=\"//test.wikipedia.org/wiki/Special:Contributions/MER-C\">contribs</a> | "
-            + "<a href=\"//test.wikipedia.org/wiki/Special:DeletedContributions/MER-C\">deleted contribs</a> | "
-            + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&user=MER-C\">logs</a> | "
-            + "<a href=\"//test.wikipedia.org/wiki/Special:Block/MER-C\">block</a> | "
-            + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&type=block&page=User:MER-C\">block log</a>)";
+              "<a href=\"" + testWiki.getPageURL("User:MER-C") + "\">MER-C</a> ("
+            + "<a href=\"" + testWiki.getPageURL("User talk:MER-C") + "\">talk</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Special:Contributions/MER-C") + "\">contribs</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Special:DeletedContributions/MER-C") + "\">deleted contribs</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&user=MER-C\">logs</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Special:Block/MER-C") + "\">block</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:MER-C\">block log</a>)";
         assertEquals("generateUserLinks", expected, ParserUtils.generateUserLinks(testWiki, "MER-C"));
         
-        expected = "<a href=\"//test.wikipedia.org/wiki/User:A_B_%E3%81%AE\">A B の</a> ("
-            + "<a href=\"//test.wikipedia.org/wiki/User_talk:A_B_%E3%81%AE\">talk</a> | "
-            + "<a href=\"//test.wikipedia.org/wiki/Special:Contributions/A_B_%E3%81%AE\">contribs</a> | "
-            + "<a href=\"//test.wikipedia.org/wiki/Special:DeletedContributions/A_B_%E3%81%AE\">deleted contribs</a> | "
-            + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&user=A_B_%E3%81%AE\">logs</a> | "
-            + "<a href=\"//test.wikipedia.org/wiki/Special:Block/A_B_%E3%81%AE\">block</a> | "
-            + "<a href=\"//test.wikipedia.org/w/index.php?title=Special:Log&type=block&page=User:A_B_%E3%81%AE\">block log</a>)";
+        expected = "<a href=\"" + testWiki.getPageURL("User:A_B_の") + "\">A B の</a> ("
+            + "<a href=\"" + testWiki.getPageURL("User_talk:A_B_の") + "\">talk</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Special:Contributions/A_B_の") + "\">contribs</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Special:DeletedContributions/A_B_の") + "\">deleted contribs</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&user=A+B+%E3%81%AE\">logs</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Special:Block/A_B_の") + "\">block</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:A+B+%E3%81%AE\">block log</a>)";
         assertEquals("generateUserLinks: special characters", expected, ParserUtils.generateUserLinks(testWiki, "A B の"));
     }
     
@@ -124,9 +125,9 @@ public class ParserUtilsUnitTest
             + "[[User talk:A B の|talk]] | "
             + "[[Special:Contributions/A B の|contribs]] | "
             + "[[Special:DeletedContributions/A B の|deleted contribs]] | "
-            + "[{{fullurl:Special:Log|user=A_B_%E3%81%AE}} logs] | "
+            + "[{{fullurl:Special:Log|user=A+B+%E3%81%AE}} logs] | "
             + "[[Special:Block/A B の|block]] | "
-            + "[{{fullurl:Special:Log|type=block&page=User:A_B_%E3%81%AE}} block log])\n";
+            + "[{{fullurl:Special:Log|type=block&page=User:A+B+%E3%81%AE}} block log])\n";
         assertEquals("generateUserLinksAsWikitext: special characters", expected, ParserUtils.generateUserLinksAsWikitext("A B の"));
     }
 }
