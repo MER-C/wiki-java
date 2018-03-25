@@ -58,15 +58,13 @@ public class AdminUnitTest
     public void getDeletedText() throws Exception
     {
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/Delete
-        String text = testWiki.getDeletedText("User:MER-C/UnitTests/Delete");
-        assertEquals("getDeletedText", text, "This revision is also deleted!");
-        
+        assertEquals("getDeletedText", "This revision is also deleted!", 
+            testWiki.getDeletedText("User:MER-C/UnitTests/Delete"));
         // https://test.wikipedia.org/wiki/Special:Undelete/Tfs;hojfsdhp;osjfeas;lioejg
         assertNull("getDeletedText: page never deleted", testWiki.getDeletedText("Tfs;hojfsdhp;osjfeas;lioejg"));
-        
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/EmptyDelete
-        text = testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete");
-        assertEquals("getDeletedText: empty", testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete"), "");
+        assertEquals("getDeletedText: empty", "", 
+            testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete"));
     }
     
     /**
@@ -94,9 +92,8 @@ public class AdminUnitTest
     {
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/revdel
         Wiki.Revision revision = testWiki.getRevision(349877L);
-        List<Wiki.Revision> revisions = new ArrayList<>();
-        revisions.add(revision);
-        testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Unit testing", Boolean.FALSE, revisions);
+        testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Unit testing", 
+            Boolean.FALSE, Arrays.asList(revision));
         assertTrue("RevisionDelete: set commentDeleted flag", revision.isCommentDeleted());
         assertTrue("RevisionDelete: set contentDeleted flag", revision.isContentDeleted());
         assertTrue("RevisionDelete: set userDeleted flag", revision.isUserDeleted());
@@ -110,9 +107,8 @@ public class AdminUnitTest
         Wiki.LogEntry[] le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
             "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"),
             OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
-        List<Wiki.LogEntry> logs = new ArrayList<>();
-        logs.add(le[0]);
-        testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Unit testing WOOP WOOP WOOP", Boolean.FALSE, logs);
+        testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, 
+            "Unit testing WOOP WOOP WOOP", Boolean.FALSE, Arrays.asList(le[0]));
         // local state is controlled by a superclass, no need to test again
         // still need to check whether ths state was actually changed on-wiki
         le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
@@ -128,16 +124,14 @@ public class AdminUnitTest
     {
         // undo RevisionDelete test on Revision
         Wiki.Revision revision = testWiki.getRevision(349877L);
-        List<Wiki.Revision> revisions = new ArrayList<>();
-        revisions.add(revision);
-        testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", Boolean.FALSE, revisions);
+        testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", 
+            Boolean.FALSE, Arrays.asList(revision));
         
         // undo RevisionDelete test on LogEntry
         Wiki.LogEntry[] le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
             "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"),
             OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
-        List<Wiki.LogEntry> logs = new ArrayList<>();
-        logs.add(le[0]);
-        testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", Boolean.FALSE, logs);
+        testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", 
+            Boolean.FALSE, Arrays.asList(le[0]));
     }
 }

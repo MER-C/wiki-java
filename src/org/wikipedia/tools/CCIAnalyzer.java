@@ -94,7 +94,7 @@ public class CCIAnalyzer
                 from.put("revid", oldid);
                 Map<String, Object> to = new HashMap<>();
                 to.put("revid", Wiki.PREVIOUS_REVISION);
-                diff = enWiki.diff(from, to);
+                diff = enWiki.diff(from, -1, to, -1);
                 exception = false;
             }
             catch (IOException ex)

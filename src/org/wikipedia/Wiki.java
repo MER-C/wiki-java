@@ -1240,7 +1240,7 @@ public class Wiki implements Serializable
     {
         Map<String, Object> content = new HashMap<>();
         content.put("text", markup);
-        return parse(content);
+        return parse(content, -1);
     }
     
     /**
@@ -1248,8 +1248,13 @@ public class Wiki implements Serializable
      *  deleted pages and RevisionDeleted revisions are not allowed if you 
      *  don't have the rights to view them.
      * 
+     *  <p>
+     *  <b>WARNING</b>: the parameters to this method will be changed when the time
+     *  comes for JDK11 refactoring to {@code parse(Map.Entry<String, Object> content, int section)}.
+     * 
      *  @param content a Map following the same scheme as specified by
-     *  {@link #diff(java.util.Map, java.util.Map)}
+     *  {@link #diff(java.util.Map, int, java.util.Map, int)}
+     *  @param section parse only this section (optional, use -1 to skip)
      *  @return the parsed wikitext
      *  @throws NoSuchElementException/IllegalArgumentException if no content 
      *  was supplied for parsing
@@ -1261,13 +1266,9 @@ public class Wiki implements Serializable
      *  documentation</a>
      *  @since 0.35
      */
-    protected String parse(Map<String, Object> content) throws IOException
+    public String parse(Map<String, Object> content, int section) throws IOException
     {
         Map<String, Object> postparams = new HashMap<>();
-        
-        Integer section = (Integer)content.remove("section");
-        if (section != null && section >= 0)
-            postparams.put("section", section);
         
         Map.Entry<String, Object> entry = content.entrySet().iterator().next();
         Object value = entry.getValue();
@@ -1288,6 +1289,8 @@ public class Wiki implements Serializable
             default:
                 throw new IllegalArgumentException("No content was specified to parse!");
         }
+        if (section >= 0)
+            postparams.put("section", section);
         
         String response = makeHTTPRequest(apiUrl + "action=parse&prop=text", postparams, "parse");
         if (response.contains("error code=\""))
@@ -1906,7 +1909,7 @@ public class Wiki implements Serializable
             content.put("text", "{{:" + title + "}}");
         else
             content.put("title", title);
-        return parse(content);
+        return parse(content, -1);
     }
 
     /**
@@ -2533,24 +2536,74 @@ public class Wiki implements Serializable
      */
     public String[] getExternalLinksOnPage(String title) throws IOException
     {
+        List<String> temp = getExternalLinksOnPage(Arrays.asList(title)).get(0);
+        return temp.toArray(new String[temp.size()]);
+    }
+    
+    /**
+     *  Gets the list of external links used on a list of pages. The return list
+     *  contains results that correspond to the list of input titles, element wise.
+     *
+     *  @param titles a list of pages
+     *  @return the lists of external links used on those pages
+     *  @throws IOException if a network error occurs
+     *  @since 0.35
+     */
+    public List<List<String>> getExternalLinksOnPage(List<String> titles) throws IOException
+    {
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=extlinks&titles=");
-        url.append(encode(title, true));
+        url.append("prop=extlinks");
         
-        List<String> links = queryAPIResult("el", url, null, "getExternalLinksOnPage", (line, results) ->
+        // copy array so redirect resolver doesn't overwrite
+        String[] titles2 = new String[titles.size()];
+        titles.toArray(titles2);
+        List<Map<String, List<String>>> stuff = new ArrayList<>();
+        Map<String, Object> postparams = new HashMap<>();
+        for (String temp : constructTitleString(titles2))
         {
-            // xml form: <pl ns="6" title="page name" />
-            for (int a = line.indexOf("<el "); a > 0; a = line.indexOf("<el ", ++a))
+            postparams.put("titles", temp);
+            stuff.addAll(queryAPIResult("el", url, postparams, "getExternalLinksOnPage", (line, results) ->
             {
-                int x = line.indexOf('>', a) + 1;
-                int y = line.indexOf("</el>", x);
-                results.add(decode(line.substring(x, y)));
-            }
-        });
+                // Split the result into individual listings for each article.
+                String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
+        
+                // Skip first element to remove front crud.
+                for (int i = 1; i < x.length; i++)
+                {
+                    // xml form: <el stuff>http://example.com</el>
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String> list = new ArrayList<>();
+                    for (int a = x[i].indexOf("<el "); a > 0; a = x[i].indexOf("<el ", ++a))
+                    {
+                        int start = x[i].indexOf('>', a) + 1;
+                        int end = x[i].indexOf("</el>", start);
+                        list.add(decode(x[i].substring(start, end)));
+                    }
+                    Map<String, List<String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, list);
+                    results.add(intermediate);
+                }
+            }));
+        }
 
-        int size = links.size();
-        log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + title + " (" + size + " links)");
-        return links.toArray(new String[size]);
+        // fill the return list
+        List<List<String>> ret = new ArrayList<>();
+        for (String unused : titles)
+            ret.add(new ArrayList<>());
+        // then retrieve the results from the intermediate list of maps, 
+        // ensuring results correspond to inputs
+        stuff.forEach(map ->
+        {
+            String parsedtitle = map.keySet().iterator().next();
+            List<String> templates = map.get(parsedtitle);
+            for (int i = 0; i < titles2.length; i++)
+                if (normalize(titles2[i]).equals(parsedtitle))
+                    ret.get(i).addAll(templates);
+        });
+        log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + titles2.length + " pages.");
+        return ret;
     }
 
     /**
@@ -3560,7 +3613,7 @@ public class Wiki implements Serializable
         log(Level.INFO, "undo", log);
     }
     
-    /**
+        /**
      *  Fetches a HTML rendered diff table; see the table at the <a
      *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
      *  Returns the empty string for moves, protections and similar dummy edits
@@ -3583,12 +3636,17 @@ public class Wiki implements Serializable
      *  obvious effect.
      *  <li><b>revision</b> ({@link Wiki.Revision}) -- a Revision
      *  <li><b>text</b> (String) -- some wikitext
-     *  <li><b>section</b> (Integer) -- diff against this section number
-     *    (optional additional parameter)
      *  </ul>
      * 
+     *  <p>
+     *  <b>WARNING</b>: the parameters to this method will be changed when the 
+     *  time comes for JDK11 refactoring to {@code diff(Map.Entry<String, Object> 
+     *  from, int fromsection, Map.Entry<String, Object> to, int tosection)}.
+     * 
      *  @param from the content on the left hand side of the diff
+     *  @param fromsection diff from only this section (optional, use -1 to skip)
      *  @param to the content on the right hand side of the diff
+     *  @param tosection diff from only this section (optional, use -1 to skip)
      *  @return a HTML difference table between the two texts, "" for dummy
      *  edits or null as described above
      *  @throws NoSuchElementException/IllegalArgumentException if no from or 
@@ -3597,16 +3655,9 @@ public class Wiki implements Serializable
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
      *  @since 0.35
      */
-    public String diff(Map<String, Object> from, Map<String, Object> to) throws IOException
+    public String diff(Map<String, Object> from, int fromsection, Map<String, Object> to, int tosection) throws IOException
     {
         HashMap<String, Object> postparams = new HashMap<>();
-        
-        Integer section = (Integer)from.remove("section");
-        if (section != null && section >= 0)
-            postparams.put("fromsection", section);
-        section = (Integer)to.remove("section");
-        if (section != null && section >= 0)
-            postparams.put("tosection", section);
         
         Map.Entry<String, Object> entry = from.entrySet().iterator().next();
         Object value = entry.getValue();
@@ -3627,6 +3678,9 @@ public class Wiki implements Serializable
             default:
                 throw new IllegalArgumentException("From content not specified!");
         }
+        if (fromsection >= 0)
+            postparams.put("fromsection", fromsection);
+        
         entry = to.entrySet().iterator().next();
         value = entry.getValue();
         switch (entry.getKey())
@@ -3653,6 +3707,8 @@ public class Wiki implements Serializable
             default:
                 throw new IllegalArgumentException("To content not specified!");
         }
+        if (tosection >= 0)
+            postparams.put("tosection", tosection);
         
         String line = makeHTTPRequest(apiUrl + "action=compare", postparams, "diff");
 
@@ -7270,7 +7326,7 @@ public class Wiki implements Serializable
                 throw new IllegalArgumentException("Log entries have no valid content!");
             Map<String, Object> content = new HashMap<String, Object>();
             content.put("revision", this);
-            return Wiki.this.parse(content);
+            return Wiki.this.parse(content, -1);
         }
         
         /**
@@ -7306,7 +7362,7 @@ public class Wiki implements Serializable
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("revision", other);
-            return Wiki.this.diff(from, to);
+            return Wiki.this.diff(from, -1, to, -1);
         }
 
         /**
@@ -7326,7 +7382,7 @@ public class Wiki implements Serializable
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("text", text);
-            return Wiki.this.diff(from, to);
+            return Wiki.this.diff(from, -1, to, -1);
         }
 
         /**
@@ -7352,7 +7408,7 @@ public class Wiki implements Serializable
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("revid", oldid);
-            return Wiki.this.diff(from, to);
+            return Wiki.this.diff(from, -1, to, -1);
         }
 
         /**
