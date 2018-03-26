@@ -130,4 +130,18 @@ public class ParserUtilsUnitTest
             + "[{{fullurl:Special:Log|type=block&page=User:A+B+%E3%81%AE}} block log])\n";
         assertEquals("generateUserLinksAsWikitext: special characters", expected, ParserUtils.generateUserLinksAsWikitext("A B の"));
     }
+    
+    @Test
+    public void extractDomain()
+    {
+        assertEquals("extractDomain: just domain", "example.com.au", 
+            ParserUtils.extractDomain("http://example.com.au"));
+        assertEquals("extractDomain: plain URL", "example.com", 
+            ParserUtils.extractDomain("http://example.com/index.html"));
+        assertEquals("extractDomain: www", "example.com", 
+            ParserUtils.extractDomain("https://www.example.com"));
+        // unfortunate, but necessary
+        assertEquals("extractDomain: other subdomains not stripped", 
+            "test.example.com", ParserUtils.extractDomain("http://test.example.com/index.html"));
+    }
 }

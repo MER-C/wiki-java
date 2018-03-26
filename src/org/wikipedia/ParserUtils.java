@@ -20,7 +20,7 @@
 package org.wikipedia;
 
 import java.io.*;
-import java.net.URLEncoder;
+import java.net.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -387,6 +387,31 @@ public class ParserUtils
         catch (IOException ex)
         {
             throw new UncheckedIOException(ex); // seriously?
+        }
+    }
+    
+    /**
+     *  Extracts the domain name from the given URL. This method strips only the
+     *  "www" subdomain, that is {@code extractDomain("https://www.example.com/index.jsp")}
+     *  returns <samp>example.com</samp> but {@code extractDomain("https://test.example.com/index.jsp")}
+     *  returns <samp>test.example.com</samp>.
+     *  @param url a valid URL
+     *  @return the domain name
+     */
+    public static String extractDomain(String url)
+    {
+        try
+        {
+            // https://stackoverflow.com/questions/9607903/get-domain-name-from-given-url
+            URI uri = new URI(url);
+            String domain = uri.getHost();
+            return domain.contains("www.") ? domain.substring(4) : domain;
+        }
+        catch (URISyntaxException ex)
+        {
+            // The primary use case deals with URLs that come from live, working
+            // external links on wiki
+            throw new IllegalArgumentException(ex);
         }
     }
     

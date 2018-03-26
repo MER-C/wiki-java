@@ -118,12 +118,9 @@ public class UserLinkAdditionFinder
         Map<String, Set<String>> domains = new HashMap<>();
         results.forEach((revision, links) ->
         {
-            for (int i = 0; i < links.size(); i++)
+            links.forEach(link ->
             {
-                String link = links.get(i);
-                // get domain name
-                String[] temp2 = link.split("/");
-                String domain = temp2[2].replace("www.", "");
+                String domain = ParserUtils.extractDomain(link);
                 if (domains.containsKey(domain))
                     domains.get(domain).add(revision.getUser());
                 else
@@ -132,7 +129,7 @@ public class UserLinkAdditionFinder
                     blah.add(revision.getUser());
                     domains.put(domain, blah);
                 }
-            }
+            });
         });
         // remove blacklisted domains (if applicable)
         if (removeblacklisted)

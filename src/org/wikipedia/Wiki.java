@@ -1256,7 +1256,7 @@ public class Wiki implements Serializable
      *  {@link #diff(java.util.Map, int, java.util.Map, int)}
      *  @param section parse only this section (optional, use -1 to skip)
      *  @return the parsed wikitext
-     *  @throws NoSuchElementException/IllegalArgumentException if no content 
+     *  @throws NoSuchElementException or IllegalArgumentException if no content 
      *  was supplied for parsing
      *  @throws IOException if a network error occurs
      *  @see #parse(java.lang.String) 
@@ -3613,7 +3613,7 @@ public class Wiki implements Serializable
         log(Level.INFO, "undo", log);
     }
     
-        /**
+    /**
      *  Fetches a HTML rendered diff table; see the table at the <a
      *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
      *  Returns the empty string for moves, protections and similar dummy edits
@@ -3649,7 +3649,7 @@ public class Wiki implements Serializable
      *  @param tosection diff from only this section (optional, use -1 to skip)
      *  @return a HTML difference table between the two texts, "" for dummy
      *  edits or null as described above
-     *  @throws NoSuchElementException/IllegalArgumentException if no from or 
+     *  @throws NoSuchElementException or IllegalArgumentException if no from or 
      *  to content is specified
      *  @throws IOException if a network error occurs
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
@@ -3835,7 +3835,7 @@ public class Wiki implements Serializable
      *  @return true or false if the image doesn't exist
      *  @throws FileNotFoundException if the file is a directory, cannot be 
      *  created or opened
-     *  @throws IOException/UncheckedIOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.30
      */
     public boolean getImage(String title, File file) throws FileNotFoundException, IOException
@@ -3855,7 +3855,7 @@ public class Wiki implements Serializable
      *  @return true or false if the image doesn't exist
      *  @throws FileNotFoundException if the file is a directory, cannot be 
      *  created or opened
-     *  @throws IOException/UncheckedIOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.30
      */
     public boolean getImage(String title, int width, int height, File file) throws FileNotFoundException, IOException
@@ -3900,7 +3900,7 @@ public class Wiki implements Serializable
      *
      *  @param file the image to get metadata for (may contain "File")
      *  @return the metadata for the image or null if it doesn't exist
-     *  @throws IOException/UncheckedIOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.20
      */
     public Map<String, Object> getFileMetadata(String file) throws IOException
@@ -3944,7 +3944,7 @@ public class Wiki implements Serializable
      *
      *  @param file the file for checking duplicates (may contain "File")
      *  @return the duplicates of that file
-     *  @throws IOException/UncheckedIOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.18
      */
     public String[] getDuplicates(String file) throws IOException
@@ -3977,7 +3977,7 @@ public class Wiki implements Serializable
      *
      *  @param title the title of the image (may contain File)
      *  @return the image history of the image
-     *  @throws IOException/UncheckedIOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.20
      */
     public LogEntry[] getImageHistory(String title) throws IOException
@@ -4141,7 +4141,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws IOException/UncheckedIOException if a network or local 
+     *  @throws IOException or UncheckedIOException if a network or local 
      *  filesystem error occurs
      *  @throws AccountLockedException if user is blocked
      *  @since 0.21
@@ -4267,7 +4267,7 @@ public class Wiki implements Serializable
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws IOException/UncheckedIOException if a network error occurs
+     *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws AccessDeniedException if the wiki does not permit us to upload
      *  from this URL
