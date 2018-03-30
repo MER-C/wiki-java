@@ -138,8 +138,12 @@ public class ParserUtilsUnitTest
             ParserUtils.extractDomain("http://example.com.au"));
         assertEquals("extractDomain: plain URL", "example.com", 
             ParserUtils.extractDomain("http://example.com/index.html"));
+        assertEquals("extractDomain: port", "example.com", 
+            ParserUtils.extractDomain("https://www.example.com:443"));
         assertEquals("extractDomain: www", "example.com", 
             ParserUtils.extractDomain("https://www.example.com"));
+        assertEquals("extractDomain: protocol relative", "example.com",
+            ParserUtils.extractDomain("//www.example.com/test.jsp?param=yes"));
         // unfortunate, but necessary
         assertEquals("extractDomain: other subdomains not stripped", 
             "test.example.com", ParserUtils.extractDomain("http://test.example.com/index.html"));

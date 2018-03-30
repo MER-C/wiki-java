@@ -49,7 +49,7 @@ public class UserLinkAdditionFinderUnitTest
     {
         Wiki.Revision[] revs = testWiki.getRevisions(new long[]
         { 
-            244169L, 244170L, 244171L, 320307L 
+            244169L, 244170L, 244171L, 320307L, 350372L
         });
         
         // https://test.wikipedia.org/w/index.php?oldid=244169&diff=prev
@@ -74,5 +74,10 @@ public class UserLinkAdditionFinderUnitTest
         results = UserLinkAdditionFinder.parseDiff(revs[3]);
         links = results.get(revs[3]);
         assertEquals(0, links.size());
+        
+        // https://test.wikipedia.org/w/index.php?oldid=350372&diff=prev
+        results = UserLinkAdditionFinder.parseDiff(revs[4]);
+        links = results.get(revs[4]);
+        assertEquals("http://template.example.com", links.get(0));
     }
 }

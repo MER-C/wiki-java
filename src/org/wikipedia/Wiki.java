@@ -56,11 +56,6 @@ import javax.security.auth.login.*;
  */
 public class Wiki implements Serializable
 {
-    // Master TODO list:
-    // *Admin stuff
-    // *More multiqueries
-    // *Generators (hard)
-
     // NAMESPACES
 
     /**
@@ -2548,6 +2543,10 @@ public class Wiki implements Serializable
      *  @return the lists of external links used on those pages
      *  @throws IOException if a network error occurs
      *  @since 0.35
+     *  @see <a href="https://www.mediawiki.org/wiki/API:Extlinks">MediaWiki
+     *  documentation</a>
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Externallinks_table">Externallinks
+     *  table</a>
      */
     public List<List<String>> getExternalLinksOnPage(List<String> titles) throws IOException
     {
@@ -5570,10 +5569,9 @@ public class Wiki implements Serializable
 
     /**
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
-     *  Returns two lists, where the first is the list of pages and the
-     *  second is the list of urls. The index of a page in the first list
-     *  corresponds to the index of the url on that page in the second list.
-     *  Wildcards (*) are only permitted at the start of the search string.
+     *  Returns a list of pairs, where the first item is a page and the second
+     *  the relevant url. Wildcards (*) are only permitted at the start of the 
+     *  search string.
      *
      *  @param pattern the pattern (String) to search for (e.g. example.com,
      *  *.example.com)
@@ -5588,19 +5586,27 @@ public class Wiki implements Serializable
 
     /**
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
-     *  Returns two lists, where the first is the list of pages and the
-     *  second is the list of urls. The index of a page in the first list
-     *  corresponds to the index of the url on that page in the second list.
-     *  Wildcards (*) are only permitted at the start of the search string.
+     *  Returns a list of pairs, where the first item is a page and the second
+     *  the relevant url. Wildcards (*) are only permitted at the start of the
+     *  search string. Searching by namespace is unreliable if <a 
+     *  href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode is 
+     *  enabled</a>. This includes pretty much all Wikimedia wikis and any 
+     *  frequently visited site.
      *
      *  @param pattern the pattern (String) to search for (e.g. example.com,
      *  *.example.com)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param protocol one of { http, https, ftp, irc, gopher, telnet, nntp,
-     *  worldwind, mailto, news, svn, git, mms } or "" (equivalent to http)
+     *  @param protocol one of the protocols listed in the API documentation or 
+     *  "" (equivalent to http)
      *  @throws IOException if a network error occurs
      *  @return a list of results where each entry is { page, URL }
      *  @since 0.24
+     *  @see <a href="https://mediawiki.org/wiki/API:Exturlusage">MediaWiki API
+     *  documentation</a>
+     *  @see <a href="https://mediawiki.org/wiki/Help:Linksearch">[[Special:Linksearch]]
+     *  documentation</a>
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Externallinks_table">Externallinks
+     *  table</a>
      */
     public List<String[]> linksearch(String pattern, String protocol, int... ns) throws IOException
     {

@@ -1162,8 +1162,8 @@ public class WikiUnitTest
     {
         Map<String, Object>[] results = testWiki.search("dlgsjdglsjdgljsgljsdlg", Wiki.MEDIAWIKI_NAMESPACE);
         assertEquals("search: no results", 0, results.length);
-        // https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User%3AMER-C%2FUnitTests%2FDelete
-        results = testWiki.search("User:MER-C/UnitTests/Delete", Wiki.USER_NAMESPACE);
+        https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User:%20subpageof:MER-C/UnitTests%20delete
+        results = testWiki.search("User: subpageof:MER-C/UnitTests delete", Wiki.USER_NAMESPACE);
         assertEquals("search: results", 2, results.length);
         Map<String, Object> result = results[0];
         assertEquals("search: title", "User:MER-C/UnitTests/Delete", result.get("title"));

@@ -61,7 +61,7 @@ public class CCIAnalyzer
             cci = new StringBuilder(enWiki.getPageText(args[0]));
         
         // some HTML strings we are looking for
-        // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
+        // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
         String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;"; // <td class="diff-addedline">
         String diffaddedend = "&lt;/td&gt;"; // </td>
         String deltabegin = "&lt;ins class=&quot;diffchange diffchange-inline&quot;&gt;"; // <ins class="diffchange diffchange-inline">

@@ -35,6 +35,8 @@ import org.wikipedia.*;
  */
 public class UserLinkAdditionFinder
 {
+    private static int threshold = 20;
+    
     /**
      *  Runs this program.
      *  @param args the command line arguments (see code for documentation)
@@ -42,9 +44,6 @@ public class UserLinkAdditionFinder
      */
     public static void main(String[] args) throws IOException
     {
-        WMFWiki enWiki = WMFWiki.createInstance("en.wikipedia.org");
-        enWiki.setQueryLimit(500);
-        
         // parse command line args
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.UserLinkAdditionFinder", "[options] [file]")
@@ -56,7 +55,8 @@ public class UserLinkAdditionFinder
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
-        
+
+        WMFWiki enWiki = WMFWiki.createInstance("en.wikipedia.org");
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         String datestring = parsedargs.get("--fetchafter");
@@ -78,8 +78,11 @@ public class UserLinkAdditionFinder
         // fetch and parse edits
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
         List<String> lines = Files.readAllLines(fp, Charset.forName("UTF-8"));
-        List<Wiki.Revision>[] revisions = enWiki.contribs(lines.toArray(new String[0]), "", null, null, null, Wiki.MAIN_NAMESPACE);
-        Arrays.stream(revisions).flatMap(List::stream).forEach(revision -> 
+        List<Wiki.Revision>[] revisions = enWiki.contribs(lines.toArray(new String[0]), "", null, date, null, Wiki.MAIN_NAMESPACE);
+        Arrays.stream(revisions)
+            .flatMap(List::stream)
+            .filter(revision -> !revision.isContentDeleted())
+            .forEach(revision -> 
         {
             try
             {
@@ -145,15 +148,18 @@ public class UserLinkAdditionFinder
         // perform a linksearch to remove frequently used domains
         if (linksearch)
         {
+            enWiki.setQueryLimit(500);
             Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
             while (iter.hasNext())
             {
                 Map.Entry<String, Set<String>> entry = iter.next();
-                int linkcount = enWiki.linksearch("*." + entry.getKey()).size()
-                    + enWiki.linksearch("*." + entry.getKey(), "https").size();
-                if (linkcount > 14)
+                int linkcount = enWiki.linksearch("*." + entry.getKey()).size();
+                if (linkcount <= threshold)
+                    linkcount += enWiki.linksearch("*." + entry.getKey(), "https").size();
+                if (linkcount > threshold)
                     iter.remove();
             }
+            enWiki.setQueryLimit(Integer.MAX_VALUE);
         }
         
         System.out.println("== Domain list ==");
@@ -175,7 +181,7 @@ public class UserLinkAdditionFinder
         });
         System.out.flush();
     }
-    
+        
     /**
      *  Returns a list of external links added by a particular revision.
      *  @param revision the revision to check of added external links.
@@ -200,7 +206,7 @@ public class UserLinkAdditionFinder
         }
 
         // some HTML strings we are looking for
-        // see https://en.wikipedia.org/w/api.php?action=query&prop=revisions&revids=77350972&rvdiffto=prev
+        // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
         String diffaddedbegin = "<td class=\"diff-addedline\">";
         String diffaddedend = "</td>";
         String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
@@ -227,7 +233,7 @@ public class UserLinkAdditionFinder
                     // extract links
                     Matcher matcher = pattern.matcher(delta);
                     while (matcher.find())
-                        links.add(matcher.group().split("[\\|<\\]\\s]")[0]);
+                        links.add(matcher.group().split("[\\|<\\]\\s\\}]")[0]);
                         
                     k = y3;
                 }
@@ -236,7 +242,7 @@ public class UserLinkAdditionFinder
             {
                 Matcher matcher = pattern.matcher(addedline);
                 while (matcher.find())
-                    links.add(matcher.group().split("[\\|<\\]\\s]")[0]);
+                    links.add(matcher.group().split("[\\|<\\]\\s\\}]")[0]);
             }
             j = y2;
         }
