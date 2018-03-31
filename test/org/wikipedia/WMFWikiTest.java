@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
  *  Unit tests for {@link org.wikipedia.WMFWiki}.
  *  @author MER-C
  */
-public class WMFWikiUnitTest
+public class WMFWikiTest
 {
     public static WMFWiki enWiki;
     

@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
  *  Unit tests for {@link ArrayUtils}.
  *  @author MER-C
  */
-public class ArrayUtilsUnitTest
+public class ArrayUtilsTest
 {
     private static Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
     

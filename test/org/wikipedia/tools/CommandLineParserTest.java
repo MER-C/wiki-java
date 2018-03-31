@@ -27,7 +27,7 @@ import static org.junit.Assert.*;
  *  Unit tests for {@link CommandLineParser}.
  *  @author MER-C
  */
-public class CommandLineParserUnitTest
+public class CommandLineParserTest
 {
     
     @Test

@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
  *  Diff parsing unit tests for the UserLinkAdditionFinder.
  *  @author MER-C
  */
-public class UserLinkAdditionFinderUnitTest
+public class UserLinkAdditionFinderTest
 {
     private static Wiki testWiki;
     

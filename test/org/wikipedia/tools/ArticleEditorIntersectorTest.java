@@ -29,7 +29,7 @@ import org.wikipedia.Wiki;
  *  Unit tests for {@link ArticleEditorIntersector}.
  *  @author MER-C
  */
-public class ArticleEditorIntersectorUnitTest
+public class ArticleEditorIntersectorTest
 {
     private static ArticleEditorIntersector intersector, intersector_enWiki;
     

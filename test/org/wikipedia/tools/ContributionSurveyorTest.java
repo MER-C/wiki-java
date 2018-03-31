@@ -28,7 +28,7 @@ import org.wikipedia.Wiki;
  *  Unit tests for {@link ContributionSurveyor}.
  *  @author MER-C
  */
-public class ContributionSurveyorUnitTest 
+public class ContributionSurveyorTest 
 {
     private static ContributionSurveyor surveyor;
     

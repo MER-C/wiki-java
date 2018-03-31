@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
  *  Unit tests for org.wikipedia.ParserUtils
  *  @author MER-C
  */
-public class ParserUtilsUnitTest
+public class ParserUtilsTest
 {
     private static Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
     

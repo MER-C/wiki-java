@@ -28,7 +28,7 @@ import static org.junit.Assert.*;
  *  Unit tests for Wiki.java which should only be run when logged in.
  *  @author MER-C
  */
-public class LoggedInUnitTest
+public class LoggedInUnitTests
 {
     private static Wiki testWiki;
     

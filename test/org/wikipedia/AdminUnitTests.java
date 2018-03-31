@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
  *  @author MER-C
  */
 
-public class AdminUnitTest
+public class AdminUnitTests
 {
     private static Wiki testWiki;
     

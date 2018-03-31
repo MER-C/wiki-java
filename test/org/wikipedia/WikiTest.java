@@ -36,12 +36,12 @@ import static org.junit.Assert.*;
  *  Unit tests for Wiki.java
  *  @author MER-C
  */
-public class WikiUnitTest
+public class WikiTest
 {
     private static Wiki enWiki, deWiki, arWiki, testWiki, enWikt;
     private static MessageDigest sha256;
     
-    public WikiUnitTest()
+    public WikiTest()
     {
     }
     
