@@ -6848,9 +6848,9 @@ public class Wiki implements Serializable
      */
     public abstract class Event implements Comparable<Event>
     {
-        private long id = -1;
+        private final long id;
         private final OffsetDateTime timestamp;
-        private String user;
+        private final String user;
         private final String comment;
         private boolean commentDeleted = false, userDeleted = false, 
             contentDeleted = false;
@@ -7252,11 +7252,11 @@ public class Wiki implements Serializable
      */
     public class Revision extends Event
     {
-        private boolean minor, bot, rvnew;
-        private String sha1;
+        private final boolean minor, bot, rvnew;
+        private final String sha1;
+        private final String title;
         private long rcid = -1;
         private long previous = 0, next = 0;
-        private String title;
         private String rollbacktoken = null;
         private int size = 0, sizediff = 0;
         private boolean pageDeleted = false;
