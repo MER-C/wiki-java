@@ -60,8 +60,9 @@ public class WikiUtils
 	 * @param wiki The wiki object to use.
 	 * 
 	 * @return An array containing the elements we were unable to delete.
+         * @deprecated use {@link org.wikipedia.Pages#massDelete(List, String, String)}
 	 */
-
+        @Deprecated
 	public static String[] arrayNuke(String[] list, String reason, String talkReason, Wiki wiki)
 	{
 		ArrayList<String> f = new ArrayList<String>();

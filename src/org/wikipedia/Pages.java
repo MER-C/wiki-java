@@ -19,8 +19,10 @@
  */
 package org.wikipedia;
 
+import java.io.*;
 import java.util.*;
 import java.util.StringTokenizer;
+import javax.security.auth.login.*;
 
 /**
  *  Utility methods for lists of wiki pages.
@@ -123,5 +125,46 @@ public class Pages
             buffer.append("]]\n");
         }
         return buffer.toString();
+    }
+    
+    /**
+     *  Deletes all supplied <var>pages</var> and their associated talk pages.
+     *  Requires admin privileges.
+     * 
+     *  @param pages a list of pages to delete
+     *  @param reason the reason for deletion
+     *  @param talkReason the reason to use when deleting the relevant talk pages
+     *  Does not delete talk pages if {@code null}.
+     *  @throws LoginException if one does not possess credentials to delete
+     *  @return an array containing pages we were unable to delete
+     */
+    public List<String> massDelete(Iterable<String> pages, String reason, String talkReason) throws LoginException
+    {
+        ArrayList<String> cantdelete = new ArrayList<>();
+        for (String page : pages)
+        {
+            try
+            {
+                wiki.delete(page, reason);
+            }
+            catch (IOException | UncheckedIOException ex)
+            {
+                cantdelete.add(page);
+                continue;
+            }
+
+            if (talkReason != null)
+            {
+                try
+                {
+                    wiki.delete(wiki.getTalkPage(page), talkReason);
+                }
+                catch (IOException | UncheckedIOException ex)
+                {
+                    cantdelete.add(page);
+                }
+            }
+        }
+        return cantdelete;
     }
 }
