@@ -19,6 +19,7 @@
  */
 package org.wikipedia;
 
+import java.util.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -29,45 +30,34 @@ import static org.junit.Assert.*;
 public class PagesTest
 {
     @Test
-    public void formatList()
+    public void toWikitextList()
     {
         // Wiki-markup breaking titles should not make it to this method
-        String[] articles = 
-        {
-            "File:Example.png",
-            "Main Page",
-            "Category:Example",
-            "*-algebra"
-        };
+        List<String> articles = Arrays.asList("File:Example.png", "Main Page", 
+            "Category:Example", "*-algebra");
+        
         String expected = "*[[:File:Example.png]]\n*[[:Main Page]]\n"
             + "*[[:Category:Example]]\n*[[:*-algebra]]\n";
-        assertEquals("formatlist", expected, Pages.formatList(articles));
+        assertEquals("toWikitextList, unnumbered", expected, Pages.toWikitextList(articles, false));
+        expected = "#[[:File:Example.png]]\n#[[:Main Page]]\n#[[:Category:Example]]\n"
+            + "#[[:*-algebra]]\n";
+        assertEquals("toWikitextList, numbered", expected, Pages.toWikitextList(articles, true));
     }
     
     @Test
-    public void parseList()
+    public void parseWikitextList()
     {
         // Again, wiki-markup breaking titles should not make it to this method.
         // In particular, titles must not contain [.
-        String list = "*[[:File:Example.png]]\n*[[Main Page]]\n"
+        String list = "*[[:File:Example.png]]\n*[[Main Page]] -- annotation\n"
             + "*[[*-algebra]]\n*:Not a list item."
             + "*[[Cape Town#Economy]]\n**[[Nested list]]";
-        String[] expected =
-        {
-            "File:Example.png",
-            "Main Page",
-            "*-algebra",
-            "Cape Town#Economy",
-            "Nested list"
-        };
-        assertArrayEquals("parselist", expected, Pages.parseList(list));
+        List<String> expected = Arrays.asList("File:Example.png", "Main Page", 
+            "*-algebra", "Cape Town#Economy", "Nested list");        
+        assertEquals("parseList, unnumbered", expected, Pages.parseWikitextList(list));
+        
         list = "#[[:File:Example.png]]\n#[[*-algebra]]\n#[[Cape Town#Economy]]";
-        expected = new String[]
-        {
-            "File:Example.png",
-            "*-algebra",
-            "Cape Town#Economy",
-        };
-        assertArrayEquals("parselist: numbered", expected, Pages.parseList(list));
+        expected = Arrays.asList("File:Example.png", "*-algebra", "Cape Town#Economy");
+        assertEquals("parseList, numbered", expected, Pages.parseWikitextList(list));
     }
 }

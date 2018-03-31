@@ -103,7 +103,7 @@ public class ContributionSurveyor
             users.addAll(Arrays.asList(homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE)));
         else if (wikipage != null)
         {
-            String[] list = ParserUtils.parseList(homewiki.getPageText(wikipage));
+            List<String> list = Pages.parseWikitextList(homewiki.getPageText(wikipage));
             for (String temp : list)
                 if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
                     users.add(homewiki.removeNamespace(temp));

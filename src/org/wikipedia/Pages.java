@@ -19,7 +19,7 @@
  */
 package org.wikipedia;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.util.StringTokenizer;
 
 /**
@@ -49,8 +49,8 @@ public class Pages
     }
     
     /**
-     *   Parses a list of links into its individual elements. Such a list
-     *   should be in the form:
+     *  Parses a wikitext list of links into its individual elements. Such a 
+     *  list should be in the form:
      *
      *  <pre>
      *  * [[Main Page]]
@@ -59,18 +59,18 @@ public class Pages
      *  * [[Cape Town#Economy]]
      *  </pre>
      *
-     *  in which case <tt>{ "Main Page", "Wikipedia:Featured picture
-     *  candidates", "File:Example.png", "Cape Town#Economy" }</tt> is the
+     *  in which case <samp>{ "Main Page", "Wikipedia:Featured picture
+     *  candidates", "File:Example.png", "Cape Town#Economy" }</samp> is the
      *  return value. Numbered lists are allowed. Nested lists are flattened.
      *
-     *  @param list a list of pages
-     *  @see #formatList(java.lang.String[])
+     *  @param wikitext a wikitext list of pages as described above
+     *  @see #toWikitextList(Iterable, boolean)
      *  @return an array of the page titles
      *  @since Wiki.java 0.11
      */
-    public static String[] parseList(String list)
+    public static List<String> parseWikitextList(String wikitext)
     {
-        StringTokenizer tokenizer = new StringTokenizer(list, "[]");
+        StringTokenizer tokenizer = new StringTokenizer(wikitext, "[]");
         ArrayList<String> titles = new ArrayList<>(667);
         tokenizer.nextToken(); // skip the first token
         while (tokenizer.hasMoreTokens()) 
@@ -84,33 +84,41 @@ public class Pages
                 token = token.substring(1);
             titles.add(token);
         }
-        return titles.toArray(new String[titles.size()]);
+        return titles;
     }
 
     /**
-     *  Formats a list of pages, say, generated from one of the query methods
-     *  into something that would be editor-friendly. Does the exact opposite
-     *  of {@link #parseList(java.lang.String) parselist()}, i.e. { "Main Page",
-     *  "Wikipedia:Featured picture candidates", "File:Example.png" } becomes
-     *  the string:
+     *  Exports a list of pages, say, generated from one of the query methods to
+     *  wikitext. Does the exact opposite of {@link #parseWikitextList(String)},
+     *  i.e. {@code { "Main Page", "Wikipedia:Featured picture candidates",
+     *  "File:Example.png" }} becomes the string:
      *
      *  <pre>
      *  *[[:Main Page]]
      *  *[[:Wikipedia:Featured picture candidates]]
      *  *[[:File:Example.png]]
      *  </pre>
+     * 
+     *  If a <var>numbered</var> list is desired, the output is:
+     * 
+     *  <pre>
+     *  #[[:Main Page]]
+     *  #[[:Wikipedia:Featured picture candidates]]
+     *  #[[:File:Example.png]]
+     *  </pre>
      *
-     *  @param pages an array of page titles
-     *  @return see above
-     *  @see #parseList(java.lang.String)
+     *  @param pages a list of page titles
+     *  @param numbered whether this is a numbered list
+     *  @return the list, exported as wikitext
+     *  @see #parseWikitextList(String)
      *  @since Wiki.java 0.14
      */
-    public static String formatList(String[] pages)
+    public static String toWikitextList(Iterable<String> pages, boolean numbered)
     {
         StringBuilder buffer = new StringBuilder(10000);
         for (String page : pages)
         {
-            buffer.append("*[[:");
+            buffer.append(numbered ? "#[[:" : "*[[:");
             buffer.append(page);
             buffer.append("]]\n");
         }
