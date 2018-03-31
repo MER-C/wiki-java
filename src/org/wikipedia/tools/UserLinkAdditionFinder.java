@@ -25,6 +25,7 @@ import java.util.regex.*;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.time.OffsetDateTime;
+import java.util.stream.Collectors;
 import javax.swing.JFileChooser;
 import org.wikipedia.*;
 
@@ -36,6 +37,7 @@ import org.wikipedia.*;
 public class UserLinkAdditionFinder
 {
     private static int threshold = 20;
+    private static WMFWiki wiki;
     
     /**
      *  Runs this program.
@@ -56,7 +58,7 @@ public class UserLinkAdditionFinder
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
 
-        WMFWiki enWiki = WMFWiki.createInstance("en.wikipedia.org");
+        wiki = WMFWiki.createInstance("en.wikipedia.org");
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         String datestring = parsedargs.get("--fetchafter");
@@ -78,7 +80,7 @@ public class UserLinkAdditionFinder
         // fetch and parse edits
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
         List<String> lines = Files.readAllLines(fp, Charset.forName("UTF-8"));
-        List<Wiki.Revision>[] revisions = enWiki.contribs(lines.toArray(new String[0]), "", null, date, null, Wiki.MAIN_NAMESPACE);
+        List<Wiki.Revision>[] revisions = wiki.contribs(lines.toArray(new String[0]), "", null, date, null, Wiki.MAIN_NAMESPACE);
         Arrays.stream(revisions)
             .flatMap(List::stream)
             .filter(revision -> !revision.isContentDeleted())
@@ -101,16 +103,36 @@ public class UserLinkAdditionFinder
             System.exit(0);
         }
         
+        // check whether the links are still there
+        Map<String, List<String>> resultsbypage = new HashMap<>();
+        results.forEach((revision, listoflinks) ->
+        {
+            String page = revision.getPage();
+            List<String> list = resultsbypage.get(page);
+            if (list == null)
+            {
+                list = new ArrayList<>();
+                resultsbypage.put(page, list);
+            }
+            list.addAll(listoflinks);
+        });
+        Map<String, Map<String, Boolean>> stillthere = Pages.of(wiki).containExternalLinks(resultsbypage);
+        
         // transform to wikitable
         System.out.println("{| class=\"wikitable\"\n");
         results.forEach((revision, links) ->
         {
+            Map<String, Boolean> revlinkexists = stillthere.get(revision.getPage());
             StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
             temp.append(revision.getID());
-            temp.append("]]\n|| ");
+            temp.append("]]\n||\n");
             for (int i = 0; i < links.size(); i++)
             {
-                temp.append(links.get(i));
+                String link = links.get(i);
+                temp.append("* ");
+                temp.append(link);
+                boolean remaining = revlinkexists.get(link);
+                temp.append(remaining ? " ('''STILL THERE''')" : " (removed)");
                 temp.append("\n");
             }
             System.out.println(temp.toString());
@@ -141,25 +163,25 @@ public class UserLinkAdditionFinder
             while (iter.hasNext())
             {
                 Map.Entry<String, Set<String>> entry = iter.next();
-                if (enWiki.isSpamBlacklisted(entry.getKey()))
+                if (wiki.isSpamBlacklisted(entry.getKey()))
                     iter.remove();
             }
         }
         // perform a linksearch to remove frequently used domains
         if (linksearch)
         {
-            enWiki.setQueryLimit(500);
+            wiki.setQueryLimit(threshold);
             Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
             while (iter.hasNext())
             {
                 Map.Entry<String, Set<String>> entry = iter.next();
-                int linkcount = enWiki.linksearch("*." + entry.getKey()).size();
+                int linkcount = wiki.linksearch("*." + entry.getKey()).size();
                 if (linkcount <= threshold)
-                    linkcount += enWiki.linksearch("*." + entry.getKey(), "https").size();
+                    linkcount += wiki.linksearch("*." + entry.getKey(), "https").size();
                 if (linkcount > threshold)
                     iter.remove();
             }
-            enWiki.setQueryLimit(Integer.MAX_VALUE);
+            wiki.setQueryLimit(Integer.MAX_VALUE);
         }
         
         System.out.println("== Domain list ==");
@@ -181,7 +203,7 @@ public class UserLinkAdditionFinder
         });
         System.out.flush();
     }
-        
+           
     /**
      *  Returns a list of external links added by a particular revision.
      *  @param revision the revision to check of added external links.

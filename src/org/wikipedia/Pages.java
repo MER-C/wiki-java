@@ -1,6 +1,6 @@
 /**
  *  @(#)Pages.java 0.01 31/03/2018
- *  Copyright (C) 2018-20XX MER-C
+ *  Copyright (C) 2018-20XX MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -40,12 +40,12 @@ public class Pages
     
     /**
      *  Creates an instance of this class bound to a particular wiki (required
-     *  for methods that make queries).
+     *  for methods that make network requests to a wiki).
      * 
      *  @param wiki the wiki to bind to
      *  @return an instance of this utility class that is bound to that wiki
      */
-    public static Pages bindTo(Wiki wiki)
+    public static Pages of(Wiki wiki)
     {
         return new Pages(wiki);
     }
@@ -67,7 +67,7 @@ public class Pages
      *
      *  @param wikitext a wikitext list of pages as described above
      *  @see #toWikitextList(Iterable, boolean)
-     *  @return an array of the page titles
+     *  @return a list of parsed titles
      *  @since Wiki.java 0.11
      */
     public static List<String> parseWikitextList(String wikitext)
@@ -128,6 +128,35 @@ public class Pages
     }
     
     /**
+     *  For a given list of pages, determine whether the supplied external links
+     *  are present in the page.
+     *  @param data a Map of title &#8594; list of links to check
+     *  @return a Map of title &#8594; link checked &#8594; whether it is in 
+     *  that page
+     *  @throws IOException if a network error occurs
+     */
+    public Map<String, Map<String, Boolean>> containExternalLinks(Map<String, List<String>> data) throws IOException
+    {
+        List<List<String>> pagelinks = wiki.getExternalLinksOnPage(new ArrayList<>(data.keySet()));
+        int counter = 0;
+        Map<String, Map<String, Boolean>> ret = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : data.entrySet())
+        {        
+            List<String> addedlinks = entry.getValue();
+            List<String> currentlinks = pagelinks.get(counter);
+            Map<String, Boolean> stillthere = new HashMap<>();
+            for (int i = 0; i < addedlinks.size(); i++)
+            {
+                String url = addedlinks.get(i);
+                stillthere.put(url, currentlinks.contains(url));
+            }
+            ret.put(entry.getKey(), stillthere);
+            counter++;
+        }
+        return ret;
+    }
+    
+    /**
      *  Deletes all supplied <var>pages</var> and their associated talk pages.
      *  Requires admin privileges.
      * 
@@ -137,6 +166,7 @@ public class Pages
      *  Does not delete talk pages if {@code null}.
      *  @throws LoginException if one does not possess credentials to delete
      *  @return an array containing pages we were unable to delete
+     *  @author Fastily
      */
     public List<String> massDelete(Iterable<String> pages, String reason, String talkReason) throws LoginException
     {

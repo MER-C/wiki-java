@@ -20,7 +20,7 @@
 package org.wikipedia;
 
 import java.util.*;
-import org.junit.Test;
+import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
@@ -29,6 +29,19 @@ import static org.junit.Assert.*;
  */
 public class PagesTest
 {
+    private static Wiki testWiki;
+    
+    /**
+     *  Initialize wiki objects.
+     *  @throws Exception if a network error occurs
+     */
+    @BeforeClass
+    public static void setUpClass() throws Exception
+    {
+        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki.setMaxLag(-1);
+    }
+    
     @Test
     public void toWikitextList()
     {
@@ -59,5 +72,18 @@ public class PagesTest
         list = "#[[:File:Example.png]]\n#[[*-algebra]]\n#[[Cape Town#Economy]]";
         expected = Arrays.asList("File:Example.png", "*-algebra", "Cape Town#Economy");
         assertEquals("parseList, numbered", expected, Pages.parseWikitextList(list));
+    }
+    
+    @Test
+    public void containExternalLinks() throws Exception
+    {
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Linkfinder
+        String page = "User:MER-C/UnitTests/Linkfinder";
+        List<String> links = Arrays.asList("http://spam.example.com", "http://absent.example.com");
+        Map<String, List<String>> inputs = new HashMap<>();
+        inputs.put(page, links);
+        Map<String, Map<String, Boolean>> actual = Pages.of(testWiki).containExternalLinks(inputs);
+        assertTrue(actual.get(page).get(links.get(0)));
+        assertFalse(actual.get(page).get(links.get(1)));
     }
 }
