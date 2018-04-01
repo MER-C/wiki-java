@@ -174,7 +174,7 @@ public class ArticleEditorIntersector
                 System.out.print("\t" + article);
                 System.out.print(" => ");
                 for (Wiki.Revision rev : articleedits)
-                    System.out.print(rev.getRevid() + " ");
+                    System.out.print(rev.getID() + " ");
                 System.out.println();
             });
             System.out.println("}");
@@ -245,7 +245,7 @@ public class ArticleEditorIntersector
      *  that has a SHA-1 equal to a previous revision on the same page).
      *  @return whether reverts are ignored
      *  @see #setIgnoringReverts(boolean) 
-     *  @see org.wikipedia.ArrayUtils#removeReverts(org.wikipedia.Wiki.Revision[])
+     *  @see ArrayUtils#removeReverts(Wiki.Revision[])
      *  @since 0.02
      */
     public boolean isIgnoringReverts()
@@ -258,7 +258,7 @@ public class ArticleEditorIntersector
      *  that has a SHA-1 equal to a previous revision on the same page).
      *  @param ignorereverts whether reverts will be ignored
      *  @see #isIgnoringReverts()
-     *  @see org.wikipedia.ArrayUtils#removeReverts(org.wikipedia.Wiki.Revision[])
+     *  @see ArrayUtils#removeReverts(Wiki.Revision[])
      *  @since 0.02
      */
     public void setIgnoringReverts(boolean ignorereverts)
@@ -282,7 +282,7 @@ public class ArticleEditorIntersector
      *  Gets the date/time at which surveys start; no edits will be returned 
      *  before then.
      *  @return (see above)
-     *  @see #setEarliestDateTime(java.time.OffsetDateTime)  
+     *  @see #setEarliestDateTime(OffsetDateTime)  
      *  @since 0.02
      */
     public OffsetDateTime getEarliestDateTime()
@@ -305,7 +305,7 @@ public class ArticleEditorIntersector
     /**
      *  Gets the date at which surveys finish. 
      *  @return (see above)
-     *  @see #setLatestDateTime(java.time.OffsetDateTime)  
+     *  @see #setLatestDateTime(OffsetDateTime)  
      *  @since 0.02
      */
     public OffsetDateTime getLatestDateTime()

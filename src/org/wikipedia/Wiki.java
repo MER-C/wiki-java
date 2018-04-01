@@ -1248,14 +1248,14 @@ public class Wiki implements Serializable
      *  comes for JDK11 refactoring to {@code parse(Map.Entry<String, Object> content, int section)}.
      * 
      *  @param content a Map following the same scheme as specified by
-     *  {@link #diff(java.util.Map, int, java.util.Map, int)}
+     *  {@link #diff(Map, int, Map, int)}
      *  @param section parse only this section (optional, use -1 to skip)
      *  @return the parsed wikitext
      *  @throws NoSuchElementException or IllegalArgumentException if no content 
      *  was supplied for parsing
      *  @throws IOException if a network error occurs
-     *  @see #parse(java.lang.String) 
-     *  @see #getRenderedText(java.lang.String) 
+     *  @see #parse(String) 
+     *  @see #getRenderedText(String) 
      *  @see Wiki.Revision#getRenderedText()
      *  @see <a href="https://mediawiki.org/wiki/API:Parsing_wikitext">MediaWiki
      *  documentation</a>
@@ -1301,7 +1301,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Same as {@link #parse(java.lang.String)}, but also strips out unwanted 
+     *  Same as {@link #parse(String)}, but also strips out unwanted 
      *  crap. This might be useful to subclasses.
      *
      *  @param in the string to parse
@@ -1406,7 +1406,7 @@ public class Wiki implements Serializable
     public String getRootPage(String page)
     {
         if (supportsSubpages(namespace(page)) && page.contains("/"))
-            return page.substring(0, page.indexOf("/"));
+            return page.substring(0, page.indexOf('/'));
         else
             return page;
     }
@@ -1428,7 +1428,7 @@ public class Wiki implements Serializable
     public String getParentPage(String page)
     {
         if (supportsSubpages(namespace(page)) && page.contains("/"))
-            return page.substring(0, page.lastIndexOf("/"));
+            return page.substring(0, page.lastIndexOf('/'));
         else
             return page;
     }
@@ -1462,7 +1462,7 @@ public class Wiki implements Serializable
      *  @return (see above)
      *  @throws UncheckedIOException if the namespace cache has not been 
      *  populated, and a network error occurs when populating it
-     *  @see #namespace(java.lang.String) 
+     *  @see #namespace(String) 
      *  @see #namespaceIdentifier(int) 
      *  @since 0.35
      */
@@ -1480,7 +1480,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public Map getPageInfo(String page) throws IOException
+    public Map<String, Object> getPageInfo(String page) throws IOException
     {
         return getPageInfo(new String[] { page })[0];
     }
@@ -1492,9 +1492,9 @@ public class Wiki implements Serializable
      *  <li><b>pagename</b>: (String) the normalized page name
      *  <li><b>displaytitle</b>: (String) the title of the page that is actually
      *    displayed. Example: "iPod"
-     *  <li><b>protection</b>: (Map) the {@link #protect(java.lang.String,
-     *    java.util.Map, java.lang.String) protection state} of the page. Does
-     *    not cover implied protection levels (e.g. MediaWiki namespace).
+     *  <li><b>protection</b>: (Map) the {@link #protect(String, Map, String)
+     *    protection state} of the page. Does not cover implied protection 
+     *    levels (e.g. MediaWiki namespace).
      *  <li><b>exists</b>: (Boolean) whether the page exists
      *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or 
      *    <code>null</code> if the page does not exist
@@ -1599,14 +1599,14 @@ public class Wiki implements Serializable
             }
         }
         
-        Map[] info = new HashMap[pages.length];
+        Map<String, Object>[] info = new HashMap[pages.length];
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.length; i++)
         {
             Map<String, Object> tempmap = metamap.get(normalize(pages2[i]));
             if (tempmap != null)
             {
-                info[i] = new HashMap(tempmap);
+                info[i] = new HashMap<>(tempmap);
                 info[i].put("inputpagename", pages[i]);
             }
         }    
@@ -1665,7 +1665,7 @@ public class Wiki implements Serializable
      *  For a given namespace denoted as an integer, fetch the corresponding
      *  identification string e.g. {@code namespaceIdentifier(1)} should 
      *  return "Talk" on en.wp. (This does the exact opposite to {@link 
-     *  #namespace(java.lang.String)}). Strings returned are always localized.
+     *  #namespace(String)}). Strings returned are always localized.
      *
      *  @param namespace an integer corresponding to a namespace. If it does not
      *  correspond to a namespace, we assume you mean the main namespace (i.e.
@@ -1673,7 +1673,7 @@ public class Wiki implements Serializable
      *  @return the identifier of the namespace
      *  @throws UncheckedIOException if the namespace cache has not been 
      *  populated, and a network error occurs when populating it
-     *  @see #namespace(java.lang.String)
+     *  @see #namespace(String)
      *  @since 0.25
      */
     public String namespaceIdentifier(int namespace)
@@ -1730,7 +1730,7 @@ public class Wiki implements Serializable
     public boolean[] exists(String[] titles) throws IOException
     {
         boolean[] ret = new boolean[titles.length];
-        Map[] info = getPageInfo(titles);
+        Map<String, Object>[] info = getPageInfo(titles);
         for (int i = 0; i < titles.length; i++)
             ret[i] = (Boolean)info[i].get("exists");
         return ret;
@@ -1739,8 +1739,8 @@ public class Wiki implements Serializable
     /**
      *  Gets the raw wikicode for a page. WARNING: does not support special
      *  pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use {@link #getImage(java.lang.String, java.io.File)}
-     *  to fetch an image.
+     *  for fetching the contents of special pages. Use {@link #getImage(String, 
+     *  File)} to fetch an image.
      *
      *  @param title the title of the page.
      *  @return the raw wikicode of a page, or {@code null} if the page doesn't exist
@@ -1757,9 +1757,9 @@ public class Wiki implements Serializable
     /**
      *  Gets the raw wikicode for a set of pages. WARNING: does not support 
      *  special pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use {@link #getImage(java.lang.String, 
-     *  java.io.File)} to fetch an image. If a page doesn't exist, the 
-     *  corresponding return value is {@code null}.
+     *  for fetching the contents of special pages. Use {@link #getImage(String, 
+     *  File)} to fetch an image. If a page doesn't exist, the corresponding 
+     *  return value is {@code null}.
      *
      *  @param titles a list of titles
      *  @return the raw wikicode of those titles, in the same order as the input
@@ -1843,7 +1843,7 @@ public class Wiki implements Serializable
                 if (!results[i].contains("missing=\"\"") && !results[i].contains("texthidden=\"\""))
                 {
                     int x = results[i].indexOf("<rev ", i);
-                    int y = results[i].indexOf(">", x) + 1;
+                    int y = results[i].indexOf('>', x) + 1;
                     // this </rev> tag is not present for empty pages/revisions
                     int z = results[i].indexOf("</rev>", y);
                     // store result for later
@@ -1887,9 +1887,9 @@ public class Wiki implements Serializable
      *  circumstances, for example {@code getRenderedText("Special:Recentchanges")}
      *  returns the 50 most recent change to the wiki in pretty-print HTML. You 
      *  should test any use of this method on-wiki through the text
-     *  <kbd>{{Special:Specialpage}}</kbd>. Use {@link #getImage(java.lang.String, 
-     *  java.io.File)} to fetch an image. Be aware of any transclusion limits, 
-     *  as outlined at [[Wikipedia:Template limits]].
+     *  <kbd>{{Special:Specialpage}}</kbd>. Use {@link #getImage(String, File)}
+     *  to fetch an image. Be aware of any transclusion limits, as outlined at
+     *  [[Wikipedia:Template limits]].
      *
      *  @param title the title of the page
      *  @return the rendered contents of that page
@@ -2051,7 +2051,7 @@ public class Wiki implements Serializable
         throttle();
 
         // protection
-        Map info = getPageInfo(title);
+        Map<String, Object> info = getPageInfo(title);
         if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -2167,8 +2167,8 @@ public class Wiki implements Serializable
         throttle();
 
         // edit token
-        Map info = getPageInfo(title);
-        if (!(Boolean)info.get("exists"))
+        Map<String, Object> info = getPageInfo(title);
+        if (Boolean.FALSE.equals(info.get("exists")))
         {
             log(Level.INFO, "delete", "Page \"" + title + "\" does not exist.");
             return;
@@ -3082,7 +3082,7 @@ public class Wiki implements Serializable
         int a = line.indexOf("<rev ");
         if (a < 0)
             return null;
-        a = line.indexOf(">", a) + 1;
+        a = line.indexOf('>', a) + 1;
         int b = line.indexOf("</rev>", a); // tag not in empty pages
         log(Level.INFO, "getDeletedText", "Successfully retrieved deleted text of page " + page);
         return (b < 0) ? "" : line.substring(a, b);
@@ -3149,9 +3149,9 @@ public class Wiki implements Serializable
         }
 
         // protection and token
-        Map info = getPageInfo(title);
+        Map<String, Object> info = getPageInfo(title);
         // determine whether the page exists
-        if (!(Boolean)info.get("exists"))
+        if (Boolean.FALSE.equals(info.get("exists")))
             throw new IllegalArgumentException("Tried to move a non-existant page!");
         if (!checkRights(info, "move"))
         {
@@ -3480,27 +3480,18 @@ public class Wiki implements Serializable
         // this is really stupid... I'm open to suggestions
         StringBuilder hide = new StringBuilder();
         StringBuilder show = new StringBuilder();
-        if (hidecontent != null)
-        {
-            if (hidecontent)
-                hide.append("content|");
-            else
-                show.append("content|");
-        }
-        if (hideuser != null)
-        {
-            if (hideuser)
-                hide.append("user|");
-            else
-                show.append("user|");
-        }
-        if (hidereason != null)
-        {
-            if (hidereason)
-                hide.append("comment");
-            else
-                show.append("comment");
-        }
+        if (Boolean.TRUE.equals(hidecontent))
+            hide.append("content|");
+        else if (Boolean.FALSE.equals(hidecontent))
+            show.append("content|");
+        if (Boolean.TRUE.equals(hideuser))
+            hide.append("user|");
+        else if (Boolean.FALSE.equals(hideuser))
+            show.append("user|");
+        if (Boolean.TRUE.equals(hidereason))
+            hide.append("comment");
+        else if (Boolean.FALSE.equals(hidereason))
+            show.append("comment");
         if (hide.lastIndexOf("|") == hide.length() - 2)
             hide.delete(hide.length() - 2, hide.length());
         if (show.lastIndexOf("|") == show.length() - 2)
@@ -3578,7 +3569,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
         // protection
-        Map info = getPageInfo(rev.getPage());
+        Map<String, Object> info = getPageInfo(rev.getPage());
         if (!checkRights(info, "edit"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -3715,7 +3706,7 @@ public class Wiki implements Serializable
         if (line.contains("</compare>"))
         {
             int a = line.indexOf("<compare");
-            a = line.indexOf(">", a) + 1;
+            a = line.indexOf('>', a) + 1;
             int b = line.indexOf("</compare>", a);
             return decode(line.substring(a, b));
         }
@@ -4159,7 +4150,7 @@ public class Wiki implements Serializable
         filename = removeNamespace(filename);
 
         // protection
-        Map info = getPageInfo("File:" + filename);
+        Map<String, Object> info = getPageInfo("File:" + filename);
         if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -4286,7 +4277,7 @@ public class Wiki implements Serializable
         filename = removeNamespace(filename);
 
         // protection
-        Map info = getPageInfo("File:" + filename);
+        Map<String, Object> info = getPageInfo("File:" + filename);
         if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -4353,7 +4344,7 @@ public class Wiki implements Serializable
     public boolean[] userExists(String[] usernames) throws IOException
     {
         boolean[] ret = new boolean[usernames.length];
-        Map[] info = getUserInfo(usernames);
+        Map<String, Object>[] info = getUserInfo(usernames);
         for (int i = 0; i < usernames.length; i++)
             ret[i] = (info[i] != null);
         return ret;
@@ -4814,7 +4805,7 @@ public class Wiki implements Serializable
             temp.append("&ucshow=");
             options.forEach((key, value) ->
             {
-                if (!value)
+                if (Boolean.FALSE.equals(value))
                     temp.append('!');
                 temp.append(key);
                 temp.append("%7C");
@@ -4892,7 +4883,7 @@ public class Wiki implements Serializable
         throttle();
 
         // is this user emailable?
-        if (!(Boolean)user.getUserInfo().get("emailable"))
+        if (Boolean.FALSE.equals(user.getUserInfo().get("emailable")))
         {
             // should throw an exception here
             log(Level.WARNING, "emailUser", "User " + user.getUsername() + " is not emailable");
@@ -4943,7 +4934,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
-     *  @see #unblock(java.lang.String, java.lang.String)
+     *  @see #unblock(String, String)
      *  @see <a href="https://mediawiki.org/wiki/API:Block">MediaWiki documentation</a>
      *  @since 0.35
      */
@@ -4969,7 +4960,7 @@ public class Wiki implements Serializable
         {
             blockoptions.forEach((key, value) ->
             {
-                if (value)
+                if (Boolean.TRUE.equals(value))
                     postparams.put(key, "1");
             });
         }
@@ -4989,7 +4980,7 @@ public class Wiki implements Serializable
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
-     *  @see #block(java.lang.String, java.lang.String, java.time.OffsetDateTime, java.util.Map) 
+     *  @see #block(String, String, OffsetDateTime, Map) 
      *  @see <a href="https://mediawiki.org/wiki/API:Block">MediaWiki documentation</a>
      *  @since 0.31
      */
@@ -5245,21 +5236,24 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Not logged in");
         StringBuilder url = new StringBuilder(query);
         url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes");
-        Boolean top = options.remove("top");
-        if (top != null && top)
-            url.append("&wlallrev=true");
         constructNamespaceString(url, "wl", ns);
-        if (options != null && !options.isEmpty())
+        if (options != null)
         {
-            url.append("&wlshow=");
-            options.forEach((key, value) ->
+            Boolean top = options.remove("top");
+            if (Boolean.TRUE.equals(top))
+                url.append("&wlallrev=true");
+            if (!options.isEmpty())
             {
-                if (!value)
-                    url.append('!');
-                url.append(key);
-                url.append("%7C");
-            });
-            url.delete(url.length() - 3, url.length());
+                url.append("&wlshow=");
+                options.forEach((key, value) ->
+                {
+                    if (Boolean.FALSE.equals(value))
+                        url.append('!');
+                    url.append(key);
+                    url.append("%7C");
+                });
+                url.delete(url.length() - 3, url.length());
+            }
         }
 
         List<Revision> wl = queryAPIResult("wl", url, null, "watchlist", (line, results) ->
@@ -5336,7 +5330,7 @@ public class Wiki implements Serializable
         
         int size = results.size();
         log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + size + " items found)");
-        return results.toArray(new Map[0]);
+        return results.toArray(new Map[size]);
     }
 
     /**
@@ -5930,7 +5924,7 @@ public class Wiki implements Serializable
         // reason
         String reason;
         boolean reasonhidden = xml.contains("commenthidden=\"");
-        if (type.equals(USER_CREATION_LOG)) // there is no reason for creating a user
+        if (USER_CREATION_LOG.equals(type)) // there is no reason for creating a user
             reason = "";
         else if (xml.contains("reason=\""))
             reason = parseAttribute(xml, "reason", 0);
@@ -6478,7 +6472,7 @@ public class Wiki implements Serializable
             url.append("&rcshow=");
             rcoptions.forEach((key, value) -> 
             {
-                if (!value)
+                if (Boolean.FALSE.equals(value))
                     url.append('!');
                 url.append(key);
                 url.append("%7C");
@@ -6609,7 +6603,7 @@ public class Wiki implements Serializable
      */
     public class User implements Cloneable, Serializable
     {
-        private String username;
+        private final String username;
         private String[] rights = null; // cache
         private String[] groups = null; // cache
 
@@ -6876,8 +6870,8 @@ public class Wiki implements Serializable
          *  number is referred to as the "oldid" or "revid" and should not be
          *  confused with "rcid" (which is the ID in the recentchanges table).
          *  For a {@link Wiki.LogEntry}, this value only makes sense if the
-         *  record was obtained through {@link Wiki#getLogEntries(java.lang.String, java.lang.String, int)}
-         *  and overloads (other methods return pseudo-LogEntries).
+         *  record was obtained through {@link Wiki#getLogEntries(String, String,
+         *  int)} and overloads (other methods return pseudo-LogEntries).
          *  @return the ID of this revision
          */
         public long getID()
@@ -6896,8 +6890,8 @@ public class Wiki implements Serializable
         
         /**
          *  Returns the user or anon who performed this event. You should pass 
-         *  this (if not an IP) to {@link #getUser(java.lang.String)} to obtain 
-         *  a {@link Wiki.User} object. Returns {@code null} if the user was 
+         *  this (if not an IP) to {@link #getUser(String)} to obtain a {@link
+         *  Wiki.User} object. Returns {@code null} if the user was 
          *  RevisionDeleted and you lack the necessary privileges.
          *  @return the user or anon
          */
@@ -7050,7 +7044,8 @@ public class Wiki implements Serializable
      */
     public class LogEntry extends Event
     {
-        private String type, action, target;
+        private String type, action;
+        private final String target;
         private Object details;
 
         /**
@@ -7330,7 +7325,7 @@ public class Wiki implements Serializable
         {
             if (getID() < 1L)
                 throw new IllegalArgumentException("Log entries have no valid content!");
-            Map<String, Object> content = new HashMap<String, Object>();
+            Map<String, Object> content = new HashMap<>();
             content.put("revision", this);
             return Wiki.this.parse(content, -1);
         }
@@ -7639,7 +7634,7 @@ public class Wiki implements Serializable
          *  Sets a rollback token for this revision.
          *  @param token a rollback token
          *  @since 0.24
-         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")}</code>
+         *  @deprecated use <code>{@link Wiki#getToken(String) getToken("rollback")}</code>
          */
         @Deprecated
         public void setRollbackToken(String token)
@@ -7652,7 +7647,7 @@ public class Wiki implements Serializable
          *  for good reasons: cannot rollback or not top revision.
          *  @return the rollback token
          *  @since 0.24
-         *  @deprecated use <code>{@link Wiki#getToken(java.lang.String) getToken("rollback")}</code>
+         *  @deprecated use <code>{@link Wiki#getToken(String) getToken("rollback")}</code>
          */
         @Deprecated
         public String getRollbackToken()
@@ -7715,7 +7710,7 @@ public class Wiki implements Serializable
      *  @param queryPrefix the request type prefix (e.g. "pl" for prop=links)
      *  @param url the query URL, without the limit and XXcontinue parameters
      *  @param postparams if not null, send these parameters via POST (see
-     *  {@link #makeHTTPRequest(java.lang.String, java.util.Map, java.lang.String) }).
+     *  {@link #makeHTTPRequest(String, Map, String) }).
      *  @param caller the name of the calling method
      *  @param parser a BiConsumer that parses the XML returned by the MediaWiki
      *  API into things we want, dumping them into the given List
@@ -7972,8 +7967,7 @@ public class Wiki implements Serializable
     
     /**
      *  Converts HTTP POST parameters to Strings. See {@link 
-     *  #makeHTTPRequest(java.lang.String, java.util.Map, java.lang.String)} for
-     *  the description.
+     *  #makeHTTPRequest(String, Map, String)} for the description.
      *  @param param the parameter to convert
      *  @return that parameter, as a String
      *  @throws UnsupportedOperationException if param is not a supported data type
@@ -8285,17 +8279,18 @@ public class Wiki implements Serializable
      */
     public String normalize(String s)
     {
+        s = s.replace('_', ' ').trim();
         // remove leading colon
         if (s.startsWith(":"))
             s = s.substring(1);
         if (s.isEmpty())
-            return s;
+            throw new IllegalArgumentException("Empty or whitespace only title.");
 
         int ns = namespace(s);
         // localize namespace names
         if (ns != MAIN_NAMESPACE)
         {
-            int colon = s.indexOf(":");
+            int colon = s.indexOf(':');
             s = namespaceIdentifier(ns) + s.substring(colon);
         }
         char[] temp = s.toCharArray();
@@ -8315,7 +8310,7 @@ public class Wiki implements Serializable
         {
             switch (temp[i])
             {
-            // illegal characters
+                // illegal characters
                 case '{':
                 case '}':
                 case '<':
@@ -8324,13 +8319,10 @@ public class Wiki implements Serializable
                 case ']':
                 case '|':
                     throw new IllegalArgumentException(s + " is an illegal title");
-                case '_':
-                    temp[i] = ' ';
-                    break;
             }
         }
         // https://mediawiki.org/wiki/Unicode_normalization_considerations
-        String temp2 = new String(temp).trim().replaceAll("\\s+", " ");
+        String temp2 = new String(temp).replaceAll("\\s+", " ");
         return Normalizer.normalize(temp2, Normalizer.Form.NFC);
     }
 
@@ -8359,7 +8351,7 @@ public class Wiki implements Serializable
      *  Checks whether the currently logged on user has sufficient rights to
      *  edit/move a protected page.
      *
-     *  @param pageinfo the output from {@link #getPageInfo(java.lang.String)}
+     *  @param pageinfo the output from {@link #getPageInfo(String)}
      *  @param action what we are doing
      *  @return whether the user can perform the specified action
      *  @throws IOException if a network error occurs
@@ -8376,7 +8368,7 @@ public class Wiki implements Serializable
             if (level.equals(FULL_PROTECTION))
                 return user.isAllowedTo("editprotected");
         }
-        if ((Boolean)protectionstate.get("cascade") == Boolean.TRUE) // can be null
+        if (Boolean.TRUE.equals(protectionstate.get("cascade")))
             return user.isAllowedTo("editprotected");
         return true;
     }

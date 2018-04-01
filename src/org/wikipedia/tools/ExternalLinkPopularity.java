@@ -95,8 +95,8 @@ public class ExternalLinkPopularity
      *  recommended to set a limit of not more than a few thousand to avoid 
      *  getting bogged down with large queries. Some domains are used very 
      *  frequently (10000+ links), often because they are reliable sources. This 
-     *  quantity is passed directly to {@link org.wikipedia.Wiki#setQueryLimit(int)}.
-     *  The default is 500.
+     *  quantity is passed directly to {@link Wiki#setQueryLimit(int)}. The 
+     *  default is 500.
      * 
      *  @param limit the query limit used
      *  @throws IllegalArgumentException if {@code limit < 1}
@@ -157,12 +157,12 @@ public class ExternalLinkPopularity
     }
     
     /**
-     *  Using the results of {@link #fetchExternalLinks(java.util.List, java.util.List)}, 
-     *  determine each site's popularity as an external link. Each popularity
-     *  score is capped at {@link #getMaxLinks()} because some domains are used
-     *  very frequently and we don't want to be here forever.
+     *  Using the results of {@link #fetchExternalLinks(List, List)}, determine 
+     *  each site's popularity as an external link. Each popularity score is
+     *  capped at {@link #getMaxLinks()} because some domains are used very
+     *  frequently and we don't want to be here forever.
      * 
-     *  @param data results from {@link #fetchExternalLinks(java.util.List, java.util.List)}
+     *  @param data results from {@link #fetchExternalLinks(List, List)}
      *  @return a Map with page &#8594; domain &#8594; popularity
      *  @throws IOException if a network error occurs
      */

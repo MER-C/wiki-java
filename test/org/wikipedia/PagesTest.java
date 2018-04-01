@@ -60,13 +60,20 @@ public class PagesTest
     @Test
     public void parseWikitextList()
     {
-        // Again, wiki-markup breaking titles should not make it to this method.
-        // In particular, titles must not contain [.
-        String list = "*[[:File:Example.png]]\n*[[Main Page]] -- annotation\n"
-            + "*[[*-algebra]]\n*:Not a list item."
-            + "*[[Cape Town#Economy]]\n**[[Nested list]]";
+        // Again, wiki-markup breaking titles should not make it to this method
+        // though it is able to tolerate some abuse
+        String list = 
+            "*[[:File:Example.png]]\n" +
+            "*[[Main Page]] -- annotation with extra [[wikilink|and description]]\n" +
+            "*[[*-algebra]]\n" +
+            "*:Not a list item.\n" +
+            "*[[Cape Town#Economy]]\n" +
+            "**[[Nested list]]\n" +
+            "*[[Link|Description]]" +
+            "*[[Invalid wiki markup instance #1\n" +
+            "*Not a link]]";
         List<String> expected = Arrays.asList("File:Example.png", "Main Page", 
-            "*-algebra", "Cape Town#Economy", "Nested list");        
+            "*-algebra", "Cape Town#Economy", "Nested list", "Link");        
         assertEquals("parseList, unnumbered", expected, Pages.parseWikitextList(list));
         
         list = "#[[:File:Example.png]]\n#[[*-algebra]]\n#[[Cape Town#Economy]]";

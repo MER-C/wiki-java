@@ -21,7 +21,6 @@ package org.wikipedia;
 
 import java.io.*;
 import java.util.*;
-import java.util.StringTokenizer;
 import javax.security.auth.login.*;
 
 /**
@@ -59,11 +58,13 @@ public class Pages
      *  * [[Wikipedia:Featured picture candidates]]
      *  * [[:File:Example.png]]
      *  * [[Cape Town#Economy]]
+     *  * [[Link|with description]]
      *  </pre>
      *
      *  in which case <samp>{ "Main Page", "Wikipedia:Featured picture
-     *  candidates", "File:Example.png", "Cape Town#Economy" }</samp> is the
-     *  return value. Numbered lists are allowed. Nested lists are flattened.
+     *  candidates", "File:Example.png", "Cape Town#Economy", "Link" }</samp> is
+     *  the return value. Numbered lists are allowed. Nested lists are 
+     *  flattened. Link descriptions are removed.
      *
      *  @param wikitext a wikitext list of pages as described above
      *  @see #toWikitextList(Iterable, boolean)
@@ -72,19 +73,23 @@ public class Pages
      */
     public static List<String> parseWikitextList(String wikitext)
     {
-        StringTokenizer tokenizer = new StringTokenizer(wikitext, "[]");
-        ArrayList<String> titles = new ArrayList<>(667);
-        tokenizer.nextToken(); // skip the first token
-        while (tokenizer.hasMoreTokens()) 
+        String[] lines = wikitext.split("\n");
+        List<String> titles = new ArrayList<>();
+        for (String line : lines)
         {
-            String token = tokenizer.nextToken();
-            // skip any containing new lines or double letters
-            if (token.contains("\n") || token.isEmpty())
+            int wikilinkstart = line.indexOf("[[");
+            int wikilinkend = line.indexOf("]]");
+            if (wikilinkstart < 0 || wikilinkend < 0)
                 continue;
-            // trim the starting colon, if present
-            if (token.startsWith(":"))
-                token = token.substring(1);
-            titles.add(token);
+            // strip descriptions
+            int pipe = line.indexOf('|', wikilinkstart);
+            if (pipe > 0 && pipe < wikilinkend)
+                wikilinkend = pipe;
+            // strip leading colon
+            String temp = line.substring(wikilinkstart + 2, wikilinkend);
+            if (temp.startsWith(":"))
+                temp = temp.substring(1);
+            titles.add(temp);
         }
         return titles;
     }

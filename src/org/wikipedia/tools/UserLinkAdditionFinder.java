@@ -25,7 +25,6 @@ import java.util.regex.*;
 import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.time.OffsetDateTime;
-import java.util.stream.Collectors;
 import javax.swing.JFileChooser;
 import org.wikipedia.*;
 

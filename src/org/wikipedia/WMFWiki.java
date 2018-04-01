@@ -80,7 +80,7 @@ public class WMFWiki extends Wiki
         WMFWiki wiki = createInstance("en.wikipedia.org");
         wiki.setMaxLag(0);
         String line = wiki.makeHTTPRequest(wiki.apiUrl + "action=sitematrix", null, "WMFWiki.getSiteMatrix");
-        ArrayList<WMFWiki> wikis = new ArrayList<WMFWiki>(1000);
+        ArrayList<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
         // <site url="http://ab.wiktionary.org" code="wiktionary" closed="" />
@@ -109,7 +109,7 @@ public class WMFWiki extends Wiki
      *  @param title the title of the page (must contain "File:")
      *  @return the global usage of the file, including the wiki and page the file is used on
      *  @throws IOException if a network error occurs
-     *  @throws UnsupportedOperationException if <code>{@link Wiki#namespace(java.lang.String) 
+     *  @throws UnsupportedOperationException if <code>{@link Wiki#namespace(String) 
      *  namespace(title)} != {@link Wiki#FILE_NAMESPACE}</code>
      */
     public String[][] getGlobalUsage(String title) throws IOException
@@ -161,7 +161,7 @@ public class WMFWiki extends Wiki
         return Stream.concat(global, local).map(str ->
         {
             if (str.contains("#"))
-                return str.substring(0, str.indexOf("#"));
+                return str.substring(0, str.indexOf('#'));
             else 
                 return str;
         }).map(String::trim)

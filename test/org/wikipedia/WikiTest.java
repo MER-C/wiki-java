@@ -143,6 +143,8 @@ public class WikiTest
         assertEquals("NS: en help talk lower case", Wiki.HELP_TALK_NAMESPACE, enWiki.namespace("help talk:About"));
         assertEquals("NS: en help talk lower case underscore", Wiki.HELP_TALK_NAMESPACE, enWiki.namespace("help_talk:About"));
         assertEquals("NS: en alias", Wiki.PROJECT_NAMESPACE, enWiki.namespace("WP:CSD"));
+        // Undocumented on mediawiki.org, better comment out for now
+        // assertEquals("NS: not case sensitive", Wiki.PROJECT_NAMESPACE, enWiki.namespace("wp:csd"));
         assertEquals("NS: main ns fail", Wiki.MAIN_NAMESPACE, enWiki.namespace("Star Wars: The Old Republic"));
         assertEquals("NS: main ns fail2", Wiki.MAIN_NAMESPACE, enWiki.namespace("Some Category: Blah"));
         assertEquals("NS: leading colon", Wiki.FILE_NAMESPACE, enWiki.namespace(":File:Blah.jpg"));
@@ -863,7 +865,9 @@ public class WikiTest
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("file:blah.jpg"));
         assertEquals("normalize", "Category:Wikipedia:blah", enWiki.normalize("Category:Wikipedia:blah"));
-        assertEquals("normalize", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));        
+        assertEquals("normalize: namespace i18n", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));
+        assertEquals("normalize: namespace alias", "Wikipedia:V", enWiki.normalize("WP:V"));
+        // variants with different cases undocumented
 
         // capital links = false
         assertEquals("normalize", "blah", enWikt.normalize("blah"));
@@ -1189,7 +1193,7 @@ public class WikiTest
         for (Wiki.Revision rev : rc)
             assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getPage()));
         // check options filtering
-        Map<String, Boolean> options = new HashMap();
+        Map<String, Boolean> options = new HashMap<>();
         options.put("minor", Boolean.FALSE);
         options.put("bot", Boolean.TRUE);
         rc = enWiki.recentChanges(10, options);

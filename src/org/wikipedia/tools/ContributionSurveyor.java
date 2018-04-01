@@ -225,7 +225,7 @@ public class ContributionSurveyor
      *  Gets the date/time at which surveys start; no edits will be returned 
      *  before then.
      *  @return (see above)
-     *  @see #setEarliestDateTime(java.time.OffsetDateTime)  
+     *  @see #setEarliestDateTime(OffsetDateTime)  
      *  @since 0.04
      */
     public OffsetDateTime getEarliestDateTime()
@@ -248,7 +248,7 @@ public class ContributionSurveyor
     /**
      *  Gets the date at which surveys finish. 
      *  @return (see above)
-     *  @see #setLatestDateTime(java.time.OffsetDateTime)  
+     *  @see #setLatestDateTime(OffsetDateTime)  
      *  @since 0.04
      */
     public OffsetDateTime getLatestDateTime()
@@ -284,7 +284,7 @@ public class ContributionSurveyor
      *  username &#8594; page &#8594; edits, where usernames are in the same
      *  order as <var>users</var>, edits are sorted to place the largest addition
      *  first and pages are sorted by their largest addition. <var>ns</var> 
-     *  containing {@link org.wikipedia.Wiki#FILE_NAMESPACE Wiki.FILE_NAMESPACE} 
+     *  containing {@link Wiki#FILE_NAMESPACE} 
      *  looks at additions of text to image description pages.
      * 
      *  @param users the list of users to survey
@@ -320,17 +320,18 @@ public class ContributionSurveyor
      * 
      *  @param username the user to survey
      *  @param ns the namespaces to survey (not specified = all namespaces)
+     *  @return the survey, in the form deleted page &#8594; revisions
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if one cannot view deleted pages
      *  @since 0.03
      */
-    public LinkedHashMap<String, ArrayList<Wiki.Revision>> deletedContributionSurvey(String username, 
+    public LinkedHashMap<String, List<Wiki.Revision>> deletedContributionSurvey(String username, 
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
         Wiki.Revision[] delcontribs = wiki.deletedContribs(username, latestdate, 
             earliestdate, false, ns);
-        LinkedHashMap<String, ArrayList<Wiki.Revision>> ret = new LinkedHashMap<>();
+        LinkedHashMap<String, List<Wiki.Revision>> ret = new LinkedHashMap<>();
         
         // group contributions by page
         for (Wiki.Revision rev : delcontribs)
@@ -339,7 +340,7 @@ public class ContributionSurveyor
                 continue;
             String page = rev.getPage();
             if (!ret.containsKey(page))
-                ret.put(page, new ArrayList<Wiki.Revision>());
+                ret.put(page, new ArrayList<>());
             ret.get(page).add(rev);
         }
         return ret;
@@ -389,10 +390,10 @@ public class ContributionSurveyor
 
     /**
      *  Formats a contribution survey for a single user as wikitext.
-     *  @param username the relevant username (use null to omit)
+     *  @param username the relevant username (use {@code null} to omit)
      *  @param survey the survey, in form of page &#8594; edits
      *  @return the formatted survey in wikitext
-     *  @see #contributionSurvey(java.lang.String[], int...) 
+     *  @see #contributionSurvey(String[], int...) 
      *  @since 0.04
      */
     public String formatTextSurveyAsWikitext(String username, Map<String, List<Wiki.Revision>> survey)
@@ -460,7 +461,7 @@ public class ContributionSurveyor
      *  @param username the relevant username (use null to omit)
      *  @param survey the survey
      *  @return the formatted survey in wikitext
-     *  @see #imageContributionSurvey(org.wikipedia.Wiki.User) 
+     *  @see #imageContributionSurvey(Wiki.User) 
      *  @since 0.04
      */
     public String formatImageSurveyAsWikitext(String username, String[][] survey)
