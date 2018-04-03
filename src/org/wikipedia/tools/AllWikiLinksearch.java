@@ -157,7 +157,7 @@ public class AllWikiLinksearch
                 int linknumber = links.size();
                 if (linknumber != 0)
                 {
-                    temp.append(ParserUtils.linksearchResultsToWikitext(links, domain));
+                    temp.append(ExternalLinks.linksearchResultsToWikitext(links, domain));
                     out.write(temp.toString());
                 }
             }

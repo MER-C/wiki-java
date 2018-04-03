@@ -133,7 +133,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         Wiki wiki = entry.getKey();
         List<String[]> value = entry.getValue();
         out.println("<h3>" + wiki.getDomain() + "</h3>");
-        out.println(ParserUtils.linksearchResultsToHTML(value, wiki, domain));
+        out.println(ExternalLinks.of(wiki).linksearchResultsToHTML(value, domain));
         out.println("<p>");
         if (value.size() > 500)
             out.print("At least ");

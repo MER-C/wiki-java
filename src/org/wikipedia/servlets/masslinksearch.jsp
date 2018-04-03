@@ -79,6 +79,7 @@ for more domains.
 
         StringBuilder regex = new StringBuilder();
         StringBuilder linksummary = new StringBuilder();
+        ExternalLinks el = ExternalLinks.of(w);
 
         for (String domain : domains)
         {
@@ -101,7 +102,7 @@ for more domains.
             linksummary.append("}}\n");
 
             out.println("<h3>Results for " + domain + "</h3>");
-            out.println(ParserUtils.linksearchResultsToHTML(temp, w, domain));
+            out.println(el.linksearchResultsToHTML(temp, domain));
         }
 %>
 <hr>

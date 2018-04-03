@@ -219,55 +219,6 @@ public class ParserUtils
     }
     
     /**
-     *  Renders output of {@link Wiki#linksearch} in wikitext.
-     *  @param results the results to render
-     *  @param domain the domain that was searched
-     *  @return the rendered wikitext
-     *  @since 0.02
-     */
-    public static String linksearchResultsToWikitext(List<String[]> results, String domain)
-    {
-        StringBuilder builder = new StringBuilder(100);
-        for (String[] result : results)
-        {
-            builder.append("# [[");
-            builder.append(result[0]);
-            builder.append("]] uses link [");
-            builder.append(result[1]);
-            builder.append("]\n");
-        }
-        return builder.toString();
-    }
-    
-    /**
-     *  Renders output of {@link Wiki#linksearch} in HTML.
-     *  @param results the results to render
-     *  @param domain the domain that was searched
-     *  @param wiki the wiki that was searched
-     *  @return the rendered HTML
-     *  @since 0.02
-     */
-    public static String linksearchResultsToHTML(List<String[]> results, Wiki wiki, String domain)
-    {
-        StringBuilder buffer = new StringBuilder(1000);
-        buffer.append("<p>\n<ol>\n");
-        results.forEach(result ->
-        {
-            buffer.append("\t<li><a href=\"");
-            buffer.append(wiki.getPageURL(result[0]));
-            buffer.append("\">");
-            buffer.append(result[0]);
-            buffer.append("</a> uses link <a href=\"");
-            buffer.append(result[1]);
-            buffer.append("\">");
-            buffer.append(result[1]);
-            buffer.append("</a>\n");
-        });
-        buffer.append("</ol>");
-        return buffer.toString();
-    }
-    
-    /**
      *  Creates user links in HTML of the form <samp>User (talk | contribs | 
      *  deletedcontribs | block | block log)</samp>
      *  @param username the username
@@ -320,32 +271,7 @@ public class ParserUtils
             throw new UncheckedIOException(ex); // seriously?
         }
     }
-    
-    /**
-     *  Extracts the domain name from the given URL. This method strips only the
-     *  "www" subdomain, that is {@code extractDomain("https://www.example.com/index.jsp")}
-     *  returns <samp>example.com</samp> but {@code extractDomain("https://test.example.com/index.jsp")}
-     *  returns <samp>test.example.com</samp>.
-     *  @param url a valid URL
-     *  @return the domain name
-     */
-    public static String extractDomain(String url)
-    {
-        try
-        {
-            // https://stackoverflow.com/questions/9607903/get-domain-name-from-given-url
-            URI uri = new URI(url);
-            String domain = uri.getHost();
-            return domain.contains("www.") ? domain.substring(4) : domain;
-        }
-        catch (URISyntaxException ex)
-        {
-            // The primary use case deals with URLs that come from live, working
-            // external links on wiki
-            throw new IllegalArgumentException(ex);
-        }
-    }
-    
+        
     /**
      *  Reverse of Wiki.decode()
      *  @param in input string

@@ -140,7 +140,7 @@ public class ExternalLinkPopularity
                 .filter(domain -> excluded.stream().noneMatch(exc -> domain.contains(exc)))
                 .collect(Collectors.groupingBy(domain ->
                 {
-                    String domain2 = ParserUtils.extractDomain(domain);
+                    String domain2 = ExternalLinks.extractDomain(domain);
                     // crude hack to remove subdomains
                     int a = domain2.indexOf('.') + 1;
                     if (domain2.indexOf('.', a) > 0)
