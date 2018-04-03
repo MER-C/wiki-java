@@ -98,7 +98,6 @@ public class ExternalLinks
      *  @param results the results to render
      *  @param domain the domain that was searched
      *  @return the rendered HTML
-     *  @since 0.02
      */
     public String linksearchResultsToHTML(List<String[]> results, String domain)
     {

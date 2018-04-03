@@ -22,6 +22,7 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.logging.*;
 import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
 
@@ -41,6 +42,7 @@ public class CCIAnalyzer
     public static void main(String[] args) throws IOException
     {
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki.setLogLevel(Level.WARNING);
         StringBuilder cci = new StringBuilder(1000000);
         if (args.length < 1)
         {
@@ -61,14 +63,14 @@ public class CCIAnalyzer
         
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
-        String diffaddedbegin = "&lt;td class=&quot;diff-addedline&quot;&gt;"; // <td class="diff-addedline">
-        String diffaddedend = "&lt;/td&gt;"; // </td>
-        String deltabegin = "&lt;ins class=&quot;diffchange diffchange-inline&quot;&gt;"; // <ins class="diffchange diffchange-inline">
-        String deltaend = "&lt;/ins&gt;"; // </ins>
+        String diffaddedbegin = "<td class=\"diff-addedline\">";
+        String diffaddedend = "</td>";
+        String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
+        String deltaend = "</ins>";
         
         // count number of diffs
         int count = 0;
-        for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
+        for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
             count++;
         
         // parse the list of diffs
@@ -76,13 +78,13 @@ public class CCIAnalyzer
         long start = System.currentTimeMillis();
         ArrayList<String> minoredits = new ArrayList<>(500);
         boolean exception = false;
-        for (int i = cci.indexOf("{{dif|"); i >= 0; i = cci.indexOf("{{dif|", ++i))
+        for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
         {
-            int x = cci.indexOf("}}", i);
-            String edit = cci.substring(i, x + 2);
-            x = edit.indexOf("|");
-            int y = edit.indexOf("|", x + 1);
-            String oldid = edit.substring(x + 1, y);
+            int xx = cci.indexOf("/", i);
+            int yy = cci.indexOf("|", xx);
+            int zz = cci.indexOf("]]", xx) + 2;
+            String edit = cci.substring(i, zz);
+            long oldid = Long.parseLong(cci.substring(xx + 1, yy));
 
             // Fetch diff. No plain text diffs for performance reasons, see
             // https://phabricator.wikimedia.org/T15209
@@ -112,6 +114,11 @@ public class CCIAnalyzer
                 exception = true;
                 continue;
             }
+            catch (UnknownError err)
+            {
+                // HACK: RevisionDeleted revision or deleted article.
+                continue;
+            }
             // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
             diff = diff.toLowerCase();
             diff = diff.replace(deltaend + " " + deltabegin, " ");
@@ -123,8 +130,8 @@ public class CCIAnalyzer
             {
                 int y2 = diff.indexOf(diffaddedend, j);
                 String addedline = diff.substring(j + diffaddedbegin.length(), y2);
-                addedline = addedline.replaceFirst("^&lt;div&gt;", "");
-                addedline = addedline.replace("&lt;/div&gt;", "");
+                addedline = addedline.replaceFirst("^<div>", "");
+                addedline = addedline.replace("</div>;", "");
                 if (addedline.contains(deltabegin))
                 {
                     for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
@@ -162,9 +169,9 @@ public class CCIAnalyzer
             cci.delete(x, x + minoredit.length());
             
             // we don't care about minor edits that add less than 500 chars
-            int y = minoredit.indexOf("|");
-            y = minoredit.indexOf("|", y + 1);
-            int size = Integer.parseInt(minoredit.substring(y + 2, minoredit.length() - 3));
+            int yy = minoredit.indexOf('|') + 2;
+            int zz = minoredit.indexOf(")]]");
+            int size = Integer.parseInt(minoredit.substring(yy, zz));
             if (size > 499)
                 System.out.println(minoredit);
         }
@@ -176,10 +183,9 @@ public class CCIAnalyzer
         for (String article : articles)
         {
             // remove articles where all diffs are trivial
-            if (article.contains("''''''") && !article.contains("{{dif|"))
+            if (article.matches(".*edits?\\):\\s+"))
                 continue;
-            // strip any left-over bold/unbold markers
-            cleaned.append(article.replaceAll("''''''", ""));
+            cleaned.append(article);
             cleaned.append("\n");
         }
         System.out.println(cleaned);

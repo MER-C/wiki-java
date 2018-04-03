@@ -158,11 +158,10 @@ public class UserLinkAdditionFinder
         // remove blacklisted domains (if applicable)
         if (removeblacklisted)
         {
-            Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
+            Iterator<String> iter = domains.keySet().iterator();
             while (iter.hasNext())
             {
-                Map.Entry<String, Set<String>> entry = iter.next();
-                if (wiki.isSpamBlacklisted(entry.getKey()))
+                if (wiki.isSpamBlacklisted(iter.next()))
                     iter.remove();
             }
         }
@@ -170,13 +169,13 @@ public class UserLinkAdditionFinder
         if (linksearch)
         {
             wiki.setQueryLimit(threshold);
-            Iterator<Map.Entry<String, Set<String>>> iter = domains.entrySet().iterator();
+            Iterator<String> iter = domains.keySet().iterator();
             while (iter.hasNext())
             {
-                Map.Entry<String, Set<String>> entry = iter.next();
-                int linkcount = wiki.linksearch("*." + entry.getKey()).size();
+                String domain = iter.next();
+                int linkcount = wiki.linksearch("*." + domain).size();
                 if (linkcount <= threshold)
-                    linkcount += wiki.linksearch("*." + entry.getKey(), "https").size();
+                    linkcount += wiki.linksearch("*." + domain, "https").size();
                 if (linkcount > threshold)
                     iter.remove();
             }
