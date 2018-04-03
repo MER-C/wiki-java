@@ -177,9 +177,10 @@ public class ParserUtils
             buffer.append("</a> .. ");
             
             // user links
-            String temp = recode(rev.getUser());
+            String temp = rev.getUser();
             if (temp != null)
             {
+                temp = recode(temp);
                 buffer.append("<a href=\"");
                 buffer.append(wiki.getPageURL("User:" + temp));
                 buffer.append("\">");

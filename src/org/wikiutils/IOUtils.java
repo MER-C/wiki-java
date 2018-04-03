@@ -1,16 +1,8 @@
 package org.wikiutils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.io.*;
+import java.util.*;
+import java.nio.file.*;
 
 import org.wikipedia.Wiki;
 
@@ -41,17 +33,18 @@ public class IOUtils
          *  in UTF-8 encoding.
 	 * 
 	 *  @param path The path of the file to read from
-	 *  @throws FileNotFoundException if path does not represent a valid file
+	 *  @throws IOException if a filesystem error occurs
 	 *  @return The HashMap we created by parsing the file
 	 */
-	public static HashMap<String, String> buildReasonCollection(String path) throws FileNotFoundException
+	public static HashMap<String, String> buildReasonCollection(String path) throws IOException
 	{
             HashMap<String, String> l = new HashMap<>();
-            for (String s : loadFromFile(path, "", "UTF-8"))
+            Files.readAllLines(Paths.get(path)).forEach(line ->
             {
-                int i = s.indexOf(":");
-                l.put(s.substring(0, i), s.substring(i + 1));
-            }
+                line = line.trim();
+                int i = line.indexOf(":");
+                l.put(line.substring(0, i), line.substring(i + 1));
+            });
             return l;
 	}
 	
@@ -65,8 +58,9 @@ public class IOUtils
 	 * @return The resulting array
 	 * 
 	 * @throws FileNotFoundException If the specified file was not found.
+         * @deprecated replace with {@code Files.lines(path, charset).map(line -> prefix + line.trim()).collect(Collectors.joining("\n"));}
 	 */
-
+        @Deprecated
 	public static String[] loadFromFile(String file, String prefix, String encoding) throws FileNotFoundException
 	{
 		Scanner m = new Scanner(new File(file), encoding);
@@ -114,7 +108,10 @@ public class IOUtils
 	 * @return The contents of the file as a String.
 	 * 
 	 * @throws FileNotFoundException If the file specified does not exist.
+         * @deprecated replace with {@code Files.lines(path, charset).map(String::trim).collect(Collectors.joining("\n"));}
+         * in the JDK.
 	 */
+        @Deprecated
 	public static String fileToString(File f, String encoding) throws FileNotFoundException
 	{
 		Scanner m = new Scanner(f, encoding);
@@ -134,7 +131,9 @@ public class IOUtils
 	 * @param file The file to use, abstract or absolute pathname
 	 * 
 	 * @throws IOException If we encountered a read/write error
+         * @deprecated replace with {@code Files.write(Paths.get(file), Arrays.asList(text));}
 	 */
+        @Deprecated
 	public static void writeToFile(String text, String file) throws IOException
 	{
 		BufferedWriter out = new BufferedWriter(new FileWriter(new File(file)));

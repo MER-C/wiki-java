@@ -20,6 +20,7 @@
 package org.wikipedia.tools;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
@@ -40,17 +41,15 @@ public class CCIAnalyzer
     public static void main(String[] args) throws IOException
     {
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
-        StringBuilder cci;
+        StringBuilder cci = new StringBuilder(1000000);
         if (args.length < 1)
         {
             // read in from file
             JFileChooser fc = new JFileChooser();
             if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
                 System.exit(0);      
-            BufferedReader in = new BufferedReader(new FileReader(fc.getSelectedFile()));
-            String line;
-            cci = new StringBuilder();
-            while ((line = in.readLine()) != null)
+            List<String> lines = Files.readAllLines(fc.getSelectedFile().toPath());
+            for (String line : lines)
             {
                 cci.append(line);
                 cci.append("\n");
@@ -58,7 +57,7 @@ public class CCIAnalyzer
         }
         else
             // or read in from supplied wiki page
-            cci = new StringBuilder(enWiki.getPageText(args[0]));
+            cci.append(enWiki.getPageText(args[0]));
         
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev

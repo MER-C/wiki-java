@@ -22,6 +22,7 @@ package org.wikipedia.tools;
 
 import java.awt.GraphicsEnvironment;
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.*;
@@ -51,21 +52,21 @@ public class AllWikiLinksearch
      *  "pl", "es", "ru", "ja", "pt", "zh", "sv", "vi", "uk", "ca", "no", "fi", 
      *  "cs", "hu", "fa" }.wikipedia.org.
      */
-    public static final Wiki[] TOP20 = new Wiki[20];
+    public static final List<Wiki> TOP20;
     
     /**
      *  The top 40 Wikimedia projects, namely everything in {@link #TOP20}, plus
      *  { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk", "lt", 
      *  "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" }.wikipedia.org.
      */
-    public static final Wiki[] TOP40 = new Wiki[40];
+    public static final List<Wiki> TOP40;
     
     /**
      *  Major Wikimedia projects prone to spam, namely { "en", "de", "fr" }.
      *  { "wikipedia", "wiktionary", "wikibooks", "wikiquote", "wikivoyage" }
      *  .org, plus Wikimedia Commons, Meta, mediawiki.org and WikiData.
      */
-    public static final Wiki[] MAJOR_WIKIS = new Wiki[19];
+    public static final List<Wiki> MAJOR_WIKIS;
     
     /**
      *  Initializes wiki groups.
@@ -80,28 +81,27 @@ public class AllWikiLinksearch
             "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr",  "kk",
             "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
         
-        for (int i = 0; i < temp.length; i++)
-        {
-            TOP40[i] = Wiki.createInstance(temp[i] + ".wikipedia.org");
-            TOP40[i].setMaxLag(-1);
-        }
-        System.arraycopy(TOP40, 0, TOP20, 0, 20);
+        List<Wiki> wikilist = new ArrayList<>();
+        for (String lang : temp)
+            wikilist.add(Wiki.createInstance(lang + ".wikipedia.org"));
+        TOP40 = Collections.unmodifiableList(wikilist);
+        TOP20 = TOP40.subList(0, 19);
 
         temp = new String[] { "en", "de", "fr" };
-        for (int i = 0; i < temp.length; i++)
+        wikilist = new ArrayList<>();
+        for (String lang : temp)
         {
-            MAJOR_WIKIS[5 * i    ] = Wiki.createInstance(temp[i] + ".wikipedia.org");
-            MAJOR_WIKIS[5 * i + 1] = Wiki.createInstance(temp[i] + ".wiktionary.org");
-            MAJOR_WIKIS[5 * i + 2] = Wiki.createInstance(temp[i] + ".wikibooks.org");
-            MAJOR_WIKIS[5 * i + 3] = Wiki.createInstance(temp[i] + ".wikiquote.org");
-            MAJOR_WIKIS[5 * i + 4] = Wiki.createInstance(temp[i] + ".wikivoyage.org");
+            wikilist.add(Wiki.createInstance(lang + ".wikipedia.org"));
+            wikilist.add(Wiki.createInstance(lang + ".wiktionary.org"));
+            wikilist.add(Wiki.createInstance(lang + ".wikibooks.org"));
+            wikilist.add(Wiki.createInstance(lang + ".wikiquote.org"));
+            wikilist.add(Wiki.createInstance(lang + ".wikivoyage.org"));
         }
-        MAJOR_WIKIS[15] = Wiki.createInstance("meta.wikimedia.org");
-        MAJOR_WIKIS[16] = Wiki.createInstance("commons.wikimedia.org");
-        MAJOR_WIKIS[17] = Wiki.createInstance("mediawiki.org");
-        MAJOR_WIKIS[18] = Wiki.createInstance("wikidata.org");
-        for (Wiki tempwiki : MAJOR_WIKIS)
-            tempwiki.setMaxLag(-1);
+        wikilist.add(Wiki.createInstance("meta.wikimedia.org"));
+        wikilist.add(Wiki.createInstance("commons.wikimedia.org"));
+        wikilist.add(Wiki.createInstance("mediawiki.org"));
+        wikilist.add(Wiki.createInstance("wikidata.org"));
+        MAJOR_WIKIS = Collections.unmodifiableList(wikilist);
     }
     
     /**
@@ -125,6 +125,7 @@ public class AllWikiLinksearch
         String domain = parsedargs.get("default");
         boolean httponly = parsedargs.containsKey("--httponly");
         int threads = Integer.parseInt(parsedargs.getOrDefault("--numthreads", "3"));
+        Path outfile = Paths.get(domain + ".wiki");
         
         if (!GraphicsEnvironment.isHeadless() && domain == null)
             domain = JOptionPane.showInputDialog(null, "Enter domain to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
@@ -134,32 +135,33 @@ public class AllWikiLinksearch
             System.exit(0);
         }
         
-        WMFWiki[] wikis = WMFWiki.getSiteMatrix();
+        List<WMFWiki> wikis = Arrays.asList(WMFWiki.getSiteMatrix());
         Map<Wiki, List<String[]>> results = crossWikiLinksearch(false, threads, domain, wikis, !httponly, false);
         
         // output results
-        FileWriter out = new FileWriter(domain + ".wiki");
-        for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
+        try (BufferedWriter out = Files.newBufferedWriter(outfile))
         {
-            Wiki wiki = result.getKey();
-            List<String[]> links = result.getValue();
-            StringBuilder temp = new StringBuilder("=== Results for ");
-            temp.append(wiki.getDomain());
-            temp.append(" ===\n");
-            if (links == null)
+            for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
             {
-                temp.append("<span style=\"color: red\">An error occurred!</span>\n\n");
-                out.write(temp.toString());
-                continue;
-            }
-            int linknumber = links.size();
-            if (linknumber != 0)
-            {
-                temp.append(ParserUtils.linksearchResultsToWikitext(links, domain));
-                out.write(temp.toString());
+                Wiki wiki = result.getKey();
+                List<String[]> links = result.getValue();
+                StringBuilder temp = new StringBuilder("=== Results for ");
+                temp.append(wiki.getDomain());
+                temp.append(" ===\n");
+                if (links == null)
+                {
+                    temp.append("<span style=\"color: red\">An error occurred!</span>\n\n");
+                    out.write(temp.toString());
+                    continue;
+                }
+                int linknumber = links.size();
+                if (linknumber != 0)
+                {
+                    temp.append(ParserUtils.linksearchResultsToWikitext(links, domain));
+                    out.write(temp.toString());
+                }
             }
         }
-        out.close();
     }
     
     /**
@@ -178,10 +180,10 @@ public class AllWikiLinksearch
      *  IOException occurred
      */
     public static Map<Wiki, List<String[]>> crossWikiLinksearch(boolean querylimit, 
-        int threads, String domain, Wiki[] wikis, boolean https, boolean mailto, 
+        int threads, String domain, List<? extends Wiki> wikis, boolean https, boolean mailto, 
         int... ns)
     {
-        Stream<Wiki> stream = Arrays.stream(wikis);
+        Stream<? extends Wiki> stream = wikis.stream();
         // set concurrency if desired
         if (!querylimit && threads > 1)
         {
@@ -190,6 +192,7 @@ public class AllWikiLinksearch
         }
         Map<Wiki, List<String[]>> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
         {
+            wiki.setMaxLag(-1);
             if (querylimit)
                 wiki.setQueryLimit(500);
             try

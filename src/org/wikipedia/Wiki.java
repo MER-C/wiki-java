@@ -464,6 +464,7 @@ public class Wiki implements Serializable
     // wiki properties
     private boolean wgCapitalLinks = true;
     private ZoneId timezone = ZoneId.of("UTC");
+    private Locale locale;
 
     // user management
     private final CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
@@ -471,6 +472,7 @@ public class Wiki implements Serializable
     private int statuscounter = 0;
 
     // various caches
+    private transient Map<String, Object> siteinfo = null;
     private transient LinkedHashMap<String, Integer> namespaces = null;
     private transient ArrayList<Integer> ns_subpages = null;
     private transient List<String> watchlist = null;
@@ -478,7 +480,7 @@ public class Wiki implements Serializable
     // preferences
     private int max = 500;
     private int slowmax = 50;
-    private int throttle = 10000; // throttle
+    private int throttle = 10000;
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
     private transient int statusinterval = 100; // status check
@@ -506,6 +508,7 @@ public class Wiki implements Serializable
     private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
     // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
     // chunked uploads by setting a large value here (50 = 1 PB will do).
+    // Stuff you actually upload must be no larger than 2 GB.
     private static final int LOG2_CHUNK_SIZE = 22;
 
     // CONSTRUCTORS AND CONFIGURATION
@@ -698,8 +701,11 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Sets the editing throttle. Read requests are not throttled or restricted
-     *  in any way. Default is 10s.
+     *  Sets the throttle, which limits most write requests to no more than one
+     *  per wiki instance in the given time across all threads. (As a 
+     *  consequence, all throttled methods are thread safe.) Read requests are 
+     *  not throttled or restricted in any way. Default is 10 seconds.
+     * 
      *  @param throttle the new throttle value in milliseconds
      *  @see #getThrottle
      *  @since 0.09
@@ -712,7 +718,7 @@ public class Wiki implements Serializable
 
     /**
      *  Gets various properties of the wiki and sets the bot framework up to use
-     *  them. Also populates the namespace cache. Returns:
+     *  them. The return value is cached. This method is thread safe. Returns:
      *  <ul>
      *  <li><b>usingcapitallinks</b>: (Boolean) whether a wiki forces upper case
      *    for the title. Example: en.wikipedia = true, en.wiktionary = false.
@@ -723,58 +729,63 @@ public class Wiki implements Serializable
      *    $wgScriptPath</var> wiki variable</a>. Default = {@code /w}.
      *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
      *  <li><b>timezone</b>: (ZoneId) the timezone the wiki is in, default = UTC
+     *  <li><b>locale</b>: (Locale) the locale of the wiki
      *  </ul>
      *
      *  @return (see above)
      *  @since 0.30
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Object> getSiteInfo() throws IOException
+    public synchronized Map<String, Object> getSiteInfo() throws IOException
     {
-        Map<String, Object> ret = new HashMap<>();
-        String line = makeHTTPRequest(query + "action=query&meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", null, "getSiteInfo");
-        
-        // general site info
-        String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
-        wgCapitalLinks = parseAttribute(bits, "case", 0).equals("first-letter");
-        ret.put("usingcapitallinks", wgCapitalLinks);
-        scriptPath = parseAttribute(bits, "scriptpath", 0);
-        ret.put("scriptpath", scriptPath);
-        timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
-        ret.put("timezone", timezone);
-        ret.put("version", parseAttribute(bits, "generator", 0));
-        
-        // populate namespace cache
-        namespaces = new LinkedHashMap<>(30);
-        ns_subpages = new ArrayList<>(30);
-        // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
-        String[] items = line.split("<ns ");
-        for (int i = 1; i < items.length; i++)
+        if (siteinfo == null)
         {
-            int ns = Integer.parseInt(parseAttribute(items[i], "id", 0));
-            
-            // parse localized namespace name
-            // must be before parsing canonical namespace so that 
-            // namespaceIdentifier always returns the localized name
-            int b = items[i].indexOf('>') + 1;
-            int c = items[i].indexOf("</ns>");
-            if (c < 0)
-                namespaces.put("", ns);
-            else
-                namespaces.put(normalize(decode(items[i].substring(b, c))), ns);
-            
-            String canonicalnamespace = parseAttribute(items[i], "canonical", 0);
-            if (canonicalnamespace != null)
-                namespaces.put(canonicalnamespace, ns);
-            
-            // does this namespace support subpages?
-            if (items[i].contains("subpages=\"\""))
-                ns_subpages.add(ns);
+            siteinfo = new HashMap<>();
+            String line = makeHTTPRequest(query + "meta=siteinfo&siprop=namespaces%7Cnamespacealiases%7Cgeneral", null, "getSiteInfo");
+
+            // general site info
+            String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
+            wgCapitalLinks = parseAttribute(bits, "case", 0).equals("first-letter");
+            siteinfo.put("usingcapitallinks", wgCapitalLinks);
+            scriptPath = parseAttribute(bits, "scriptpath", 0);
+            siteinfo.put("scriptpath", scriptPath);
+            timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
+            siteinfo.put("timezone", timezone);
+            siteinfo.put("version", parseAttribute(bits, "generator", 0));
+            locale = new Locale(parseAttribute(bits, "lang", 0));
+            siteinfo.put("locale", locale);
+
+            // populate namespace cache
+            namespaces = new LinkedHashMap<>(30);
+            ns_subpages = new ArrayList<>(30);
+            // xml form: <ns id="-2" canonical="Media" ... >Media</ns> or <ns id="0" ... />
+            String[] items = line.split("<ns ");
+            for (int i = 1; i < items.length; i++)
+            {
+                int ns = Integer.parseInt(parseAttribute(items[i], "id", 0));
+
+                // parse localized namespace name
+                // must be before parsing canonical namespace so that 
+                // namespaceIdentifier always returns the localized name
+                int b = items[i].indexOf('>') + 1;
+                int c = items[i].indexOf("</ns>");
+                if (c < 0)
+                    namespaces.put("", ns);
+                else
+                    namespaces.put(normalize(decode(items[i].substring(b, c))), ns);
+
+                String canonicalnamespace = parseAttribute(items[i], "canonical", 0);
+                if (canonicalnamespace != null)
+                    namespaces.put(canonicalnamespace, ns);
+
+                // does this namespace support subpages?
+                if (items[i].contains("subpages=\"\""))
+                    ns_subpages.add(ns);
+            }
+            initVars();
+            log(Level.INFO, "getSiteInfo", "Successfully retrieved site info for " + getDomain());
         }
-        
-        initVars();
-        log(Level.INFO, "getSiteInfo", "Successfully retrieved site info for " + getDomain());
-        return ret;
+        return new HashMap<>(siteinfo);
     }
 
     /**
@@ -1615,13 +1626,13 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Fill namespace cache. Required for thread safety.
+     *  Fills namespace cache.
      *  @throws UncheckedIOException if a network error occurs (unchecked for
      *  lambda friendliness, very rare since this should only be called once
      *  per session)
      *  @since 0.32
      */
-    private synchronized void ensureNamespaceCache()
+    private void ensureNamespaceCache()
     {
         try
         {
@@ -1657,7 +1668,7 @@ public class Wiki implements Serializable
         if (!title.contains(":"))
             return MAIN_NAMESPACE;
         title = title.replace("_", " ");
-        String namespace = title.substring(0, 1).toUpperCase() + title.substring(1, title.indexOf(':'));
+        String namespace = title.substring(0, 1).toUpperCase(locale) + title.substring(1, title.indexOf(':'));
         return namespaces.getOrDefault(namespace, MAIN_NAMESPACE);
     }
 
@@ -1909,8 +1920,7 @@ public class Wiki implements Serializable
 
     /**
      *  Edits a page by setting its text to the supplied value. This method is
-     *  thread safe and blocks for a minimum time as specified by the
-     *  {@linkplain #getThrottle throttle}. The edit will be marked bot if 
+     *  {@linkplain #setThrottle(int) throttled}. The edit will be marked bot if 
      *  {@link #isMarkBot()} is {@code true} and minor if {@link #isMarkMinor()}
      *  is {@code true}.
      *
@@ -1933,10 +1943,9 @@ public class Wiki implements Serializable
 
     /**
      *  Edits a page by setting its <var>text</var> to the supplied value. This 
-     *  method is thread safe and blocks for a minimum time as specified by the
-     *  {@linkplain #getThrottle throttle}. The edit will be marked bot if 
-     *  {@link #isMarkBot()} is {@code true} and minor if {@link #isMarkMinor()}
-     *  is {@code true}.
+     *  method is {@linkplain #setThrottle(int) throttled}. The edit will be 
+     *  marked bot if {@link #isMarkBot()} is {@code true} and minor if {@link 
+     *  #isMarkMinor()} is {@code true}.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1959,10 +1968,9 @@ public class Wiki implements Serializable
 
     /**
      *  Edits a section by setting its <var>text</var> to the supplied value. 
-     *  This method is thread safe and blocks for a minimum time as specified by 
-     *  the {@linkplain #getThrottle throttle}. The edit will be marked bot if 
-     *  {@link #isMarkBot()} is {@code true} and minor if {@link #isMarkMinor()}
-     *  is {@code true}.
+     *  This method is {@linkplain #setThrottle(int) throttled}. The edit will 
+     *  be marked bot if {@link #isMarkBot()} is {@code true} and minor if 
+     *  {@link #isMarkMinor()} is {@code true}.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -1986,10 +1994,9 @@ public class Wiki implements Serializable
 
     /**
      *  Edits a page by setting its <var>text</var> to the supplied value. This
-     *  method is thread safe and blocks for a minimum time as specified by the
-     *  {@linkplain #getThrottle throttle}. The edit will be marked bot if 
-     *  {@link #isMarkBot()} is {@code true} and minor if {@link #isMarkMinor()}
-     *  is {@code true}.
+     *  method is {@linkplain #setThrottle(int) throttled}. The edit will be 
+     *  marked bot if {@link #isMarkBot()} is {@code true} and minor if {@link 
+     *  #isMarkMinor()} is {@code true}.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -2016,8 +2023,7 @@ public class Wiki implements Serializable
 
     /**
      *  Edits a page by setting its text to the supplied value. This method is
-     *  thread safe and blocks for a minimum time as specified by the
-     *  throttle.
+     *  {@linkplain #setThrottle(int) throttled}.
      *
      *  @param text the text of the page
      *  @param title the title of the page
@@ -2095,7 +2101,8 @@ public class Wiki implements Serializable
 
     /**
      *  Creates a new section on the specified page. Leave <var>subject</var> as
-     *  the empty string if you just want to append.
+     *  the empty string if you just want to append. This method is 
+     *  {@linkplain #setThrottle(int) throttled}.
      *
      *  @param title the title of the page to edit
      *  @param subject the subject of the new section
@@ -2120,7 +2127,7 @@ public class Wiki implements Serializable
     /**
      *  Prepends something to the given page. A convenience method for
      *  adding maintenance templates, rather than getting and setting the
-     *  page yourself.
+     *  page yourself. {@linkplain #setThrottle(int) throttled}.
      *
      *  @param title the title of the page
      *  @param stuff what to prepend to the page
@@ -2147,6 +2154,7 @@ public class Wiki implements Serializable
 
     /**
      *  Deletes a page. Does not delete any page with more than 5000 revisions.
+     *  {@linkplain #setThrottle(int) throttled}.
      *  @param title the page to delete
      *  @param reason the reason for deletion
      *  @throws IOException or UncheckedIOException if a network error occurs
@@ -2189,7 +2197,9 @@ public class Wiki implements Serializable
 
     /**
      *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
-     *  revisions and files by default. This method is throttled.
+     *  revisions and files by default. This method is {@linkplain 
+     *  #setThrottle(int) throttled}.
+     * 
      *  @param title a page to undelete
      *  @param reason the reason for undeletion
      *  @param revisions a list of revisions for selective undeletion
@@ -3090,8 +3100,8 @@ public class Wiki implements Serializable
 
     /**
      *  Moves a page. Moves the associated talk page and leaves redirects, if
-     *  applicable. Equivalent to [[Special:MovePage]]. This method is thread
-     *  safe and is subject to the throttle. Does not recategorize pages
+     *  applicable. Equivalent to [[Special:MovePage]]. This method is 
+     *  {@linkplain #setThrottle(int) throttled}. Does not recategorize pages
      *  in moved categories.
      *
      *  @param title the title of the page to move
@@ -3113,7 +3123,7 @@ public class Wiki implements Serializable
 
     /**
      *  Moves a page. Equivalent to [[Special:MovePage]]. This method is
-     *  thread safe and is subject to the throttle. Does not recategorize pages
+     *  {@linkplain #setThrottle(int) throttled}. Does not recategorize pages
      *  in moved categories.
      *
      *  @param title the title of the page to move
@@ -3181,9 +3191,10 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Protects a page. Structure of <var>protectionstate</var> (everything is
-     *  optional, if a value is not present, then the corresponding values will
-     *  be left untouched):
+     *  Protects a page. This method is {@linkplain #setThrottle(int) throttled}.
+     *  Structure of <var>protectionstate</var> (everything is optional, if a 
+     *  value is not present, then the corresponding values will be left 
+     *  untouched):
      *  
      *  <pre><samp>
      *  {
@@ -3208,10 +3219,9 @@ public class Wiki implements Serializable
      */
     public synchronized void protect(String page, Map<String, Object> protectionstate, String reason) throws IOException, LoginException
     {
-        throttle();
-        
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
+        throttle();
         
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("title", normalize(page));
@@ -3250,7 +3260,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Completely unprotects a page.
+     *  Completely unprotects a page. This method is {@linkplain #setThrottle(int) 
+     *  throttled}.
      *  @param page the page to unprotect
      *  @param reason the reason for unprotection
      *  @throws IOException if a network error occurs
@@ -3393,6 +3404,7 @@ public class Wiki implements Serializable
         // check rights
         if (user == null || !user.isAllowedTo("rollback"))
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
+        // This method is intentionally NOT throttled.
 
         // Perform the rollback. 
         Map<String, Object> postparams = new HashMap<>();
@@ -3419,7 +3431,8 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Deletes and undeletes revisions or log entries.
+     *  Deletes and undeletes revisions or log entries. This method is
+     *  {@linkplain #setThrottle(int) throttled}.
      *
      *  @param hidecontent hide the content of the revision (true/false
      *  = hide/unhide, {@code null} = status quo)
@@ -3541,7 +3554,8 @@ public class Wiki implements Serializable
      *  </code>
      *
      *  This will only work if revision 541 or any subsequent edits do not
-     *  clash with the change resulting from the undo.
+     *  clash with the change resulting from the undo. This method is
+     *  {@linkplain #setThrottle(int) throttled}.
      *
      *  @param rev a revision to undo
      *  @param to the most recent in a range of revisions to undo. Set to null
@@ -3907,9 +3921,9 @@ public class Wiki implements Serializable
         Map<String, Object> metadata = new HashMap<>(30);
 
         // size, width, height, sha, mime type
-        metadata.put("size", new Integer(parseAttribute(line, "size", 0)));
-        metadata.put("width", new Integer(parseAttribute(line, "width", 0)));
-        metadata.put("height", new Integer(parseAttribute(line, "height", 0)));
+        metadata.put("size", Integer.valueOf(parseAttribute(line, "size", 0)));
+        metadata.put("width", Integer.valueOf(parseAttribute(line, "width", 0)));
+        metadata.put("height", Integer.valueOf(parseAttribute(line, "height", 0)));
         metadata.put("sha1", parseAttribute(line, "sha1", 0));
         metadata.put("mime", parseAttribute(line, "mime", 0));
 
@@ -4118,8 +4132,8 @@ public class Wiki implements Serializable
      *  Uploads an image. Equivalent to [[Special:Upload]]. Supported
      *  extensions are (case-insensitive) "png", "jpg", "gif" and "svg". You
      *  need to be logged on to do this. Automatically breaks uploads into
-     *  2^{@link #LOG2_CHUNK_SIZE} byte size chunks. This method is thread safe
-     *  and subject to the throttle.
+     *  2^{@link #LOG2_CHUNK_SIZE} byte size chunks. This method is {@linkplain
+     *  #setThrottle(int) throttled}.
      *
      *  @param file the image file
      *  @param filename the target file name (may contain File)
@@ -4138,8 +4152,6 @@ public class Wiki implements Serializable
      */
     public synchronized void upload(File file, String filename, String contents, String reason) throws IOException, LoginException
     {
-        throttle();
-
         // check for log in
         if (user == null || !user.isAllowedTo("upload"))
         {
@@ -4148,6 +4160,7 @@ public class Wiki implements Serializable
             throw ex;
         }
         filename = removeNamespace(filename);
+        throttle();
 
         // protection
         Map<String, Object> info = getPageInfo("File:" + filename);
@@ -4178,8 +4191,7 @@ public class Wiki implements Serializable
                     postparams.put("text", contents);
                     if (!reason.isEmpty())
                         postparams.put("comment", reason);
-                    byte[] by = new byte[fi.available()];
-                    fi.read(by);
+                    byte[] by = Files.readAllBytes(file.toPath());
                     // Why this is necessary?
                     postparams.put("file\"; filename=\"" + file.getName(), by);
                 }
@@ -4245,7 +4257,7 @@ public class Wiki implements Serializable
      *  Uploads an image by copying it from the given URL. Equivalent to 
      *  [[Special:Upload]]. Supported extensions are (case-insensitive) "png", 
      *  "jpg", "gif" and "svg". You need to be logged on to do this. This method 
-     *  is thread safe and subject to the throttle.
+     *  is {@linkplain #setThrottle(int) throttled}.
      *
      *  @param url the URL of the image to fetch
      *  @param filename the target file name (may contain File)
@@ -4265,8 +4277,6 @@ public class Wiki implements Serializable
      */
     public synchronized void upload(URL url, String filename, String contents, String reason) throws IOException, LoginException
     {
-        throttle();
-
         // check for log in
         if (user == null || !user.isAllowedTo("upload_by_url"))
         {
@@ -4275,6 +4285,7 @@ public class Wiki implements Serializable
             throw ex;
         }
         filename = removeNamespace(filename);
+        throttle();
 
         // protection
         Map<String, Object> info = getPageInfo("File:" + filename);
@@ -4863,9 +4874,10 @@ public class Wiki implements Serializable
      *  Sends an email message to a user in a similar manner to [[Special:Emailuser]].
      *  You and the target user must have a confirmed email address and the
      *  target user must have email contact enabled. Messages are sent in plain
-     *  text (no wiki markup or HTML).
+     *  text (no wiki markup or HTML). This method is {@linkplain 
+     *  #setThrottle(int) throttled}.
      *
-     *  @param user a Wikipedia user with email enabled
+     *  @param user a wiki user with email enabled
      *  @param subject the subject of the message
      *  @param message the plain text message
      *  @param emailme whether to send a copy of the message to your email address
@@ -4909,8 +4921,8 @@ public class Wiki implements Serializable
     
     /**
      *  Blocks a user, IP address or IP address range. Overwrites existing
-     *  blocks. This method is throttled. Allowed keys for <var>blockoptions</var>
-     *  include:
+     *  blocks. This method is {@linkplain #setThrottle(int) throttled}. Allowed 
+     *  keys for <var>blockoptions</var> include:
      *  
      *  <ul>
      *  <li><b>nocreate</b>: prevent account creation from the relevant IP 
@@ -4973,7 +4985,7 @@ public class Wiki implements Serializable
     }
 
     /**
-     *  Unblocks a user. This method is throttled.
+     *  Unblocks a user. This method is {@linkplain #setThrottle(int) throttled}.
      *  @param blockeduser the user to unblock
      *  @param reason the reason for unblocking
      *  @throws CredentialNotFoundException if not an admin
@@ -5017,7 +5029,8 @@ public class Wiki implements Serializable
      *  1 (add all permissions until this time) or {@code addedgroups.length}
      *  (add each permission for the time given by the index in <var>expiry</var>). 
      *  See [[Special:Listgrouprights]] for the permissions you can add or
-     *  remove and what they do. Equivalent to [[Special:UserRights]].
+     *  remove and what they do. Equivalent to [[Special:UserRights]]. This
+     *  method is {@linkplain #setThrottle(int) throttled}.
      * 
      *  @param u the user to change permissions for
      *  @param granted a list of groups to add
@@ -6601,7 +6614,7 @@ public class Wiki implements Serializable
      *  Subclass for wiki users.
      *  @since 0.05
      */
-    public class User implements Cloneable, Serializable
+    public class User implements Cloneable
     {
         private final String username;
         private String[] rights = null; // cache
@@ -7304,7 +7317,7 @@ public class Wiki implements Serializable
                 String url = query + "prop=deletedrevisions&drvprop=content&revids=" + getID();
                 String temp = makeHTTPRequest(url, null, "Revision.getText");
                 int a = temp.indexOf("<rev ");
-                a = temp.indexOf(">", a) + 1;
+                a = temp.indexOf('>', a) + 1;
                 int b = temp.indexOf("</rev>", a); // tag not present if revision has no content
                 log(Level.INFO, "Revision.getText", "Successfully retrieved text of revision " + getID());
                 return (b < 0) ? "" : temp.substring(a, b);
@@ -8018,7 +8031,7 @@ public class Wiki implements Serializable
             {
                 int time = connection.getHeaderFieldInt("Retry-After", 10);
                 logger.log(Level.WARNING, "Current database lag {0} s exceeds maxlag of {1} s, waiting {2} s.", new Object[] { lag, maxlag, time });
-                Thread.sleep(time * 1000);
+                Thread.sleep(time * 1000L);
             }
             catch (InterruptedException ignored)
             {
@@ -8331,7 +8344,7 @@ public class Wiki implements Serializable
      *  and other write actions.
      *  @since 0.30
      */
-    private synchronized void throttle()
+    protected synchronized void throttle()
     {
         try
         {

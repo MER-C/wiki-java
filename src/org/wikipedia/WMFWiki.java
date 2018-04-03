@@ -33,6 +33,7 @@ import java.util.stream.*;
  */
 public class WMFWiki extends Wiki
 {
+    // caches
     private static String globalblacklist;
     private String localblacklist;
     

@@ -853,8 +853,11 @@ public class WikiTest
         assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
         assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
         assertEquals("siteinfo: timezone", ZoneId.of("UTC"), info.get("timezone"));
+        assertEquals("siteinfo: locale", Locale.ENGLISH, info.get("locale"));
         info = enWikt.getSiteInfo();
         assertFalse("siteinfo: caplinks false", (Boolean)info.get("usingcapitallinks"));
+        info = deWiki.getSiteInfo();
+        assertEquals("siteinfo: locale (2)", Locale.GERMAN, info.get("locale"));
     }
     
     @Test

@@ -19,7 +19,6 @@
 package org.wikipedia.tools;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.util.*;
 import java.time.*;
@@ -117,15 +116,15 @@ public class ContributionSurveyor
                 fc.setDialogTitle("Select user list");
                 if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
                     path = fc.getSelectedFile().toPath();
-                else
-                {
-                    System.out.println("Error: No input file selected.");
-                    System.exit(0);
-                }
             }
             else
                 path = Paths.get(infile);
-            List<String> templist = Files.readAllLines(path, Charset.forName("UTF-8"));
+            if (path == null)
+            {
+                System.out.println("Error: No input file selected.");
+                System.exit(0);
+            }
+            List<String> templist = Files.readAllLines(path);
             for (String line : templist)
             {
                 if (homewiki.namespace(line) == Wiki.USER_NAMESPACE)
@@ -138,21 +137,21 @@ public class ContributionSurveyor
         }
 
         // output file
-        File out = null;
+        Path out = null;
         if (outfile == null)
         {
             JFileChooser fc = new JFileChooser();
             fc.setDialogTitle("Select output file");
             if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
-                out = fc.getSelectedFile();
-            else
-            {
-                System.out.println("Error: No output file selected.");
-                System.exit(0);
-            }
+                out = fc.getSelectedFile().toPath();
         }
         else
-            out = new File(outfile);
+            out = Paths.get(outfile);
+        if (out == null)
+        {
+            System.out.println("Error: No output file selected.");
+            System.exit(0);
+        }
         
         int[] ns = userspace ? (new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE }) : (new int[] { Wiki.MAIN_NAMESPACE });
         
@@ -161,7 +160,7 @@ public class ContributionSurveyor
         surveyor.setEarliestDateTime(editsafter);
         surveyor.setLatestDateTime(editsbefore);
         surveyor.setIgnoringMinorEdits(nominor);
-        try (FileWriter outwriter = new FileWriter(out))
+        try (BufferedWriter outwriter = Files.newBufferedWriter(out))
         {
             outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
         }
@@ -474,12 +473,21 @@ public class ContributionSurveyor
             numfiles++;
             if (numfiles % 20 == 1)
             {
-                if (username == null)
-                    out.append(String.format("\n=== Local files %d through %d ===\n", numfiles, Math.min(numfiles + 19, totalfiles)));
-                else
-                    out.append(String.format("\n=== %s: Local files %d through %d ===\n", username, numfiles, Math.min(numfiles + 19, totalfiles)));
+                out.append("\n=== ");
+                if (username != null)
+                {
+                    out.append(username);
+                    out.append(": ");
+                }
+                out.append("Local files ");
+                out.append(numfiles);
+                out.append(" through ");
+                out.append(Math.min(numfiles + 19, totalfiles));
+                out.append(" ===\n");
             }
-            out.append(String.format("*[[:%s]]\n", entry));
+            out.append("*[[:");
+            out.append(entry);
+            out.append("]]\n");
         }
 
         numfiles = 0;
@@ -489,12 +497,21 @@ public class ContributionSurveyor
             numfiles++;
             if (numfiles % 20 == 1)
             {
-                if (username == null)
-                    out.append(String.format("\n=== Commons files %d through %d ===\n", numfiles, Math.min(numfiles + 19, totalfiles)));
-                else
-                    out.append(String.format("\n=== %s: Commons files %d through %d ===\n", username, numfiles, Math.min(numfiles + 19, totalfiles)));
+                out.append("\n=== ");
+                if (username != null)
+                {
+                    out.append(username);
+                    out.append(": ");
+                }
+                out.append("Commons files ");
+                out.append(numfiles);
+                out.append(" through ");
+                out.append(Math.min(numfiles + 19, totalfiles));
+                out.append(" ===\n");
             }
-            out.append(String.format("*[[:%s]]\n", entry));
+            out.append("*[[:");
+            out.append(entry);
+            out.append("]]\n");
         }
 
         numfiles = 0;
@@ -504,12 +521,21 @@ public class ContributionSurveyor
             numfiles++;
             if (numfiles % 20 == 1)
             {
-                if (username == null)
-                    out.append(String.format("\n=== Transferred files %d through %d ===\n", numfiles, Math.min(numfiles + 19, totalfiles)));
-                else
-                    out.append(String.format("\n=== %s: Transferred files %d through %d ===\n", username, numfiles, Math.min(numfiles + 19, totalfiles)));
+                out.append("\n=== ");
+                if (username != null)
+                {
+                    out.append(username);
+                    out.append(": ");
+                }
+                out.append("Transferred files ");
+                out.append(numfiles);
+                out.append(" through ");
+                out.append(Math.min(numfiles + 19, totalfiles));
+                out.append(" ===\n");
             }
-            out.append(String.format("*[[:%s]]\n", entry));
+            out.append("*[[:");
+            out.append(entry);
+            out.append("]]\n");
         }
         return out.toString();
     }
@@ -538,7 +564,9 @@ public class ContributionSurveyor
             String username = entry.getKey();
             Map<String, List<Wiki.Revision>> survey = entry.getValue();
             
-            out.append(String.format("== %s ==\n", username));
+            out.append("== ");
+            out.append(username);
+            out.append(" ==\n");
             out.append(ParserUtils.generateUserLinksAsWikitext(username));
             out.append(formatTextSurveyAsWikitext(username, survey));
             

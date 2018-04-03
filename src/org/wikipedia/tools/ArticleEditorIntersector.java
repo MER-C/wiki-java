@@ -394,7 +394,7 @@ public class ArticleEditorIntersector
         Set<String> keyset = results.keySet();
         if (noadmin || nobot || noanon)
         {
-            String[] users = keyset.toArray(new String[0]);
+            String[] users = keyset.toArray(new String[keyset.size()]);
             Map<String, Object>[] userinfo = wiki.getUserInfo(users);
             for (int i = 0; i < users.length; i++)
             {

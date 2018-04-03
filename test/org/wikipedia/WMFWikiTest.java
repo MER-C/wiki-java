@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
  */
 public class WMFWikiTest
 {
-    public static WMFWiki enWiki;
+    private static WMFWiki enWiki;
     
     @BeforeClass
     public static void setUpClass()
