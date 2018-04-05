@@ -52,7 +52,7 @@
     {
         // get results
         Wiki wiki = Wiki.createInstance(homewiki);
-        wiki.setQueryLimit(30000); // 60 network requests
+        wiki.setQueryLimit(35000); // 70 network requests
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setIgnoringMinorEdits(nominor);
         if (!earliest.isEmpty())
@@ -94,7 +94,7 @@
 This tool generates a listing of a user's edits for use at <a
 href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations</a>
 and other venues. It isolates and ranks major edits by size. A query limit of
-30000 edits applies.
+35000 edits applies.
 
 <p>
 <form action="./contributionsurveyor.jsp" method=GET>

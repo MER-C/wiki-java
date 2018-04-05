@@ -443,11 +443,11 @@ public class ContributionSurveyor
             out.append(entry.getKey());
             out.append("]] (");
             if (numedits == 1)
-                out.append("]] (1 edit): ");
+                out.append("1 edit): ");
             else
             {
                 out.append(numedits);
-                out.append("): ");
+                out.append(" edits): ");
             }
             out.append(temp);
             out.append("\n");

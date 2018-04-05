@@ -2667,7 +2667,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=1&meta=tokens&type=rollback&titles=");
         url.append(encode(title, true));
-        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Cparsedcomment%7Csha1");
         String line = makeHTTPRequest(url.toString(), null, "getTopRevision");
         int a = line.indexOf("<rev "); // important space
         int b = line.indexOf("/>", a);
@@ -2693,7 +2693,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvlimit=1&rvdir=newer&titles=");
         url.append(encode(title, true));
-        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Cparsedcomment%7Csha1");
         String line = makeHTTPRequest(url.toString(), null, "getFirstRevision");
         int a = line.indexOf("<rev "); // important space!
         int b = line.indexOf("/>", a);
@@ -2805,7 +2805,7 @@ public class Wiki implements Serializable
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&titles=");
         url.append(encode(title, true));
-        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Csha1");
+        url.append("&rvprop=timestamp%7Cuser%7Cids%7Cflags%7Csize%7Ccomment%7Cparsedcomment%7Csha1");
         if (reverse)
         {
             log(Level.WARNING, "getPageHistory", "Parameter reverse is deprecated.");
@@ -2901,7 +2901,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Csha1");
+        url.append("prop=deletedrevisions&drvprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Cparsedcomment%7Csha1");
         if (reverse)
         {
             log(Level.WARNING, "getDeletedHistory", "Parameter reverse is deprecated");
@@ -2983,7 +2983,7 @@ public class Wiki implements Serializable
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
 
         StringBuilder url = new StringBuilder(query);
-        url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Ctimestamp%7Csha1");
+        url.append("list=alldeletedrevisions&adrprop=ids%7Cuser%7Cflags%7Csize%7Ccomment%7Cparsedcomment%7Ctimestamp%7Csha1");
         if (reverse)
         {
             log(Level.WARNING, "deletedContribs", "Parameter reverse is deprecated.");
@@ -3326,7 +3326,7 @@ public class Wiki implements Serializable
     {
         // build url and connect
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cflags%7Csize%7Csha1&revids=");
+        url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cparsedcomment%7Cflags%7Csize%7Csha1&revids=");
         HashMap<Long, Revision> revs = new HashMap<>(2 * oldids.length);
         
         // fetch and parse
@@ -3764,9 +3764,12 @@ public class Wiki implements Serializable
             title = parseAttribute(xml, "title", 0);
 
         // summary
-        String summary = null;
+        String summary = null, parsedsummary = null;
         if (xml.contains("comment=\""))
+        {
             summary = parseAttribute(xml, "comment", 0);
+            parsedsummary = parseAttribute(xml, "parsedcomment", 0);
+        }
 
         // user
         String user2 = null;
@@ -3792,7 +3795,7 @@ public class Wiki implements Serializable
         if (xml.contains("sha1=\""))
             sha1 = parseAttribute(xml, "sha1", 0);
         
-        Revision revision = new Revision(oldid, sha1, timestamp, title, summary, user2, minor, bot, rvnew, size);
+        Revision revision = new Revision(oldid, timestamp, user2, summary, parsedsummary, title, sha1, minor, bot, rvnew, size);
         // set rcid
         if (xml.contains("rcid=\""))
             revision.setRcid(Long.parseLong(parseAttribute(xml, "rcid", 0)));
@@ -3988,7 +3991,7 @@ public class Wiki implements Serializable
     {
         title = removeNamespace(title);
         StringBuilder url = new StringBuilder(query);
-        url.append("prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment&titles=");
+        url.append("prop=imageinfo&iiprop=timestamp%7Cuser%7Ccomment%7Cparsedcomment&titles=");
         url.append(encode("File:" + title, true));
 
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
@@ -4099,7 +4102,7 @@ public class Wiki implements Serializable
             throw new IllegalArgumentException("Specified start date is before specified end date!");
         
         StringBuilder url = new StringBuilder(query);
-        url.append("list=allimages&aisort=timestamp&aiprop=timestamp%7Ccomment&aiuser=");
+        url.append("list=allimages&aisort=timestamp&aiprop=timestamp%7Ccomment%7Cparsedcomment&aiuser=");
         url.append(encode(user.getUsername(), false));
         if (start != null)
         {
@@ -4799,7 +4802,7 @@ public class Wiki implements Serializable
         
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
-        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cids%7Csize%7Csizediff&7Csha1");
+        temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cparsedcomment%7Cids%7Csize%7Csizediff&7Csha1");
         if (end != null)
         {
             temp.append("&ucend=");
@@ -5248,7 +5251,7 @@ public class Wiki implements Serializable
         if (user == null)
             throw new CredentialNotFoundException("Not logged in");
         StringBuilder url = new StringBuilder(query);
-        url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Csizes");
+        url.append("list=watchlist&wlprop=ids%7Ctitle%7Ctimestamp%7Cuser%7Ccomment%7Cparsedcomment%7Csizes");
         constructNamespaceString(url, "wl", ns);
         if (options != null)
         {
@@ -5832,7 +5835,7 @@ public class Wiki implements Serializable
     {
         // construct the query url from the parameters given
         StringBuilder url = new StringBuilder(query);
-        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cdetails");
+        url.append("list=logevents&leprop=ids%7Ctitle%7Ctype%7Cuser%7Ctimestamp%7Ccomment%7Cparsedcomment%7Cdetails");
 
         // check for amount
         if (amount < 1)
@@ -5935,14 +5938,24 @@ public class Wiki implements Serializable
         }
 
         // reason
-        String reason;
+        String reason, parsedreason;
         boolean reasonhidden = xml.contains("commenthidden=\"");
-        if (USER_CREATION_LOG.equals(type)) // there is no reason for creating a user
+        if (USER_CREATION_LOG.equals(type))
+        {
+            // there is no reason for creating a user
             reason = "";
+            parsedreason = "";
+        }
         else if (xml.contains("reason=\""))
+        {
             reason = parseAttribute(xml, "reason", 0);
+            parsedreason = null; // not available in list=blocks / getBlockList!
+        }
         else
+        {
             reason = parseAttribute(xml, "comment", 0);
+            parsedreason = parseAttribute(xml, "parsedcomment", 0);
+        }
 
         // generic performer name
         boolean userhidden = xml.contains("userhidden=\"\"");
@@ -6010,7 +6023,7 @@ public class Wiki implements Serializable
             details = temp.toArray(new String[temp.size()]);
         }
 
-        LogEntry le = new LogEntry(id, type, action, reason, user, target, timestamp, details);
+        LogEntry le = new LogEntry(id, timestamp, user, reason, parsedreason, type, action, target, details);
         le.setUserDeleted(userhidden);
         le.setCommentDeleted(reasonhidden);
         le.setContentDeleted(actionhidden);
@@ -6475,7 +6488,7 @@ public class Wiki implements Serializable
     protected Revision[] recentChanges(int amount, Map<String, Boolean> rcoptions, boolean newpages, int... ns) throws IOException
     {
         StringBuilder url = new StringBuilder(query);
-        url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Csizes%7Csha1");
+        url.append("list=recentchanges&rcprop=title%7Cids%7Cuser%7Ctimestamp%7Cflags%7Ccomment%7Cparsedcomment%7Csizes%7Csha1");
         constructNamespaceString(url, "rc", ns);
         if (newpages)
             url.append("&rctype=new");
@@ -6859,6 +6872,7 @@ public class Wiki implements Serializable
         private final OffsetDateTime timestamp;
         private final String user;
         private final String comment;
+        private final String parsedcomment;
         private boolean commentDeleted = false, userDeleted = false, 
             contentDeleted = false;
         
@@ -6869,13 +6883,20 @@ public class Wiki implements Serializable
          *  @param user the user or IP address performing the event
          *  @param comment the comment left by the user when performing the 
          *  event (e.g. an edit summary)
+         *  @param parsedcomment comment, but parsed into HTML
          */
-        protected Event(long id, OffsetDateTime timestamp, String user, String comment)
+        protected Event(long id, OffsetDateTime timestamp, String user, String comment, String parsedcomment)
         {
             this.id = id;
             this.timestamp = timestamp;
             this.user = user;
             this.comment = comment;
+            // parsedcomments contain relative hyperlinks to other pages... this
+            // is completely meaningless outside of GUI mode
+            if (parsedcomment == null)
+                this.parsedcomment = null;
+            else
+                this.parsedcomment = parsedcomment.replace("href=\"/wiki", "href=\"" + protocol + domain + "/wiki");
         }
         
         /**
@@ -6937,12 +6958,13 @@ public class Wiki implements Serializable
         }
         
         /**
-         *  Gets the comment for this event. If this is a {@link Wiki.Revision},
-         *  this is the edit summary. If this is a {@link Wiki.LogEntry}, this
-         *  is the reason for the logged action. WARNING: returns {@code null} 
-         *  if the reason was RevisionDeleted and you lack the necessary 
-         *  privileges.
+         *  Gets the comment for this event in wikitext. If this is a {@link
+         *  Wiki.Revision}, this is the edit summary. If this is a {@link 
+         *  Wiki.LogEntry}, this is the reason for the logged action. WARNING: 
+         *  returns {@code null} if the reason was RevisionDeleted and you lack 
+         *  the necessary privileges.
          *  @return the comment associated with the event
+         *  @see #getParsedComment()
          */
         public String getComment()
         {
@@ -6950,10 +6972,24 @@ public class Wiki implements Serializable
         }
         
         /**
+         *  Gets the comment for this event, with limited parsing into HTML.
+         *  WARNING: returns {@code null} if the reason was RevisionDeleted and 
+         *  you lack the necessary privileges. Not available through {@link
+         *  #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
+         *  @return the comment associated with the event, parsed into HTML
+         *  @see #getComment() 
+         */
+        public String getParsedComment()
+        {
+            return parsedcomment;
+        }
+        
+        /**
          *  Sets a boolean flag that the comment associated with this event has 
          *  been RevisionDeleted in on-wiki records.
          *  @param deleted (see above)
          *  @see #getComment
+         *  @see #getParsedComment()
          *  @see #isCommentDeleted() 
          */
         protected void setCommentDeleted(boolean deleted)
@@ -6965,6 +7001,7 @@ public class Wiki implements Serializable
          *  Returns {@code true} if the comment is RevisionDeleted.
          *  @return (see above)
          *  @see #getComment
+         *  @see #getParsedComment()
          */
         public boolean isCommentDeleted()
         {
@@ -7066,22 +7103,23 @@ public class Wiki implements Serializable
          *  implied. Use Wiki.class methods to achieve this.
          *
          *  @param id the unique of this log entry
+         *  @param timestamp the local time when the action was performed.
+         *  @param user the user who performed the action
+         *  @param comment why the action was performed
+         *  @param parsedcomment like comment, but parsed into HTML         
          *  @param type the type of log entry, one of {@link #USER_CREATION_LOG},
          *  {@link #DELETION_LOG}, {@link #BLOCK_LOG}, etc.
          *  @param action the type of action that was performed e.g. "delete",
          *  "unblock", "overwrite", etc.
-         *  @param reason why the action was performed
-         *  @param user the user who performed the action
          *  @param target the target of the action
-         *  @param timestamp the local time when the action was performed.
          *  @param details the details of the action (e.g. the new title of
          *  the page after a move was performed).
          *  @since 0.08
          */
-        protected LogEntry(long id, String type, String action, String reason, String user, 
-            String target, OffsetDateTime timestamp, Object details)
+        protected LogEntry(long id, OffsetDateTime timestamp, String user, String comment, 
+            String parsedcomment, String type, String action, String target, Object details)
         {
-            super(id, timestamp, user, reason);
+            super(id, timestamp, user, comment, parsedcomment);
             this.type = type;
             this.action = action;
             this.target = target;
@@ -7274,21 +7312,23 @@ public class Wiki implements Serializable
          *  @param revid the id of the revision (this is a long since
          *  {{NUMBEROFEDITS}} on en.wikipedia.org is now (January 2018) ~38%
          *  of {@code Integer.MAX_VALUE}
-         *  @param sha1 the SHA-1 hash of the revision
          *  @param timestamp when this revision was made
-         *  @param title the concerned article
-         *  @param summary the edit summary
          *  @param user the user making this revision (may be anonymous)
+         *  @param comment the edit summary
+         *  @param parsedcomment the edit summary, parsed into HTML
+         *  @param title the concerned article
+         *  @param sha1 the SHA-1 hash of the revision
          *  @param minor whether this was a minor edit
          *  @param bot whether this was a bot edit
          *  @param rvnew whether this revision created a new page
          *  @param size the size of the revision
          *  @since 0.17
          */
-        public Revision(long revid, String sha1, OffsetDateTime timestamp, String title, String summary, 
-            String user, boolean minor, boolean bot, boolean rvnew, int size)
+        public Revision(long revid, OffsetDateTime timestamp, String user, String comment, 
+            String parsedcomment, String title, String sha1, boolean minor, boolean bot, 
+            boolean rvnew, int size)
         {
-            super(revid, timestamp, user, summary);
+            super(revid, timestamp, user, comment, parsedcomment);
             this.sha1 = sha1;
             this.minor = minor;
             this.title = title;

@@ -702,6 +702,7 @@ public class WikiTest
         assertEquals("getLogEntries/block: action", "block", le[0].getAction());
         assertEquals("getLogEntries: target", "User:Nimimaan", le[0].getTarget());
         assertEquals("getLogEntries: reason", "spambot", le[0].getComment());
+        assertEquals("getLogEntries: parsed reason", "spambot", le[0].getParsedComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
 //            false, true, // autoblock enabled, email disabled
@@ -713,6 +714,7 @@ public class WikiTest
         assertEquals("getLogEntries/newusers: log", Wiki.USER_CREATION_LOG, le[1].getType());
         assertEquals("getLogEntries/newusers: action", "create", le[1].getAction());
         assertEquals("getLogEntries/newusers: reason", "", le[1].getComment());
+        assertEquals("getLogEntries/newusers: reason", "", le[1].getParsedComment());
 //        assertNull("getLogEntries/newusers: parameters", le[1].getDetails());
         
         // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp&format=xmlfm
@@ -732,6 +734,7 @@ public class WikiTest
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&letitle=User%3AMER-C%2FTest
         le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:MER-C/Test");
         assertNull("getLogEntries: reason hidden", le[0].getComment());
+        assertNull("getLogEntries: reason hidden", le[0].getParsedComment());
         assertTrue("getLogEntries: reason hidden", le[0].isCommentDeleted());
         assertNull("getLogEntries: user hidden", le[0].getUser());
         assertTrue("getLogEntries: user hidden", le[0].isUserDeleted());
@@ -902,6 +905,9 @@ public class WikiTest
         assertEquals("getRevision: user", "Lowercase sigmabot III", rev.getUser());
         assertEquals("getRevision: summary", "Archiving 3 discussion(s) to [[Wikipedia talk:WikiProject Spam/2014 Archive Feb 1]]) (bot",
             rev.getComment());
+        String parsedcomment = "Archiving 3 discussion(s) to <a href=\"https://en.wikipedia.org/wiki/Wikipedia_talk:WikiProject_Spam/2014_Archive_Feb_1\" "
+            + "title=\"Wikipedia talk:WikiProject Spam/2014 Archive Feb 1\">Wikipedia talk:WikiProject Spam/2014 Archive Feb 1</a>) (bot";
+        assertEquals("getRevision: parsed summary with link", parsedcomment, rev.getParsedComment());
         assertEquals("getRevision: sha1", "540a2b3501e4d15729ea25ec3238da9ad0dd6dc4", rev.getSha1());
         assertEquals("getRevision: size", 4286, rev.getSize());
         assertEquals("getRevision: revid", 597454682L, rev.getID());
@@ -919,6 +925,7 @@ public class WikiTest
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         rev = enWiki.getRevision(596714684L);
         assertNull("getRevision: summary revdeled", rev.getComment());
+        assertNull("getRevision: summary revdeled", rev.getParsedComment());
         assertNull("getRevision: user revdeled", rev.getUser());
         assertNull("getRevision: sha1/content revdeled", rev.getSha1());
         assertTrue("getRevision: user revdeled", rev.isUserDeleted());
