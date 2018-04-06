@@ -271,6 +271,38 @@ public class ParserUtils
             throw new UncheckedIOException(ex); // seriously?
         }
     }
+    
+    /**
+     *  Parses a wikilink into its target and linked text. Example: <kbd>[[Link]]</kbd>
+     *  returns {@code { "Link", "Link" }} and <kbd>[[Link|Test]]</kbd> returns
+     *  {@code { "Link", "Test" }}. Can also be used to get sortkeys from 
+     *  categorizations. Use with caution on file uses because they can
+     *  contain their own wikilinks.
+     *  @param wikitext the wikitext to parse
+     *  @return first element = the target of the link, the second being the
+     *  description
+     *  @throws IllegalArgumentException if wikitext is not a valid wikilink
+     */
+    public static List<String> parseWikilink(String wikitext)
+    {
+        int wikilinkstart = wikitext.indexOf("[[");
+        int wikilinkend = wikitext.indexOf("]]", wikilinkstart);
+        if (wikilinkstart < 0 || wikilinkend < 0)
+            throw new IllegalArgumentException("\"" + wikitext + "\" is not a valid wikilink.");
+        // strip escaping of categories and files
+        String linktext = wikitext.substring(wikilinkstart + 2, wikilinkend).trim();
+        if (linktext.startsWith(":"))
+            linktext = linktext.substring(1);
+        // check for description, if not there then set it to the target
+        int pipe = linktext.indexOf('|');
+        if (pipe >= 0)
+            return Arrays.asList(linktext.substring(0, pipe).trim(), linktext.substring(pipe + 1).trim());
+        else
+        {
+            String temp = linktext.trim();
+            return Arrays.asList(temp, temp);
+        }        
+    }
         
     /**
      *  Reverse of Wiki.decode()

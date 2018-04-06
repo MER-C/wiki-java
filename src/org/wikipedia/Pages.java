@@ -81,15 +81,7 @@ public class Pages
             int wikilinkend = line.indexOf("]]");
             if (wikilinkstart < 0 || wikilinkend < 0)
                 continue;
-            // strip descriptions
-            int pipe = line.indexOf('|', wikilinkstart);
-            if (pipe > 0 && pipe < wikilinkend)
-                wikilinkend = pipe;
-            // strip leading colon
-            String temp = line.substring(wikilinkstart + 2, wikilinkend);
-            if (temp.startsWith(":"))
-                temp = temp.substring(1);
-            titles.add(temp);
+            titles.add(ParserUtils.parseWikilink(line.substring(wikilinkstart, wikilinkend + 2)).get(0));
         }
         return titles;
     }

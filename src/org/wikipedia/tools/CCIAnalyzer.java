@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.*;
 import javax.swing.JFileChooser;
+import org.wikipedia.ParserUtils;
 import org.wikipedia.Wiki;
 
 /**
@@ -33,6 +34,8 @@ import org.wikipedia.Wiki;
  */
 public class CCIAnalyzer
 {
+    private static Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+    
     /**
      *  Runs this program.
      *  @param args the command line arguments
@@ -41,7 +44,6 @@ public class CCIAnalyzer
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setLogLevel(Level.WARNING);
         StringBuilder cci = new StringBuilder(1000000);
         if (args.length < 1)
@@ -216,19 +218,22 @@ public class CCIAnalyzer
         if (delta.contains("{{infobox "))
             return false;
         
-        // remove wikilinks and files
+        // replace wikilinks, categories and files with their descriptions
         StringBuilder temp = new StringBuilder(delta);
-        for (int i = temp.indexOf("[["); i > 0; i = temp.indexOf("[["))
+        for (int i = temp.indexOf("[["); i >= 0; i = temp.indexOf("[["))
         {
             int j = temp.indexOf("]]", i);
             if (j < 0) // unbalanced brackets
                 break;
-            int k = temp.indexOf("|", i);
-            temp.delete(j, j + 2); // ]] => empty string
-            if (k < j && k > 0)
-                temp.delete(i, k + 1); // [[Blah de blah| => empty string
+            List<String> parsedlink = ParserUtils.parseWikilink(temp.substring(i, j + 2));
+            if (parsedlink.get(0).length() > 100)
+                // something has gone wrong here
+                break;
+            else if (enWiki.namespace(parsedlink.get(0)) == Wiki.CATEGORY_NAMESPACE)
+                // I'm not interested in the category sortkey
+                temp.delete(i, j + 2);
             else
-                temp.delete(i, i + 2); // [[ => empty string
+                temp.replace(i, j + 2, parsedlink.get(1));
         }
         
         // decode() the delta

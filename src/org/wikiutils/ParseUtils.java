@@ -723,7 +723,9 @@ public class ParseUtils
          *  @param internalLink
          *  @return 
          *  Contributed by Hunsu.
+         *  @deprecated see org.wikipedia.ParserUtils.parseWikilink
          */
+        @Deprecated
         public static String getInternalLinkTitle(String internalLink)
         {
                 if(internalLink == null)

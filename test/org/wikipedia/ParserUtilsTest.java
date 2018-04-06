@@ -20,12 +20,11 @@
 
 package org.wikipedia;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import java.util.Arrays;
 
 /**
  *  Unit tests for org.wikipedia.ParserUtils
@@ -33,7 +32,7 @@ import static org.junit.Assert.*;
  */
 public class ParserUtilsTest
 {
-    private static Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
+    private static Wiki testWiki;
     
     /**
      *  Initialize wiki objects.
@@ -42,6 +41,7 @@ public class ParserUtilsTest
     @BeforeClass
     public static void setUpClass() throws Exception
     {
+        testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
     }
     
@@ -89,5 +89,14 @@ public class ParserUtilsTest
             + "[[Special:Block/A B の|block]] | "
             + "[{{fullurl:Special:Log|type=block&page=User:A+B+%E3%81%AE}} block log])\n";
         assertEquals("generateUserLinksAsWikitext: special characters", expected, ParserUtils.generateUserLinksAsWikitext("A B の"));
+    }
+    
+    @Test
+    public void parseWikilink()
+    {
+        assertEquals("link", Arrays.asList("Link", "Link"), ParserUtils.parseWikilink("[[ Link ]]"));
+        assertEquals("link with colon", Arrays.asList("Link", "Link"), ParserUtils.parseWikilink("[[:Link]]"));
+        assertEquals("link with description", Arrays.asList("Link", "Description"), ParserUtils.parseWikilink("[[ Link | Description ]]"));
+        assertEquals("link with description and colon", Arrays.asList("Link", "Description"), ParserUtils.parseWikilink("[[:Link|Description]]"));
     }
 }
