@@ -20,6 +20,8 @@
 
 package org.wikipedia;
 
+import java.util.*;
+import java.time.OffsetDateTime;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -44,5 +46,20 @@ public class WMFWikiTest
     {
         assertFalse(enWiki.isSpamBlacklisted("example.com"));
         assertTrue(enWiki.isSpamBlacklisted("youtu.be"));
+    }
+    
+    @Test
+    public void getAbuseFilterLogs() throws Exception
+    {
+        // https://en.wikipedia.org/wiki/Special:AbuseLog?wpSearchUser=Miniapolis&wpSearchTitle=Catopsbaatar&wpSearchFilter=1
+        List<Wiki.LogEntry> afl = enWiki.getAbuseLogEntries(Arrays.asList(1), "Miniapolis", "Catopsbaatar", 
+            OffsetDateTime.parse("2018-04-05T00:00:00Z"), OffsetDateTime.parse("2018-04-06T01:00:00Z"));
+        Wiki.LogEntry ale = afl.get(0);
+        assertEquals("abuse log: id", 20838976L, ale.getID());
+        assertEquals("abuse log: username", "Miniapolis", ale.getUser());
+        assertEquals("abuse log: target", "Catopsbaatar", ale.getTarget());
+        assertEquals("abuse log: timestamp", OffsetDateTime.parse("2018-04-05T22:58:14Z"), ale.getTimestamp());
+        assertEquals("abuse log: action", "edit", ale.getAction());
+        // TODO: test details when they are overhauled
     }
 }

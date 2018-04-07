@@ -25,6 +25,9 @@
     String temp = request.getParameter("skip");
     int skip = (temp == null) ? 0 : Integer.parseInt(temp);
     skip = Math.max(skip, 0);
+
+    Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+    enWiki.setMaxLag(-1);
 %>
 
 <!doctype html>
@@ -58,8 +61,8 @@ Someone # Spam
         if (inputpage != null)
         {
         %>
-        <a href="<%= wiki.getPageURL(inputpage) %>">visit</a> |
-        <a href="<%= wiki.getIndexPHPURL() + "?action=edit&title=" + inputpage_url %>">edit</a>
+        <a href="<%= enWiki.getPageURL(inputpage) %>">visit</a> |
+        <a href="<%= enWiki.getIndexPHPURL() + "?action=edit&title=" + inputpage_url %>">edit</a>
         <%
         }
         %>
@@ -90,8 +93,6 @@ Someone # Spam
         <%
         return;
     }
-    Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
-    enWiki.setMaxLag(-1);
     String us = inputpage.substring(5, inputpage.indexOf('/'));
     Wiki.User us2 = enWiki.getUser(us);
     if (us2 == null || !us2.isA("sysop"))

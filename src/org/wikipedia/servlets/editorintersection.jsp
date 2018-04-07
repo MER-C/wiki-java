@@ -140,7 +140,7 @@ first in the GUI) apply.
     out.println("<hr>");
     String[] pagesarray = pagestream
         .distinct()
-        .filter(wiki.namespace(page) >= 0)
+        .filter(title -> wiki.namespace(title) >= 0)
         .limit(25)
         .toArray(String[]::new);
     if (pagesarray.length < 2)

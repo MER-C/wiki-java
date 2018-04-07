@@ -620,7 +620,7 @@ public class Wiki implements Serializable
     {
         // Don't put network requests here. Servlets cannot afford to make
         // unnecessary network requests in initialization.
-        Wiki wiki = new Wiki(domain, "/w", protocol);
+        Wiki wiki = new Wiki(domain, scriptPath, protocol);
         wiki.initVars(); // construct URL bases
         return wiki;
     }

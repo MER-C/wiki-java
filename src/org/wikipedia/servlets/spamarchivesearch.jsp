@@ -45,12 +45,13 @@ If you want to search a domain name, please enclose it in quotation marks.
 <hr>
 <ul>
 <%
-        ArrayList<String[]> results = SpamArchiveSearch.archiveSearch(query);
-        for (String[] result : results)
+        ArrayList<Map<String, Object>> results = SpamArchiveSearch.archiveSearch(query);
+        for (Map<String, Object> result : results)
         {
-            String blahwiki = result[0].contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia";
+            String title = (String)result.get("title");
+            String blahwiki = title.contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia";
 %>
-    <li><a href="//<%= blahwiki %>.org/wiki/<%= result[0] %>"><%= result[0] %></a>
+    <li><a href="//<%= blahwiki %>.org/wiki/<%= title %>"><%= title %></a>
 <%
         }
 %>

@@ -58,9 +58,9 @@ reasons, results are limited to between 500 and 1000 links per wiki.
          " checked" : "" %>>
     <td>Wikis to search:
     <td><select name=set id=set<%= mode.equals("multi") ? "" : " disabled" %>>
-            <option value="top20"<%= set == "top20" ? " selected" : ""%>>Top 20 Wikipedias</option>
-            <option value="top40"<%= set == "top40" ? " selected" : ""%>>Top 40 Wikipedias</option>
-            <option value="major"<%= set == "major" ? " selected" : ""%>>Major Wikimedia projects</option>
+            <option value="top20"<%= set.equals("top20") ? " selected" : ""%>>Top 20 Wikipedias</option>
+            <option value="top40"<%= set.equals("top40") ? " selected" : ""%>>Top 40 Wikipedias</option>
+            <option value="major"<%= set.equals("major") ? " selected" : ""%>>Major Wikimedia projects</option>
         </select>
         
 <tr>
@@ -82,7 +82,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
 
 <tr>
     <td><input type=checkbox name=ns value=0<%= mainns ? " checked" : "" %>>
-    <td colspan=3>Main namespace only?
+    <td colspan=3>Main namespace only? (May be unreliable.)
 
 </table>
 <br>
@@ -126,7 +126,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
     }
     else if (mode.equals("single"))
         results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 
-            Arrays.asList(Wiki.createInstance(wikiinput), https, mailto, ns);
+            Arrays.asList(Wiki.createInstance(wikiinput)), https, mailto, ns);
 
     for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
     {

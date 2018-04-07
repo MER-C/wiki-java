@@ -25,6 +25,8 @@ import java.net.URLEncoder;
 import java.util.*;
 import java.util.logging.*;
 import java.util.stream.*;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 
 /**
  *  Stuff specific to Wikimedia wikis.
@@ -36,6 +38,13 @@ public class WMFWiki extends Wiki
     // caches
     private static String globalblacklist;
     private String localblacklist;
+    
+    /**
+     *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
+     *  through [[Special:Log]] or getLogEntries.
+     *  @see #getAbuseLogEntries(List, String, String, OffsetDateTime, OffsetDateTime) 
+     */
+    public static final String ABUSE_LOG = "abuselog";
     
     /**
      *  Creates a new WMF wiki that represents the English Wikipedia.
@@ -55,7 +64,7 @@ public class WMFWiki extends Wiki
     @Deprecated
     public WMFWiki(String domain)
     {
-        super(domain);
+        super(domain, "/w", "https://");
     }
     
     /**
@@ -112,6 +121,7 @@ public class WMFWiki extends Wiki
      *  @throws IOException if a network error occurs
      *  @throws UnsupportedOperationException if <code>{@link Wiki#namespace(String) 
      *  namespace(title)} != {@link Wiki#FILE_NAMESPACE}</code>
+     *  @see <a href="https://mediawiki.org/wiki/Extension:GlobalUsage">Extension:GlobalUsage</a>
      */
     public String[][] getGlobalUsage(String title) throws IOException
     {
@@ -120,8 +130,7 @@ public class WMFWiki extends Wiki
         
     	StringBuilder url = new StringBuilder(query);
         url.append("prop=globalusage&titles=");
-        title = normalize(title);
-        url.append(URLEncoder.encode(title, "UTF-8"));
+        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
     	
         List<String[]> usage = queryAPIResult("gu", url, null, "getGlobalUsage", (line, results) ->
         {
@@ -141,6 +150,7 @@ public class WMFWiki extends Wiki
      *  @param site the site to check
      *  @throws IOException if a network error occurs
      *  @return whether a site is on the spam blacklist
+     *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
      */
     public boolean isSpamBlacklisted(String site) throws IOException
     {
@@ -168,5 +178,81 @@ public class WMFWiki extends Wiki
         }).map(String::trim)
         .filter(str -> !str.isEmpty())
         .anyMatch(str -> site.matches(str));
+    }
+    
+    /**
+     *  Gets abuse log entries. Requires extension AbuseFilter. An abuse log 
+     *  entry will have a set <var>id</var>, <var>target</var> set to the title
+     *  of the page, <var>action</var> set to the action that was attempted (e.g.  
+     *  "edit") and {@code null} (parsed)comment. <var>details</var> are a Map
+     *  containing <var>filter_id</var>, <var>revid</var> if the edit was 
+     *  successful and <var>result</var> (what happened). All parameters are 
+     *  optional, but you should set at least one or a query limit.
+     *  
+     *  @param filters fetch log entries triggered by these filters (optional, 
+     *  use null or empty list to get all filters)
+     *  @param user fetch log entries triggered by this user or IP (optional, use
+     *  null to skip)
+     *  @param title fetch log entries for this page (optional, use null to skip)
+     *  @param earliest fetch log entries no earlier than this date (optional, 
+     *  use null to skip)
+     *  @param latest fetch log entries no later than this date (optional, use 
+     *  null to skip)
+     *  @return the abuse filter log entries
+     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @see <a href="https://mediawiki.org/wiki/Extension:AbuseFilter">Extension:AbuseFilter</a>
+     */
+    public List<LogEntry> getAbuseLogEntries(List<Integer> filters, String user, String title, OffsetDateTime earliest, OffsetDateTime latest) throws IOException
+    {
+        // WARNING: don't use a BotPassword for this! See https://phabricator.wikimedia.org/T191703
+        StringBuilder url = new StringBuilder(query);
+        url.append("list=abuselog");
+        if (filters != null && !filters.isEmpty())
+        {
+            url.append("&aflfilter=");
+            url.append(filters.stream().distinct().sorted().map(String::valueOf).collect(Collectors.joining("%7C")));
+        }
+        if (user != null)
+        {
+            url.append("&afluser=");
+            url.append(URLEncoder.encode(user, "UTF-8"));
+        }
+        if (title != null)
+        {
+            url.append("&afltitle=");
+            url.append(URLEncoder.encode(normalize(title), "UTF-8"));
+        }
+        if (earliest != null)
+        {
+            url.append("&aflend=");
+            url.append(earliest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+        if (latest != null)
+        {
+            url.append("&aflstart=");
+            url.append(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        }
+        
+        List<LogEntry> filterlog = queryAPIResult("afl", url, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
+        {
+            String[] items = line.split("<item ");
+            for (int i = 1; i < items.length; i++)
+            {
+                long id = Long.parseLong(parseAttribute(items[i], "id", 0));
+                OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(items[i], "timestamp", 0));
+                String loguser = parseAttribute(items[i], "user", 0);
+                String action = parseAttribute(items[i], "action", 0);
+                String target = parseAttribute(items[i], "title", 0);
+                Map<String, Object> details = new HashMap<>();
+                String revid = parseAttribute(items[i], "revid", 0); // may be null
+                if (revid != null)
+                    details.put("revid", Long.valueOf(revid));
+                details.put("filter_id", Integer.valueOf(parseAttribute(items[i], "filter_id", 0)));
+                details.put("result", parseAttribute(items[i], "result", 0));
+                results.add(new LogEntry(id, timestamp, loguser, null, null, ABUSE_LOG, action, target, details));
+            }
+        });
+        log(Level.INFO, "WMFWiki.getAbuselogEntries", "Sucessfully returned abuse filter log entries (" + filterlog.size() + " entries.");
+        return filterlog;
     }
 }
