@@ -22,8 +22,7 @@ package org.wikipedia;
 
 import java.util.*;
 import java.time.OffsetDateTime;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
@@ -49,6 +48,11 @@ public class WMFWikiTest
     }
     
     @Test
+    @Ignore
+    // This is a semi-privileged action that requires the test runner to be not
+    // blocked (even though login is not required). CI services (Travis,  
+    // Codeship, etc) run on colocation facilities which are blocked as proxies,
+    // causing the test to fail.
     public void getAbuseFilterLogs() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:AbuseLog?wpSearchUser=Miniapolis&wpSearchTitle=Catopsbaatar&wpSearchFilter=1

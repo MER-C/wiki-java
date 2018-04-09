@@ -1,5 +1,5 @@
 /**
- *  @(#)WikiUnitTest.java 0.34 13/01/2018
+ *  @(#)WikiTest.java 0.34 13/01/2018
  *  Copyright (C) 2014-2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -71,6 +71,8 @@ public class WikiTest
     public void getIndexPHPURL()
     {
         assertEquals("getIndexPHPURL", "https://en.wikipedia.org/w/index.php", enWiki.getIndexPHPURL());
+        Wiki dummy = Wiki.createInstance("example.com", "/scriptpath", "http://");
+        assertEquals("getIndexPHPURL, different protocol, scriptpath", "http://example.com/scriptpath/index.php", dummy.getIndexPHPURL());
     }
     
     @Test

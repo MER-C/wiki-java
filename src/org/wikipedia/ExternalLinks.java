@@ -50,11 +50,28 @@ public class ExternalLinks
         
     /**
      *  Extracts the domain name from the given URL. This method strips only the
-     *  "www" subdomain, that is {@code extractDomain("https://www.example.com/index.jsp")}
-     *  returns <samp>example.com</samp> but {@code extractDomain("https://test.example.com/index.jsp")}
-     *  returns <samp>test.example.com</samp>.
+     *  "www" subdomain.
+     * 
+     *  <ul>
+     *  <li>{@code extractDomain("http://example.com")} returns <samp>example.com</samp>
+     *  <li>{@code extractDomain("https://www.example.com/index.jsp")} returns
+     *      <samp>example.com</samp>
+     *  <li>{@code extractDomain("https://test.example.com/index.jsp")} returns
+     *      <samp>test.example.com</samp>.
+     *  </ul>
+     *  
+     *  <p>
+     *  The primary use case deals with URLs that come from live, working
+     *  external links on wiki. Erroneous markup that MediaWiki parses as valid
+     *  external links can give unpredictable results:
+     *  
+     *  <ul>
+     *  <li>{@code extractDomain("http://www.example.com,")} returns {@code null}.
+     *  <li>{@code extractDomain("http://http://example.com"}} returns <samp>http</samp>.
+     *  </ul>
+     * 
      *  @param url a valid URL
-     *  @return the domain name
+     *  @return the domain name or {@code null} if the URL cannot be parsed
      */
     public static String extractDomain(String url)
     {
@@ -63,13 +80,13 @@ public class ExternalLinks
             // https://stackoverflow.com/questions/9607903/get-domain-name-from-given-url
             URI uri = new URI(url);
             String domain = uri.getHost();
+            if (domain == null)
+                return null;
             return domain.contains("www.") ? domain.substring(4) : domain;
         }
         catch (URISyntaxException ex)
         {
-            // The primary use case deals with URLs that come from live, working
-            // external links on wiki
-            throw new IllegalArgumentException(ex);
+            return null;
         }
     }
 

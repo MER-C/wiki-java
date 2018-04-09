@@ -145,7 +145,9 @@ public class UserLinkAdditionFinder
             links.forEach(link ->
             {
                 String domain = ExternalLinks.extractDomain(link);
-                if (domains.containsKey(domain))
+                if (domain == null)
+                    return;
+                else if (domains.containsKey(domain))
                     domains.get(domain).add(revision.getUser());
                 else
                 {

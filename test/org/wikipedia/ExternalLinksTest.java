@@ -44,5 +44,10 @@ public class ExternalLinksTest
         // unfortunate, but necessary
         assertEquals("extractDomain: other subdomains not stripped", 
             "test.example.com", ExternalLinks.extractDomain("http://test.example.com/index.html"));
+        // failures
+        assertNull("extractDomain: nonsense", ExternalLinks.extractDomain("gkskdgds"));
+        assertNull("extractDomain: not quite right", ExternalLinks.extractDomain("http://example.com,"));
+        // documenting this common form of broken wikimarkup 
+        assertEquals("extractDomain: http", "http", ExternalLinks.extractDomain("http://http://example.com"));
     }
 }

@@ -38,6 +38,7 @@ public class ExternalLinkPopularity
 {
     private final Wiki wiki;
     private int maxlinks = 500;
+    private List<String> exclude;
     
     /**
      *  Runs this program.
@@ -46,10 +47,10 @@ public class ExternalLinkPopularity
      */
     public static void main(String[] args) throws IOException
     {
-        // meta-domains (edwardbetts.com = {{orphan}}
-        List<String> excluded = Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org");
         Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         ExternalLinkPopularity elp = new ExternalLinkPopularity(enWiki);
+        // meta-domains (edwardbetts.com = {{orphan}}
+        elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
         
         String[] spampages = enWiki.getCategoryMembers("Category:Wikipedia articles with undisclosed paid content from March 2018", Wiki.MAIN_NAMESPACE);
         // filter down the spam to recently created pages
@@ -57,17 +58,17 @@ public class ExternalLinkPopularity
         for (String page : spampages)
             if (enWiki.getFirstRevision(page).getTimestamp().isAfter(OffsetDateTime.parse("2018-02-01T00:00:00Z")))
                 recentspam.add(page);
-        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(recentspam, excluded);
+        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(recentspam);
         Map<String, Map<String, Integer>> popresults = elp.determineLinkPopularity(results);
         elp.exportResultsAsWikitext(results, popresults);
         
         String[] notspam = enWiki.getCategoryMembers("Category:Companies in the Dow Jones Industrial Average", Wiki.MAIN_NAMESPACE);
-        results = elp.fetchExternalLinks(Arrays.asList(Arrays.copyOfRange(notspam, 0, 5)), excluded);
+        results = elp.fetchExternalLinks(Arrays.asList(Arrays.copyOfRange(notspam, 0, 5)));
         popresults = elp.determineLinkPopularity(results);
         elp.exportResultsAsWikitext(results, popresults);
         
         String[] control = enWiki.getCategoryMembers("Category:Banks of Australia", Wiki.MAIN_NAMESPACE);
-        results = elp.fetchExternalLinks(Arrays.asList(Arrays.copyOfRange(control, 5, 20)), excluded);
+        results = elp.fetchExternalLinks(Arrays.asList(Arrays.copyOfRange(control, 5, 20)));
         popresults = elp.determineLinkPopularity(results);
         elp.exportResultsAsWikitext(results, popresults);
     }
@@ -79,6 +80,7 @@ public class ExternalLinkPopularity
     public ExternalLinkPopularity(Wiki wiki)
     {
         this.wiki = wiki;
+        exclude = new ArrayList<>();
     }
     
     /**
@@ -120,15 +122,24 @@ public class ExternalLinkPopularity
     }
     
     /**
+     *  Gets the list of domains excluded from the analysis. This list is
+     *  modifiable -- changes to it will affect subsequent analyses.
+     *  @return the list of domains excluded from the analysis
+     */
+    public List<String> getExcludeList()
+    {
+        return exclude;
+    }
+    
+    /**
      *  For each of a supplied list of <var>articles</var>, fetch the external
      *  links used within and group by domain.
      * 
      *  @param articles the list of articles to analyze
-     *  @param excluded a list of domains to exclude from the analysis
      *  @return a Map with page &#8594; domain &#8594; URL
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Map<String, List<String>>> fetchExternalLinks(List<String> articles, List<String> excluded) throws IOException
+    public Map<String, Map<String, List<String>>> fetchExternalLinks(List<String> articles) throws IOException
     {
         List<List<String>> links = wiki.getExternalLinksOnPage(articles);
         Map<String, Map<String, List<String>>> domaintourls = new HashMap<>();
@@ -137,7 +148,7 @@ public class ExternalLinkPopularity
         for (int i = 0; i < links.size(); i++)
         {
             Map<String, List<String>> pagedomaintourls = links.get(i).stream()
-                .filter(domain -> excluded.stream().noneMatch(exc -> domain.contains(exc)))
+                .filter(domain -> exclude.stream().noneMatch(exc -> domain.contains(exc)))
                 .collect(Collectors.groupingBy(domain ->
                 {
                     String domain2 = ExternalLinks.extractDomain(domain);
@@ -157,12 +168,13 @@ public class ExternalLinkPopularity
     }
     
     /**
-     *  Using the results of {@link #fetchExternalLinks(List, List)}, determine 
-     *  each site's popularity as an external link. Each popularity score is
-     *  capped at {@link #getMaxLinks()} because some domains are used very
-     *  frequently and we don't want to be here forever.
+     *  Determine a list of sites' popularity as external links. Each popularity
+     *  score is capped at {@link #getMaxLinks()} because some domains are used 
+     *  very frequently and we don't want to be here forever. <var>data</var>
+     *  is of the form unique String &#8594; domain &#8594; links and can be
+     *  the results from {@link #fetchExternalLinks(List, List)}.
      * 
-     *  @param data results from {@link #fetchExternalLinks(List, List)}
+     *  @param data a Map with unique String &#8594; domain &#8594; links
      *  @return a Map with page &#8594; domain &#8594; popularity
      *  @throws IOException if a network error occurs
      */
@@ -174,6 +186,7 @@ public class ExternalLinkPopularity
         {
             domains.addAll(pagedomaintourls.keySet());
         });
+        domains.removeIf(domain -> exclude.stream().noneMatch(exc -> domain.contains(exc)));
 
         // linksearch the domains to determine popularity
         // discard the linksearch data for now, but bear in mind that it could
@@ -205,11 +218,13 @@ public class ExternalLinkPopularity
         return ret;
     }
     
-    private void exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
+    public void exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
     {
         // gather the results
         urldata.forEach((page, pagedomaintourls) ->
         {
+            if (pagedomaintourls.isEmpty())
+                return;
             System.out.println("== [[" + page + "]]==");
             DoubleStream.Builder scores = DoubleStream.builder();
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
