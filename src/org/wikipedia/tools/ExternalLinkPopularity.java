@@ -148,7 +148,8 @@ public class ExternalLinkPopularity
         for (int i = 0; i < links.size(); i++)
         {
             Map<String, List<String>> pagedomaintourls = links.get(i).stream()
-                .filter(domain -> exclude.stream().noneMatch(exc -> domain.contains(exc)))
+                .filter(link -> ExternalLinks.extractDomain(link) != null)
+                .filter(link -> exclude.stream().noneMatch(exc -> link.contains(exc)))
                 .collect(Collectors.groupingBy(domain ->
                 {
                     String domain2 = ExternalLinks.extractDomain(domain);
