@@ -32,7 +32,6 @@ public class LoggedInTests
 {
     public static void main(String[] args) throws Exception
     {
-
         // login
         Wiki wiki = Wiki.createInstance("test.wikipedia.org");
         LoginUtils.guiLogin(wiki);
@@ -81,18 +80,6 @@ public class LoggedInTests
         // deleted contributions
         // for (Wiki.Revision rev : enWiki.deletedContribs("Namkeenvilla"))
         //    System.out.println(rev);
-        
-        // revdeled information
-        // Calendar start = new GregorianCalendar(2014, 1, 22);
-        // Calendar end = new GregorianCalendar(2014, 1, 24);
-        // for (Wiki.Revision rev : enWiki.getPageHistory("Imran Khan (singer)", start, end, false))
-        //     System.out.println(rev);
-        
-        // revdelete
-        // Wiki.Revision rev = enWiki.getRevision(600296466L);
-        // enWiki.revisionDelete(Boolean.TRUE, null, Boolean.TRUE, "Testing", Boolean.TRUE, new Wiki.Revision[] { rev });
-        // enWiki.revisionDelete(Boolean.FALSE, null, null, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
-        // enWiki.revisionDelete(null, null, Boolean.FALSE, "Testing", Boolean.FALSE, new Wiki.Revision[] { rev });
 */        
     }
 }

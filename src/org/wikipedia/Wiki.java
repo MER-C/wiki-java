@@ -54,7 +54,7 @@ import javax.security.auth.login.*;
  *  @author MER-C and contributors
  *  @version 0.34
  */
-public class Wiki implements Serializable
+public class Wiki
 {
     // NAMESPACES
 
@@ -425,7 +425,7 @@ public class Wiki implements Serializable
     // URL strings
     private String protocol = "https://";
     protected String scriptPath = "/w";
-    private String domain;
+    private final String domain;
     
     /**
      *  URL for index.php. (Needs to be accessible to subclasses.)
@@ -472,10 +472,10 @@ public class Wiki implements Serializable
     private int statuscounter = 0;
 
     // various caches
-    private transient Map<String, Object> siteinfo = null;
-    private transient LinkedHashMap<String, Integer> namespaces = null;
-    private transient ArrayList<Integer> ns_subpages = null;
-    private transient List<String> watchlist = null;
+    private Map<String, Object> siteinfo = null;
+    private LinkedHashMap<String, Integer> namespaces = null;
+    private ArrayList<Integer> ns_subpages = null;
+    private List<String> watchlist = null;
 
     // preferences
     private int max = 500;
@@ -483,7 +483,7 @@ public class Wiki implements Serializable
     private int throttle = 10000;
     private int maxlag = 5;
     private int assertion = ASSERT_NONE; // assertion mode
-    private transient int statusinterval = 100; // status check
+    private int statusinterval = 100; // status check
     private int querylimit = Integer.MAX_VALUE;
     private String useragent = "Wiki.java/" + version + " (https://github.com/MER-C/wiki-java/)";
     private boolean zipped = true;
@@ -497,9 +497,6 @@ public class Wiki implements Serializable
 
     // retry count
     private final int maxtries = 2;
-
-    // serial version
-    private static final long serialVersionUID = -8745212681497643456L;
 
     // time to open a connection
     private static final int CONNECTION_CONNECT_TIMEOUT_MSEC = 30000; // 30 seconds
@@ -8449,31 +8446,5 @@ public class Wiki implements Serializable
     protected void logurl(String url, String method)
     {
         logger.logp(Level.INFO, "Wiki", method, "Fetching URL {0}", url);
-    }
-
-    // serialization
-
-    /**
-     *  Writes this wiki to a file.
-     *  @param out an ObjectOutputStream to write to
-     *  @throws IOException if there are local IO problems
-     *  @since 0.10
-     */
-    private void writeObject(ObjectOutputStream out) throws IOException
-    {
-        out.defaultWriteObject();
-    }
-
-    /**
-     *  Reads a copy of a wiki from a file.
-     *  @param in an ObjectInputStream to read from
-     *  @throws IOException if there are local IO problems
-     *  @throws ClassNotFoundException if we can't recognize the input
-     *  @since 0.10
-     */
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException
-    {
-        in.defaultReadObject();
-        statuscounter = statusinterval; // force a status check on next edit
     }
 }

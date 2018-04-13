@@ -1220,6 +1220,7 @@ public class WikiTest
     public void allUsersInGroup() throws Exception
     {
         assertArrayEquals("allUsersInGroup: nonsense", new String[0], testWiki.allUsersInGroup("sdfkd|&"));
+        assertArrayEquals("allUsersInGroup: founder", new String[] { "Jimbo Wales" }, enWiki.allUsersInGroup("founder"));
     }
     
     @Test
