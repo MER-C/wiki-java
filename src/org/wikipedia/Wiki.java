@@ -8476,4 +8476,29 @@ public class Wiki implements Serializable
         in.defaultReadObject();
         statuscounter = statusinterval; // force a status check on next edit
     }
+    
+        /**
+     * This method gets the wikidata ID
+     * of a title e.g. Q12901
+     * @param title The title of the page
+     * @return String
+     * @throws IOException
+     * @throws LoginException
+     */
+    public String getWikiDataItem (String title) throws IOException, LoginException {
+        StringBuilder url = new StringBuilder();
+        url.append(query);
+        url.append("api.php?action=query&prop=pageprops&format=xml&titles=");
+        url.append(encode(title, false));
+        // post data
+        String response = fetch(url.toString(), "getData");
+        if (response.contains("wikibase_item")) {
+            response = response.substring(response.indexOf("wikibase_item=\"") + 15, response.indexOf("\" />"));
+        } else {
+            response = "";
+        }
+
+        return response;
+    }
+    
 }
