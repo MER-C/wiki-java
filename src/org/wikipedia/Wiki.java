@@ -54,7 +54,7 @@ import javax.security.auth.login.*;
  *  @author MER-C and contributors
  *  @version 0.34
  */
-public class Wiki
+public class Wiki implements Comparable<Wiki>
 {
     // NAMESPACES
 
@@ -671,6 +671,24 @@ public class Wiki
     public String getDomain()
     {
         return domain;
+    }
+    
+    /**
+     *  Allows wikis to be sorted based on their domain, then their script path
+     *  (both case insensitive). If 0 is returned, it is reasonable both Wikis
+     *  point to the same instance of MediaWiki.
+     *  @param other the wiki to compare to
+     *  @return -1 if this wiki is alphabetically before the other, 1 if after
+     *  and 0 if they are likely to be the same instance of MediaWiki
+     *  @since 0.35
+     */
+    @Override
+    public int compareTo(Wiki other)
+    {
+        int result = getDomain().compareToIgnoreCase(other.getDomain());
+        if (result == 0)
+            result = scriptPath.compareTo(other.scriptPath);
+        return result;
     }
     
     /**

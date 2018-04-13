@@ -68,6 +68,19 @@ public class WikiTest
     }
     
     @Test
+    public void compareTo()
+    {
+        int result_1 = enWiki.compareTo(arWiki);
+        int result_2 = arWiki.compareTo(enWiki);
+        int result_3 = testWiki.compareTo(enWiki);
+        int result_4 = testWiki.compareTo(arWiki);
+        
+        assertTrue("compareTo", result_1 > 0);
+        assertEquals("compareTo: symmetric", -1*result_1, result_2);
+        assertTrue("compareTo: transitivity", result_3 > 0 && result_4 > 0);
+    }
+    
+    @Test
     public void getIndexPHPURL()
     {
         assertEquals("getIndexPHPURL", "https://en.wikipedia.org/w/index.php", enWiki.getIndexPHPURL());

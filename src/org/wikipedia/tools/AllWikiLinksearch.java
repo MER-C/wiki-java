@@ -180,7 +180,7 @@ public class AllWikiLinksearch
      *  IOException occurred
      */
     public static Map<Wiki, List<String[]>> crossWikiLinksearch(boolean querylimit, 
-        int threads, String domain, List<? extends Wiki> wikis, boolean https, boolean mailto, 
+        int threads, String domain, Collection<? extends Wiki> wikis, boolean https, boolean mailto, 
         int... ns)
     {
         Stream<? extends Wiki> stream = wikis.stream();
@@ -214,7 +214,7 @@ public class AllWikiLinksearch
             {
                 return null;
             }
-        }));
+        }, (wiki1, wiki2) -> { throw new RuntimeException("Duplicate wikis!"); }, TreeMap::new));
 
         return ret;
     }
