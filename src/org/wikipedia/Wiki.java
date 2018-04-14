@@ -48,7 +48,7 @@ import javax.security.auth.login.*;
  *  your wiki's time zone.
  *  </p>
  *  Please file bug reports <a href="https://en.wikipedia.org/wiki/User_talk:MER-C">here</a>
- *  or at the <a href="https://github.com/MER-C/wiki-java/issues">Github issue 
+ *  or at the <a href="https://github.com/MER-C/wiki-java/issues">Github issue
  * tracker</a>.
  *
  *  @author MER-C and contributors
@@ -268,7 +268,7 @@ public class Wiki implements Comparable<Wiki>
     public static final String NO_PROTECTION = "all";
 
     /**
-     *  Denotes semi-protection (only autoconfirmed users can perform a 
+     *  Denotes semi-protection (only autoconfirmed users can perform a
      *  action).
      *  @since 0.09
      */
@@ -368,25 +368,25 @@ public class Wiki implements Comparable<Wiki>
     // REVISION OPTIONS
 
     /**
-     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()}, 
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()},
      *  denotes the next revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(long) 
+     *  @see org.wikipedia.Wiki.Revision#diff(long)
      *  @since 0.21
      */
     public static final long NEXT_REVISION = -1L;
 
     /**
-     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()}, 
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()},
      *  denotes the current revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(long) 
+     *  @see org.wikipedia.Wiki.Revision#diff(long)
      *  @since 0.21
      */
     public static final long CURRENT_REVISION = -2L;
 
     /**
-     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()}, 
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()},
      *  denotes the previous revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(long) 
+     *  @see org.wikipedia.Wiki.Revision#diff(long)
      *  @since 0.21
      */
     public static final long PREVIOUS_REVISION = -3L;
@@ -422,11 +422,9 @@ public class Wiki implements Comparable<Wiki>
 
     private static final String version = "0.34";
 
-    // URL strings
-    private String protocol = "https://";
-    protected String scriptPath = "/w";
-    private final String domain;
-    
+    // fundamental URL strings
+    private final String protocol, domain, scriptPath;
+
     /**
      *  URL for index.php. (Needs to be accessible to subclasses.)
      *  @see #initVars()
@@ -438,9 +436,9 @@ public class Wiki implements Comparable<Wiki>
      */
     @Deprecated
     protected String base;
-    
+
     /**
-     *  URL entrypoint for the MediaWiki API.  (Needs to be accessible to 
+     *  URL entrypoint for the MediaWiki API.  (Needs to be accessible to
      *  subclasses.)
      *  @see #initVars()
      *  @see #base
@@ -449,18 +447,18 @@ public class Wiki implements Comparable<Wiki>
      *  documentation</a>
      */
     protected String apiUrl;
-    
+
     /**
-     *  Base URL for action=query type requests from the API.  (Needs to be 
+     *  Base URL for action=query type requests from the API.  (Needs to be
      *  accessible to subclasses.)
-     *  @see #initVars() 
+     *  @see #initVars()
      *  @see #base
      *  @see #apiUrl
      *  @see <a href="https://www.mediawiki.org/wiki/API:Query">MediaWiki
      *  documentation</a>
      */
     protected String query;
-    
+
     // wiki properties
     private boolean wgCapitalLinks = true;
     private ZoneId timezone = ZoneId.of("UTC");
@@ -568,10 +566,10 @@ public class Wiki implements Comparable<Wiki>
     {
         if (domain == null || domain.isEmpty())
             domain = "en.wikipedia.org";
-        this.domain = domain;
-        this.scriptPath = scriptPath;
-        this.protocol = protocol;
-        
+        this.domain = Objects.requireNonNull(domain);
+        this.scriptPath = Objects.requireNonNull(scriptPath);
+        this.protocol = Objects.requireNonNull(protocol);
+
         // init variables
         // This is fine as long as you do not have parameters other than domain
         // and scriptpath in constructors and do not do anything else than super(x)!
@@ -582,11 +580,11 @@ public class Wiki implements Comparable<Wiki>
         CookieHandler.setDefault(cookies);
         initVars();
     }
-    
+
     /**
      *  Creates a new connection to a wiki via HTTPS. Depending on the settings
-     *  of the wiki, you may need to call {@link Wiki#getSiteInfo()} on the 
-     *  returned object after this in order for some functionality to work 
+     *  of the wiki, you may need to call {@link Wiki#getSiteInfo()} on the
+     *  returned object after this in order for some functionality to work
      *  correctly.
      *
      *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
@@ -598,14 +596,16 @@ public class Wiki implements Comparable<Wiki>
     {
         return createInstance(domain, "/w", "https://");
     }
-    
+
     /**
      *  Creates a new connection to a wiki with <a
      *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
-     *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the 
-     *  specified protocol. Depending on the settings of the wiki, you may need 
-     *  to call {@link Wiki#getSiteInfo()} on the returned object after this in 
+     *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the
+     *  specified protocol. Depending on the settings of the wiki, you may need
+     *  to call {@link Wiki#getSiteInfo()} on the returned object after this in
      *  order for some functionality to work correctly.
+     *
+     *  <p>All factory methods in subclasses must call {@link #initVars()}.
      *
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
@@ -624,7 +624,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Edit this if you need to change the API and human interface url
-     *  configuration of the wiki. One example use is server-side cache 
+     *  configuration of the wiki. One example use is server-side cache
      *  management (maxage and smaxage API parameters).
      *
      *  <p>Contributed by Tedder
@@ -664,19 +664,76 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the domain of the wiki, as supplied on construction.
+     *  Gets the domain of the wiki as supplied on construction.
      *  @return the domain of the wiki
      *  @since 0.06
      */
-    public String getDomain()
+    public final String getDomain()
     {
         return domain;
     }
-    
+
     /**
-     *  Allows wikis to be sorted based on their domain, then their script path
-     *  (both case insensitive). If 0 is returned, it is reasonable both Wikis
-     *  point to the same instance of MediaWiki.
+     *  Gets the <a href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
+     *  $wgScriptPath</var></a> variable as supplied on construction.
+     *  @return the script path of the wiki
+     *  @since 0.14
+     */
+    public final String getScriptPath()
+    {
+        return scriptPath;
+    }
+
+    /**
+     *  Gets the protocol used to access this MediaWiki instance, as supplied
+     *  on construction.
+     *  @return (see above)
+     *  @since 0.35
+     */
+    public final String getProtocol()
+    {
+        return protocol;
+    }
+
+    /**
+     *  Determines whether this wiki is equal to another object based on the
+     *  protocol (not case sensitive), domain (not case sensitive) and
+     *  scriptPath (case sensitive). A return value of {@code true} means two
+     *  Wiki objects point to the same instance of MediaWiki.
+     *  @param obj the object to compare
+     *  @return whether the wikis point to the same instance of MediaWiki
+     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        if (!(obj instanceof Wiki))
+            return false;
+        Wiki other = (Wiki)obj;
+        return domain.equalsIgnoreCase(other.domain)
+            && scriptPath.equals(other.scriptPath)
+            && protocol.equalsIgnoreCase(other.protocol);
+    }
+
+    /**
+     *  Returns a hash code of this object based on the protocol, domain and
+     *  scriptpath.
+     *  @return a hash code
+     */
+    @Override
+    public int hashCode()
+    {
+        // English locale used here for reproducability and so network requests
+        // are not required
+        int hc = domain.toLowerCase(Locale.ENGLISH).hashCode();
+        hc = 127 * hc + scriptPath.hashCode();
+        hc = 127 * hc + protocol.toLowerCase(Locale.ENGLISH).hashCode();
+        return hc;
+    }
+
+    /**
+     *  Allows wikis to be sorted based on their domain (case insensitive), then
+     *  their script path (case sensitive). If 0 is returned, it is reasonable
+     *  both Wikis point to the same instance of MediaWiki.
      *  @param other the wiki to compare to
      *  @return -1 if this wiki is alphabetically before the other, 1 if after
      *  and 0 if they are likely to be the same instance of MediaWiki
@@ -685,12 +742,12 @@ public class Wiki implements Comparable<Wiki>
     @Override
     public int compareTo(Wiki other)
     {
-        int result = getDomain().compareToIgnoreCase(other.getDomain());
+        int result = domain.compareToIgnoreCase(other.domain);
         if (result == 0)
             result = scriptPath.compareTo(other.scriptPath);
         return result;
     }
-    
+
     /**
      *  Gets the URL of index.php.
      *  @return (see above)
@@ -717,10 +774,10 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Sets the throttle, which limits most write requests to no more than one
-     *  per wiki instance in the given time across all threads. (As a 
-     *  consequence, all throttled methods are thread safe.) Read requests are 
+     *  per wiki instance in the given time across all threads. (As a
+     *  consequence, all throttled methods are thread safe.) Read requests are
      *  not throttled or restricted in any way. Default is 10 seconds.
-     * 
+     *
      *  @param throttle the new throttle value in milliseconds
      *  @see #getThrottle
      *  @since 0.09
@@ -739,7 +796,7 @@ public class Wiki implements Comparable<Wiki>
      *    for the title. Example: en.wikipedia = true, en.wiktionary = false.
      *    Default = true. See <a href="https://mediawiki.org/wiki/Manual:$wgCapitalLinks">
      *    <var>$wgCapitalLinks</var></a>
-     *  <li><b>scriptpath</b>: (String) the <a 
+     *  <li><b>scriptpath</b>: (String) the <a
      *    href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
      *    $wgScriptPath</var> wiki variable</a>. Default = {@code /w}.
      *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
@@ -762,7 +819,6 @@ public class Wiki implements Comparable<Wiki>
             String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
             wgCapitalLinks = parseAttribute(bits, "case", 0).equals("first-letter");
             siteinfo.put("usingcapitallinks", wgCapitalLinks);
-            scriptPath = parseAttribute(bits, "scriptpath", 0);
             siteinfo.put("scriptpath", scriptPath);
             timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
             siteinfo.put("timezone", timezone);
@@ -780,7 +836,7 @@ public class Wiki implements Comparable<Wiki>
                 int ns = Integer.parseInt(parseAttribute(items[i], "id", 0));
 
                 // parse localized namespace name
-                // must be before parsing canonical namespace so that 
+                // must be before parsing canonical namespace so that
                 // namespaceIdentifier always returns the localized name
                 int b = items[i].indexOf('>') + 1;
                 int c = items[i].indexOf("</ns>");
@@ -940,31 +996,6 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Determines whether this wiki is equal to another object.
-     *  @param obj the object to compare
-     *  @return whether the domains of the wikis are equal
-     *  @since 0.10
-     */
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (!(obj instanceof Wiki))
-            return false;
-        return domain.equals(((Wiki)obj).domain);
-    }
-
-    /**
-     *  Returns a hash code of this object.
-     *  @return a hash code
-     *  @since 0.12
-     */
-    @Override
-    public int hashCode()
-    {
-        return domain.hashCode() * maxlag - throttle;
-    }
-
-    /**
      *   Returns a string representation of this Wiki.
      *   @return a string representation of this Wiki.
      *   @since 0.10
@@ -973,8 +1004,10 @@ public class Wiki implements Comparable<Wiki>
     public String toString()
     {
         // domain
-        StringBuilder buffer = new StringBuilder("Wiki[domain=");
+        StringBuilder buffer = new StringBuilder("Wiki[url=");
+        buffer.append(protocol);
         buffer.append(domain);
+        buffer.append(scriptPath);
 
         // user
         buffer.append(",user=");
@@ -1097,17 +1130,17 @@ public class Wiki implements Comparable<Wiki>
     // META STUFF
 
     /**
-     *  Logs in to the wiki. This method is thread-safe. 
+     *  Logs in to the wiki. This method is thread-safe.
      *
      *  @param username a username
-     *  @param password a password, as a {@code char[]} for security 
+     *  @param password a password, as a {@code char[]} for security
      *  reasons. Overwritten once the password is used.
      *  @throws IOException if a network error occurs
      *  @throws FailedLoginException if the login failed due to an incorrect
      *  username or password, the requirement for an interactive login (not
      *  supported, use [[Special:BotPasswords]]) or some other reason
      *  @see #logout
-     *  @see <a href="https://mediawiki.org/wiki/API:Login">MediaWiki 
+     *  @see <a href="https://mediawiki.org/wiki/API:Login">MediaWiki
      *  documentation</a>
      */
     public synchronized void login(String username, char[] password) throws IOException, FailedLoginException
@@ -1134,14 +1167,14 @@ public class Wiki implements Comparable<Wiki>
         else if (line.contains("result=\"Failed\""))
             throw new FailedLoginException("Login failed: " + parseAttribute(line, "reason", 0));
         // interactive login or bot password required
-        else if (line.contains("result=\"Aborted\"")) 
+        else if (line.contains("result=\"Aborted\""))
             throw new FailedLoginException("Login failed: you need to use a bot password, see [[Special:Botpasswords]].");
         else
             throw new AssertionError("Unreachable!");
     }
 
     /**
-     *  Logs in to the wiki. This method is thread-safe. 
+     *  Logs in to the wiki. This method is thread-safe.
      *
      *  @param username a username
      *  @param password a string with the password
@@ -1250,8 +1283,8 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Renders the specified wiki markup as HTML by passing it to the MediaWiki
-     *  parser through the API. 
-     * 
+     *  parser through the API.
+     *
      *  @param markup the markup to parse
      *  @return the parsed markup as HTML
      *  @throws IOException if a network error occurs
@@ -1263,25 +1296,25 @@ public class Wiki implements Comparable<Wiki>
         content.put("text", markup);
         return parse(content, -1);
     }
-    
+
     /**
-     *  Parses wikitext, revisions or pages.  Deleted pages, revisions to 
-     *  deleted pages and RevisionDeleted revisions are not allowed if you 
+     *  Parses wikitext, revisions or pages.  Deleted pages, revisions to
+     *  deleted pages and RevisionDeleted revisions are not allowed if you
      *  don't have the rights to view them.
-     * 
+     *
      *  <p>
      *  <b>WARNING</b>: the parameters to this method will be changed when the time
      *  comes for JDK11 refactoring to {@code parse(Map.Entry<String, Object> content, int section)}.
-     * 
+     *
      *  @param content a Map following the same scheme as specified by
      *  {@link #diff(Map, int, Map, int)}
      *  @param section parse only this section (optional, use -1 to skip)
      *  @return the parsed wikitext
-     *  @throws NoSuchElementException or IllegalArgumentException if no content 
+     *  @throws NoSuchElementException or IllegalArgumentException if no content
      *  was supplied for parsing
      *  @throws IOException if a network error occurs
-     *  @see #parse(String) 
-     *  @see #getRenderedText(String) 
+     *  @see #parse(String)
+     *  @see #getRenderedText(String)
      *  @see Wiki.Revision#getRenderedText()
      *  @see <a href="https://mediawiki.org/wiki/API:Parsing_wikitext">MediaWiki
      *  documentation</a>
@@ -1290,7 +1323,7 @@ public class Wiki implements Comparable<Wiki>
     public String parse(Map<String, Object> content, int section) throws IOException
     {
         Map<String, Object> postparams = new HashMap<>();
-        
+
         Map.Entry<String, Object> entry = content.entrySet().iterator().next();
         Object value = entry.getValue();
         switch (entry.getKey())
@@ -1312,12 +1345,12 @@ public class Wiki implements Comparable<Wiki>
         }
         if (section >= 0)
             postparams.put("section", section);
-        
+
         String response = makeHTTPRequest(apiUrl + "action=parse&prop=text", postparams, "parse");
         if (response.contains("error code=\""))
             // Bad section numbers, revids, deleted pages, RevisionDeleted
             // revisions should all end up here.
-            // FIXME: makeHTTPRequest() swallows the API errors "missingtitle" (deleted 
+            // FIXME: makeHTTPRequest() swallows the API errors "missingtitle" (deleted
             // pages) and "permissiondenied" (fetching deleted content) to throw
             // an UnknownError instead.
             return null;
@@ -1327,7 +1360,7 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Same as {@link #parse(String)}, but also strips out unwanted 
+     *  Same as {@link #parse(String)}, but also strips out unwanted
      *  crap. This might be useful to subclasses.
      *
      *  @param in the string to parse
@@ -1353,7 +1386,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param ns the namespaces to fetch random pages from. If not present,
      *  fetch pages from {@link #MAIN_NAMESPACE}. Allows {@link #ALL_NAMESPACES}
      *  for obvious effect. Invalid namespaces, {@link #SPECIAL_NAMESPACE} and
-     *  {@link #MEDIA_NAMESPACE} are ignored; if only these namespaces are 
+     *  {@link #MEDIA_NAMESPACE} are ignored; if only these namespaces are
      *  provided, this is equivalent to {@link #ALL_NAMESPACES}.
      *  @return the title of the page
      *  @throws IOException if a network error occurs
@@ -1363,7 +1396,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (ns.length == 0)
             ns = new int[] { MAIN_NAMESPACE };
-        
+
         // no bulk queries here because they are deterministic
         // https://mediawiki.org/wiki/API:Random
         StringBuilder url = new StringBuilder(query);
@@ -1373,7 +1406,7 @@ public class Wiki implements Comparable<Wiki>
         String line = makeHTTPRequest(url.toString(), null, "random");
         return parseAttribute(line, "title", 0);
     }
-    
+
     /**
      *  Fetches edit and other types of tokens.
      *  @param type one of "csrf", "patrol", "rollback", "userrights", "watch"
@@ -1387,7 +1420,7 @@ public class Wiki implements Comparable<Wiki>
         String content = makeHTTPRequest(query + "meta=tokens&type=" + type, null, "getToken");
         return parseAttribute(content, type + "token", 0);
     }
-    
+
     // PAGE METHODS
 
     /**
@@ -1398,7 +1431,7 @@ public class Wiki implements Comparable<Wiki>
      *  or "" if we cannot recognise it
      *  @throws IllegalArgumentException if given title is in a talk namespace
      *  or we try to retrieve the talk page of a Special: or Media: page.
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.10
      */
@@ -1415,17 +1448,17 @@ public class Wiki implements Comparable<Wiki>
             title = title.substring(title.indexOf(':') + 1);
         return namespaceIdentifier(namespace + 1) + ":" + title;
     }
-    
+
     /**
-     *  If a namespace supports subpages, return the top-most page -- 
+     *  If a namespace supports subpages, return the top-most page --
      *  {@code getRootPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa" if the talk
-     *  namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See 
+     *  namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. See
      *  also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic word</a>
      *  <kbd>{{ROOTPAGENAME}}</kbd>, though that removes the namespace prefix.
-     * 
+     *
      *  @param page a page
      *  @return (see above)
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.33
      */
@@ -1436,18 +1469,18 @@ public class Wiki implements Comparable<Wiki>
         else
             return page;
     }
-    
+
     /**
-     *  If a namespace supports subpages, return the top-most page -- 
-     *  {@code getParentPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa/Bbb" if  
-     *  the talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't. 
-     *  See also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic 
+     *  If a namespace supports subpages, return the top-most page --
+     *  {@code getParentPage("Talk:Aaa/Bbb/Ccc")} returns "Talk:Aaa/Bbb" if
+     *  the talk namespace supports subpages, "Talk:Aaa/Bbb/Ccc" if it doesn't.
+     *  See also the <a href="https://mediawiki.org/wiki/Help:Magic_words">magic
      *  word</a> <kbd>{{BASEPAGENAME}}</kbd>, though that removes the namespace
      *  prefix.
-     * 
+     *
      *  @param page a page
      *  @return (see above)
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.33
      */
@@ -1458,10 +1491,10 @@ public class Wiki implements Comparable<Wiki>
         else
             return page;
     }
-    
+
     /**
      *  Returns a URL to the human readable version of <var>page</var>. Example:
-     *  https://en.wikipedia.org/wiki/Create_a_page 
+     *  https://en.wikipedia.org/wiki/Create_a_page
      *  @param page a title
      *  @return (see above)
      *  @since 0.35
@@ -1478,18 +1511,18 @@ public class Wiki implements Comparable<Wiki>
             throw new UncheckedIOException(ex); // seriously?
         }
     }
-    
+
     /**
      *  Removes the namespace identifier from a page title. Equivalent to the
      *  <a href="https://mediawiki.org/wiki/Help:Magic_words">magic word</a>
      *  <kbd>{{PAGENAME}}</kbd>.
-     * 
+     *
      *  @param page a page
      *  @return (see above)
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
-     *  @see #namespace(String) 
-     *  @see #namespaceIdentifier(int) 
+     *  @see #namespace(String)
+     *  @see #namespaceIdentifier(int)
      *  @since 0.35
      */
     public String removeNamespace(String page)
@@ -1519,10 +1552,10 @@ public class Wiki implements Comparable<Wiki>
      *  <li><b>displaytitle</b>: (String) the title of the page that is actually
      *    displayed. Example: "iPod"
      *  <li><b>protection</b>: (Map) the {@link #protect(String, Map, String)
-     *    protection state} of the page. Does not cover implied protection 
+     *    protection state} of the page. Does not cover implied protection
      *    levels (e.g. MediaWiki namespace).
      *  <li><b>exists</b>: (Boolean) whether the page exists
-     *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or 
+     *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or
      *    <code>null</code> if the page does not exist
      *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the
      *    page does not exist
@@ -1535,7 +1568,7 @@ public class Wiki implements Comparable<Wiki>
      *  </ul>
      *
      *  @param pages the pages to get info for.
-     *  @return (see above), or {@code null} for Special and Media pages. 
+     *  @return (see above), or {@code null} for Special and Media pages.
      *  The Maps will come out in the same order as the processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.23
@@ -1547,14 +1580,14 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, Object>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
-        String[] pages2 = Arrays.copyOf(pages, pages.length); 
+        String[] pages2 = Arrays.copyOf(pages, pages.length);
         for (String temp : constructTitleString(pages))
         {
             postparams.put("titles", temp);
             String line = makeHTTPRequest(url.toString(), postparams, "getPageInfo");
             if (resolveredirect)
                 resolveRedirectParser(pages2, line);
-            
+
             // form: <page pageid="239098" ns="0" title="BitTorrent" ... >
             // <protection />
             // </page>
@@ -1624,7 +1657,7 @@ public class Wiki implements Comparable<Wiki>
                 metamap.put(parsedtitle, tempmap);
             }
         }
-        
+
         Map<String, Object>[] info = new HashMap[pages.length];
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.length; i++)
@@ -1635,7 +1668,7 @@ public class Wiki implements Comparable<Wiki>
                 info[i] = new HashMap<>(tempmap);
                 info[i].put("inputpagename", pages[i]);
             }
-        }    
+        }
         log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + Arrays.toString(pages));
         return info;
     }
@@ -1668,7 +1701,7 @@ public class Wiki implements Comparable<Wiki>
      *
      *  @param title any valid page name
      *  @return an integer representing the namespace of <var>title</var>
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @see #namespaceIdentifier(int)
      *  @since 0.03
@@ -1689,15 +1722,15 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  For a given namespace denoted as an integer, fetch the corresponding
-     *  identification string e.g. {@code namespaceIdentifier(1)} should 
-     *  return "Talk" on en.wp. (This does the exact opposite to {@link 
+     *  identification string e.g. {@code namespaceIdentifier(1)} should
+     *  return "Talk" on en.wp. (This does the exact opposite to {@link
      *  #namespace(String)}). Strings returned are always localized.
      *
      *  @param namespace an integer corresponding to a namespace. If it does not
      *  correspond to a namespace, we assume you mean the main namespace (i.e.
      *  return "").
      *  @return the identifier of the namespace
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @see #namespace(String)
      *  @since 0.25
@@ -1719,7 +1752,7 @@ public class Wiki implements Comparable<Wiki>
      *  Gets the namespaces used by this wiki.
      *  @return a map containing e.g. {"Media" : -2, "Special" : -1, ...}.
      *  Changes in this map do not propagate back to this Wiki object.
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.28
      */
@@ -1728,12 +1761,12 @@ public class Wiki implements Comparable<Wiki>
         ensureNamespaceCache();
         return new LinkedHashMap<>(namespaces);
     }
-    
+
     /**
      *  Returns true if the given namespace allows subpages.
      *  @param ns a namespace number
      *  @return (see above)
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @throws IllegalArgumentException if the give namespace does not exist
      *  @since 0.33
@@ -1745,7 +1778,7 @@ public class Wiki implements Comparable<Wiki>
             return ns_subpages.contains(ns);
         throw new IllegalArgumentException("Invalid namespace " + ns);
     }
-    
+
     /**
      *  Determines whether a series of pages exist.
      *  @param titles the titles to check.
@@ -1765,7 +1798,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Gets the raw wikicode for a page. WARNING: does not support special
      *  pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use {@link #getImage(String, 
+     *  for fetching the contents of special pages. Use {@link #getImage(String,
      *  File)} to fetch an image.
      *
      *  @param title the title of the page.
@@ -1779,12 +1812,12 @@ public class Wiki implements Comparable<Wiki>
     {
         return getPageText(new String[] { title })[0];
     }
-    
+
     /**
-     *  Gets the raw wikicode for a set of pages. WARNING: does not support 
+     *  Gets the raw wikicode for a set of pages. WARNING: does not support
      *  special pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use {@link #getImage(String, 
-     *  File)} to fetch an image. If a page doesn't exist, the corresponding 
+     *  for fetching the contents of special pages. Use {@link #getImage(String,
+     *  File)} to fetch an image. If a page doesn't exist, the corresponding
      *  return value is {@code null}.
      *
      *  @param titles a list of titles
@@ -1800,17 +1833,17 @@ public class Wiki implements Comparable<Wiki>
     {
         return getText(titles, null, -1);
     }
-    
+
     /**
      *  Gets the wikitext of a list of titles or revisions. If a page or
-     *  revision doesn't exist or is deleted, return {@code null}. 
+     *  revision doesn't exist or is deleted, return {@code null}.
      *  RevisionDeleted revisions are not allowed.
-     * 
-     *  @param titles a list of titles (use null or zero length to skip, 
+     *
+     *  @param titles a list of titles (use null or zero length to skip,
      *  overrides revids).
      *  @param revids a list of revids (use null or zero length to skip)
      *  @param section a section number. This section number must exist in all
-     *  titles or revids otherwise you will get vast swathes of your results 
+     *  titles or revids otherwise you will get vast swathes of your results
      *  being erroneously null. Optional, use -1 to skip.
      *  @return the raw wikicode of those titles, in the same order as the input
      *  array
@@ -1841,7 +1874,7 @@ public class Wiki implements Comparable<Wiki>
         }
         else
             throw new IllegalArgumentException("Either titles or revids must be specified!");
-        
+
         HashMap<String, String> pageTexts = new HashMap<>(2 * count);
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=ids%7Ccontent");
@@ -1851,7 +1884,7 @@ public class Wiki implements Comparable<Wiki>
             url.append(section);
         }
         Map<String, Object> postparams = new HashMap<>();
-        
+
         List<String> chunks = isrevisions ? constructRevisionString(revids) : constructTitleString(titles);
         for (String chunk : chunks)
         {
@@ -1911,7 +1944,7 @@ public class Wiki implements Comparable<Wiki>
      *  Gets the contents of a page, rendered in HTML (as opposed to
      *  wikitext). WARNING: only supports special pages in certain
      *  circumstances, for example {@code getRenderedText("Special:Recentchanges")}
-     *  returns the 50 most recent change to the wiki in pretty-print HTML. You 
+     *  returns the 50 most recent change to the wiki in pretty-print HTML. You
      *  should test any use of this method on-wiki through the text
      *  <kbd>{{Special:Specialpage}}</kbd>. Use {@link #getImage(String, File)}
      *  to fetch an image. Be aware of any transclusion limits, as outlined at
@@ -1935,7 +1968,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Edits a page by setting its text to the supplied value. This method is
-     *  {@linkplain #setThrottle(int) throttled}. The edit will be marked bot if 
+     *  {@linkplain #setThrottle(int) throttled}. The edit will be marked bot if
      *  {@link #isMarkBot()} is {@code true} and minor if {@link #isMarkMinor()}
      *  is {@code true}.
      *
@@ -1957,9 +1990,9 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Edits a page by setting its <var>text</var> to the supplied value. This 
-     *  method is {@linkplain #setThrottle(int) throttled}. The edit will be 
-     *  marked bot if {@link #isMarkBot()} is {@code true} and minor if {@link 
+     *  Edits a page by setting its <var>text</var> to the supplied value. This
+     *  method is {@linkplain #setThrottle(int) throttled}. The edit will be
+     *  marked bot if {@link #isMarkBot()} is {@code true} and minor if {@link
      *  #isMarkMinor()} is {@code true}.
      *
      *  @param text the text of the page
@@ -1982,9 +2015,9 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Edits a section by setting its <var>text</var> to the supplied value. 
-     *  This method is {@linkplain #setThrottle(int) throttled}. The edit will 
-     *  be marked bot if {@link #isMarkBot()} is {@code true} and minor if 
+     *  Edits a section by setting its <var>text</var> to the supplied value.
+     *  This method is {@linkplain #setThrottle(int) throttled}. The edit will
+     *  be marked bot if {@link #isMarkBot()} is {@code true} and minor if
      *  {@link #isMarkMinor()} is {@code true}.
      *
      *  @param text the text of the page
@@ -2009,8 +2042,8 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Edits a page by setting its <var>text</var> to the supplied value. This
-     *  method is {@linkplain #setThrottle(int) throttled}. The edit will be 
-     *  marked bot if {@link #isMarkBot()} is {@code true} and minor if {@link 
+     *  method is {@linkplain #setThrottle(int) throttled}. The edit will be
+     *  marked bot if {@link #isMarkBot()} is {@code true} and minor if {@link
      *  #isMarkMinor()} is {@code true}.
      *
      *  @param text the text of the page
@@ -2116,7 +2149,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Creates a new section on the specified page. Leave <var>subject</var> as
-     *  the empty string if you just want to append. This method is 
+     *  the empty string if you just want to append. This method is
      *  {@linkplain #setThrottle(int) throttled}.
      *
      *  @param title the title of the page to edit
@@ -2212,9 +2245,9 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
-     *  revisions and files by default. This method is {@linkplain 
+     *  revisions and files by default. This method is {@linkplain
      *  #setThrottle(int) throttled}.
-     * 
+     *
      *  @param title a page to undelete
      *  @param reason the reason for undeletion
      *  @param revisions a list of revisions for selective undeletion
@@ -2280,10 +2313,10 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the list of images used on a particular page. If there are
-     *  redirected images, both the source and target page are included. 
+     *  redirected images, both the source and target page are included.
      *
      *  @param title a page
-     *  @return the list of images used in the page.  Note that each String in 
+     *  @return the list of images used in the page.  Note that each String in
      *  the array will begin with the prefix "File:"
      *  @throws IOException if a network error occurs
      *  @since 0.16
@@ -2293,7 +2326,7 @@ public class Wiki implements Comparable<Wiki>
         StringBuilder url = new StringBuilder(query);
         url.append("prop=images&titles=");
         url.append(encode(title, true));
-        
+
         List<String> images = queryAPIResult("im", url, null, "getImagesOnPage", (line, results) ->
         {
             // xml form: <im ns="6" title="File:Example.jpg" />
@@ -2308,7 +2341,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the list of categories a particular page is in. Includes hidden
-     *  categories. 
+     *  categories.
      *
      *  @param title a page
      *  @return the list of categories that page is in
@@ -2323,7 +2356,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Gets the list of categories a particular page is in. Ignores hidden
      *  categories if <var>ignoreHidden</var> is true. Also includes the sortkey
-     *  of a category if <var>sortkey</var> is true. The sortkey would then be 
+     *  of a category if <var>sortkey</var> is true. The sortkey would then be
      *  appended to the element of the returned string array (separated by "|").
      *
      *  @param title a page
@@ -2341,7 +2374,7 @@ public class Wiki implements Comparable<Wiki>
             url.append("&clprop=sortkey%7Chidden");
         url.append("&titles=");
         url.append(encode(title, true));
-        
+
         List<String> categories = queryAPIResult("cl", url, null, "getCategories", (line, results) ->
         {
             // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
@@ -2358,7 +2391,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add(category);
             }
         });
-        
+
         int temp = categories.size();
         log(Level.INFO, "getCategories", "Successfully retrieved categories of " + title + " (" + temp + " categories)");
         return categories.toArray(new String[temp]);
@@ -2379,10 +2412,10 @@ public class Wiki implements Comparable<Wiki>
         List<String> temp = getTemplates(new String[] { title }, ns)[0];
         return temp.toArray(new String[temp.size()]);
     }
-    
+
     /**
      *  Gets the list of templates used on the given pages that are in a
-     *  particular namespace(s). The order of elements in the return array is 
+     *  particular namespace(s). The order of elements in the return array is
      *  the same as the order of the list of titles.
      *
      *  @param titles a list of pages
@@ -2395,12 +2428,12 @@ public class Wiki implements Comparable<Wiki>
     {
         return getTemplates(titles, null, ns);
     }
-    
+
     /**
-     *  Determine whether a list of pages contains the given template. The order 
-     *  of elements in the return array is the same as the order of the list of 
+     *  Determine whether a list of pages contains the given template. The order
+     *  of elements in the return array is the same as the order of the list of
      *  titles.
-     * 
+     *
      *  @param pages a list of pages
      *  @param template the template to check for
      *  @return whether the given pages contain said template
@@ -2418,7 +2451,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the list of templates used on the given pages that are in a
-     *  particular namespace(s). The order of elements in the return array is 
+     *  particular namespace(s). The order of elements in the return array is
      *  the same as the order of the list of titles.
      *
      *  @param titles a list of pages
@@ -2466,7 +2499,7 @@ public class Wiki implements Comparable<Wiki>
                 }
             }));
         }
-        
+
         // merge and reorder
         List<String>[] out = new ArrayList[titles.length];
         Arrays.setAll(out, ArrayList::new);
@@ -2499,7 +2532,7 @@ public class Wiki implements Comparable<Wiki>
         StringBuilder url = new StringBuilder(query);
         url.append("prop=langlinks&titles=");
         url.append(encode(title, true));
-        
+
         List<String[]> blah = queryAPIResult("ll", url, null, "getInterWikiLinks", (line, results) ->
         {
             // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
@@ -2512,7 +2545,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add(new String[] { language, page });
             }
         });
-        
+
         Map<String, String> interwikis = new HashMap<>(750);
         blah.forEach(result -> interwikis.put(result[0], result[1]));
         log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links on " + title);
@@ -2533,7 +2566,7 @@ public class Wiki implements Comparable<Wiki>
         StringBuilder url = new StringBuilder(query);
         url.append("prop=links&titles=");
         url.append(encode(title, true));
-        
+
         List<String> links = queryAPIResult("pl", url, null, "getLinksOnPage", (line, results) ->
         {
             // xml form: <pl ns="6" title="page name" />
@@ -2559,7 +2592,7 @@ public class Wiki implements Comparable<Wiki>
         List<String> temp = getExternalLinksOnPage(Arrays.asList(title)).get(0);
         return temp.toArray(new String[temp.size()]);
     }
-    
+
     /**
      *  Gets the list of external links used on a list of pages. The return list
      *  contains results that correspond to the list of input titles, element wise.
@@ -2577,7 +2610,7 @@ public class Wiki implements Comparable<Wiki>
     {
         StringBuilder url = new StringBuilder(query);
         url.append("prop=extlinks");
-        
+
         // copy array so redirect resolver doesn't overwrite
         String[] titles2 = new String[titles.size()];
         titles.toArray(titles2);
@@ -2592,7 +2625,7 @@ public class Wiki implements Comparable<Wiki>
                 String[] x = line.split("<page ");
                 if (resolveredirect)
                     resolveRedirectParser(titles2, x[0]);
-        
+
                 // Skip first element to remove front crud.
                 for (int i = 1; i < x.length; i++)
                 {
@@ -2616,7 +2649,7 @@ public class Wiki implements Comparable<Wiki>
         List<List<String>> ret = new ArrayList<>();
         for (String unused : titles)
             ret.add(new ArrayList<>());
-        // then retrieve the results from the intermediate list of maps, 
+        // then retrieve the results from the intermediate list of maps,
         // ensuring results correspond to inputs
         stuff.forEach(map ->
         {
@@ -2631,8 +2664,8 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the list of sections on the specified <var>page</var>. The returned 
-     *  map pairs the section numbering as in the table of contents with the 
+     *  Gets the list of sections on the specified <var>page</var>. The returned
+     *  map pairs the section numbering as in the table of contents with the
      *  section title, as in the following example:
      *
      *  <pre><samp>
@@ -2666,7 +2699,7 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the most recent revision of a page, or {@code null} if the page 
+     *  Gets the most recent revision of a page, or {@code null} if the page
      *  does not exist.
      *  @param title a page
      *  @return the most recent revision of that page
@@ -2734,7 +2767,7 @@ public class Wiki implements Comparable<Wiki>
      *  Gets the newest page name or the name of a page where the asked pages
      *  redirect.
      *  @param titles a list of titles.
-     *  @return for each title, the page redirected to or the original page 
+     *  @return for each title, the page redirected to or the original page
      *  title if not a redirect
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.29
@@ -2755,16 +2788,16 @@ public class Wiki implements Comparable<Wiki>
         }
         return ret;
     }
-    
+
     /**
-     *  Parses the output of queries that resolve redirects (extracted to 
-     *  separate method as requirement for all vectorized queries when 
+     *  Parses the output of queries that resolve redirects (extracted to
+     *  separate method as requirement for all vectorized queries when
      *  {@link #isResolvingRedirects()} is {@code true}).
      *
      *  @param inputpages the array of pages to resolve redirects for. Entries
      *  will be overwritten.
      *  @param xml the xml to parse
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.34
      */
@@ -2815,7 +2848,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
-        
+
         // set up the url
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&titles=");
@@ -2845,7 +2878,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add(parseRevision(line.substring(a, b), title));
             }
         });
-        
+
         // populate previous/next
         int size = revisions.size();
         Revision[] temp = revisions.toArray(new Revision[size]);
@@ -2922,7 +2955,7 @@ public class Wiki implements Comparable<Wiki>
             log(Level.WARNING, "getDeletedHistory", "Parameter reverse is deprecated");
             url.append("&drvdir=newer");
         }
-            
+
         if (start != null)
         {
             url.append(reverse ? "&drvstart=" : "&drvend=");
@@ -2954,7 +2987,7 @@ public class Wiki implements Comparable<Wiki>
                 }
             }
         });
-        
+
         int size = delrevs.size();
         log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
         return delrevs.toArray(new Revision[size]);
@@ -3060,11 +3093,11 @@ public class Wiki implements Comparable<Wiki>
     {
         if (user == null || !user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
-        
+
         // disallow ALL_NAMESPACES, this query is extremely slow and likely to error out.
         if (namespace == ALL_NAMESPACES)
             throw new IllegalArgumentException("deletedPrefixIndex: you must choose a namespace.");
-        
+
         // use the generator here to get a list of pages, not revisions
         StringBuilder url = new StringBuilder(query);
         url.append("generator=alldeletedrevisions&gadrdir=newer&gadrgeneratetitles=1&gadrprefix=");
@@ -3077,7 +3110,7 @@ public class Wiki implements Comparable<Wiki>
             for (int x = text.indexOf("<page ", 0); x > 0; x = text.indexOf("<page ", ++x))
                 results.add(parseAttribute(text, "title", x));
         });
-        
+
         int size = pages.size();
         log(Level.INFO, "deletedPrefixIndex", "Successfully retrieved deleted page list (" + size + " items).");
         return pages.toArray(new String[size]);
@@ -3115,7 +3148,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Moves a page. Moves the associated talk page and leaves redirects, if
-     *  applicable. Equivalent to [[Special:MovePage]]. This method is 
+     *  applicable. Equivalent to [[Special:MovePage]]. This method is
      *  {@linkplain #setThrottle(int) throttled}. Does not recategorize pages
      *  in moved categories.
      *
@@ -3150,7 +3183,7 @@ public class Wiki implements Comparable<Wiki>
      *  be an admin to do this, otherwise this will be ignored.
      *  @param movetalk move the talk page as well (if applicable)
      *  @throws UnsupportedOperationException if the original page is in the
-     *  Special or Media namespaces. MediaWiki does not support moving of these 
+     *  Special or Media namespaces. MediaWiki does not support moving of these
      *  pages.
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws CredentialNotFoundException if not logged in
@@ -3163,7 +3196,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Tried to move a Special or Media page.");
-        
+
         throttle();
         // check for log in
         if (user == null || !user.isAllowedTo("move"))
@@ -3207,10 +3240,10 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Protects a page. This method is {@linkplain #setThrottle(int) throttled}.
-     *  Structure of <var>protectionstate</var> (everything is optional, if a 
-     *  value is not present, then the corresponding values will be left 
+     *  Structure of <var>protectionstate</var> (everything is optional, if a
+     *  value is not present, then the corresponding values will be left
      *  untouched):
-     *  
+     *
      *  <pre><samp>
      *  {
      *     edit: one of { NO_PROTECTION, SEMI_PROTECTION, FULL_PROTECTION }, // restricts editing
@@ -3237,7 +3270,7 @@ public class Wiki implements Comparable<Wiki>
         if (user == null || !user.isAllowedTo("protect"))
             throw new CredentialNotFoundException("Cannot protect: permission denied.");
         throttle();
-        
+
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("title", normalize(page));
         postparams.put("reason", reason);
@@ -3256,7 +3289,7 @@ public class Wiki implements Comparable<Wiki>
                 pro.append('=');
                 pro.append(value);
                 pro.append('|');
-                
+
                 OffsetDateTime expiry = (OffsetDateTime)protectionstate.get(key + "expiry");
                 exp.append(expiry == null ? "never" : expiry.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
                 exp.append('|');
@@ -3275,7 +3308,7 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Completely unprotects a page. This method is {@linkplain #setThrottle(int) 
+     *  Completely unprotects a page. This method is {@linkplain #setThrottle(int)
      *  throttled}.
      *  @param page the page to unprotect
      *  @param reason the reason for unprotection
@@ -3316,7 +3349,7 @@ public class Wiki implements Comparable<Wiki>
      *  attributes of that revision except <var>rcid</var> and <var>rollbacktoken</var>.
      *
      *  @param oldid an oldid
-     *  @return the revision corresponding to <var>oldid</var>, or {@code null} 
+     *  @return the revision corresponding to <var>oldid</var>, or {@code null}
      *  if it has been deleted or the ID is bad.
      *  @throws IOException if a network error occurs
      *  @since 0.17
@@ -3331,7 +3364,7 @@ public class Wiki implements Comparable<Wiki>
      *  attributes of those revisions except <var>rcid</var> and <var>rollbacktoken</var>.
      *
      *  @param oldids a list of oldids
-     *  @return the revisions corresponding to <var>oldids</var>, in the order 
+     *  @return the revisions corresponding to <var>oldids</var>, in the order
      *  of the input array. If a particular revision has been deleted or the ID
      *  is bad, the corresponding index is {@code null}.
      *  @throws IOException if a network error occurs
@@ -3343,7 +3376,7 @@ public class Wiki implements Comparable<Wiki>
         StringBuilder url = new StringBuilder(query);
         url.append("prop=revisions&rvprop=ids%7Ctimestamp%7Cuser%7Ccomment%7Cparsedcomment%7Cflags%7Csize%7Csha1&revids=");
         HashMap<Long, Revision> revs = new HashMap<>(2 * oldids.length);
-        
+
         // fetch and parse
         for (String chunk : constructRevisionString(oldids))
         {
@@ -3362,8 +3395,8 @@ public class Wiki implements Comparable<Wiki>
                 }
             }
         }
-        
-        // reorder 
+
+        // reorder
         Revision[] revisions = new Revision[oldids.length];
         for (int i = 0; i < oldids.length; i++)
             revisions[i] = revs.get(oldids[i]);
@@ -3374,9 +3407,9 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
-     *  is not the case, then this method does nothing. The edit and reverted 
+     *  is not the case, then this method does nothing. The edit and reverted
      *  edits will be marked as bot if {@link #isMarkBot()} is {@code true}.
-     *  
+     *
      *
      *  @param revision the revision to revert. All subsequent revisions to
      *  the corresponding page must be made by this revision's user in order for
@@ -3397,7 +3430,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Reverts a series of edits on the same page by the same user quickly
      *  provided that they are the most recent revisions on that page. If this
-     *  is not the case, then this method does nothing. 
+     *  is not the case, then this method does nothing.
      *
      *  @param revision the revision to revert. All subsequent revisions to
      *  the corresponding page must be made by this revision's user in order for
@@ -3421,7 +3454,7 @@ public class Wiki implements Comparable<Wiki>
             throw new CredentialNotFoundException("Permission denied: cannot rollback.");
         // This method is intentionally NOT throttled.
 
-        // Perform the rollback. 
+        // Perform the rollback.
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("title", normalize(revision.getPage()));
         postparams.put("user", revision.getUser());
@@ -3457,15 +3490,15 @@ public class Wiki implements Comparable<Wiki>
      *  @param suppress [[Wikipedia:Oversight]] the information in question
      *  (ignored if we cannot {@code suppressrevision}, {@code null} = status quo).
      *  @param events the list of Events to (un)delete. All Events must be of
-     *  the same type (no mixing Revisions or LogEntries). Pseudo-LogEntries and 
+     *  the same type (no mixing Revisions or LogEntries). Pseudo-LogEntries and
      *  revisions to deleted pages are currently not allowed.
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if you do not have the rights to
      *  delete revisions or log entries
      *  @throws AccountLockedException if the user is blocked
-     *  @see <a href="https://mediawiki.org/wiki/Help:RevisionDelete">MediaWiki 
+     *  @see <a href="https://mediawiki.org/wiki/Help:RevisionDelete">MediaWiki
      *  help page</a>
-     *  @see <a href="https://mediawiki.org/wiki/API:Revisiondelete">MediaWiki 
+     *  @see <a href="https://mediawiki.org/wiki/API:Revisiondelete">MediaWiki
      *  documentation</a>
      *  @since 0.30
      */
@@ -3481,8 +3514,8 @@ public class Wiki implements Comparable<Wiki>
             Event temp = events.get(i);
             if (!temp.getClass().equals(clazz))
                 throw new IllegalArgumentException("All Events to be RevisionDeleted must be of the same type.");
-            // TODO: Apparently you can RevisionDelete old files (i.e. 
-            // pseudo-LogEntries from getImageHistory and the file archive, but  
+            // TODO: Apparently you can RevisionDelete old files (i.e.
+            // pseudo-LogEntries from getImageHistory and the file archive, but
             // I have no idea how to get the necessary ID parameter.
             // You can also RevisionDelete deleted revisions, but I need to
             // test this first.
@@ -3503,7 +3536,7 @@ public class Wiki implements Comparable<Wiki>
             postparams.put("type", "revision");
         else if (first instanceof LogEntry)
             postparams.put("type", "logging");
-        else // unreachable... for now. 
+        else // unreachable... for now.
             throw new UnsupportedOperationException("Unsupported Event type in RevisionDelete.");
         // this is really stupid... I'm open to suggestions
         StringBuilder hide = new StringBuilder();
@@ -3526,14 +3559,14 @@ public class Wiki implements Comparable<Wiki>
             show.delete(show.length() - 2, show.length());
         postparams.put("hide", hide);
         postparams.put("show", show);
-        
+
         // send/read response
         for (String revstring : constructRevisionString(ids))
         {
             postparams.put("token", getToken("csrf"));
             postparams.put("ids", revstring);
             String response = makeHTTPRequest(apiUrl + "action=revisiondelete", postparams, "revisionDelete");
-            
+
             if (!response.contains("<revisiondelete "))
                 checkErrorsAndUpdateStatus(response, "revisionDelete");
             for (Event event : events)
@@ -3546,7 +3579,7 @@ public class Wiki implements Comparable<Wiki>
                     event.setContentDeleted(hidecontent);
             }
         }
-        
+
         log(Level.INFO, "revisionDelete", "Successfully (un)deleted " + events.size() + " events.");
     }
 
@@ -3625,50 +3658,50 @@ public class Wiki implements Comparable<Wiki>
         if (response.contains("error code=\"editconflict\""))
             throw new ConcurrentModificationException("Edit conflict on " + rev.getPage());
         checkErrorsAndUpdateStatus(response, "undo");
-        
+
         String log = "Successfully undid revision(s) " + rev.getID();
         if (to != null)
             log += (" - " + to.getID());
         log(Level.INFO, "undo", log);
     }
-    
+
     /**
      *  Fetches a HTML rendered diff table; see the table at the <a
      *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
      *  Returns the empty string for moves, protections and similar dummy edits
      *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
-     *  and pairs of revisions where there is no difference. Returns 
-     *  {@code null} for bad section numbers and revision IDs. Deleted pages,   
+     *  and pairs of revisions where there is no difference. Returns
+     *  {@code null} for bad section numbers and revision IDs. Deleted pages,
      *  revisions to deleted pages and RevisionDeleted revisions are all not
      *  allowed if you don't have the rights to see them.
-     * 
+     *
      *  <p>
-     *  <var>from</var> refers to content on the left side of the diff table 
-     *  while <var>to</var> refers to content on the right side. Only one of the 
+     *  <var>from</var> refers to content on the left side of the diff table
+     *  while <var>to</var> refers to content on the right side. Only one of the
      *  following keys representing content sources must be specified for each:
-     *  
+     *
      *  <ul>
      *  <li><b>title</b> (String) -- a page title
      *  <li><b>revid</b> (long) -- a {@linkplain Revision#getID() unique ID for
      *  a revision}. {@link Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION}
-     *  and {@link Wiki#CURRENT_REVISION} can be used in <var>to</var> for 
+     *  and {@link Wiki#CURRENT_REVISION} can be used in <var>to</var> for
      *  obvious effect.
      *  <li><b>revision</b> ({@link Wiki.Revision}) -- a Revision
      *  <li><b>text</b> (String) -- some wikitext
      *  </ul>
-     * 
+     *
      *  <p>
-     *  <b>WARNING</b>: the parameters to this method will be changed when the 
-     *  time comes for JDK11 refactoring to {@code diff(Map.Entry<String, Object> 
+     *  <b>WARNING</b>: the parameters to this method will be changed when the
+     *  time comes for JDK11 refactoring to {@code diff(Map.Entry<String, Object>
      *  from, int fromsection, Map.Entry<String, Object> to, int tosection)}.
-     * 
+     *
      *  @param from the content on the left hand side of the diff
      *  @param fromsection diff from only this section (optional, use -1 to skip)
      *  @param to the content on the right hand side of the diff
      *  @param tosection diff from only this section (optional, use -1 to skip)
      *  @return a HTML difference table between the two texts, "" for dummy
      *  edits or null as described above
-     *  @throws NoSuchElementException or IllegalArgumentException if no from or 
+     *  @throws NoSuchElementException or IllegalArgumentException if no from or
      *  to content is specified
      *  @throws IOException if a network error occurs
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
@@ -3677,7 +3710,7 @@ public class Wiki implements Comparable<Wiki>
     public String diff(Map<String, Object> from, int fromsection, Map<String, Object> to, int tosection) throws IOException
     {
         HashMap<String, Object> postparams = new HashMap<>();
-        
+
         Map.Entry<String, Object> entry = from.entrySet().iterator().next();
         Object value = entry.getValue();
         switch (entry.getKey())
@@ -3699,7 +3732,7 @@ public class Wiki implements Comparable<Wiki>
         }
         if (fromsection >= 0)
             postparams.put("fromsection", fromsection);
-        
+
         entry = to.entrySet().iterator().next();
         value = entry.getValue();
         switch (entry.getKey())
@@ -3728,7 +3761,7 @@ public class Wiki implements Comparable<Wiki>
         }
         if (tosection >= 0)
             postparams.put("tosection", tosection);
-        
+
         String line = makeHTTPRequest(apiUrl + "action=compare", postparams, "diff");
 
         // strip extraneous information
@@ -3749,7 +3782,7 @@ public class Wiki implements Comparable<Wiki>
         else
             // Bad section numbers, revids, deleted pages, RevisionDeleted
             // revisions should all end up here.
-            // FIXME: fetch() swallows the API errors "missingtitle" (deleted 
+            // FIXME: fetch() swallows the API errors "missingtitle" (deleted
             // pages) and "permissiondenied" (fetching deleted content) to throw
             // an UnknownError instead.
             return null;
@@ -3809,7 +3842,7 @@ public class Wiki implements Comparable<Wiki>
         String sha1 = null;
         if (xml.contains("sha1=\""))
             sha1 = parseAttribute(xml, "sha1", 0);
-        
+
         Revision revision = new Revision(oldid, timestamp, user2, summary, parsedsummary, title, sha1, minor, bot, rvnew, size);
         // set rcid
         if (xml.contains("rcid=\""))
@@ -3834,9 +3867,9 @@ public class Wiki implements Comparable<Wiki>
         // revisiondelete
         revision.setCommentDeleted(xml.contains("commenthidden=\""));
         revision.setUserDeleted(xml.contains("userhidden=\""));
-        // Silly workaround: prop=revisions, prop=deletedrevisions, 
-        // list=recentchanges and list=alldeletedrevisions all don't tell you 
-        // whether content has been revision deleted until you fetch the content. 
+        // Silly workaround: prop=revisions, prop=deletedrevisions,
+        // list=recentchanges and list=alldeletedrevisions all don't tell you
+        // whether content has been revision deleted until you fetch the content.
         // Instead, fetch the SHA-1 of the content to minimize data transfer.
         revision.setContentDeleted(xml.contains("sha1hidden=\""));
         // list=usercontribs does tell you
@@ -3849,13 +3882,13 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Fetches an image and saves it in the given file. Warning: the specified
-     *  file is overwritten! Works for files originating from external 
+     *  file is overwritten! Works for files originating from external
      *  repositories (e.g. Wikimedia Commons).
      *
      *  @param title the title of the image (may contain "File")
      *  @param file the file to save the image to.
      *  @return true or false if the image doesn't exist
-     *  @throws FileNotFoundException if the file is a directory, cannot be 
+     *  @throws FileNotFoundException if the file is a directory, cannot be
      *  created or opened
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.30
@@ -3875,7 +3908,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param height the height of the thumbnail (use -1 for actual height)
      *  @param file a write-able file to save the data to.
      *  @return true or false if the image doesn't exist
-     *  @throws FileNotFoundException if the file is a directory, cannot be 
+     *  @throws FileNotFoundException if the file is a directory, cannot be
      *  created or opened
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.30
@@ -4103,7 +4136,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Gets the (non-deleted) uploads of a user between the specified times.
      *  @param user the user to get uploads for
-     *  @param start the date to start enumeration (use {@code null} to not 
+     *  @param start the date to start enumeration (use {@code null} to not
      *  specify one)
      *  @param end the date to end enumeration (use {@code null} to not specify one)
      *  @return a list of all live images the user has uploaded
@@ -4115,7 +4148,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (start != null && end != null && start.isBefore(end))
             throw new IllegalArgumentException("Specified start date is before specified end date!");
-        
+
         StringBuilder url = new StringBuilder(query);
         url.append("list=allimages&aisort=timestamp&aiprop=timestamp%7Ccomment%7Cparsedcomment&aiuser=");
         url.append(encode(user.getUsername(), false));
@@ -4129,7 +4162,7 @@ public class Wiki implements Comparable<Wiki>
             url.append("&aiend=");
             url.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         }
-        
+
         List<LogEntry> uploads = queryAPIResult("ai", url, null, "getUploads", (line, results) ->
         {
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
@@ -4140,7 +4173,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add(le);
             }
         });
-        
+
         int size = uploads.size();
         log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)");
         return uploads.toArray(new LogEntry[size]);
@@ -4163,7 +4196,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws IOException or UncheckedIOException if a network or local 
+     *  @throws IOException or UncheckedIOException if a network or local
      *  filesystem error occurs
      *  @throws AccountLockedException if user is blocked
      *  @since 0.21
@@ -4270,11 +4303,11 @@ public class Wiki implements Comparable<Wiki>
         }
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
     }
-    
+
     /**
-     *  Uploads an image by copying it from the given URL. Equivalent to 
-     *  [[Special:Upload]]. Supported extensions are (case-insensitive) "png", 
-     *  "jpg", "gif" and "svg". You need to be logged on to do this. This method 
+     *  Uploads an image by copying it from the given URL. Equivalent to
+     *  [[Special:Upload]]. Supported extensions are (case-insensitive) "png",
+     *  "jpg", "gif" and "svg". You need to be logged on to do this. This method
      *  is {@linkplain #setThrottle(int) throttled}.
      *
      *  @param url the URL of the image to fetch
@@ -4313,7 +4346,7 @@ public class Wiki implements Comparable<Wiki>
             log(Level.WARNING, "upload", "Cannot upload - permission denied." + ex);
             throw ex;
         }
-        
+
         // send and build request
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("ignorewarnings", "1");
@@ -4323,7 +4356,7 @@ public class Wiki implements Comparable<Wiki>
         postparams.put("comment", reason);
         postparams.put("url", url.toExternalForm());
         String response = makeHTTPRequest(apiUrl + "action=upload", postparams, "upload");
-        
+
         if (response.contains("error code=\"fileexists-shared-forbidden\""))
         {
             CredentialException ex = new CredentialException("Cannot overwrite file hosted on central repository.");
@@ -4344,7 +4377,7 @@ public class Wiki implements Comparable<Wiki>
         checkErrorsAndUpdateStatus(response, "upload");
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
     }
-    
+
     // USER METHODS
 
     /**
@@ -4360,7 +4393,7 @@ public class Wiki implements Comparable<Wiki>
     {
         return getUserInfo(new String[] { username })[0] != null;
     }
-    
+
     /**
      *  Determines whether the specified users exist. Should evaluate to false
      *  for anons. Output array is in the same order as the input usernames.
@@ -4396,7 +4429,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Returns all usernames of users in given group(s)
-     *  @param group a group name. Use pipe-char "|" to separate if several 
+     *  @param group a group name. Use pipe-char "|" to separate if several
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @since 0.32
@@ -4405,10 +4438,10 @@ public class Wiki implements Comparable<Wiki>
     {
         return allUsers("", -1, "", group, "", "", false, false);
     }
-     
+
     /**
      *  Returns all usernames of users who are not in given group(s)
-     *  @param excludegroup a group name. Use pipe-char "|" to separate if several 
+     *  @param excludegroup a group name. Use pipe-char "|" to separate if several
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @since 0.32
@@ -4417,10 +4450,10 @@ public class Wiki implements Comparable<Wiki>
     {
         return allUsers("", -1, "", "", excludegroup, "", false, false);
     }
-    
+
     /**
      *  Returns all usernames of users who have given right(s)
-     *  @param rights a right name. Use pipe-char "|" to separate if several 
+     *  @param rights a right name. Use pipe-char "|" to separate if several
      *  @return (see above)
      *  @throws IOException if a network error occurs
      *  @since 0.32
@@ -4429,7 +4462,7 @@ public class Wiki implements Comparable<Wiki>
     {
         return allUsers("", -1, "", "", "", rights, false, false);
     }
-    
+
     /**
      *  Returns all usernames with the given prefix.
      *  @param prefix a username prefix (without User:)
@@ -4441,20 +4474,20 @@ public class Wiki implements Comparable<Wiki>
     {
         return allUsers("", -1, prefix, "", "", "", false, false);
     }
-    
+
     /**
      *  Gets the specified number of users (as a String) starting at the
      *  given string, in alphabetical order. Equivalent to [[Special:Listusers]].
      *
      *  @param start the string to start enumeration
      *  @param number the number of users to return
-     *  @param prefix list all users with this prefix (overrides start and 
+     *  @param prefix list all users with this prefix (overrides start and
      *  amount), use "" to not not specify one
-     *  @param group list all users in this group(s). Use pipe-char "|" to 
+     *  @param group list all users in this group(s). Use pipe-char "|" to
      *  separate group names.
-     *  @param excludegroup list all users who are not in this group(s). Use 
+     *  @param excludegroup list all users who are not in this group(s). Use
      *  pipe-char "|" to separate group names.
-     *  @param rights list all users with this right(s). Use pipe-char "|" to 
+     *  @param rights list all users with this right(s). Use pipe-char "|" to
      *  separate right names.
      *  @param activeonly return only users who have edited in the last 30 days
      *  @param skipzero return only users with edits
@@ -4462,7 +4495,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public String[] allUsers(String start, int number, String prefix, String group, 
+    public String[] allUsers(String start, int number, String prefix, String group,
         String excludegroup, String rights, boolean activeonly, boolean skipzero) throws IOException
     {
         // sanitise
@@ -4506,11 +4539,11 @@ public class Wiki implements Comparable<Wiki>
             if (!next.isEmpty())
                 temp += ("&aufrom=" + encode(next, false));
             String line = makeHTTPRequest(temp, null, "allUsers");
-            
+
             // bail if nonsense groups/rights
             if (line.contains("Unrecognized values for parameter"))
                 return new String[0];
-            
+
             // parse
             next = parseAttribute(line, "aufrom", 0);
             for (int w = line.indexOf("<u "); w > 0; w = line.indexOf("<u ", ++w))
@@ -4541,7 +4574,7 @@ public class Wiki implements Comparable<Wiki>
     {
         return getUsers(new String[] { username })[0];
     }
-    
+
     /**
      *  Gets the users with the given usernames. Returns null if it doesn't
      *  exist. Output array is in the same order as the input array.
@@ -4566,7 +4599,7 @@ public class Wiki implements Comparable<Wiki>
      *  <li><b>inputname</b>: (String) the username supplied to this method
      *  <li><b>username</b>: (String) the normalized user name
      *  <li><b>user</b>: (User) a user object representing this user
-     *  <li><b>editcount</b>: (int) the user's edit count (see {@link 
+     *  <li><b>editcount</b>: (int) the user's edit count (see {@link
      *    User#countEdits()})
      *  <li><b>groups</b>: (String[]) the groups the user is in (see
      *    [[Special:Listgrouprights]])
@@ -4581,7 +4614,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param usernames the list of usernames to get information for (without
      *  the "User:" prefix)
      *  @return (see above). The Maps will come out in the same order as the
-     *  processed array. 
+     *  processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.33
      */
@@ -4601,7 +4634,7 @@ public class Wiki implements Comparable<Wiki>
                 String result = results[i];
                 if (result.contains("missing=\"\"") || result.contains("invalid=\"\""))
                     continue;
-                
+
                 Map<String, Object> ret = new HashMap<>(10);
                 String parsedname = parseAttribute(result, "name", 0);
 
@@ -4640,7 +4673,7 @@ public class Wiki implements Comparable<Wiki>
                 metamap.put(parsedname, ret);
             }
         }
-        
+
         // Reorder. Make a new map to ensure that inputname remains unique.
         Map<String, Object>[] info = new HashMap[usernames.length];
         for (int i = 0; i < usernames.length; i++)
@@ -4668,8 +4701,8 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the contributions of a user, IP address or range of IP addresses 
-     *  in a particular namespace. Equivalent to [[Special:Contributions]]. Be 
+     *  Gets the contributions of a user, IP address or range of IP addresses
+     *  in a particular namespace. Equivalent to [[Special:Contributions]]. Be
      *  careful when using this method on large wikis because more than 100000
      *  edits may be returned for certain values of <var>user</var>.
      *
@@ -4710,7 +4743,7 @@ public class Wiki implements Comparable<Wiki>
         StringBuilder contribuser = new StringBuilder();
         if (ipaddr instanceof Inet6Address)
         {
-            // MediaWiki represents IPv6 addresses as 
+            // MediaWiki represents IPv6 addresses as
             // 0:0:0:0:0:0:0:1 or 1234:123:4567:567:AAAA:BBBB:CCCC:DDEF
             // hex letters must be upper case
             int numbytes = (parts.length < 2) ? 16 : (Integer.parseInt(parts[1]) >> 3);
@@ -4723,7 +4756,7 @@ public class Wiki implements Comparable<Wiki>
                 contribuser.append(String.format("%X", shorts[i]));
                 if (i != 8)
                     contribuser.append(":");
-            } 
+            }
             if (numbytes % 2 == 1)
                 contribuser.append(String.format("%X", bytes[numbytes - 1]));
         }
@@ -4740,11 +4773,11 @@ public class Wiki implements Comparable<Wiki>
         }
         return prefixContribs(contribuser.toString(), null, null);
     }
-    
+
     /**
      *  Gets contributions for all users starting with <var>prefix</var>. Be
      *  careful when using this method on large wikis as
-     *  @param prefix a prefix of usernames. 
+     *  @param prefix a prefix of usernames.
      *  @param start fetch edits no newer than this date
      *  @param end fetch edits no older than this date
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
@@ -4759,7 +4792,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. Equivalent to [[Special:Contributions]]. Be 
+     *  addresses. Equivalent to [[Special:Contributions]]. Be
      *  careful when using this method on large wikis because more than 100000
      *  edits may be returned for certain values of <var>user</var>.
      *
@@ -4767,7 +4800,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param start fetch edits no newer than this date
      *  @param end fetch edits no older than this date
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return contributions of this user, or a zero-length array if the user 
+     *  @return contributions of this user, or a zero-length array if the user
      *  does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.17
@@ -4777,44 +4810,44 @@ public class Wiki implements Comparable<Wiki>
         List<Revision> list = contribs(new String[] { user }, "", end, start, null, ns)[0];
         return list.toArray(new Revision[list.size()]);
     }
-    
+
     /**
      *  Gets the contributions for a list of users, IP addresses or ranges of IP
-     *  addresses. Equivalent to [[Special:Contributions]]. Be careful when 
-     *  using <var>prefix</var> and <var>users</var> on large wikis because more 
+     *  addresses. Equivalent to [[Special:Contributions]]. Be careful when
+     *  using <var>prefix</var> and <var>users</var> on large wikis because more
      *  than 100000 edits may be returned for certain values of <var>users</var>.
-     * 
+     *
      *  <p>
      *  Available keys for <var>options</var> include "minor", "top", "new" and
      *  "patrolled" for vanilla MediaWiki (extensions may define their own).their own).
      *  For example, {@code options = { top = true, new = true }} returns all
      *  edits by a user that created pages which haven't been edited since.
      *  Setting "patrolled" limits results to no older than <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in  
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in
      *  the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
      *  table</a>.
-     * 
-     *  @param users a list of users, IP addresses or IP ranges to get 
+     *
+     *  @param users a list of users, IP addresses or IP ranges to get
      *  contributions for
      *  @param start fetch edits no newer than this date
      *  @param end fetch edits no older than this date
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use ""
      *  to not specify one.
-     *  @param options a Map dictating which revisions to select. Key not present 
+     *  @param options a Map dictating which revisions to select. Key not present
      *  = don't care.
-     *  @return contributions of <var>users</var> in the same order as 
+     *  @return contributions of <var>users</var> in the same order as
      *  <var>users</var>, or a zero-length array where the user does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.34
      */
-    public List<Revision>[] contribs(String[] users, String prefix, OffsetDateTime end, OffsetDateTime start, 
+    public List<Revision>[] contribs(String[] users, String prefix, OffsetDateTime end, OffsetDateTime start,
         Map<String, Boolean> options, int... ns) throws IOException
     {
         // end refers to the *oldest* allowable edit and vice versa
         if (start != null && end != null && start.isBefore(end))
             throw new IllegalArgumentException("Specified start date is before specified end date!");
-        
+
         // prepare the url
         StringBuilder temp = new StringBuilder(query);
         temp.append("list=usercontribs&ucprop=title%7Ctimestamp%7Cflags%7Ccomment%7Cparsedcomment%7Cids%7Csize%7Csizediff&7Csha1");
@@ -4841,7 +4874,7 @@ public class Wiki implements Comparable<Wiki>
             });
             temp.delete(temp.length() - 3, temp.length());
         }
-        
+
         BiConsumer<String, List<Revision>> parser = (line, results) ->
         {
             // xml form: <item user="Wizardman" ... size="59460" />
@@ -4851,7 +4884,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add(parseRevision(line.substring(a, b), ""));
             }
         };
-        
+
         if (prefix == null || prefix.isEmpty())
         {
             Map<String, Object> postparams = new HashMap<>();
@@ -4870,7 +4903,7 @@ public class Wiki implements Comparable<Wiki>
             {
                 for (int i = 0; i < users.length; i++)
                     if (normalize(users[i]).equals(revision.getUser()))
-                        ret[i].add(revision);    
+                        ret[i].add(revision);
             });
             log(Level.INFO, "contribs", "Successfully retrived contributions for " + Arrays.toString(users));
             return ret;
@@ -4892,7 +4925,7 @@ public class Wiki implements Comparable<Wiki>
      *  Sends an email message to a user in a similar manner to [[Special:Emailuser]].
      *  You and the target user must have a confirmed email address and the
      *  target user must have email contact enabled. Messages are sent in plain
-     *  text (no wiki markup or HTML). This method is {@linkplain 
+     *  text (no wiki markup or HTML). This method is {@linkplain
      *  #setThrottle(int) throttled}.
      *
      *  @param user a wiki user with email enabled
@@ -4936,14 +4969,14 @@ public class Wiki implements Comparable<Wiki>
             throw new UnsupportedOperationException("Email is disabled for this wiki or you do not have a confirmed email address.");
         log(Level.INFO, "emailUser", "Successfully emailed " + user.getUsername() + ".");
     }
-    
+
     /**
      *  Blocks a user, IP address or IP address range. Overwrites existing
-     *  blocks. This method is {@linkplain #setThrottle(int) throttled}. Allowed 
+     *  blocks. This method is {@linkplain #setThrottle(int) throttled}. Allowed
      *  keys for <var>blockoptions</var> include:
-     *  
+     *
      *  <ul>
-     *  <li><b>nocreate</b>: prevent account creation from the relevant IP 
+     *  <li><b>nocreate</b>: prevent account creation from the relevant IP
      *    addresses (includes IP addresses underlying user accounts)
      *  <li><b>noemail</b>: prevent use of [[Special:Emailuser]]
      *  <li><b>allowusertalk</b>: allow use of [[User talk:<var>usertoblock</var>]]
@@ -4954,7 +4987,7 @@ public class Wiki implements Comparable<Wiki>
      *  <li><b>anononly</b>: for IP addresses and ranges, allow the creation of
      *    new accounts on that range
      *  </ul>
-     * 
+     *
      *  @param usertoblock the user to block
      *  @param reason the reason for blocking
      *  @param expiry when the block expires (use {@code null} for indefinite)
@@ -4972,13 +5005,13 @@ public class Wiki implements Comparable<Wiki>
     {
         // Note: blockoptions is implemented as a Map because more might be added
         // in the future.
-        
+
         if (expiry != null && expiry.isBefore(OffsetDateTime.now()))
             throw new IllegalArgumentException("Cannot set a block with a past expiry time!");
         if (user == null || !user.isA("sysop"))
             throw new CredentialNotFoundException("Cannot unblock: permission denied!");
         throttle();
-        
+
         // send request
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("user", usertoblock);
@@ -4995,7 +5028,7 @@ public class Wiki implements Comparable<Wiki>
             });
         }
         String response = makeHTTPRequest(query + "action=block", postparams, "block");
-        
+
         // done
         if (!response.contains("<block "))
             checkErrorsAndUpdateStatus(response, "block");
@@ -5010,7 +5043,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
-     *  @see #block(String, String, OffsetDateTime, Map) 
+     *  @see #block(String, String, OffsetDateTime, Map)
      *  @see <a href="https://mediawiki.org/wiki/API:Block">MediaWiki documentation</a>
      *  @since 0.31
      */
@@ -5039,23 +5072,23 @@ public class Wiki implements Comparable<Wiki>
         }
         log(Level.INFO, "unblock", "Successfully unblocked " + blockeduser);
     }
-    
+
     /**
-     *  Changes the privilege level of the given user. Permissions that you 
-     *  don't have the ability to add or remove are silently ignored. {@code 
+     *  Changes the privilege level of the given user. Permissions that you
+     *  don't have the ability to add or remove are silently ignored. {@code
      *  expiry.length} must be either of 0 (add all permissions indefinitely),
      *  1 (add all permissions until this time) or {@code addedgroups.length}
-     *  (add each permission for the time given by the index in <var>expiry</var>). 
+     *  (add each permission for the time given by the index in <var>expiry</var>).
      *  See [[Special:Listgrouprights]] for the permissions you can add or
      *  remove and what they do. Equivalent to [[Special:UserRights]]. This
      *  method is {@linkplain #setThrottle(int) throttled}.
-     * 
+     *
      *  @param u the user to change permissions for
      *  @param granted a list of groups to add
      *  @param expiry the expiry time of these rights
-     *  @param revoked a list of 
+     *  @param revoked a list of
      *  @param reason the reason for granting and/or removal
-     *  @throws IllegalArgumentException if expiry.length != 0, 1 or 
+     *  @throws IllegalArgumentException if expiry.length != 0, 1 or
      *  addedgroups.length or if any expiry time is in the past
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if you are not logged in
@@ -5065,7 +5098,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="https://www.mediawiki.org/wiki/API:User_group_membership">MediaWiki
      *  documentation</a>
      */
-    public synchronized void changeUserPrivileges(User u, List<String> granted, List<OffsetDateTime> expiry, 
+    public synchronized void changeUserPrivileges(User u, List<String> granted, List<OffsetDateTime> expiry,
         List<String> revoked, String reason) throws IOException, LoginException
     {
         // validate parameters
@@ -5078,7 +5111,7 @@ public class Wiki implements Comparable<Wiki>
         if (user == null)
             throw new CredentialNotFoundException("You need to be logged in to change user privileges.");
         throttle();
-        
+
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("user", u.getUsername());
         postparams.put("reason", reason);
@@ -5189,7 +5222,7 @@ public class Wiki implements Comparable<Wiki>
 
         StringBuilder url = new StringBuilder(query);
         url.append("list=watchlistraw");
-        
+
         watchlist = queryAPIResult("wr", url, null, "getRawWatchlist", (line, results) ->
         {
             // xml form: <wr ns="14" title="Categorie:Even more things"/>
@@ -5201,7 +5234,7 @@ public class Wiki implements Comparable<Wiki>
                     results.add(title);
             }
         });
-        
+
         // log
         int size = watchlist.size();
         log(Level.INFO, "getRawWatchlist", "Successfully retrieved raw watchlist (" + size + " items)");
@@ -5249,11 +5282,11 @@ public class Wiki implements Comparable<Wiki>
      *  of time</a>.
      *  <p>
      *  Available keys for <var>options</var> include "minor", "bot", "anon",
-     *  "patrolled", "top" and "unread" for vanilla MediaWiki (extensions may 
-     *  define their own). {@code options = { minor = true;, bot = false }} 
+     *  "patrolled", "top" and "unread" for vanilla MediaWiki (extensions may
+     *  define their own). {@code options = { minor = true;, bot = false }}
      *  returns all minor edits not made by bots.
-     * 
-     *  @param options a Map dictating which revisions to select. Key not present 
+     *
+     *  @param options a Map dictating which revisions to select. Key not present
      *  = don't care.
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return list of changes to watched pages and their talk pages
@@ -5296,7 +5329,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add(parseRevision(line.substring(i, j), ""));
             }
         });
-        
+
         int size = wl.size();
         log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + size + " items)");
         return wl.toArray(new Revision[size]);
@@ -5307,9 +5340,9 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Performs a full text search of the wiki. Equivalent to
      *  [[Special:Search]], or that little textbox in the sidebar. Returns an
-     *  array of search results in decreasing order of relevance, where each 
+     *  array of search results in decreasing order of relevance, where each
      *  result has the form:
-     * 
+     *
      *  <ul>
      *  <li><b>title</b>: (String) the page name
      *  <li><b>sectiontitle</b>: (String) the matching section title, may not be
@@ -5326,7 +5359,7 @@ public class Wiki implements Comparable<Wiki>
      *  @return the search results as detailed above
      *  @throws IOException if a network error occurs
      *  @since 0.14
-     *  @see <a href="https://mediawiki.org/wiki/API:Search">MediaWiki 
+     *  @see <a href="https://mediawiki.org/wiki/API:Search">MediaWiki
      *  documentation</a>
      */
     public Map<String, Object>[] search(String search, int... namespaces) throws IOException
@@ -5350,15 +5383,15 @@ public class Wiki implements Comparable<Wiki>
                 result.put("wordcount", Integer.parseInt(parseAttribute(line, "wordcount", x)));
                 result.put("size", Integer.parseInt(parseAttribute(line, "size", x)));
                 result.put("lastedittime", OffsetDateTime.parse(parseAttribute(line, "timestamp", x)));
-                
+
                 // section title (if available). Stupid API documentation is misleading.
                 if (line.contains("sectionsnippet=\""))
                     result.put("sectiontitle", parseAttribute(line, "sectionsnippet", x));
-              
+
                 list.add(result);
             }
         });
-        
+
         int size = results.size();
         log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + size + " items found)");
         return results.toArray(new Map[size]);
@@ -5387,7 +5420,7 @@ public class Wiki implements Comparable<Wiki>
             for (int x = line.indexOf("<iu "); x > 0; x = line.indexOf("<iu ", ++x))
                 results.add(parseAttribute(line, "title", x));
         });
-        
+
         int size = pages.size();
         log(Level.INFO, "imageUsage", "Successfully retrieved usages of File:" + image + " (" + size + " items)");
         return pages.toArray(new String[size]);
@@ -5465,7 +5498,7 @@ public class Wiki implements Comparable<Wiki>
             for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
                 results.add(parseAttribute(line, "title", x));
         });
-        
+
         int size = pages.size();
         log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
@@ -5531,7 +5564,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.03
      */
-    protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories, 
+    protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories,
         boolean sorttimestamp, int... ns) throws IOException
     {
         name = removeNamespace(name);
@@ -5557,7 +5590,7 @@ public class Wiki implements Comparable<Wiki>
         else
             constructNamespaceString(url, "cm", ns);
         final boolean nocat2 = nocat;
-        
+
         List<String> members = queryAPIResult("cm", url, null, "getCategoryMembers", (line, results) ->
         {
             try
@@ -5586,7 +5619,7 @@ public class Wiki implements Comparable<Wiki>
                 throw new UncheckedIOException(ex);
             }
         });
-        
+
         int size = members.size();
         log(Level.INFO, "getCategoryMembers", "Successfully retrieved contents of Category:" + name + " (" + size + " items)");
         return members.toArray(new String[size]);
@@ -5595,7 +5628,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
      *  Returns a list of pairs, where the first item is a page and the second
-     *  the relevant url. Wildcards (*) are only permitted at the start of the 
+     *  the relevant url. Wildcards (*) are only permitted at the start of the
      *  search string.
      *
      *  @param pattern the pattern (String) to search for (e.g. example.com,
@@ -5613,15 +5646,15 @@ public class Wiki implements Comparable<Wiki>
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
      *  Returns a list of pairs, where the first item is a page and the second
      *  the relevant url. Wildcards (*) are only permitted at the start of the
-     *  search string. Searching by namespace is unreliable if <a 
-     *  href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode is 
-     *  enabled</a>. This includes pretty much all Wikimedia wikis and any 
+     *  search string. Searching by namespace is unreliable if <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode is
+     *  enabled</a>. This includes pretty much all Wikimedia wikis and any
      *  frequently visited site.
      *
      *  @param pattern the pattern (String) to search for (e.g. example.com,
      *  *.example.com)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param protocol one of the protocols listed in the API documentation or 
+     *  @param protocol one of the protocols listed in the API documentation or
      *  "" (equivalent to http)
      *  @throws IOException if a network error occurs
      *  @return a list of results where each entry is { page, URL }
@@ -5637,7 +5670,7 @@ public class Wiki implements Comparable<Wiki>
     {
         // I'm still not happy with the return type, but I think this is as good
         // as it gets in vanilla JDK.
-        
+
         StringBuilder url = new StringBuilder(query);
         url.append("list=exturlusage&euprop=title%7curl&euquery=");
         url.append(pattern);
@@ -5658,13 +5691,13 @@ public class Wiki implements Comparable<Wiki>
                     results.add(new String[] { pagename, link });
             }
         });
-        
+
         log(Level.INFO, "linksearch", "Successfully returned instances of external link " + pattern + " (" + links.size() + " links)");
         return links;
     }
 
     /**
-     *  Looks up a particular user in the list of current blocks, i.e. whether 
+     *  Looks up a particular user in the list of current blocks, i.e. whether
      *  a user is currently blocked. Equivalent to [[Special:BlockList]].
      *
      *  @param user a username or IP (e.g. "127.0.0.1")
@@ -5736,15 +5769,15 @@ public class Wiki implements Comparable<Wiki>
         // connection
         List<LogEntry> entries = queryAPIResult("bk", url, null, "getIPBlockList", (line, results) ->
         {
-            // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot" 
-            // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z" 
+            // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot"
+            // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z"
             // reason="{{blocked proxy}} <!-- 8080 -->" nocreate="" allowusertalk=""/>
             for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
             {
                 // find entry
                 int b = line.indexOf("/>", a);
                 String temp = line.substring(a, b);
-                
+
                 String blocker = parseAttribute(temp, "by", 0);
                 String blockeduser = parseAttribute(temp, "user", 0);
                 String target;
@@ -5752,7 +5785,7 @@ public class Wiki implements Comparable<Wiki>
                     target = "#" + parseAttribute(temp, "id", 0);
                 else
                     target = namespaceIdentifier(USER_NAMESPACE) + ":" + blockeduser;
-                
+
                 LogEntry le = parseLogEntry(temp, blocker, BLOCK_LOG, "block", target);
                 results.add(le);
             }
@@ -5807,7 +5840,7 @@ public class Wiki implements Comparable<Wiki>
      *  {@code type.equals({@link #UPLOAD_LOG})}.
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
-     *  @param action what action to get (e.g. delete, undelete, etc.), use 
+     *  @param action what action to get (e.g. delete, undelete, etc.), use
      *  {@code null} to not specify one
      *  @param amount the number of entries to get (overrides global limits)
      *  @throws IOException if a network error occurs
@@ -5826,7 +5859,7 @@ public class Wiki implements Comparable<Wiki>
      *  the order of enumeration is from newest to oldest.
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
-     *  @param action what action to get (e.g. delete, undelete, etc.), use 
+     *  @param action what action to get (e.g. delete, undelete, etc.), use
      *  {@code null} to not specify one
      *  @param user the user performing the action. Use {@code null} not to specify
      *  one.
@@ -5845,7 +5878,7 @@ public class Wiki implements Comparable<Wiki>
      *  @return the specified log entries
      *  @since 0.08
      */
-    public LogEntry[] getLogEntries(String logtype, String action, String user, String target, 
+    public LogEntry[] getLogEntries(String logtype, String action, String user, String target,
         OffsetDateTime start, OffsetDateTime end, int amount, int namespace) throws IOException
     {
         // construct the query url from the parameters given
@@ -5944,7 +5977,7 @@ public class Wiki implements Comparable<Wiki>
         long id = -1;
         if (xml.contains("logid=\""))
             id = Long.parseLong(parseAttribute(xml, "logid", 0));
-        
+
         boolean actionhidden = xml.contains("actionhidden=\"");
         if (type == null && xml.contains("type=\"")) // only getLogEntries
         {
@@ -5979,7 +6012,7 @@ public class Wiki implements Comparable<Wiki>
 
         // generic target name
         // space is important -- commons.getImageHistory("File:Chief1.gif");
-        if (target == null && xml.contains(" title=\"")) 
+        if (target == null && xml.contains(" title=\""))
             target = parseAttribute(xml, "title", 0);
 
         OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(xml, "timestamp", 0));
@@ -6265,7 +6298,7 @@ public class Wiki implements Comparable<Wiki>
         StringBuilder url = new StringBuilder(query);
         url.append("action=query&list=querypage&qppage=");
         url.append(page);
-        
+
         List<String> pages = queryAPIResult("qp", url, null, "queryPage", (line, results) ->
         {
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
@@ -6285,7 +6318,7 @@ public class Wiki implements Comparable<Wiki>
      *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of time</a>;
      *  it is not possible to retrieve pages created before then.
      *
-     *  @param amount the number of pages to fetch (overrides global query 
+     *  @param amount the number of pages to fetch (overrides global query
      *  limits)
      *  @return the revisions that created the pages satisfying the requirements
      *  above
@@ -6299,14 +6332,14 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Fetches the <var>amount</var> most recently created pages in the main
-     *  namespace subject to the specified constraints. WARNING: The <a 
+     *  namespace subject to the specified constraints. WARNING: The <a
      *  href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
      *  table</a> stores new pages for a <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
-     *  time</a>; it is not possible to retrieve pages created before then. 
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of
+     *  time</a>; it is not possible to retrieve pages created before then.
      *  Equivalent to [[Special:Newpages]].
      *
-     *  @param rcoptions a bitmask of {@link #HIDE_ANON} etc that dictate which 
+     *  @param rcoptions a bitmask of {@link #HIDE_ANON} etc that dictate which
      *  pages we return (e.g. to exclude patrolled pages set rcoptions = HIDE_PATROLLED).
      *  @param amount the amount of new pages to get (overrides global query
      *  limits)
@@ -6336,24 +6369,24 @@ public class Wiki implements Comparable<Wiki>
         }
         return recentChanges(amount, newoptions, true, ns);
     }
-    
+
     /**
      *  Fetches the <var>amount</var> most recently created pages in the main
-     *  namespace subject to the specified constraints. WARNING: The <a 
+     *  namespace subject to the specified constraints. WARNING: The <a
      *  href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
      *  table</a> stores new pages for a <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
-     *  time</a>; it is not possible to retrieve pages created before then. 
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of
+     *  time</a>; it is not possible to retrieve pages created before then.
      *  Equivalent to [[Special:Newpages]].
-     * 
+     *
      *  <p>
-     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon", 
-     *  "redirect" and "patrolled" for vanilla MediaWiki (extensions may define 
+     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon",
+     *  "redirect" and "patrolled" for vanilla MediaWiki (extensions may define
      *  their own). {@code rcoptions = { minor = true, anon = false, patrolled
      *  = false }} returns all minor edits from logged in users that aren't
      *  patrolled.
      *
-     *  @param rcoptions a Map dictating which pages to select. Key not present 
+     *  @param rcoptions a Map dictating which pages to select. Key not present
      *  = don't care.
      *  @param amount the amount of new pages to get (overrides global query
      *  limits)
@@ -6372,7 +6405,7 @@ public class Wiki implements Comparable<Wiki>
      *  Fetches the <var>amount</var> most recent changes in the main namespace.
      *  WARNING: The <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
      *  recentchanges table</a> stores edits for a <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of
      *  time</a>; it is not possible to retrieve pages created before then.
      *  Equivalent to [[Special:Recentchanges]].
      *  <p>
@@ -6393,7 +6426,7 @@ public class Wiki implements Comparable<Wiki>
      *  Fetches the <tt>amount</tt> most recent changes in the specified
      *  namespace. WARNING: The <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
      *  recentchanges table</a> stores edits for a <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of 
+     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">finite period of
      *  time</a>; it is not possible to retrieve pages created before then.
      *  Equivalent to [[Special:Recentchanges]].
      *  <p>
@@ -6449,13 +6482,13 @@ public class Wiki implements Comparable<Wiki>
         }
         return recentChanges(amount, newoptions, false, ns);
     }
-    
+
     /**
      *  Fetches the <var>amount</var> most recent changes in the specified
-     *  namespace subject to the specified constraints. WARNING: The 
+     *  namespace subject to the specified constraints. WARNING: The
      *  <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
      *  table</a> stores edits for a <a href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">
-     *  finite period of time</a>; it is not possible to retrieve pages created 
+     *  finite period of time</a>; it is not possible to retrieve pages created
      *  before then. Equivalent to [[Special:Recentchanges]].
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
@@ -6463,7 +6496,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param amount the number of entries to return (overrides global query
      *  limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param rcoptions a Map dictating which revisions to return. Key not  
+     *  @param rcoptions a Map dictating which revisions to return. Key not
      *  present = don't care.
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
@@ -6473,18 +6506,18 @@ public class Wiki implements Comparable<Wiki>
     {
         return recentChanges(amount, rcoptions, false, ns);
     }
-    
+
     /**
      *  Fetches the <var>amount</var> most recent changes in the specified
-     *  namespace subject to the specified constraints. WARNING: The 
+     *  namespace subject to the specified constraints. WARNING: The
      *  <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
      *  table</a> stores edits for a <a href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">
-     *  finite period of time</a>; it is not possible to retrieve pages created 
+     *  finite period of time</a>; it is not possible to retrieve pages created
      *  before then. Equivalent to [[Special:Recentchanges]].
      *  <p>
-     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon", 
-     *  "redirect", "patrolled" for vanilla MediaWiki (extensions may define 
-     *  their own). {@code rcoptions = { minor = true, anon = false, patrolled 
+     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon",
+     *  "redirect", "patrolled" for vanilla MediaWiki (extensions may define
+     *  their own). {@code rcoptions = { minor = true, anon = false, patrolled
      *  = false}} returns all minor edits from logged in users that aren't
      *  patrolled.
      *  <p>
@@ -6493,7 +6526,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param amount the number of entries to return (overrides global
      *  query limits)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param rcoptions a Map dictating which revisions to return. Key not  
+     *  @param rcoptions a Map dictating which revisions to return. Key not
      *  present = don't care.
      *  @param newpages show new pages only
      *  @return the recent changes that satisfy these criteria
@@ -6511,7 +6544,7 @@ public class Wiki implements Comparable<Wiki>
         if (rcoptions != null && !rcoptions.isEmpty())
         {
             url.append("&rcshow=");
-            rcoptions.forEach((key, value) -> 
+            rcoptions.forEach((key, value) ->
             {
                 if (Boolean.FALSE.equals(value))
                     url.append('!');
@@ -6631,7 +6664,7 @@ public class Wiki implements Comparable<Wiki>
                 });
             }
         });
-        
+
         log(Level.INFO, "getInterWikiBacklinks", "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)");
         return links.toArray(new String[0][0]);
     }
@@ -6642,7 +6675,7 @@ public class Wiki implements Comparable<Wiki>
      *  Subclass for wiki users.
      *  @since 0.05
      */
-    public class User implements Cloneable
+    public class User implements Comparable<User>
     {
         private final String username;
         private String[] rights = null; // cache
@@ -6658,7 +6691,7 @@ public class Wiki implements Comparable<Wiki>
          */
         protected User(String username)
         {
-            this.username = username;
+            this.username = Objects.requireNonNull(username);
         }
 
         /**
@@ -6666,7 +6699,7 @@ public class Wiki implements Comparable<Wiki>
          *  @return this user's username
          *  @since 0.08
          */
-        public String getUsername()
+        public final String getUsername()
         {
             return username;
         }
@@ -6784,7 +6817,7 @@ public class Wiki implements Comparable<Wiki>
         {
             return Wiki.this.contribs(username, ns);
         }
-        
+
         /**
          *  Returns a list of pages created by this user in the given namespaces.
          *  @param ns a list of namespaces to filter by, empty = all namespaces
@@ -6802,11 +6835,11 @@ public class Wiki implements Comparable<Wiki>
                 ret[i] = contribs[0].get(i).getPage();
             return ret;
         }
-        
+
         /**
          *  Returns the list of logged actions performed by this user.
          *  @param logtype what log to get ({@link Wiki#DELETION_LOG} etc.)
-         *  @param action what action to get (e.g. delete, undelete), use 
+         *  @param action what action to get (e.g. delete, undelete), use
          *  "" to not specify one
          *  @return (see above)
          *  @throws IOException if a network error occurs
@@ -6818,40 +6851,41 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Copies this user object.
-         *  @return the copy
-         *  @throws CloneNotSupportedException if the clone fails
-         *  @since 0.08
-         */
-        @Override
-        public User clone() throws CloneNotSupportedException
-        {
-            try
-            {
-                return (User)super.clone();
-            }
-            catch (CloneNotSupportedException e)
-            {
-                return null;
-            }
-        }
-
-        /**
          *  Tests whether this user is equal to another one.
          *  @param x another object
          *  @return whether the usernames of the users are equal
-         *  @since 0.08
          */
         @Override
         public boolean equals(Object x)
         {
-            return x instanceof User && username.equals(((User)x).username);
+            return x instanceof User && Objects.equals(username, ((User)x).username);
+        }
+
+        /**
+         *  Returns a hashcode of this user based on the username.
+         *  @return see above
+         */
+        @Override
+        public int hashCode()
+        {
+            return username.hashCode() * 127;
+        }
+
+        /**
+         *  Enables sorting of users by their username.
+         *  @param other some other user
+         *  @return less than zero if this user is alphabetically before the
+         *  other, 0 if they are the same and 1 if alphabetically after
+         */
+        @Override
+        public int compareTo(User other)
+        {
+            return username.compareTo(other.username);
         }
 
         /**
          *  Returns a string representation of this user.
          *  @return see above
-         *  @since 0.17
          */
         @Override
         public String toString()
@@ -6863,19 +6897,8 @@ public class Wiki implements Comparable<Wiki>
             temp.append("]");
             return temp.toString();
         }
-
-        /**
-         *  Returns a hashcode of this user.
-         *  @return see above
-         *  @since 0.19
-         */
-        @Override
-        public int hashCode()
-        {
-            return username.hashCode() * 2 + 1;
-        }
     }
-    
+
     /**
      *  A data super class for an event happening on a wiki such as a {@link
      *  Wiki.Revision} or a {@link Wiki.LogEntry}.
@@ -6888,22 +6911,22 @@ public class Wiki implements Comparable<Wiki>
         private final String user;
         private final String comment;
         private final String parsedcomment;
-        private boolean commentDeleted = false, userDeleted = false, 
+        private boolean commentDeleted = false, userDeleted = false,
             contentDeleted = false;
-        
+
         /**
          *  Creates a new Event record.
          *  @param id the unique ID of the event
          *  @param timestamp the timestamp at which it occurred
          *  @param user the user or IP address performing the event
-         *  @param comment the comment left by the user when performing the 
+         *  @param comment the comment left by the user when performing the
          *  event (e.g. an edit summary)
          *  @param parsedcomment comment, but parsed into HTML
          */
         protected Event(long id, OffsetDateTime timestamp, String user, String comment, String parsedcomment)
         {
             this.id = id;
-            this.timestamp = timestamp;
+            this.timestamp = Objects.requireNonNull(timestamp);
             this.user = user;
             this.comment = comment;
             // parsedcomments contain relative hyperlinks to other pages... this
@@ -6913,7 +6936,7 @@ public class Wiki implements Comparable<Wiki>
             else
                 this.parsedcomment = parsedcomment.replace("href=\"/wiki", "href=\"" + protocol + domain + "/wiki");
         }
-        
+
         /**
          *  Gets the unique ID of this event. For a {@link Wiki.Revision}, this
          *  number is referred to as the "oldid" or "revid" and should not be
@@ -6927,7 +6950,7 @@ public class Wiki implements Comparable<Wiki>
         {
             return id;
         }
-        
+
         /**
          *  Gets the timestamp of this event.
          *  @return the timestamp of this event
@@ -6936,11 +6959,11 @@ public class Wiki implements Comparable<Wiki>
         {
             return timestamp;
         }
-        
+
         /**
-         *  Returns the user or anon who performed this event. You should pass 
+         *  Returns the user or anon who performed this event. You should pass
          *  this (if not an IP) to {@link #getUser(String)} to obtain a {@link
-         *  Wiki.User} object. Returns {@code null} if the user was 
+         *  Wiki.User} object. Returns {@code null} if the user was
          *  RevisionDeleted and you lack the necessary privileges.
          *  @return the user or anon
          */
@@ -6948,7 +6971,7 @@ public class Wiki implements Comparable<Wiki>
         {
             return user;
         }
-        
+
         /**
          *  Sets a boolean flag that the user triggering this event has been
          *  RevisionDeleted in on-wiki records.
@@ -6960,23 +6983,23 @@ public class Wiki implements Comparable<Wiki>
         {
             userDeleted = deleted;
         }
-        
+
         /**
-         *  Returns {@code true} if the user triggering this event is 
+         *  Returns {@code true} if the user triggering this event is
          *  RevisionDeleted.
          *  @return (see above)
-         *  @see #getUser() 
+         *  @see #getUser()
          */
         public boolean isUserDeleted()
         {
             return userDeleted;
         }
-        
+
         /**
          *  Gets the comment for this event in wikitext. If this is a {@link
-         *  Wiki.Revision}, this is the edit summary. If this is a {@link 
-         *  Wiki.LogEntry}, this is the reason for the logged action. WARNING: 
-         *  returns {@code null} if the reason was RevisionDeleted and you lack 
+         *  Wiki.Revision}, this is the edit summary. If this is a {@link
+         *  Wiki.LogEntry}, this is the reason for the logged action. WARNING:
+         *  returns {@code null} if the reason was RevisionDeleted and you lack
          *  the necessary privileges.
          *  @return the comment associated with the event
          *  @see #getParsedComment()
@@ -6985,33 +7008,33 @@ public class Wiki implements Comparable<Wiki>
         {
             return comment;
         }
-        
+
         /**
          *  Gets the comment for this event, with limited parsing into HTML.
-         *  WARNING: returns {@code null} if the reason was RevisionDeleted and 
+         *  WARNING: returns {@code null} if the reason was RevisionDeleted and
          *  you lack the necessary privileges. Not available through {@link
          *  #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
          *  @return the comment associated with the event, parsed into HTML
-         *  @see #getComment() 
+         *  @see #getComment()
          */
         public String getParsedComment()
         {
             return parsedcomment;
         }
-        
+
         /**
-         *  Sets a boolean flag that the comment associated with this event has 
+         *  Sets a boolean flag that the comment associated with this event has
          *  been RevisionDeleted in on-wiki records.
          *  @param deleted (see above)
          *  @see #getComment
          *  @see #getParsedComment()
-         *  @see #isCommentDeleted() 
+         *  @see #isCommentDeleted()
          */
         protected void setCommentDeleted(boolean deleted)
         {
             commentDeleted = deleted;
         }
-        
+
         /**
          *  Returns {@code true} if the comment is RevisionDeleted.
          *  @return (see above)
@@ -7022,20 +7045,20 @@ public class Wiki implements Comparable<Wiki>
         {
             return commentDeleted;
         }
-        
+
         /**
-         *  Sets a boolean flag that the content of this event has been 
+         *  Sets a boolean flag that the content of this event has been
          *  RevisionDeleted.
          *  @param deleted (see above)
-         *  @see #isContentDeleted() 
+         *  @see #isContentDeleted()
          */
         protected void setContentDeleted(boolean deleted)
         {
             contentDeleted = deleted;
         }
-        
+
         /**
-         *  Returns {@code true} if the content of this event has been 
+         *  Returns {@code true} if the content of this event has been
          *  RevisionDeleted. For a {@link Wiki.LogEntry}, this refers to the
          *  target of the logged action and the logged action performed (e.g.
          *  "unblock" or "delete").
@@ -7045,7 +7068,7 @@ public class Wiki implements Comparable<Wiki>
         {
             return contentDeleted;
         }
-        
+
         /**
          *  Returns a String representation of this Event. Subclasses only need
          *  to lop off the trailing "]" and add their own fields when overriding
@@ -7064,9 +7087,9 @@ public class Wiki implements Comparable<Wiki>
                + "commentDeleted=" + commentDeleted + ','
                + "contentDeleted=" + contentDeleted + ']';
         }
-        
+
         /**
-         *  Determines whether this Event is equal to some other object. This 
+         *  Determines whether this Event is equal to some other object. This
          *  method checks the timestamp, user, comment and ID.
          *  @param other the other object to compare to
          *  @return whether this instance is equal to that object
@@ -7077,15 +7100,30 @@ public class Wiki implements Comparable<Wiki>
             if (!(other instanceof Event))
                 return false;
             Event event = (Event)other;
-            return id == event.getID() &&
-                timestamp.equals(event.getTimestamp()) &&
-                user.equals(event.getUser()) && 
-                comment.equals(event.getComment());
+            return id == event.id
+                && Objects.equals(timestamp, event.timestamp)
+                && Objects.equals(user, event.user)
+                && Objects.equals(comment, event.comment);
         }
-        
+
+        /**
+         *  Returns a hash code for this object based on the ID, timestamp,
+         *  user and comment.
+         *  @return (see above)
+         */
+        @Override
+        public int hashCode()
+        {
+            int hc = Long.hashCode(id);
+            hc = 127 * hc + timestamp.hashCode();
+            hc = 127 * hc + (user == null ? 0 : user.hashCode());
+            hc = 127 * hc + (comment == null ? 0 : comment.hashCode());
+            return hc;
+        }
+
         /**
          *  Compares this event to another one based on the recentness of their
-         *  timestamps (more recent = positive return value), then  
+         *  timestamps (more recent = positive return value), then
          *  alphabetically by user.
          *  @param other the event to compare to
          *  @return the comparator value, negative if less, positive if greater
@@ -7093,9 +7131,9 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public int compareTo(Wiki.Event other)
         {
-            int result = getTimestamp().compareTo(other.getTimestamp());
-            if (result == 0)
-                result = getUser().compareTo(other.getUser());
+            int result = timestamp.compareTo(other.timestamp);
+            if (result == 0 && user != null)
+                result = user.compareTo(other.user);
             return result;
         }
     }
@@ -7109,7 +7147,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public class LogEntry extends Event
     {
-        private String type, action;
+        private final String type;
+        private String action;
         private final String target;
         private Object details;
 
@@ -7121,7 +7160,7 @@ public class Wiki implements Comparable<Wiki>
          *  @param timestamp the local time when the action was performed.
          *  @param user the user who performed the action
          *  @param comment why the action was performed
-         *  @param parsedcomment like comment, but parsed into HTML         
+         *  @param parsedcomment like comment, but parsed into HTML
          *  @param type the type of log entry, one of {@link #USER_CREATION_LOG},
          *  {@link #DELETION_LOG}, {@link #BLOCK_LOG}, etc.
          *  @param action the type of action that was performed e.g. "delete",
@@ -7131,16 +7170,16 @@ public class Wiki implements Comparable<Wiki>
          *  the page after a move was performed).
          *  @since 0.08
          */
-        protected LogEntry(long id, OffsetDateTime timestamp, String user, String comment, 
+        protected LogEntry(long id, OffsetDateTime timestamp, String user, String comment,
             String parsedcomment, String type, String action, String target, Object details)
         {
             super(id, timestamp, user, comment, parsedcomment);
-            this.type = type;
+            this.type = Objects.requireNonNull(type);
             this.action = action;
             this.target = target;
             this.details = details;
         }
-        
+
         /**
          *  Gets the ID of this log entry. Only available if retrieved by
          *  {@link Wiki#getLogEntries}, otherwise returns -1.
@@ -7175,7 +7214,7 @@ public class Wiki implements Comparable<Wiki>
         {
             return action;
         }
-        
+
         /**
          *  Returns true if the target has been RevisionDeleted (action is hidden
          *  in the GUI but retrievable by the API).
@@ -7202,7 +7241,7 @@ public class Wiki implements Comparable<Wiki>
         {
             return getComment();
         }
-        
+
         /**
          *  Returns true if the reason is RevisionDeleted.
          *  @return (see above)
@@ -7238,13 +7277,13 @@ public class Wiki implements Comparable<Wiki>
          *  <tr><td>USER_RENAME_LOG
          *      <td>The new username
          *  <tr><td>BLOCK_LOG
-         *      <td>new Object[] { boolean anononly, boolean nocreate, boolean 
+         *      <td>new Object[] { boolean anononly, boolean nocreate, boolean
          *      noautoblock, boolean noemail, boolean nousertalk, String duration }
          *  <tr><td>USER_RIGHTS_LOG
          *      <td>The new user rights (String[])
          *  <tr><td>PROTECTION_LOG
          *      <td>if action == "protect" or "modify" return the protection level
-         *          (int, -2 if unrecognized) if action == "move_prot" return 
+         *          (int, -2 if unrecognized) if action == "move_prot" return
          *          the old title, else null
          *  <tr><td>Others or RevisionDeleted
          *      <td>null
@@ -7289,7 +7328,8 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Determines whether two LogEntries refer to the same event.
+         *  Determines whether two LogEntries are equal based on the underlying
+         *  {@linkplain Event#equals(Object) Event}, type, action and target.
          *  @param other some object to compare to
          *  @return (see above)
          *  @since 0.33
@@ -7302,8 +7342,25 @@ public class Wiki implements Comparable<Wiki>
             if (!(other instanceof LogEntry))
                 return false;
             LogEntry le = (LogEntry)other;
-            return type.equals(le.type) && action.equals(le.action) && 
-                target.equals(le.target);
+            return Objects.equals(type, le.type)
+                && Objects.equals(action, le.action)
+                && Objects.equals(target, le.target);
+        }
+
+        /**
+         *  Computes a hashcode for this LogEntry based on the underlying
+         *  {@linkplain Event#hashCode() Event}, type, action and target.
+         *  @return (see above)
+         *  @since 0.35
+         */
+        @Override
+        public int hashCode()
+        {
+            int hc = super.hashCode();
+            hc = 127 * hc + type.hashCode();
+            hc = 127 * hc + (action == null ? 0 : action.hashCode());
+            hc = 127 * hc + (target == null ? 0 : target.hashCode());
+            return hc;
         }
     }
 
@@ -7339,14 +7396,14 @@ public class Wiki implements Comparable<Wiki>
          *  @param size the size of the revision
          *  @since 0.17
          */
-        public Revision(long revid, OffsetDateTime timestamp, String user, String comment, 
-            String parsedcomment, String title, String sha1, boolean minor, boolean bot, 
+        public Revision(long revid, OffsetDateTime timestamp, String user, String comment,
+            String parsedcomment, String title, String sha1, boolean minor, boolean bot,
             boolean rvnew, int size)
         {
             super(revid, timestamp, user, comment, parsedcomment);
             this.sha1 = sha1;
             this.minor = minor;
-            this.title = title;
+            this.title = Objects.requireNonNull(title);
             this.bot = bot;
             this.rvnew = rvnew;
             this.size = size;
@@ -7397,10 +7454,10 @@ public class Wiki implements Comparable<Wiki>
             content.put("revision", this);
             return Wiki.this.parse(content, -1);
         }
-        
+
         /**
-         *  Returns the SHA-1 hash (base 16, lower case) of the content of this 
-         *  revision, or {@code null} if the revision content is RevisionDeleted 
+         *  Returns the SHA-1 hash (base 16, lower case) of the content of this
+         *  revision, or {@code null} if the revision content is RevisionDeleted
          *  and we cannot access it. Warning: not accessible from watchlist or
          *  contribs (blame the MediaWiki API for this).
          *  @return (see above)
@@ -7412,14 +7469,14 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Returns a HTML rendered diff table of this revision to <var>other</var>; 
+         *  Returns a HTML rendered diff table of this revision to <var>other</var>;
          *  see the table at the <a href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns the empty string for moves, protections and similar dummy 
-         *  edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>) 
-         *  and pairs of revisions where there is no difference. Revisions to 
-         *  deleted pages and RevisionDeleted revisions if you don't have the 
+         *  Returns the empty string for moves, protections and similar dummy
+         *  edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
+         *  and pairs of revisions where there is no difference. Revisions to
+         *  deleted pages and RevisionDeleted revisions if you don't have the
          *  rights to see them are both not allowed.
-         * 
+         *
          *  @param other another revision on the same page.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
@@ -7436,10 +7493,10 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Returns a HTML rendered diff table from this revision to the given
-         *  <var>text</var>. Useful for emulating the "show changes" 
-         *  functionality. See the table at the <a 
+         *  <var>text</var>. Useful for emulating the "show changes"
+         *  functionality. See the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         * 
+         *
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
@@ -7458,15 +7515,15 @@ public class Wiki implements Comparable<Wiki>
          *  Returns a HTML rendered diff table from this revision to the given
          *  <var>oldid</var>; see the table at the <a
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns the empty string for moves, protections and similar dummy edits 
+         *  Returns the empty string for moves, protections and similar dummy edits
          *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
-         *  and pairs of revisions where there is no difference. Revisions to 
-         *  deleted pages and RevisionDeleted revisions if you don't have the 
+         *  and pairs of revisions where there is no difference. Revisions to
+         *  deleted pages and RevisionDeleted revisions if you don't have the
          *  rights to see them are both not allowed.
-         * 
-         *  @param oldid the oldid of a revision on the same page. {@link 
-         *  Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION} and {@link 
-         *  Wiki#CURRENT_REVISION} can be used here for obvious effect. 
+         *
+         *  @param oldid the oldid of a revision on the same page. {@link
+         *  Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION} and {@link
+         *  Wiki#CURRENT_REVISION} can be used here for obvious effect.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @since 0.26
@@ -7481,7 +7538,8 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Determines whether this Revision is equal to another object.
+         *  Determines whether this Revision is equal to another based on the
+         *  underlying {@linkplain Event#equals(Object) Event} and title.
          *  @param o an object
          *  @return whether o is equal to this object
          *  @since 0.17
@@ -7489,20 +7547,26 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public boolean equals(Object o)
         {
+            if (!super.equals(o))
+                return false;
             if (!(o instanceof Revision))
                 return false;
-            return super.equals(o);
+            Revision rev = (Revision)o;
+            return Objects.equals(title, rev.title);
         }
 
         /**
-         *  Returns a hash code of this revision.
+         *  Returns a hash code of this revision based on the underlying
+         *  {@linkplain Event#hashCode() Event} and title.
          *  @return a hash code
          *  @since 0.17
          */
         @Override
         public int hashCode()
         {
-            return (int)getID() * 2 - Wiki.this.hashCode();
+            int hc = super.hashCode();
+            hc = 127 * hc + title.hashCode();
+            return hc;
         }
 
         /**
@@ -7543,7 +7607,7 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Returns the edit summary for this revision, or {@code null} if the 
+         *  Returns the edit summary for this revision, or {@code null} if the
          *  summary was RevisionDeleted and you lack the necessary privileges.
          *  @return the edit summary
          *  @since 0.17
@@ -7589,7 +7653,7 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Returns the unique ID of this revision (also referred to as 
+         *  Returns the unique ID of this revision (also referred to as
          *  <var>oldid</var> on the live website). Don't confuse this with
          *  <var>rcid</var>
          *  @return the oldid (long)
@@ -7722,9 +7786,11 @@ public class Wiki implements Comparable<Wiki>
         {
             return rollbacktoken;
         }
-        
+
         /**
          *  Gets a permanent URL to the human-readable version of this Revision.
+         *  This URL uses index.php, not Special:Permanentlink for ease of adding
+         *  other parameters.
          *  @return (see above)
          *  @since 0.35
          */
@@ -7734,8 +7800,8 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Reverts this revision using the rollback method. 
-         * 
+         *  Reverts this revision using the rollback method.
+         *
          *  @throws IOException if a network error occurs
          *  @throws CredentialNotFoundException if not logged in or user is not
          *  an admin
@@ -7750,8 +7816,8 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Reverts this revision using the rollback method. 
-         * 
+         *  Reverts this revision using the rollback method.
+         *
          *  @param bot mark this and the reverted revision(s) as bot edits
          *  @param reason (optional) a custom reason
          *  @throws IOException if a network error occurs
@@ -7772,8 +7838,8 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Fetches list-type results from the MediaWiki API.
-     * 
-     *  @param <T> a class describing the parsed API results (e.g. String, 
+     *
+     *  @param <T> a class describing the parsed API results (e.g. String,
      *  LogEntry, Revision)
      *  @param queryPrefix the request type prefix (e.g. "pl" for prop=links)
      *  @param url the query URL, without the limit and XXcontinue parameters
@@ -7786,7 +7852,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.34
      */
-    protected <T> List<T> queryAPIResult(String queryPrefix, StringBuilder url, 
+    protected <T> List<T> queryAPIResult(String queryPrefix, StringBuilder url,
         Map<String, Object> postparams, String caller, BiConsumer<String, List<T>> parser) throws IOException
     {
         List<T> results = new ArrayList<>(1333);
@@ -7798,7 +7864,7 @@ public class Wiki implements Comparable<Wiki>
             String tempurl = url.toString() + limitstring + limit;
             String line = makeHTTPRequest(tempurl + xxcontinue.toString(), postparams, caller);
             xxcontinue.setLength(0);
-            
+
             // Continuation parameter has form:
             // <continue rccontinue="20170924064528|986351741" continue="-||" />
             if (line.contains("<continue "))
@@ -7812,26 +7878,26 @@ public class Wiki implements Comparable<Wiki>
                 xxcontinue.append(temp[2].replace(" ", "&"));
                 xxcontinue.append(encode(temp[3], false));
             }
-            
+
             parser.accept(line, results);
         }
         while (xxcontinue.length() != 0 && results.size() < querylimit);
         return results;
     }
-    
+
     // miscellany
 
     /**
-     *  Constructs, sends and receives HTTP requests. May be useful for 
+     *  Constructs, sends and receives HTTP requests. May be useful for
      *  subclasses.
-     * 
+     *
      *  <p>
-     *  If <var>postparams</var> is not {@code null} or empty, the request is 
-     *  sent using HTTP GET, otherwise it is sent using HTTP POST. A 
-     *  {@code byte[]} value in <var>postparams</var> causes the request to be 
-     *  sent as a multipart POST. Anything else is converted to String via the 
+     *  If <var>postparams</var> is not {@code null} or empty, the request is
+     *  sent using HTTP GET, otherwise it is sent using HTTP POST. A
+     *  {@code byte[]} value in <var>postparams</var> causes the request to be
+     *  sent as a multipart POST. Anything else is converted to String via the
      *  following means:
-     *  
+     *
      *  <ul>
      *  <li>String[] -- {@code String.join("|", arr)}
      *  <li>StringBuilder -- {@code sb.toString()}
@@ -7841,11 +7907,11 @@ public class Wiki implements Comparable<Wiki>
      *      .map(item -> convertToString(item)) // using the above rules
      *      .collect(Collectors.joining("|"))}
      *  </ul>
-     * 
+     *
      *  <p>
-     *  All supplied Strings and objects converted to String are automatically 
+     *  All supplied Strings and objects converted to String are automatically
      *  URLEncoded in UTF-8 if this is a normal POST request.
-     *  
+     *
      *  <p>
      *  Here we also check the database lag and wait if it exceeds
      *  <var>maxlag</var>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
@@ -7879,7 +7945,7 @@ public class Wiki implements Comparable<Wiki>
                 else
                     entry.setValue(convertToString(value));
             }
-            
+
             // now we know how we're sending it, construct the post body
             if (multipart)
             {
@@ -7976,7 +8042,7 @@ public class Wiki implements Comparable<Wiki>
                 {
                     response = in.lines().collect(Collectors.joining("\n"));
                 }
-                
+
                 // Check for rate limit (though might be a long one e.g. email)
                 if (response.contains("error code=\"ratelimited\""))
                 {
@@ -7993,7 +8059,7 @@ public class Wiki implements Comparable<Wiki>
                     Thread.sleep(10000);
                     throw new HttpRetryException("Database locked!", 503);
                 }
-                
+
                 // No need to retry anymore, success or unrecoverable failure.
                 tries = 0;
             }
@@ -8022,19 +8088,19 @@ public class Wiki implements Comparable<Wiki>
                 case "nosuchfromsection": // diff()
                 case "nosuchtosection":   // diff()
                 case "nosuchrevid":       // parse(), diff()
-                    break; 
+                    break;
                 // Something *really* bad happened. Most of these are self-explanatory
                 // and are indicative of bugs (not necessarily in this framework) or
                 // can be avoided entirely.
                 default:
                     throw new UnknownError("MW API error. Server response was: " + response);
-            }   
+            }
         }
         return response;
     }
-    
+
     /**
-     *  Converts HTTP POST parameters to Strings. See {@link 
+     *  Converts HTTP POST parameters to Strings. See {@link
      *  #makeHTTPRequest(String, Map, String)} for the description.
      *  @param param the parameter to convert
      *  @return that parameter, as a String
@@ -8070,7 +8136,7 @@ public class Wiki implements Comparable<Wiki>
      *  Checks for database lag and sleeps if {@code lag < getMaxLag()}.
      *  @param connection the URL connection used in the request
      *  @return true if there was sufficient database lag.
-     *  @see #getMaxLag() 
+     *  @see #getMaxLag()
      *  @see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
      *  MediaWiki documentation</a>
      *  @since 0.32
@@ -8240,9 +8306,9 @@ public class Wiki implements Comparable<Wiki>
             .mapToObj(String::valueOf)
             .collect(Collectors.joining("|")));
     }
-    
+
     /**
-     *  Cuts up a list of revisions into batches for prop=X&amp;ids=Y type 
+     *  Cuts up a list of revisions into batches for prop=X&amp;ids=Y type
      *  queries. IDs less than 0 are ignored.
      *  @param ids a list of revision IDs
      *  @return the revisions ready for insertion into a URL
@@ -8257,7 +8323,7 @@ public class Wiki implements Comparable<Wiki>
             .sorted()
             .mapToObj(String::valueOf)
             .toArray(String[]::new);
-        
+
         StringBuilder buffer = new StringBuilder();
         List<String> chunks = new ArrayList<>();
         for (int i = 0; i < sortedids.length; i++)
@@ -8278,7 +8344,7 @@ public class Wiki implements Comparable<Wiki>
      *  Cuts up a list of titles into batches for prop=X&amp;titles=Y type queries.
      *  @param titles a list of titles.
      *  @return the titles ready for insertion into a URL
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.29
      */
@@ -8312,11 +8378,11 @@ public class Wiki implements Comparable<Wiki>
      *  UTF-8 encode the String with URLEncoder after optional normalization;
      *  Usually, normalize should be set to true when a title or name String is
      *  passed in as an argument of a method.
-     * 
+     *
      *  @param text the text to encode
      *  @param normalize if the text should be normalized first
      *  @return the encoded text
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      */
     private String encode(String text, boolean normalize)
@@ -8341,7 +8407,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param s the string to normalize
      *  @return the normalized string
      *  @throws IllegalArgumentException if the title is invalid
-     *  @throws UncheckedIOException if the namespace cache has not been 
+     *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
      *  @since 0.27
      */
