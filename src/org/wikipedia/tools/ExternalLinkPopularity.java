@@ -173,7 +173,7 @@ public class ExternalLinkPopularity
      *  score is capped at {@link #getMaxLinks()} because some domains are used 
      *  very frequently and we don't want to be here forever. <var>data</var>
      *  is of the form unique String &#8594; domain &#8594; links and can be
-     *  the results from {@link #fetchExternalLinks(List, List)}.
+     *  the results from {@link #fetchExternalLinks(List)}.
      * 
      *  @param data a Map with unique String &#8594; domain &#8594; links
      *  @return a Map with page &#8594; domain &#8594; popularity

@@ -73,6 +73,7 @@
             // write results
             out.print(ParserUtils.generateUserLinksAsWikitext(user));
             out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+            out.println();
             out.print(surveyor.formatTextSurveyAsWikitext(null, usersurvey));
             out.println(surveyor.generateWikitextFooter());
             out.flush();

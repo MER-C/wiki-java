@@ -23,6 +23,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.*;
+import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
 import org.wikipedia.ParserUtils;
 import org.wikipedia.Wiki;
@@ -182,15 +183,23 @@ public class CCIAnalyzer
         // clean up output CCI listing
         String[] articles = cci.toString().split("\\n");
         StringBuilder cleaned = new StringBuilder();
+        int removedarticles = 0;
+        Pattern pattern = Pattern.compile(".*edits?\\):\\s+");
         for (String article : articles)
         {
             // remove articles where all diffs are trivial
-            if (article.matches(".*edits?\\):\\s+"))
+            if (pattern.matcher(article).matches())
+            {
+                removedarticles++;
                 continue;
+            }
             cleaned.append(article);
             cleaned.append("\n");
         }
         System.out.println(cleaned);
+        System.out.println("----------------------");
+        System.out.println("Diffs removed: " + minoredits.size() + " of " + count 
+            + ", articles removed: " + removedarticles);
     }
     
     /**

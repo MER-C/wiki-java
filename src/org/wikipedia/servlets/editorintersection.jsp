@@ -175,43 +175,43 @@ first in the GUI) apply.
             .collect(Collectors.groupingBy(Wiki.Revision::getPage));
         bypage.put(key, grouppage);
     });
-    String blah = bypage.entrySet().stream().sorted((entry1, entry2) -> 
-    {
-        // sort by number of articles hit
-        return entry2.getValue().size() - entry1.getValue().size();
-
-    }).map(entry ->
-    {
-        // generate HTML
-        StringBuilder sb = new StringBuilder();
-        sb.append("<h2>");
-        sb.append(entry.getKey());
-        sb.append("</h2>\n");
-        sb.append(ParserUtils.generateUserLinks(wiki, entry.getKey()));
-
-        for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
+    String blah = bypage.entrySet().stream()
+        .sorted((entry1, entry2) -> 
         {
-            List<Wiki.Revision> revs = entry2.getValue();
-            StringBuilder title = new StringBuilder("<a href=\"");
-            title.append(wiki.getPageURL(entry2.getKey()));
-            title.append("\">");
-            title.append(entry2.getKey());
-            title.append("</a> (<a href=\"");
-            title.append(wiki.getIndexPHPURL());
-            title.append("?title=");
-            title.append(entry2.getKey());
-            title.append("&action=history\">history</a>) &ndash; ");
-            title.append(revs.size());
-            title.append(" edit");
-            if (revs.size() > 1)
-                title.append("s");
-            sb.append("<p>\n");
-            sb.append(ServletUtils.beginCollapsibleSection(title.toString(), true));
-            sb.append(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
-            sb.append(ServletUtils.endCollapsibleSection());
-        }
-        return sb;
-    }).collect(Collectors.joining());
+            // sort by number of articles hit
+            return entry2.getValue().size() - entry1.getValue().size();
+        }).map(entry ->
+        {
+            // generate HTML
+            StringBuilder sb = new StringBuilder();
+            sb.append("<h2>");
+            sb.append(entry.getKey());
+            sb.append("</h2>\n");
+            sb.append(ParserUtils.generateUserLinks(wiki, entry.getKey()));
+
+            for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
+            {
+                List<Wiki.Revision> revs = entry2.getValue();
+                StringBuilder title = new StringBuilder("<a href=\"");
+                title.append(wiki.getPageURL(entry2.getKey()));
+                title.append("\">");
+                title.append(entry2.getKey());
+                title.append("</a> (<a href=\"");
+                title.append(wiki.getIndexPHPURL());
+                title.append("?title=");
+                title.append(entry2.getKey());
+                title.append("&action=history\">history</a>) &ndash; ");
+                title.append(revs.size());
+                title.append(" edit");
+                if (revs.size() > 1)
+                    title.append("s");
+                sb.append("<p>\n");
+                sb.append(ServletUtils.beginCollapsibleSection(title.toString(), true));
+                sb.append(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
+                sb.append(ServletUtils.endCollapsibleSection());
+            }
+            return sb;
+        }).collect(Collectors.joining());
     out.println(blah);
 %>
 <%@ include file="footer.jsp" %>

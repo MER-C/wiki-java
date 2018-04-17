@@ -48,7 +48,7 @@ public class ContributionSurveyor
     private OffsetDateTime earliestdate, latestdate;
     private boolean nominor = true;
     private int minsizediff = 150;
-    
+
     /**
      *  Runs this program.
      *  @param args command line arguments (see code for documentation)
@@ -77,7 +77,7 @@ public class ContributionSurveyor
             .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
             .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
             .parse(args);
-        
+
         Wiki homewiki = Wiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         String infile = parsedargs.get("--infile");
         String outfile = parsedargs.get("--outfile");
@@ -90,16 +90,19 @@ public class ContributionSurveyor
         int minsize = Integer.parseInt(parsedargs.getOrDefault("--minsize", "150"));
         String earliestdatestring = parsedargs.get("--editsafter");
         String latestdatestring = parsedargs.get("--editsbefore");
-        
+
         List<String> users = new ArrayList<>(1500);
         OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
         OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
-        
+
         // fetch user list
         if (user != null)
             users.add(user);
         else if (category != null)
-            users.addAll(Arrays.asList(homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE)));
+        {
+            for (String member : homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
+                users.add(homewiki.removeNamespace(member));
+        }
         else if (wikipage != null)
         {
             List<String> list = Pages.parseWikitextList(homewiki.getPageText(wikipage));
@@ -152,9 +155,9 @@ public class ContributionSurveyor
             System.out.println("Error: No output file selected.");
             System.exit(0);
         }
-        
+
         int[] ns = userspace ? (new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE }) : (new int[] { Wiki.MAIN_NAMESPACE });
-        
+
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setMinimumSizeDiff(minsize);
         surveyor.setEarliestDateTime(editsafter);
@@ -165,7 +168,7 @@ public class ContributionSurveyor
             outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
         }
     }
-    
+
     /**
      *  Constructs a new ContributionSurveyor instance.
      *  @param homewiki the wiki that has users we want to survey
@@ -175,7 +178,7 @@ public class ContributionSurveyor
     {
         this.wiki = homewiki;
     }
-    
+
     /**
      *  Returns the home wiki of users that can be surveyed by this instance.
      *  @return (see above)
@@ -185,53 +188,53 @@ public class ContributionSurveyor
     {
         return wiki;
     }
-    
+
     /**
      *  Sets whether surveys ignore minor edits. Default = true.
      *  @param ignoreminor (see above)
-     *  @see #isIgnoringMinorEdits() 
+     *  @see #isIgnoringMinorEdits()
      *  @since 0.04
      */
     public void setIgnoringMinorEdits(boolean ignoreminor)
     {
         nominor = ignoreminor;
     }
-    
+
     /**
      *  Gets whether surveys ignore minor edits. Default = true.
      *  @return (see above)
-     *  @see #setIgnoringMinorEdits(boolean) 
+     *  @see #setIgnoringMinorEdits(boolean)
      *  @since 0.04
      */
     public boolean isIgnoringMinorEdits()
     {
         return nominor;
     }
-    
+
     /**
      *  Sets the date/time at which surveys start; no edits will be returned
      *  before then. Defaults to {@code null}, i.e. no lower bound.
      *  @param earliest the desired start date/time
-     *  @see #getEarliestDateTime() 
+     *  @see #getEarliestDateTime()
      *  @since 0.04
      */
     public void setEarliestDateTime(OffsetDateTime earliest)
     {
         earliestdate = earliest;
     }
-    
+
     /**
-     *  Gets the date/time at which surveys start; no edits will be returned 
+     *  Gets the date/time at which surveys start; no edits will be returned
      *  before then.
      *  @return (see above)
-     *  @see #setEarliestDateTime(OffsetDateTime)  
+     *  @see #setEarliestDateTime(OffsetDateTime)
      *  @since 0.04
      */
     public OffsetDateTime getEarliestDateTime()
     {
         return earliestdate;
     }
-    
+
     /**
      *  Sets the date/time at which surveys finish; no edits will be returned
      *  after then. Defaults to {@code null}, i.e. when the survey is performed
@@ -243,50 +246,50 @@ public class ContributionSurveyor
     {
         latestdate = latest;
     }
-    
+
     /**
-     *  Gets the date at which surveys finish. 
+     *  Gets the date at which surveys finish.
      *  @return (see above)
-     *  @see #setLatestDateTime(OffsetDateTime)  
+     *  @see #setLatestDateTime(OffsetDateTime)
      *  @since 0.04
      */
     public OffsetDateTime getLatestDateTime()
     {
         return latestdate;
     }
-    
+
     /**
-     *  Sets the minimum change size (in bytes added) to include in surveys.  
+     *  Sets the minimum change size (in bytes added) to include in surveys.
      *  Default is 150, set to {@code Integer.MIN_VALUE} to disable.
      *  @param sizediff the minimum change size, in bytes added
-     *  @see #getMinimumSizeDiff() 
+     *  @see #getMinimumSizeDiff()
      *  @since 0.04
      */
     public void setMinimumSizeDiff(int sizediff)
     {
         minsizediff = sizediff;
     }
-    
+
     /**
-     *  Gets the minimum change size to include in surveys. 
+     *  Gets the minimum change size to include in surveys.
      *  @return the minimum change size, in bytes
-     *  @see #setMinimumSizeDiff(int) 
+     *  @see #setMinimumSizeDiff(int)
      *  @since 0.04
      */
     public int getMinimumSizeDiff()
     {
         return minsizediff;
     }
-    
+
     /**
      *  Conducts a survey of edits by the given users. The output is in the form
      *  username &#8594; page &#8594; edits, where usernames are in the same
      *  order as <var>users</var>, edits are sorted to place the largest addition
-     *  first and pages are sorted by their largest addition. <var>ns</var> 
-     *  containing {@link Wiki#FILE_NAMESPACE} 
-     *  looks at additions of text to image description pages.
-     * 
-     *  @param users the list of users to survey
+     *  first and pages are sorted by their largest addition. <var>ns</var>
+     *  containing {@link Wiki#FILE_NAMESPACE} looks at additions of text to
+     *  image description pages.
+     *
+     *  @param users the list of users to survey (without User: prefix)
      *  @param ns the namespaces to survey (not specified = all namespaces,)
      *  @return the survey in the form username &#8594; page &#8594; edits
      *  @throws IOException if a network error occurs
@@ -299,24 +302,23 @@ public class ContributionSurveyor
             options.put("minor", Boolean.FALSE);
         List<Wiki.Revision>[] edits = wiki.contribs(users, "", earliestdate, latestdate, options, ns);
         Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
-        Comparator<Wiki.Revision> diffsorter = (rev1, rev2) -> rev2.getSizeDiff() - rev1.getSizeDiff();
         for (int i = 0; i < users.length; i++)
         {
             Map<String, List<Wiki.Revision>> results = edits[i].stream()
                 .filter(rev -> rev.getSizeDiff() >= minsizediff)
-                .sorted(diffsorter)
+                .sorted(Comparator.comparingInt(Wiki.Revision::getSizeDiff).reversed())
                 .collect(Collectors.groupingBy(Wiki.Revision::getPage, LinkedHashMap::new, Collectors.toList()));
             ret.put(users[i], results);
         }
         return ret;
     }
-    
+
     /**
-     *  Performs a survey of a user's deleted contributions. Requires 
+     *  Performs a survey of a user's deleted contributions. Requires
      *  administrator access to the relevant wiki. (Note: due to MediaWiki
      *  limitations, it is not possible to filter by bytes added or whether an
      *  edit created a new page.)
-     * 
+     *
      *  @param username the user to survey
      *  @param ns the namespaces to survey (not specified = all namespaces)
      *  @return the survey, in the form deleted page &#8594; revisions
@@ -324,14 +326,14 @@ public class ContributionSurveyor
      *  @throws CredentialNotFoundException if one cannot view deleted pages
      *  @since 0.03
      */
-    public LinkedHashMap<String, List<Wiki.Revision>> deletedContributionSurvey(String username, 
+    public LinkedHashMap<String, List<Wiki.Revision>> deletedContributionSurvey(String username,
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
-        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, latestdate, 
+        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, latestdate,
             earliestdate, false, ns);
         LinkedHashMap<String, List<Wiki.Revision>> ret = new LinkedHashMap<>();
-        
+
         // group contributions by page
         for (Wiki.Revision rev : delcontribs)
         {
@@ -344,7 +346,7 @@ public class ContributionSurveyor
         }
         return ret;
     }
-    
+
     /**
      *  Performs an image contribution survey on a user. (Date/time limits do
      *  not apply to, nor do they make sense for transferred images.)
@@ -360,7 +362,7 @@ public class ContributionSurveyor
         HashSet<String> localuploads = new HashSet<>(10000);
         for (Wiki.LogEntry upload : wiki.getUploads(user, earliestdate, latestdate))
             localuploads.add(upload.getTarget());
-        
+
         // fetch commons uploads
         Wiki commons = Wiki.createInstance("commons.wikimedia.org");
         Wiki.User comuser = commons.getUser(user.getUsername());
@@ -368,7 +370,7 @@ public class ContributionSurveyor
         if (comuser != null)
             for (Wiki.LogEntry upload : commons.getUploads(user, earliestdate, latestdate))
                 comuploads.add(upload.getTarget());
-        
+
         // fetch transferred commons uploads
         HashSet<String> commonsTransfer = new HashSet<>(10000);
         Map<String, Object>[] temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
@@ -379,7 +381,7 @@ public class ContributionSurveyor
         localuploads.removeAll(comuploads);
         localuploads.removeAll(commonsTransfer);
         commonsTransfer.removeAll(comuploads);
-        
+
         return new String[][] {
             localuploads.toArray(new String[localuploads.size()]),
             comuploads.toArray(new String[comuploads.size()]),
@@ -392,7 +394,7 @@ public class ContributionSurveyor
      *  @param username the relevant username (use {@code null} to omit)
      *  @param survey the survey, in form of page &#8594; edits
      *  @return the formatted survey in wikitext
-     *  @see #contributionSurvey(String[], int...) 
+     *  @see #contributionSurvey(String[], int...)
      *  @since 0.04
      */
     public String formatTextSurveyAsWikitext(String username, Map<String, List<Wiki.Revision>> survey)
@@ -401,14 +403,14 @@ public class ContributionSurveyor
         Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = survey.entrySet().iterator();
         int numarticles = 0;
         int totalarticles = survey.size();
-        
+
         while (iter.hasNext())
         {
-            // add convenience breaks
+            // add convenience breaks for long surveys
             numarticles++;
-            if (numarticles % 20 == 1)
+            if (numarticles % 20 == 1 && totalarticles > 20)
             {
-                out.append("\n=== ");
+                out.append("=== ");
                 if (username != null)
                 {
                     out.append(username);
@@ -420,11 +422,11 @@ public class ContributionSurveyor
                 out.append(Math.min(numarticles + 19, totalarticles));
                 out.append(" ===\n");
             }
-            
+
             Map.Entry<String, List<Wiki.Revision>> entry = iter.next();
             List<Wiki.Revision> edits = entry.getValue();
             out.append("*");
-            
+
             StringBuilder temp = new StringBuilder();
             boolean newpage = false;
             for (Wiki.Revision edit : edits)
@@ -451,16 +453,18 @@ public class ContributionSurveyor
             }
             out.append(temp);
             out.append("\n");
+            if (numarticles % 20 == 0)
+                out.append("\n");
         }
         return out.toString();
     }
-    
+
     /**
      *  Formats an image contribution survey for a single user as wikitext.
      *  @param username the relevant username (use null to omit)
      *  @param survey the survey
      *  @return the formatted survey in wikitext
-     *  @see #imageContributionSurvey(Wiki.User) 
+     *  @see #imageContributionSurvey(Wiki.User)
      *  @since 0.04
      */
     public String formatImageSurveyAsWikitext(String username, String[][] survey)
@@ -539,7 +543,7 @@ public class ContributionSurveyor
         }
         return out.toString();
     }
-    
+
     /**
      *  Performs a mass contribution survey and returns wikitext output.
      *  @param users the users to survey
@@ -554,34 +558,42 @@ public class ContributionSurveyor
         StringBuilder out = new StringBuilder();
         Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(users, ns);
         Map<String, Object>[] userinfo = wiki.getUserInfo(users);
-        
+
         Iterator<Map.Entry<String, Map<String, List<Wiki.Revision>>>> iter = results.entrySet().iterator();
         int userindex = 0;
-        
+
         while (iter.hasNext())
         {
             Map.Entry<String, Map<String, List<Wiki.Revision>>> entry = iter.next();
             String username = entry.getKey();
             Map<String, List<Wiki.Revision>> survey = entry.getValue();
-            
+            // skip no results users
+            if (survey.isEmpty())
+            {
+                userindex++;
+                continue;
+            }
+
             out.append("== ");
             out.append(username);
             out.append(" ==\n");
             out.append(ParserUtils.generateUserLinksAsWikitext(username));
+            out.append("\n");
             out.append(formatTextSurveyAsWikitext(username, survey));
-            
+
             // survey images
             if (images && userinfo[userindex] != null)
             {
                 String[][] imagesurvey = imageContributionSurvey((Wiki.User)userinfo[userindex].get("user"));
                 out.append(formatImageSurveyAsWikitext(username, imagesurvey));
             }
+            out.append("\n");
             userindex++;
         }
         out.append(generateWikitextFooter());
         return out.toString();
     }
-    
+
     /**
      *  Generates a wikitext footer for contribution surveys.
      *  @return (see above)
