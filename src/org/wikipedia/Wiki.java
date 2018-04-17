@@ -3369,7 +3369,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets a revision based on a given oldid. Automatically fills out all
-     *  attributes of that revision except <var>rcid</var> and <var>rollbacktoken</var>.
+     *  attributes of that revision except <var>rcid</var>.
      *
      *  @param oldid an oldid
      *  @return the revision corresponding to <var>oldid</var>, or {@code null}
@@ -3384,7 +3384,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets revisions based on given oldids. Automatically fills out all
-     *  attributes of those revisions except <var>rcid</var> and <var>rollbacktoken</var>.
+     *  attributes of those revisions except <var>rcid</var>.
      *
      *  @param oldids a list of oldids
      *  @return the revisions corresponding to <var>oldids</var>, in the order
@@ -3883,10 +3883,6 @@ public class Wiki implements Comparable<Wiki>
         // set rcid
         if (xml.contains("rcid=\""))
             revision.setRcid(Long.parseLong(parseAttribute(xml, "rcid", 0)));
-
-        // rollback token; will automatically be null if we cannot rollback
-        if (xml.contains("rollbacktoken=\""))
-            revision.setRollbackToken(parseAttribute(xml, "rollbacktoken", 0));
 
         // previous revision
         if (xml.contains("parentid")) // page history/getRevision
@@ -7360,7 +7356,6 @@ public class Wiki implements Comparable<Wiki>
         private final String title;
         private long rcid = -1;
         private long previous = 0, next = 0;
-        private String rollbacktoken = null;
         private int size = 0, sizediff = 0;
         private boolean pageDeleted = false;
 
@@ -7698,8 +7693,6 @@ public class Wiki implements Comparable<Wiki>
             sb.append(previous);
             sb.append(",next=");
             sb.append(next);
-            sb.append(",rollbacktoken=");
-            sb.append(rollbacktoken == null ? "null" : rollbacktoken);
             sb.append("]");
             return sb.toString();
         }
@@ -7748,31 +7741,6 @@ public class Wiki implements Comparable<Wiki>
         public long getRcid()
         {
             return rcid;
-        }
-
-        /**
-         *  Sets a rollback token for this revision.
-         *  @param token a rollback token
-         *  @since 0.24
-         *  @deprecated use <code>{@link Wiki#getToken(String) getToken("rollback")}</code>
-         */
-        @Deprecated
-        public void setRollbackToken(String token)
-        {
-            rollbacktoken = token;
-        }
-
-        /**
-         *  Gets the rollback token for this revision. Can be null, and often
-         *  for good reasons: cannot rollback or not top revision.
-         *  @return the rollback token
-         *  @since 0.24
-         *  @deprecated use <code>{@link Wiki#getToken(String) getToken("rollback")}</code>
-         */
-        @Deprecated
-        public String getRollbackToken()
-        {
-            return rollbacktoken;
         }
 
         /**
