@@ -21,7 +21,6 @@
 package org.wikipedia;
 
 import java.io.*;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.logging.*;
 import java.util.stream.*;
@@ -42,7 +41,7 @@ public class WMFWiki extends Wiki
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
      *  through [[Special:Log]] or getLogEntries.
-     *  @see #getAbuseLogEntries(List, String, String, OffsetDateTime, OffsetDateTime) 
+     *  @see #getAbuseLogEntries(int[], String, String, OffsetDateTime, OffsetDateTime) 
      */
     public static final String ABUSE_LOG = "abuselog";
     
@@ -89,7 +88,9 @@ public class WMFWiki extends Wiki
     {
         WMFWiki wiki = createInstance("en.wikipedia.org");
         wiki.setMaxLag(0);
-        String line = wiki.makeHTTPRequest(wiki.apiUrl + "action=sitematrix", null, "WMFWiki.getSiteMatrix");
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "sitematrix");
+        String line = wiki.makeHTTPRequest(wiki.apiUrl, getparams, null, "WMFWiki.getSiteMatrix");
         ArrayList<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
@@ -128,11 +129,11 @@ public class WMFWiki extends Wiki
     	if (namespace(title) != FILE_NAMESPACE)
             throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
         
-    	StringBuilder url = new StringBuilder(query);
-        url.append("prop=globalusage&titles=");
-        url.append(URLEncoder.encode(normalize(title), "UTF-8"));
+    	Map<String, String> getparams = new HashMap<>();
+        getparams.put("prop", "globalusage");
+        getparams.put("titles", normalize(title));
     	
-        List<String[]> usage = queryAPIResult("gu", url, null, "getGlobalUsage", (line, results) ->
+        List<String[]> usage = makeListQuery("gu", query, getparams, null, "getGlobalUsage", (line, results) ->
         {
             for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
                 results.add(new String[] {
@@ -202,38 +203,23 @@ public class WMFWiki extends Wiki
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @see <a href="https://mediawiki.org/wiki/Extension:AbuseFilter">Extension:AbuseFilter</a>
      */
-    public List<LogEntry> getAbuseLogEntries(List<Integer> filters, String user, String title, OffsetDateTime earliest, OffsetDateTime latest) throws IOException
+    public List<LogEntry> getAbuseLogEntries(int[] filters, String user, String title, OffsetDateTime earliest, OffsetDateTime latest) throws IOException
     {
         // WARNING: don't use a BotPassword for this! See https://phabricator.wikimedia.org/T191703
-        StringBuilder url = new StringBuilder(query);
-        url.append("list=abuselog");
-        if (filters != null && !filters.isEmpty())
-        {
-            url.append("&aflfilter=");
-            url.append(filters.stream().distinct().sorted().map(String::valueOf).collect(Collectors.joining("%7C")));
-        }
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("list", "abuselog");
+        if (filters.length > 0)
+            getparams.put("aflfilter", constructNamespaceString(filters));
         if (user != null)
-        {
-            url.append("&afluser=");
-            url.append(URLEncoder.encode(user, "UTF-8"));
-        }
+            getparams.put("afluser", user);
         if (title != null)
-        {
-            url.append("&afltitle=");
-            url.append(URLEncoder.encode(normalize(title), "UTF-8"));
-        }
+            getparams.put("afltitle", normalize(title));
         if (earliest != null)
-        {
-            url.append("&aflend=");
-            url.append(earliest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        }
+            getparams.put("aflend", earliest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         if (latest != null)
-        {
-            url.append("&aflstart=");
-            url.append(latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        }
+            getparams.put("aflstart", latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         
-        List<LogEntry> filterlog = queryAPIResult("afl", url, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
+        List<LogEntry> filterlog = makeListQuery("afl", query, getparams, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
         {
             String[] items = line.split("<item ");
             for (int i = 1; i < items.length; i++)

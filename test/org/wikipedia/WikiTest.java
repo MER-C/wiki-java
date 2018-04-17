@@ -1265,9 +1265,8 @@ public class WikiTest
     @Test
     public void constructNamespaceString() throws Exception
     {
-        StringBuilder temp = new StringBuilder();
-        enWiki.constructNamespaceString(temp, "blah", new int[] { 3, 2, 1, 2, -10 });
-        assertEquals("constructNamespaceString", "&blahnamespace=1|2|3", temp.toString());
+        String actual = enWiki.constructNamespaceString(new int[] { 3, 2, 1, 2, -10 });
+        assertEquals("constructNamespaceString", "1|2|3", actual);
     }
 
     @Test
