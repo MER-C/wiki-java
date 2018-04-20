@@ -5140,6 +5140,19 @@ public class Wiki implements Comparable<Wiki>
             throw new IllegalArgumentException("Supplied dates must be in the future!");
         if (user == null)
             throw new CredentialNotFoundException("You need to be logged in to change user privileges.");
+        
+        // warn for ignored groups
+        List<String> groups = u.getGroups();
+        List<String> alreadyhas = new ArrayList<>(groups);
+        alreadyhas.retainAll(granted);
+        if (!alreadyhas.isEmpty())
+            log(Level.WARNING, "changeUserprivileges", "User " + u + " is already in groups you attempted to add: "
+                + Arrays.toString(alreadyhas.toArray()));
+        List<String> notingroups = new ArrayList<>(revoked);
+        notingroups.removeAll(groups);
+        if (!notingroups.isEmpty())
+            log(Level.WARNING, "changeUserPrivileges", "User " + u + " is not in groups you attempted to remove: "
+                + Arrays.toString(notingroups.toArray()));
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
