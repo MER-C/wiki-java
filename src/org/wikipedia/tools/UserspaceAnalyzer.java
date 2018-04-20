@@ -62,7 +62,7 @@ public class UserspaceAnalyzer
         }
 
         String[] usernames = users.toArray(new String[0]);
-        Map<String, Object>[] userinfo = wiki.getUserInfo(usernames);
+        Wiki.User[] userinfo = wiki.getUsers(usernames);
         
         System.out.println("==Results for " + args[0] + "==");
         System.out.println("{| class=\"wikitable sortable\"");
@@ -78,8 +78,7 @@ public class UserspaceAnalyzer
                     usernames[i], usernames[i]);
                 continue;
             }
-            int count = (Integer)userinfo[i].get("editcount");
-            if (count > 50)
+            if (userinfo[i].countEdits() > 50)
                 continue;
             Wiki.Revision[] contribs = wiki.contribs(usernames[i]);
             if (contribs.length == 0)

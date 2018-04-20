@@ -546,18 +546,18 @@ public class ContributionSurveyor
 
     /**
      *  Performs a mass contribution survey and returns wikitext output.
-     *  @param users the users to survey
+     *  @param usernames the users to survey
      *  @param ns the namespaces to survey
      *  @param images whether to survey images (searches Commons as well)
      *  @return the survey results as wikitext
      *  @throws IOException if a network error occurs
      *  @since 0.02
      */
-    public String massContributionSurvey(String[] users, boolean images, int... ns) throws IOException
+    public String massContributionSurvey(String[] usernames, boolean images, int... ns) throws IOException
     {
         StringBuilder out = new StringBuilder();
-        Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(users, ns);
-        Map<String, Object>[] userinfo = wiki.getUserInfo(users);
+        Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(usernames, ns);
+        Wiki.User[] userinfo = wiki.getUsers(usernames);
 
         Iterator<Map.Entry<String, Map<String, List<Wiki.Revision>>>> iter = results.entrySet().iterator();
         int userindex = 0;
@@ -584,7 +584,7 @@ public class ContributionSurveyor
             // survey images
             if (images && userinfo[userindex] != null)
             {
-                String[][] imagesurvey = imageContributionSurvey((Wiki.User)userinfo[userindex].get("user"));
+                String[][] imagesurvey = imageContributionSurvey(userinfo[userindex]);
                 out.append(formatImageSurveyAsWikitext(username, imagesurvey));
             }
             out.append("\n");

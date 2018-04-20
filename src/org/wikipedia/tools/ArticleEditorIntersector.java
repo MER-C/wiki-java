@@ -394,29 +394,28 @@ public class ArticleEditorIntersector
         Set<String> keyset = results.keySet();
         if (noadmin || nobot || noanon)
         {
-            String[] users = keyset.toArray(new String[keyset.size()]);
-            Map<String, Object>[] userinfo = wiki.getUserInfo(users);
-            for (int i = 0; i < users.length; i++)
+            String[] usernames = keyset.toArray(new String[keyset.size()]);
+            Wiki.User[] userinfo = wiki.getUsers(usernames);
+            for (int i = 0; i < userinfo.length; i++)
             {
-                // skip IPs because getUserInfo returns null
+                // skip IPs because getUsers returns null
                 if (userinfo[i] == null)
                 {
                     if (noanon)
-                        keyset.remove(users[i]);
+                        keyset.remove(usernames[i]);
                     continue;
                 }
                 
-                String[] groups = (String[])userinfo[i].get("groups");
-                for (String group : groups)
+                for (String group : userinfo[i].getGroups())
                 {
                     if (group.equals("sysop") && noadmin)
                     {
-                        keyset.remove(users[i]);
+                        keyset.remove(usernames[i]);
                         continue;
                     }
                     if (group.equals("bot") && nobot)
                     {
-                        keyset.remove(users[i]);
+                        keyset.remove(usernames[i]);
                         continue;
                     }
                 }

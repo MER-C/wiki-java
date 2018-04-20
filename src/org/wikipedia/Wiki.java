@@ -393,6 +393,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  The list of options the user can specify for his/her gender.
+     *  @see User#getGender()
      *  @since 0.24
      */
     public enum Gender
@@ -1159,7 +1160,7 @@ public class Wiki implements Comparable<Wiki>
         // check for success
         if (line.contains("result=\"Success\""))
         {
-            user = new User(parseAttribute(line, "lgusername", 0));
+            user = getUser(parseAttribute(line, "lgusername", 0));
             boolean apihighlimit = user.isAllowedTo("apihighlimits");
             if (apihighlimit)
             {
@@ -3103,7 +3104,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException, CredentialNotFoundException
     {
-        if (user == null || !user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
+        if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
         // disallow ALL_NAMESPACES, this query is extremely slow and likely to error out.
@@ -3140,7 +3141,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String getDeletedText(String page) throws IOException, CredentialNotFoundException
     {
-        if (user == null || !user.isAllowedTo("deletedhistory") || !user.isAllowedTo("deletedtext"))
+        if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
             throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
 
         // TODO: this can be multiquery(?)
@@ -3552,7 +3553,7 @@ public class Wiki implements Comparable<Wiki>
                 throw new UnsupportedOperationException("RevisionDeletion of pseudo-LogEntries is not supported.");
             ids[i] = temp.getID();
         }
-        if (user == null || !user.isAllowedTo("deleterevision") || !user.isAllowedTo("deletelogentry"))
+        if (user == null || !user.isAllowedTo("deleterevision", "deletelogentry"))
             throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
         throttle();
 
@@ -4596,8 +4597,8 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the users with the given usernames. Returns null if it doesn't
-     *  exist. Output array is in the same order as the input array.
+     *  Gets the users with the given usernames. Returns {@code null} if they
+     *  don't exist. Output array is in the same order as the input array.
      *  @param usernames a list of usernames
      *  @return the users with those usernames
      *  @since 0.33
@@ -4637,7 +4638,9 @@ public class Wiki implements Comparable<Wiki>
      *  processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.33
+     *  @deprecated will be merged to {@link #getUsers(String[])}
      */
+    @Deprecated
     public Map<String, Object>[] getUserInfo(String... usernames) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
@@ -4660,38 +4663,43 @@ public class Wiki implements Comparable<Wiki>
                 Map<String, Object> ret = new HashMap<>(10);
                 String parsedname = parseAttribute(result, "name", 0);
 
-                ret.put("username", parsedname);
-                ret.put("user", new User(parsedname));
-                ret.put("blocked", result.contains("blockedby=\""));
-                ret.put("emailable", result.contains("emailable=\""));
-                ret.put("editcount", Integer.parseInt(parseAttribute(result, "editcount", 0)));
-                ret.put("gender", Gender.valueOf(parseAttribute(result, "gender", 0)));
-
                 String registrationdate = parseAttribute(result, "registration", 0);
+                OffsetDateTime registration = null;
                 // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
                 if (registrationdate != null && !registrationdate.isEmpty())
-                    ret.put("created", OffsetDateTime.parse(registrationdate));
-
-                // groups
-                List<String> temp = new ArrayList<>();
-                for (int x = result.indexOf("<g>"); x > 0; x = result.indexOf("<g>", ++x))
                 {
-                    int y = result.indexOf("</g>", x);
-                    temp.add(result.substring(x + 3, y));
+                    registration = OffsetDateTime.parse(registrationdate);
+                    ret.put("created", registrationdate);
                 }
-                String[] groups = temp.toArray(new String[temp.size()]);
-                ret.put("groups", groups);
 
-                // rights
-                temp.clear();
+                List<String> rights = new ArrayList<>();
                 for (int x = result.indexOf("<r>"); x > 0; x = result.indexOf("<r>", ++x))
                 {
                     int y = result.indexOf("</r>", x);
-                    temp.add(result.substring(x + 3, y));
+                    rights.add(result.substring(x + 3, y));
                 }
-                String[] rights = temp.toArray(new String[temp.size()]);
-                ret.put("rights", rights);
+                ret.put("rights", rights.toArray(new String[rights.size()]));
 
+                List<String> groups = new ArrayList<>();
+                for (int x = result.indexOf("<g>"); x > 0; x = result.indexOf("<g>", ++x))
+                {
+                    int y = result.indexOf("</g>", x);
+                    groups.add(result.substring(x + 3, y));
+                }
+                ret.put("groups", groups.toArray(new String[groups.size()]));
+
+                int editcount = Integer.parseInt(parseAttribute(result, "editcount", 0));
+                ret.put("editcount", editcount);
+
+                boolean emailable = result.contains("emailable=\"");
+                ret.put("emailable", emailable);
+                Gender gender = Gender.valueOf(parseAttribute(result, "gender", 0));
+                ret.put("gender", gender);
+                boolean blocked = result.contains("blockedby=\"");
+                ret.put("blocked", blocked);
+
+                ret.put("user", new User(parsedname, registration, rights, groups, gender, emailable, blocked, editcount));
+                ret.put("username", parsedname);
                 metamap.put(parsedname, ret);
             }
         }
@@ -4944,7 +4952,7 @@ public class Wiki implements Comparable<Wiki>
      *  text (no wiki markup or HTML). This method is {@linkplain
      *  #setThrottle(int) throttled}.
      *
-     *  @param user a wiki user with email enabled
+     *  @param usertomail a wiki user with email enabled
      *  @param subject the subject of the message
      *  @param message the plain text message
      *  @param emailme whether to send a copy of the message to your email address
@@ -4953,16 +4961,17 @@ public class Wiki implements Comparable<Wiki>
      *  @throws AccountLockedException if you have been blocked from sending email
      *  @throws UnsupportedOperationException if email is disabled or if you do
      *  not have a verified email address
+     *  @see <a href="https://mediawiki.org/wiki/API:Emailuser">MediaWiki documentation</a>
+     *  @see Wiki.User#canBeEmailed()
      *  @since 0.24
      */
-    public synchronized void emailUser(User user, String message, String subject, boolean emailme) throws IOException, LoginException
+    public synchronized void emailUser(User usertomail, String message, String subject, boolean emailme) throws IOException, LoginException
     {
-        if (this.user == null || !this.user.isAllowedTo("sendemail"))
+        if (this.user == null || !user.isAllowedTo("sendemail"))
             throw new CredentialNotFoundException("Permission denied: cannot email.");
         throttle();
 
-        // is this user emailable?
-        if (Boolean.FALSE.equals(user.getUserInfo().get("emailable")))
+        if (!usertomail.canBeEmailed())
         {
             // should throw an exception here
             log(Level.WARNING, "emailUser", "User " + user.getUsername() + " is not emailable");
@@ -4972,7 +4981,7 @@ public class Wiki implements Comparable<Wiki>
         // post email
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "emailuser");
-        getparams.put("target", user.getUsername());
+        getparams.put("target", usertomail.getUsername());
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("token", getToken("csrf"));
         if (emailme)
@@ -6659,8 +6668,16 @@ public class Wiki implements Comparable<Wiki>
     public class User implements Comparable<User>
     {
         private final String username;
-        private String[] rights = null; // cache
-        private String[] groups = null; // cache
+        private final OffsetDateTime registration;
+        // user privileges (volatile, changes rarely)
+        private List<String> rights;
+        private List<String> groups;
+        private boolean blocked;
+        // user preferences (volatile, changes rarely)
+        private Gender gender;
+        private boolean emailable;
+        // volatile, changes often
+        private int editcount;
 
         /**
          *  Creates a new user object. Does not create a new user on the
@@ -6668,11 +6685,27 @@ public class Wiki implements Comparable<Wiki>
          *  be called for anons.
          *
          *  @param username the username of the user
+         *  @param registration when the user was registered
+         *  @param rights the rights this user has
+         *  @param groups the groups this user belongs to
+         *  @param gender the self-declared {@link Wiki.Gender Gender} of this user.
+         *  @param emailable whether the user can be emailed through [[Special:Emailuser]]
+         *  @param blocked whether this user is blocked
+         *  @param editcount the internal edit count of this user
          *  @since 0.05
          */
-        protected User(String username)
+        protected User(String username, OffsetDateTime registration, List<String> rights, List<String> groups,
+            Gender gender, boolean emailable, boolean blocked,int editcount)
         {
             this.username = Objects.requireNonNull(username);
+            // can be null per https://phabricator.wikimedia.org/T24097
+            this.registration = registration;
+            this.rights = Objects.requireNonNull(rights);
+            this.groups = Objects.requireNonNull(groups);
+            this.gender = gender;
+            this.emailable = emailable;
+            this.blocked = blocked;
+            this.editcount = editcount;
         }
 
         /**
@@ -6683,6 +6716,18 @@ public class Wiki implements Comparable<Wiki>
         public final String getUsername()
         {
             return username;
+        }
+
+        /**
+         *  Gets the date/time at which this user account was created. May be
+         *  {@code null} per <a href="https://phabricator.wikimedia.org/T24097">
+         *  https://phabricator.wikimedia.org/T24097</a>.
+         *  @return (see above)
+         *  @since 0.35
+         */
+        public final OffsetDateTime getRegistrationDate()
+        {
+            return registration;
         }
 
         /**
@@ -6697,55 +6742,113 @@ public class Wiki implements Comparable<Wiki>
          *    through [[Special:Emailuser]] or emailUser()
          *  <li><b>blocked</b>: (Boolean) whether the user is blocked
          *  <li><b>gender</b>: (Wiki.Gender) the user's gender
-         *  <li><b>created</b>: (Calendar) when the user account was created
+         *  <li><b>created</b>: (OffsetDateTime) when the user account was created
          *  </ul>
          *
          *  @return (see above)
          *  @throws IOException if a network error occurs
          *  @since 0.24
+         *  @deprecated use specific methods in this class
          */
+        @Deprecated
         public Map<String, Object> getUserInfo() throws IOException
         {
             return Wiki.this.getUserInfo(new String[] { username })[0];
         }
 
         /**
-         *  Returns true if the user is allowed to perform the specified action.
-         *  Uses the rights cache. Read [[Special:Listgrouprights]] before using
-         *  this!
+         *  Returns {@code true} if the user is allowed to perform the specified
+         *  action(s). Read [[Special:Listgrouprights]] before using this!
          *  @param right a specific action
-         *  @return whether the user is allowed to execute it
+         *  @param morerights additional actions to check
+         *  @return whether the user is allowed to execute them
          *  @since 0.24
-         *  @throws IOException if a network error occurs
          */
-        public boolean isAllowedTo(String right) throws IOException
+        public boolean isAllowedTo(String right, String... morerights)
         {
-            // We can safely assume the user is allowed to { read, edit, create,
-            // writeapi }.
-            if (rights == null)
-                rights = (String[])getUserInfo().get("rights");
-            for (String r : rights)
-                if (r.equals(right))
-                    return true;
-            return false;
+            return rights.containsAll(Arrays.asList(right, morerights));
         }
 
         /**
-         *  Returns true if the user is a member of the specified group. Uses
-         *  the groups cache.
+         *  Returns {@code true} if the user is a member of the specified group.
          *  @param group a specific group
          *  @return whether the user is in it
          *  @since 0.24
-         *  @throws IOException if a network error occurs
          */
-        public boolean isA(String group) throws IOException
+        public boolean isA(String group)
         {
-            if (groups == null)
-                groups = (String[])getUserInfo().get("groups");
-            for (String g : groups)
-                if (g.equals(group))
-                    return true;
-            return false;
+            return groups.contains(group);
+        }
+
+        /**
+         *  Returns the groups the user is a member of. See [[Special:Listgrouprights]].
+         *  Changes in this list do not propagate to this object or the wiki.
+         *  @return (see above)
+         *  @since 0.35
+         */
+        public List<String> getGroups()
+        {
+            return new ArrayList<>(groups);
+        }
+
+        /**
+         *  Returns the specific permissions this user has. See [[Special:Listgrouprights]].
+         *  Changes in this list do not propagate to the object or the wiki.
+         *  @return (see above)
+         *  @since 0.35
+         */
+        public List<String> getRights()
+        {
+            return new ArrayList<>(rights);
+        }
+
+        /**
+         *  Returns whether this user can be emailed through [[Special:Emailuser]].
+         *  @return (see above)
+         *  @see #emailUser(Wiki.User, String, String, boolean)
+         *  @since 0.35
+         */
+        public boolean canBeEmailed()
+        {
+            return emailable;
+        }
+
+        /**
+         *  Returns the self-disclosed {@linkplain Wiki.Gender gender} of this
+         *  user.
+         *  @return (see above)
+         *  @see Wiki.Gender
+         *  @since 0.35
+         */
+        public Gender getGender()
+        {
+            return gender;
+        }
+
+        /**
+         *  Determines whether this user is blocked at the time of construction.
+         *  If you want a live check, look  up the user on the {@linkplain
+         *  #getBlockList(String) list of blocks}.
+         *  @return whether this user is blocked
+         *  @since 0.12
+         */
+        public boolean isBlocked()
+        {
+            return blocked;
+        }
+
+        /**
+         *  Fetches the internal edit count for this user at the time of
+         *  construction, which includes all live edits and deleted edits after
+         *  (I think) January 2007. If you want to count live edits only,
+         *  compute the size of {@link User#contribs(int...) User.contribs()}.
+         *
+         *  @return the user's edit count
+         *  @since 0.16
+         */
+        public int countEdits()
+        {
+            return editcount;
         }
 
         /**
@@ -6757,34 +6860,6 @@ public class Wiki implements Comparable<Wiki>
         public LogEntry[] blockLog() throws IOException
         {
             return Wiki.this.getLogEntries(Wiki.BLOCK_LOG, null, null, "User:" + username);
-        }
-
-        /**
-         *  Determines whether this user is blocked by looking it up on the IP
-         *  block list.
-         *  @return whether this user is blocked
-         *  @throws IOException if we cannot retrieve the IP block list
-         *  @since 0.12
-         */
-        public boolean isBlocked() throws IOException
-        {
-            // @revised 0.18 now check for errors after each edit, including blocks
-            return getBlockList(username, null, null).length != 0;
-        }
-
-        /**
-         *  Fetches the internal edit count for this user, which includes all
-         *  live edits and deleted edits after (I think) January 2007. If you
-         *  want to count live edits only, use the slower
-         *  <code>int <var>count</var> = {@link User#contribs(int...) <var>user</var>.contribs()}.length;</code>.
-         *
-         *  @return the user's edit count
-         *  @throws IOException if a network error occurs
-         *  @since 0.16
-         */
-        public int countEdits() throws IOException
-        {
-            return (Integer)getUserInfo().get("editcount");
         }
 
         /**
@@ -6839,17 +6914,22 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public boolean equals(Object x)
         {
-            return x instanceof User && Objects.equals(username, ((User)x).username);
+            if (!(x instanceof User))
+                return false;
+            User other = (User)x;
+            return Objects.equals(username, other.username)
+                && Objects.equals(registration, other.registration);
         }
 
         /**
-         *  Returns a hashcode of this user based on the username.
+         *  Returns a hashcode of this user based on the username and
+         *  registration date.
          *  @return see above
          */
         @Override
         public int hashCode()
         {
-            return username.hashCode() * 127;
+            return username.hashCode() * 127 + registration.hashCode();
         }
 
         /**
@@ -6871,12 +6951,10 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public String toString()
         {
-            StringBuilder temp = new StringBuilder("User[username=");
-            temp.append(username);
-            temp.append("groups=");
-            temp.append(groups != null ? Arrays.toString(groups) : "unset");
-            temp.append("]");
-            return temp.toString();
+            return getClass().getName() + "["
+                + "username=" + username + ","
+                + "registration=" + (registration != null ? registration.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) : "unset") + ","
+                + "groups=" + Arrays.toString(groups.toArray()) + "]";
         }
     }
 
@@ -8170,7 +8248,7 @@ public class Wiki implements Comparable<Wiki>
         if (statuscounter > statusinterval)
         {
             // purge user rights in case of desysop or loss of other priviliges
-            user.getUserInfo();
+            user = getUser(user.getUsername());
             if ((assertion & ASSERT_SYSOP) == ASSERT_SYSOP && !user.isA("sysop"))
                 // assert user.isA("sysop") : "Sysop privileges missing or revoked, or session expired";
                 throw new AssertionError("Sysop privileges missing or revoked, or session expired");

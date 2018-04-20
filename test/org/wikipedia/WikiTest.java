@@ -1070,61 +1070,44 @@ public class WikiTest
         assertEquals("contribs: filtered", 120919L, edits[0].get(0).getID());
         // not implemented in MediaWiki API
         // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits[0].get(0).getSha1());
-        edits[0].forEach(rev ->
-        {
+        for (Wiki.Revision rev : edits[0])
             assertEquals("contribs: namespace", Wiki.MAIN_NAMESPACE, testWiki.namespace(rev.getPage()));
-        });
     }
 
     @Test
-    public void getUser() throws Exception
+    public void getUsers() throws Exception
     {
-        assertNull("getUser: IPv4 address", testWiki.getUser("127.0.0.1"));
-        assertNull("getUser: IP address range", testWiki.getUser("127.0.0.0/24"));
-    }
-
-    @Test
-    public void getUserInfo() throws Exception
-    {
-        String[] users = new String[]
+        String[] usernames = new String[]
         {
             "127.0.0.1", // IP address
             "MER-C",
             "DKdsf;lksd", // should be non-existent...
-            "Jimbo Wales",
-            "Jimbo_Wales" // duplicate
+            "ZZRBrenda08", // blocked spambot with 2 edits
+            "127.0.0.0/24" // IP range
         };
-        Map<String, Object>[] info = testWiki.getUserInfo(users);
-        assertNull("getUserInfo: IP address", info[0]);
-        assertNull("getUserInfo: non-existent user", info[2]);
+        Wiki.User[] users = enWiki.getUsers(usernames);
+        assertNull("getUsers: IP address", users[0]);
+        assertNull("getUsers: non-existent user", users[2]);
+        assertNull("getUsers: IP address range", users[4]);
 
-        // editcount omitted because it is dynamic
-        assertEquals("getUserInfo: username", users[1], info[1].get("inputname"));
-        assertEquals("getUserInfo: normalized username", users[1], info[1].get("username"));
-        assertFalse("getUserInfo: blocked", (Boolean)info[1].get("blocked"));
-        assertEquals("getUserInfo: gender", Wiki.Gender.unknown, (Wiki.Gender)info[1].get("gender"));
-        assertEquals("getUserInfo: registration", "2007-02-14T11:38:37Z",
-            ((OffsetDateTime)info[1].get("created")).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertTrue("getUserInfo: email", (Boolean)info[1].get("emailable"));
+        assertEquals("getUsers: normalized username", usernames[1], users[1].getUsername());
+        assertFalse("getUsers: blocked", users[1].isBlocked());
+        assertEquals("getUsers: gender", Wiki.Gender.unknown, users[1].getGender());
+        assertEquals("getUsers: registration", "2006-07-07T10:52:41Z",
+            users[1].getRegistrationDate().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertTrue("getUsers: email", users[1].canBeEmailed());
 
-        // check groups
-        String[] temp = (String[])info[1].get("groups");
-        List<String> groups = Arrays.asList(temp);
-        temp = new String[] { "*", "autoconfirmed", "user", "sysop" };
-        assertTrue("getUserInfo: groups", groups.containsAll(Arrays.asList(temp)));
+        List<String> groups = users[1].getGroups();
+        List<String> temp = Arrays.asList("*", "autoconfirmed", "user", "sysop");
+        assertTrue("getUsers: groups", groups.containsAll(temp));
 
         // check (subset of) rights
-        temp = (String[])info[1].get("rights");
-        List<String> rights = Arrays.asList(temp);
-        temp = new String[] { "apihighlimits", "delete", "block", "editinterface", "writeapi" };
-        assertTrue("getUserInfo: groups", rights.containsAll(Arrays.asList(temp)));
+        List<String> rights = users[1].getRights();
+        temp = Arrays.asList("apihighlimits", "delete", "block", "editinterface");
+        assertTrue("getUsers: groups", rights.containsAll(temp));
 
-        // check de-duplication
-        assertEquals("getUserInfo: username", users[3], info[3].get("inputname"));
-        assertEquals("getUserInfo: username", users[4], info[4].get("inputname"));
-        info[3].remove("inputname");
-        info[4].remove("inputname");
-        assertEquals("getUserInfo: duplicates", info[3], info[4]);
+        assertEquals("getUsers: editcount", 2, users[3].countEdits());
+        assertTrue("getUsers: actually blocked", users[3].isBlocked());
     }
 
     @Test
