@@ -6779,7 +6779,10 @@ public class Wiki implements Comparable<Wiki>
          */
         public boolean isAllowedTo(String right, String... morerights)
         {
-            return rights.containsAll(Arrays.asList(right, morerights));
+            List<String> temp = new ArrayList<>();
+            temp.add(right);
+            temp.addAll(Arrays.asList(morerights));
+            return rights.containsAll(temp);
         }
 
         /**
