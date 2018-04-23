@@ -52,6 +52,7 @@ public class UserLinkAdditionFinder
             .description("Finds the set of links added by a list of users.")
             .addHelp()
             .addVersion("UserLinkAdditionFinder v0.02\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addSingleArgumentFlag("--user", "user", "Get links for this user only.")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
@@ -60,25 +61,32 @@ public class UserLinkAdditionFinder
 
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
+        String user = parsedargs.get("--user");
         String datestring = parsedargs.get("--fetchafter");
         String filename = parsedargs.get("default");
         OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
 
         // read in from file
-        Path fp = null;
-        if (filename == null)
+        List<String> users;
+        if (user == null)
         {
-            JFileChooser fc = new JFileChooser();
-            if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-                System.exit(0);
-            fp = fc.getSelectedFile().toPath();
+            Path fp = null;
+            if (filename == null)
+            {
+                JFileChooser fc = new JFileChooser();
+                if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
+                    System.exit(0);
+                fp = fc.getSelectedFile().toPath();
+            }
+            else
+                fp = Paths.get(filename);
+            users = Files.readAllLines(fp, Charset.forName("UTF-8"));
         }
         else
-            fp = Paths.get(filename);
+            users = Arrays.asList(user);
 
         // fetch and parse edits
-        List<String> lines = Files.readAllLines(fp, Charset.forName("UTF-8"));
-        Map<Wiki.Revision, List<String>> results = getLinksAdded(lines, date);
+        Map<Wiki.Revision, List<String>> results = getLinksAdded(users, date);
         if (results.isEmpty())
         {
             System.out.println("No links found.");
@@ -204,7 +212,8 @@ public class UserLinkAdditionFinder
     }
 
     /**
-     *  Fetches the list of links added by a list of users.
+     *  Fetches the list of links added by a list of users. The list of users
+     *  must be a list of usernames only, no User: prefix or wikilinks allowed.
      *  @param users the list of users to get link additions for
      *  @param earliest return edits no earlier than this date
      *  @return a Map: revision &#8594; added links
