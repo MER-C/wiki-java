@@ -238,7 +238,7 @@ public class WMFWiki extends Wiki
                 results.add(new LogEntry(id, timestamp, loguser, null, null, ABUSE_LOG, action, target, details));
             }
         });
-        log(Level.INFO, "WMFWiki.getAbuselogEntries", "Sucessfully returned abuse filter log entries (" + filterlog.size() + " entries.");
+        log(Level.INFO, "WMFWiki.getAbuselogEntries", "Sucessfully returned abuse filter log entries (" + filterlog.size() + " entries).");
         return filterlog;
     }
 }

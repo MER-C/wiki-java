@@ -22,7 +22,6 @@ package org.wikipedia.tools;
 
 import java.io.*;
 import java.util.*;
-import java.time.*;
 import java.util.stream.*;
 import org.wikipedia.*;
 
@@ -30,7 +29,7 @@ import org.wikipedia.*;
  *  This tool takes a list of articles, fetches the external links used within
  *  and checks their popularity. Use cases include looking for spam references
  *  and spam articles and providing a proxy for the quality of sourcing.
- *  <p><b>WARNING: EXPERIMENTAL</b>
+ *
  *  @author MER-C
  *  @version 0.01
  */
@@ -52,25 +51,31 @@ public class ExternalLinkPopularity
         // meta-domains (edwardbetts.com = {{orphan}}
         elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
         
-        String[] spampages = enWiki.getCategoryMembers("Category:Wikipedia articles with undisclosed paid content from March 2018", Wiki.MAIN_NAMESPACE);
-        // filter down the spam to recently created pages
-        List<String> recentspam = new ArrayList<>();
-        for (String page : spampages)
-            if (enWiki.getFirstRevision(page).getTimestamp().isAfter(OffsetDateTime.parse("2018-02-01T00:00:00Z")))
-                recentspam.add(page);
-        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(recentspam);
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.ExternalLinkPopularity", "[options]")
+            .addSingleArgumentFlag("--title", "wikipage", "The wiki page to get links from")
+            .addSingleArgumentFlag("--limit", "n", "Fetch no more than n links (default: 500)")
+            .parse(args);
+        elp.setMaxLinks(Integer.parseInt(parsedargs.getOrDefault("--limit", "500")));
+        String article = parsedargs.get("--title");
+        if (article == null)
+        {
+            System.out.println("No article specified!");
+            System.exit(1);
+        }
+        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(Arrays.asList(article));
         Map<String, Map<String, Integer>> popresults = elp.determineLinkPopularity(results);
-        elp.exportResultsAsWikitext(results, popresults);
+        System.out.println(elp.exportResultsAsWikitext(results, popresults));
         
-        String[] notspam = enWiki.getCategoryMembers("Category:Companies in the Dow Jones Industrial Average", Wiki.MAIN_NAMESPACE);
-        results = elp.fetchExternalLinks(Arrays.asList(Arrays.copyOfRange(notspam, 0, 5)));
-        popresults = elp.determineLinkPopularity(results);
-        elp.exportResultsAsWikitext(results, popresults);
-        
-        String[] control = enWiki.getCategoryMembers("Category:Banks of Australia", Wiki.MAIN_NAMESPACE);
-        results = elp.fetchExternalLinks(Arrays.asList(Arrays.copyOfRange(control, 5, 20)));
-        popresults = elp.determineLinkPopularity(results);
-        elp.exportResultsAsWikitext(results, popresults);
+        // String[] spampages = enWiki.getCategoryMembers("Category:Wikipedia articles with undisclosed paid content from March 2018", Wiki.MAIN_NAMESPACE);
+        // filter down the spam to recently created pages
+        // List<String> recentspam = new ArrayList<>();
+        // for (String page : spampages)
+        //     if (enWiki.getFirstRevision(page).getTimestamp().isAfter(OffsetDateTime.parse("2018-02-01T00:00:00Z")))
+        //       recentspam.add(page);
+        //Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(recentspam);
+        //Map<String, Map<String, Integer>> popresults = elp.determineLinkPopularity(results);
+        //elp.exportResultsAsWikitext(results, popresults);
     }
     
     /**
@@ -187,7 +192,7 @@ public class ExternalLinkPopularity
         {
             domains.addAll(pagedomaintourls.keySet());
         });
-        domains.removeIf(domain -> exclude.stream().noneMatch(exc -> domain.contains(exc)));
+        domains.removeIf(domain -> exclude.stream().anyMatch(exc -> domain.contains(exc)));
 
         // linksearch the domains to determine popularity
         // discard the linksearch data for now, but bear in mind that it could
@@ -219,36 +224,58 @@ public class ExternalLinkPopularity
         return ret;
     }
     
-    public void exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
+    public String exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
     {
-        // gather the results
+        StringBuilder sb = new StringBuilder();
         urldata.forEach((page, pagedomaintourls) ->
         {
             if (pagedomaintourls.isEmpty())
                 return;
-            System.out.println("== [[" + page + "]]==");
+            sb.append("== [[:");
+            sb.append(page);
+            sb.append("]]==\n");
             DoubleStream.Builder scores = DoubleStream.builder();
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
             pagedomaintourls.forEach((domain, listoflinks) ->
             {
                 Integer numlinks = popularity.get(page).get(domain);
-                System.out.println("*" + domain + " (" + numlinks + " links)");
-                numlinks = Math.min(numlinks, maxlinks);
+                sb.append("*");
+                sb.append(domain);
+                if (numlinks >= maxlinks)
+                    sb.append(" (at least ");
+                else
+                    sb.append(" (");
+                sb.append(numlinks);
+                if (numlinks == 1)
+                    sb.append(" link)\n");
+                else
+                    sb.append(" links)\n");
                 scores.accept(numlinks);
                 dss.accept(numlinks);
-                listoflinks.forEach(url -> System.out.println("** " + url));
+                for (String url : listoflinks)
+                {
+                    sb.append("** ");
+                    sb.append(url);
+                    sb.append("\n");
+                }
+                sb.append("\n");
             });
             // compute summary statistics
-            double[] temp = scores.build().toArray();
-            System.out.println("\n;Summary statistics");
-            System.out.println("*COUNT: " + temp.length);
-            System.out.printf("*MEAN: %.1f\n", dss.getAverage());
-            Arrays.sort(temp);
-            double[] quartiles = quartiles(temp);
-            System.out.printf("*Q1: %.1f\n", quartiles[0]);
-            System.out.printf("*MEDIAN: %.1f\n", median(temp));
-            System.out.printf("*Q3: %.1f\n\n", quartiles[1]);
+            if (pagedomaintourls.size() > 1)
+            {
+                double[] temp = scores.build().toArray();
+                sb.append(";Summary statistics\n");
+                sb.append("*COUNT: ");
+                sb.append(temp.length);
+                sb.append(String.format("\n*MEAN: %.1f\n", dss.getAverage()));
+                Arrays.sort(temp);
+                double[] quartiles = quartiles(temp);
+                sb.append(String.format("*Q1: %.1f\n", quartiles[0]));
+                sb.append(String.format("*MEDIAN: %.1f\n", median(temp)));
+                sb.append(String.format("*Q3: %.1f\n\n", quartiles[1]));
+            }
         });
+        return sb.toString();
     }
         
     // see https://en.wikipedia.org/wiki/Quartile (method 3)
