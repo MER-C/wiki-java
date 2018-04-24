@@ -113,6 +113,7 @@
                             <include>**/CommandLineParserTest.java</include>
                             <include>**/ContributionSurveyorTest.java</include>
                             <include>**/UserLinkAdditionFinderTest.java</include>
+                            <include>**/ExternalLinkPopularityTest.java</include>
                         </includes>
                     </configuration>
                 </plugin>

@@ -56,9 +56,9 @@ public class UserLinkAdditionFinderTest
 
         List<String> users = Arrays.asList("Helonty", "ReteNsep", "Reyeilint", "Shittipa", "EDPerfect");
         Map<Wiki.Revision, List<String>> linksadded = UserLinkAdditionFinder.getLinksAdded(users, null);
-        Set<String> expected = new HashSet<>(Arrays.asList("834061933", "823758919", "833871994", "834097191"));
         Set<String> actual = linksadded.keySet().stream().map(rev -> String.valueOf(rev.getID())).collect(Collectors.toSet());
-        assertEquals(expected, actual);
+        assertEquals(4, actual.size());
+        assertTrue(actual.containsAll(Arrays.asList("834061933", "823758919", "833871994", "834097191")));
         for (Map.Entry<Wiki.Revision, List<String>> entry : linksadded.entrySet())
         {
             Wiki.Revision revision = entry.getKey();
