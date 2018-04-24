@@ -36,6 +36,10 @@
         <servlet-name>Contribution surveyor</servlet-name>
         <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/contributionsurveyor.jsp</jsp-file>
     </servlet>
+    <servlet>
+        <servlet-name>External link checker</servlet-name>
+        <jsp-file>/WEB-INF/classes/org/wikipedia/servlets/extlinkchecker.jsp</jsp-file>
+    </servlet>
     
     <servlet-mapping>
         <servlet-name>Cross-wiki linksearch</servlet-name>
@@ -68,6 +72,10 @@
     <servlet-mapping>
         <servlet-name>Contribution surveyor</servlet-name>
         <url-pattern>/contributionsurveyor.jsp</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>External link checker</servlet-name>
+        <url-pattern>/extlinkchecker.jsp</url-pattern>
     </servlet-mapping>
     
     <session-config>

@@ -21,7 +21,7 @@
 <%@ page import="java.net.URLEncoder" %>
 
 <%
-    request.setAttribute("toolname", "Contribution surveyor (beta)");
+    request.setAttribute("toolname", "Contribution surveyor");
 
     String user = request.getParameter("user");
     boolean nominor = (request.getParameter("nominor") != null);

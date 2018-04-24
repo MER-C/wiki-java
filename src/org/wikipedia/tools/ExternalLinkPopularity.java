@@ -32,6 +32,8 @@ import org.wikipedia.*;
  *
  *  @author MER-C
  *  @version 0.01
+ *  @see <a href="https://wikipediatools.appspot.com/extlinkchecker.jsp">
+ *  External link checker (online version)</a> 
  */
 public class ExternalLinkPopularity
 {
@@ -273,6 +275,71 @@ public class ExternalLinkPopularity
                 sb.append(String.format("*Q1: %.1f\n", quartiles[0]));
                 sb.append(String.format("*MEDIAN: %.1f\n", median(temp)));
                 sb.append(String.format("*Q3: %.1f\n\n", quartiles[1]));
+            }
+        });
+        return sb.toString();
+    }
+    
+    public String exportResultsAsHTML(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
+    {
+        StringBuilder sb = new StringBuilder();
+        urldata.forEach((page, pagedomaintourls) ->
+        {
+            if (pagedomaintourls.isEmpty())
+                return;
+            sb.append("<h2><a href=\"");
+            sb.append(wiki.getPageURL(page));
+            sb.append("\">");
+            sb.append(page);
+            sb.append("</a></h2>\n<ul>\n");
+            DoubleStream.Builder scores = DoubleStream.builder();
+            DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
+            pagedomaintourls.forEach((domain, listoflinks) ->
+            {
+                Integer numlinks = popularity.get(page).get(domain);
+                sb.append("<li>");
+                sb.append(domain);
+                if (numlinks >= maxlinks)
+                    sb.append(" (at least ");
+                else
+                    sb.append(" (");
+                sb.append(numlinks);
+                if (numlinks == 1)
+                    sb.append(" link; Linksearch: ");
+                else
+                    sb.append(" links; Linksearch: ");
+                sb.append("<a href=\"");
+                sb.append(wiki.getPageURL("Special:Linksearch/*." + domain));
+                sb.append("\">http</a> <a href=\"");
+                sb.append(wiki.getPageURL("Special:Linksearch/https://*." + domain));
+                sb.append("\">https</a>)\n");
+                scores.accept(numlinks);
+                dss.accept(numlinks);
+                sb.append("<ul>");
+                for (String url : listoflinks)
+                {
+                    sb.append("<li><a href=\"");
+                    sb.append(url);
+                    sb.append("\">");
+                    sb.append(url);
+                    sb.append("</a>\n");
+                }
+                sb.append("</ul>\n");
+            });
+            sb.append("</ul>\n");
+            // compute summary statistics
+            if (pagedomaintourls.size() > 1)
+            {
+                double[] temp = scores.build().toArray();
+                sb.append("<b>Summary statistics</b>\n<ul>\n");
+                sb.append("<li>COUNT: ");
+                sb.append(temp.length);
+                sb.append(String.format("\n<li>MEAN: %.1f\n", dss.getAverage()));
+                Arrays.sort(temp);
+                double[] quartiles = quartiles(temp);
+                sb.append(String.format("<li>Q1: %.1f\n", quartiles[0]));
+                sb.append(String.format("<li>MEDIAN: %.1f\n", median(temp)));
+                sb.append(String.format("<li>Q3: %.1f\n</ul>\n", quartiles[1]));
             }
         });
         return sb.toString();

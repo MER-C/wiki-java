@@ -11,7 +11,7 @@
 <%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
 
 <%
-    request.setAttribute("toolname", "Article/editor intersection (beta)");
+    request.setAttribute("toolname", "Article/editor intersection");
 
     String wikiparam = request.getParameter("wiki");
     wikiparam = (wikiparam == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wikiparam);
