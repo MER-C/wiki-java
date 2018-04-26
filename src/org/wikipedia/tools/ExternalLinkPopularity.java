@@ -48,16 +48,19 @@ public class ExternalLinkPopularity
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
-        ExternalLinkPopularity elp = new ExternalLinkPopularity(enWiki);
-        // meta-domains (edwardbetts.com = {{orphan}}
-        elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
-        
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.ExternalLinkPopularity", "[options]")
+            .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--title", "wikipage", "The wiki page to get links from")
             .addSingleArgumentFlag("--limit", "n", "Fetch no more than n links (default: 500)")
             .parse(args);
+        
+        String wikistring = parsedargs.getOrDefault("--wiki", "en.wikipedia.org");
+        Wiki wiki = Wiki.createInstance(wikistring);
+        ExternalLinkPopularity elp = new ExternalLinkPopularity(wiki);
+        // meta-domains (edwardbetts.com = {{orphan}}
+        elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
+        
         elp.setMaxLinks(Integer.parseInt(parsedargs.getOrDefault("--limit", "500")));
         String article = parsedargs.get("--title");
         if (article == null)

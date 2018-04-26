@@ -53,6 +53,25 @@ public class ExternalLinkPopularityTest
     }
     
     @Test
+    public void setMaxLinks() throws Exception
+    {
+        int limit = 250;
+        elp.setMaxLinks(limit);
+        assertEquals(limit, elp.getMaxLinks());
+        
+        // check that the limit actually does anything
+        Map<String, List<String>> domains1 = new HashMap<>();
+        domains1.put("wikipedia.org", Arrays.asList("http://test.wikipedia.org"));
+        Map<String, Map<String, List<String>>> data = new HashMap<>();
+        data.put("Page1", domains1);
+        
+        Map<String, Map<String, Integer>> results = elp.determineLinkPopularity(data);
+        Map<String, Integer> temp = results.get("Page1");
+        assertEquals(1, temp.size());
+        assertEquals(limit, temp.get("wikipedia.org").intValue());
+    }
+    
+    @Test
     public void getExcludeList() throws Exception
     {
         elp.getExcludeList().addAll(Arrays.asList("wikipedia.org", "example."));
@@ -73,5 +92,27 @@ public class ExternalLinkPopularityTest
         assertEquals(Arrays.asList("http://www.example.net"), urlsbydomain.get("example.net"));
         assertEquals(Arrays.asList("https://en.wikipedia.org"), urlsbydomain.get("wikipedia.org"));
         assertEquals(Arrays.asList("http://spam.example.com"), urlsbydomain.get("example.com"));
+    }
+    
+    @Test
+    public void determineLinkPopularity() throws Exception
+    {
+        Map<String, List<String>> domains1 = new HashMap<>();
+        domains1.put("wikipedia.org", Arrays.asList("http://test.wikipedia.org"));
+        domains1.put("obviously.invalid", Arrays.asList("https://obviously.invalid/index.php?action=view"));
+        Map<String, List<String>> domains2 = new HashMap<>();
+        domains2.put("wikimedia.org", Arrays.asList("https://commons.wikimedia.org/wiki/File:Test.png"));
+        Map<String, Map<String, List<String>>> data = new HashMap<>();
+        data.put("Page1", domains1);
+        data.put("Page2", domains2);
+        
+        Map<String, Map<String, Integer>> results = elp.determineLinkPopularity(data);
+        Map<String, Integer> temp = results.get("Page1");
+        assertEquals(2, temp.size());
+        assertEquals(500, temp.get("wikipedia.org").intValue());
+        assertEquals(0, temp.get("obviously.invalid").intValue());
+        temp = results.get("Page2");
+        assertEquals(1, temp.size());
+        assertEquals(500, temp.get("wikimedia.org").intValue());        
     }
 }

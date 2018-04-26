@@ -13,8 +13,11 @@
 <%
     request.setAttribute("toolname", "External link checker (beta)");
 
+    String wiki = request.getParameter("wiki");
+    wiki = (wiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wiki);
+
     String title = request.getParameter("title");
-    title = (title == null) ? "" : ServletUtils.sanitizeForHTML(title);
+    title = (title == null) ? "" : ServletUtils.sanitizeForAttribute(title);
 %>
 
 <!doctype html>
@@ -30,8 +33,11 @@ This tool performs linksearches to count how many live links exist to each
 unique domain used in external links by a given article. Useful for finding
 long-standing reference spam.
 
-<form action="./extlinkchecker.jsp" method=POST>
+<form action="./extlinkchecker.jsp" method=GET>
 <table>
+<tr>
+    <td colspan=2>Wiki:
+    <td><input type=text name=wiki value="<%= wiki %>" required>
 <tr>
     <td colspan=2>Title:
     <td><input type=text name=title value="<%= title %>" required>
@@ -45,7 +51,7 @@ long-standing reference spam.
     {
         out.println("<hr>");
 
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        Wiki enWiki = Wiki.createInstance(wiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(enWiki);
         elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
         Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(Arrays.asList(title));
