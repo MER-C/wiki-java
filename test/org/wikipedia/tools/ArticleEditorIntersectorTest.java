@@ -31,21 +31,29 @@ import org.wikipedia.Wiki;
  */
 public class ArticleEditorIntersectorTest
 {
-    private static ArticleEditorIntersector intersector, intersector_enWiki;
+    private static Wiki enWiki, testWiki;
+    private ArticleEditorIntersector intersector, intersector_enWiki;
     
     /**
-     *  Initializes intersector object.
-     *  @throws Exception if a network error occurs
+     *  Sets up shared connections to enWiki and testWiki for testing.
      */
     @BeforeClass
-    public static void setUpClass() throws Exception
+    public static void setUpClass()
     {
-        Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
-        intersector = new ArticleEditorIntersector(testWiki);
         
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
+    }
+    
+    /**
+     *  Construct tool objects for every test so that tests are independent.
+     */
+    @Before
+    public void setUp()
+    {
+        intersector = new ArticleEditorIntersector(testWiki);
         intersector_enWiki = new ArticleEditorIntersector(enWiki);
     }
     
@@ -144,9 +152,5 @@ public class ArticleEditorIntersectorTest
         String[] articles = { "Sainpasela", "Qihe County" };
         Map<String, List<Wiki.Revision>> results = intersector_enWiki.intersectArticles(articles, false, false, false);
         assertTrue("Check date/time bounds", results.isEmpty());
-        
-        // reset state
-        intersector_enWiki.setEarliestDateTime(null);
-        intersector_enWiki.setLatestDateTime(null);
     }
 }

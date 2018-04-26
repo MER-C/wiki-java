@@ -19,8 +19,7 @@ package org.wikipedia.tools;
 
 import java.util.*;
 import java.time.OffsetDateTime;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import static org.junit.Assert.*;
 import org.wikipedia.Wiki;
 
@@ -30,13 +29,25 @@ import org.wikipedia.Wiki;
  */
 public class ContributionSurveyorTest 
 {
-    private static ContributionSurveyor surveyor;
+    private static Wiki enWiki;
+    private ContributionSurveyor surveyor;
     
+    /**
+     *  Sets up a shared connection to enWiki for testing.
+     */
     @BeforeClass
-    public static void setUpClass() throws Exception
+    public static void setUpClass()
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
+    }
+    
+    /**
+     *  Construct a tool object for every test so that tests are independent.
+     */
+    @Before
+    public void beforeEach()
+    {
         surveyor = new ContributionSurveyor(enWiki);
     }
 
@@ -75,9 +86,5 @@ public class ContributionSurveyorTest
         String[] users = { "Jimbo Wales" };
         Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue("Check date/time bounds", results.get("Jimbo Wales").isEmpty());
-        
-        // reset state
-        surveyor.setEarliestDateTime(null);
-        surveyor.setLatestDateTime(null);
     }
 }

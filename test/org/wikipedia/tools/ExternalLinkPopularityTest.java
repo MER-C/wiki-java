@@ -21,9 +21,8 @@ package org.wikipedia.tools;
 
 import java.util.*;
 
-import org.junit.Test;
+import org.junit.*;
 import static org.junit.Assert.*;
-import org.junit.BeforeClass;
 import org.wikipedia.Wiki;
 
 /**
@@ -32,17 +31,25 @@ import org.wikipedia.Wiki;
  */
 public class ExternalLinkPopularityTest
 {
-    private static ExternalLinkPopularity elp;
+    private static Wiki testWiki;
+    private ExternalLinkPopularity elp;
     
     /**
-     *  Initializes tool object.
-     *  @throws Exception if a network error occurs
+     *  Sets up a shared connection to testWiki for testing.
      */
     @BeforeClass
-    public static void setUpClass() throws Exception
+    public static void setUpClass()
     {
-        Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
+    }
+    
+    /**
+     *  Construct a tool object for every test so that tests are independent.
+     */
+    @Before
+    public void setUp()
+    {
         elp = new ExternalLinkPopularity(testWiki);
     }
     
@@ -97,14 +104,14 @@ public class ExternalLinkPopularityTest
     @Test
     public void determineLinkPopularity() throws Exception
     {
-        Map<String, List<String>> domains1 = new HashMap<>();
-        domains1.put("wikipedia.org", Arrays.asList("http://test.wikipedia.org"));
-        domains1.put("obviously.invalid", Arrays.asList("https://obviously.invalid/index.php?action=view"));
-        Map<String, List<String>> domains2 = new HashMap<>();
-        domains2.put("wikimedia.org", Arrays.asList("https://commons.wikimedia.org/wiki/File:Test.png"));
+        Map<String, List<String>> firstpage = new HashMap<>();
+        firstpage.put("wikipedia.org", Arrays.asList("http://test.wikipedia.org"));
+        firstpage.put("obviously.invalid", Arrays.asList("https://obviously.invalid/index.php?action=view"));
+        Map<String, List<String>> secondpage = new HashMap<>();
+        secondpage.put("wikimedia.org", Arrays.asList("https://commons.wikimedia.org/wiki/File:Test.png"));
         Map<String, Map<String, List<String>>> data = new HashMap<>();
-        data.put("Page1", domains1);
-        data.put("Page2", domains2);
+        data.put("Page1", firstpage);
+        data.put("Page2", secondpage);
         
         Map<String, Map<String, Integer>> results = elp.determineLinkPopularity(data);
         Map<String, Integer> temp = results.get("Page1");
