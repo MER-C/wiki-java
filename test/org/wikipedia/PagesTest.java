@@ -82,6 +82,27 @@ public class PagesTest
     }
     
     @Test
+    public void generateSummaryLinks()
+    {
+        Pages testWikiPages = Pages.of(testWiki);
+        String indexPHPURL = testWiki.getIndexPHPURL();
+        String expected = 
+              "<a href=\"" + testWiki.getPageURL("Test") + "\">Test</a> ("
+            + "<a href=\"" + indexPHPURL + "?title=Test&action=edit\">edit</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Talk:Test") + "\">talk</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Test&action=history\">history</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=Test\">logs</a>)";
+        assertEquals("generateLinks", expected, testWikiPages.generateSummaryLinks("Test"));
+        
+        expected = "<a href=\"" + testWiki.getPageURL("A B の") + "\">A B の</a> ("
+            + "<a href=\"" + indexPHPURL + "?title=A+B+%E3%81%AE&action=edit\">edit</a> | "
+            + "<a href=\"" + testWiki.getPageURL("Talk:A B の") + "\">talk</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=A+B+%E3%81%AE&action=history\">history</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=A+B+%E3%81%AE\">logs</a>)";
+        assertEquals("generateLinks: special characters", expected, testWikiPages.generateSummaryLinks("A B の"));
+    }
+    
+    @Test
     public void containExternalLinks() throws Exception
     {
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Linkfinder

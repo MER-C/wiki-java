@@ -252,9 +252,14 @@ public class ExternalLinkPopularity
                     sb.append(" (");
                 sb.append(numlinks);
                 if (numlinks == 1)
-                    sb.append(" link)\n");
+                    sb.append(" link; Linksearch: ");
                 else
-                    sb.append(" links)\n");
+                    sb.append(" links; Linksearch: ");
+                sb.append("[[Special:Linksearch/*.");
+                sb.append(domain);
+                sb.append("|http]] [[Special:Linksearch/https://*.");
+                sb.append(domain);
+                sb.append("|https]])\n");
                 scores.accept(numlinks);
                 dss.accept(numlinks);
                 for (String url : listoflinks)
@@ -285,6 +290,7 @@ public class ExternalLinkPopularity
     
     public String exportResultsAsHTML(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
     {
+        Pages pageUtils = Pages.of(wiki);
         StringBuilder sb = new StringBuilder();
         urldata.forEach((page, pagedomaintourls) ->
         {
@@ -294,7 +300,9 @@ public class ExternalLinkPopularity
             sb.append(wiki.getPageURL(page));
             sb.append("\">");
             sb.append(page);
-            sb.append("</a></h2>\n<ul>\n");
+            sb.append("</a></h2>\n");
+            sb.append(pageUtils.generateSummaryLinks(page));
+            sb.append("\n<ul>\n");
             DoubleStream.Builder scores = DoubleStream.builder();
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
             pagedomaintourls.forEach((domain, listoflinks) ->

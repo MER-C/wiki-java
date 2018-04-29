@@ -175,6 +175,7 @@ first in the GUI) apply.
             .collect(Collectors.groupingBy(Wiki.Revision::getPage));
         bypage.put(key, grouppage);
     });
+    Pages pageUtils = Pages.of(wiki);
     String blah = bypage.entrySet().stream()
         .sorted((entry1, entry2) -> 
         {
@@ -191,16 +192,10 @@ first in the GUI) apply.
 
             for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
             {
+                String thisPage = entry2.getKey();
                 List<Wiki.Revision> revs = entry2.getValue();
-                StringBuilder title = new StringBuilder("<a href=\"");
-                title.append(wiki.getPageURL(entry2.getKey()));
-                title.append("\">");
-                title.append(entry2.getKey());
-                title.append("</a> (<a href=\"");
-                title.append(wiki.getIndexPHPURL());
-                title.append("?title=");
-                title.append(entry2.getKey());
-                title.append("&action=history\">history</a>) &ndash; ");
+                StringBuilder title = new StringBuilder(pageUtils.generateSummaryLinks(thisPage));
+                title.append(" &ndash; ");
                 title.append(revs.size());
                 title.append(" edit");
                 if (revs.size() > 1)

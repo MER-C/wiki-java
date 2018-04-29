@@ -209,7 +209,7 @@ public class ParserUtils
             // edit summary
             buffer.append(") .. (");
             if (rev.getParsedComment() != null)
-                buffer.append(recode(rev.getParsedComment()));
+                buffer.append(rev.getParsedComment());
             else
                 buffer.append(DELETED);
             buffer.append(")\n");

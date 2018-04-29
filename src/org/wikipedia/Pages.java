@@ -20,6 +20,7 @@
 package org.wikipedia;
 
 import java.io.*;
+import java.net.URLEncoder;
 import java.util.*;
 import javax.security.auth.login.*;
 
@@ -151,6 +152,33 @@ public class Pages
             counter++;
         }
         return ret;
+    }
+    
+    /**
+     *  Generates summary page links of the form Page (edit | talk | history | logs)
+     *  as HTML. Doesn't support talk pages yet.
+     *  @param page the page to generate links for
+     *  @return generated HTML
+     */
+    public String generateSummaryLinks(String page)
+    {
+        if (wiki.namespace(page) % 2 == 1)
+            return ""; // no talk pages yet
+        try
+        {
+            String indexPHPURL = wiki.getIndexPHPURL();
+            String pageenc = URLEncoder.encode(page, "UTF-8");
+            
+            return "<a href=\"" + wiki.getPageURL(page) + "\">" + page + "</a> ("
+                + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=edit\">edit</a> | "
+                + "<a href=\"" + wiki.getPageURL(wiki.getTalkPage(page)) + "\">talk</a> | "
+                + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "
+                + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=" + pageenc + "\">logs</a>)";
+        }
+        catch (IOException ex)
+        {
+            throw new UncheckedIOException(ex); // seriously?
+        }
     }
     
     /**
