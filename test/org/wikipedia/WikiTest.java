@@ -1171,17 +1171,17 @@ public class WikiTest
     {
         HashMap<String, Object> content = new HashMap<>();
         content.put("title", "Hello");
-        assertNull("parse: no such section", enWiki.parse(content, 50));
+        assertNull("parse: no such section", enWiki.parse(content, 50, true));
         content.clear();
         content.put("revid", 1L << 62);
-        assertNull("parse: bad revid", enWiki.parse(content, -1));
+        assertNull("parse: bad revid", enWiki.parse(content, -1, true));
         // FIXME: currently broken because makeHTTPRequest swallows the API error
         // assertNull("parse: deleted page", enWiki.parse(-1L, "Create a page", null, -1));
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
         // assertNull("parse: revisiondeleted revision", enWiki.parse(596714684L, null, null, -1));
         try
         {
-            enWiki.parse(Collections.emptyMap(), -1);
+            enWiki.parse(Collections.emptyMap(), -1, true);
             fail("Parse: did not specify content to parse.");
         }
         catch (IllegalArgumentException | NoSuchElementException expected)

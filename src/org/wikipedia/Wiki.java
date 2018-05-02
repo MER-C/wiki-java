@@ -1309,21 +1309,24 @@ public class Wiki implements Comparable<Wiki>
     {
         Map<String, Object> content = new HashMap<>();
         content.put("text", markup);
-        return parse(content, -1);
+        return parse(content, -1, false);
     }
 
     /**
      *  Parses wikitext, revisions or pages.  Deleted pages, revisions to
      *  deleted pages and RevisionDeleted revisions are not allowed if you
-     *  don't have the rights to view them.
+     *  don't have the rights to view them. Does not include "edit" links.
      *
      *  <p>
      *  <b>WARNING</b>: the parameters to this method will be changed when the time
-     *  comes for JDK11 refactoring to {@code parse(Map.Entry<String, Object> content, int section)}.
+     *  comes for JDK11 refactoring to accept Map.Entry instead. (I also haven't
+     *  decided how many more boolean parameters to add, and what format they will
+     *  take.)
      *
      *  @param content a Map following the same scheme as specified by
      *  {@link #diff(Map, int, Map, int)}
      *  @param section parse only this section (optional, use -1 to skip)
+     *  @param nolimitreport do not include the HTML comment detailing limits
      *  @return the parsed wikitext
      *  @throws NoSuchElementException or IllegalArgumentException if no content
      *  was supplied for parsing
@@ -1335,11 +1338,14 @@ public class Wiki implements Comparable<Wiki>
      *  documentation</a>
      *  @since 0.35
      */
-    public String parse(Map<String, Object> content, int section) throws IOException
+    public String parse(Map<String, Object> content, int section, boolean nolimitreport) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "parse");
         getparams.put("prop", "text");
+        if (nolimitreport)
+            getparams.put("disablelimitreport", "1");
+        getparams.put("disableeditsection", "1");
         Map<String, Object> postparams = new HashMap<>();
 
         Map.Entry<String, Object> entry = content.entrySet().iterator().next();
@@ -1385,7 +1391,9 @@ public class Wiki implements Comparable<Wiki>
      *  @return that string without the crap
      *  @throws IOException if a network error occurs
      *  @since 0.14
+     *  @deprecated parse now has a parameter that disables the parser report
      */
+    @Deprecated
     protected String parseAndCleanup(String in) throws IOException
     {
         String output = parse(in);
@@ -1984,7 +1992,7 @@ public class Wiki implements Comparable<Wiki>
             content.put("text", "{{:" + title + "}}");
         else
             content.put("title", title);
-        return parse(content, -1);
+        return parse(content, -1, false);
     }
 
     /**
@@ -7541,7 +7549,7 @@ public class Wiki implements Comparable<Wiki>
                 throw new IllegalArgumentException("Log entries have no valid content!");
             Map<String, Object> content = new HashMap<>();
             content.put("revision", this);
-            return Wiki.this.parse(content, -1);
+            return Wiki.this.parse(content, -1, false);
         }
 
         /**
