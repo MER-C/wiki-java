@@ -144,7 +144,7 @@ public class UserLinkAdditionFinder
         Map<String, List<String>> resultsbypage = new HashMap<>();
         results.forEach((revision, listoflinks) ->
         {
-            String page = revision.getPage();
+            String page = revision.getTitle();
             List<String> list = resultsbypage.get(page);
             if (list == null)
             {
@@ -161,7 +161,7 @@ public class UserLinkAdditionFinder
         {
             if (links.isEmpty())
                 return;
-            Map<String, Boolean> revlinkexists = stillthere.get(revision.getPage());
+            Map<String, Boolean> revlinkexists = stillthere.get(revision.getTitle());
             StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
             temp.append(revision.getID());
             temp.append("]]\n||\n");

@@ -86,7 +86,7 @@ public class UserspaceAnalyzer
             int mainspace = 0, userspace = 0;
             for (Wiki.Revision edit : contribs)
             {
-                int namespace = wiki.namespace(edit.getPage());
+                int namespace = wiki.namespace(edit.getTitle());
                 if (namespace == Wiki.MAIN_NAMESPACE)
                     mainspace++;
                 if (namespace == Wiki.USER_NAMESPACE || namespace == Wiki.USER_TALK_NAMESPACE)

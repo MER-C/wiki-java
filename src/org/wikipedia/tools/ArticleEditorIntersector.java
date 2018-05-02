@@ -146,7 +146,7 @@ public class ArticleEditorIntersector
             }
             if (nominor)
                 stuff = stuff.filter(rev -> !rev.isMinor());
-            articles = stuff.map(Wiki.Revision::getPage)
+            articles = stuff.map(Wiki.Revision::getTitle)
                 .distinct()
                 .toArray(String[]::new);
         }
@@ -168,7 +168,7 @@ public class ArticleEditorIntersector
             
             // group by article
             Map<String, List<Wiki.Revision>> grouppage = edits.stream()
-                .collect(Collectors.groupingBy(Wiki.Revision::getPage));
+                .collect(Collectors.groupingBy(Wiki.Revision::getTitle));
             grouppage.forEach((article, articleedits) ->
             {
                 System.out.print("\t" + article);
@@ -382,7 +382,7 @@ public class ArticleEditorIntersector
             }
             // throw out any account that appears in only one article
             Set<String> allpages = list.stream()
-                .map(Wiki.Revision::getPage)
+                .map(Wiki.Revision::getTitle)
                 .collect(Collectors.toCollection(HashSet::new));
             if (allpages.size() < 2)
                 iter.remove();
@@ -467,6 +467,6 @@ public class ArticleEditorIntersector
         // this information for deleted revisions
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
-        return revstream.collect(Collectors.groupingBy(Wiki.Revision::getPage));
+        return revstream.collect(Collectors.groupingBy(Wiki.Revision::getTitle));
     }
 }

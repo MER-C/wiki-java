@@ -104,7 +104,7 @@ public class ArrayUtils
     {
         // Group revisions by page, then sort so that the oldest edits are first.
         Map<String, Set<Wiki.Revision>> stuff = Arrays.stream(revisions)
-            .collect(Collectors.groupingBy(Wiki.Revision::getPage, Collectors.toCollection(TreeSet::new)));
+            .collect(Collectors.groupingBy(Wiki.Revision::getTitle, Collectors.toCollection(TreeSet::new)));
         Set<Wiki.Revision> ret = new LinkedHashSet<>();
         stuff.forEach((page, listofrevisions) ->
         {

@@ -708,7 +708,7 @@ public class WikiTest
         assertEquals("getIPBlockList: user", "MER-C", le[0].getUser());
         assertEquals("getIPBlockList: log", Wiki.BLOCK_LOG, le[0].getType());
         assertEquals("getIPBlockList: action", "block", le[0].getAction());
-        assertEquals("getIPBlockList: target", "User:Nimimaan", le[0].getTarget());
+        assertEquals("getIPBlockList: target", "User:Nimimaan", le[0].getTitle());
         assertEquals("getIPBlockList: reason", "spambot", le[0].getComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
@@ -735,7 +735,7 @@ public class WikiTest
         assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser());
         assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
         assertEquals("getLogEntries/block: action", "block", le[0].getAction());
-        assertEquals("getLogEntries: target", "User:Nimimaan", le[0].getTarget());
+        assertEquals("getLogEntries: target", "User:Nimimaan", le[0].getTitle());
         assertEquals("getLogEntries: reason", "spambot", le[0].getComment());
         assertEquals("getLogEntries: parsed reason", "spambot", le[0].getParsedComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
@@ -779,7 +779,7 @@ public class WikiTest
             OffsetDateTime.parse("2016-10-02T05:00:30Z"),
             OffsetDateTime.parse("2016-10-02T05:00:00Z"),
             Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
-        assertNull("getLogEntries: action hidden", le[0].getTarget());
+        assertNull("getLogEntries: action hidden", le[0].getTitle());
         assertTrue("getLogEntries: action hidden", le[0].isContentDeleted());
     }
 
@@ -935,7 +935,7 @@ public class WikiTest
     {
         // https://en.wikipedia.org/w/index.php?title=Wikipedia_talk%3AWikiProject_Spam&oldid=597454682
         Wiki.Revision rev = enWiki.getRevision(597454682L);
-        assertEquals("getRevision: page", "Wikipedia talk:WikiProject Spam", rev.getPage());
+        assertEquals("getRevision: title", "Wikipedia talk:WikiProject Spam", rev.getTitle());
         assertEquals("getRevision: timestamp", "2014-02-28T00:40:31Z", rev.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getRevision: user", "Lowercase sigmabot III", rev.getUser());
         assertEquals("getRevision: summary", "Archiving 3 discussion(s) to [[Wikipedia talk:WikiProject Spam/2014 Archive Feb 1]]) (bot",
@@ -1071,7 +1071,7 @@ public class WikiTest
         // not implemented in MediaWiki API
         // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits[0].get(0).getSha1());
         for (Wiki.Revision rev : edits[0])
-            assertEquals("contribs: namespace", Wiki.MAIN_NAMESPACE, testWiki.namespace(rev.getPage()));
+            assertEquals("contribs: namespace", Wiki.MAIN_NAMESPACE, testWiki.namespace(rev.getTitle()));
     }
 
     @Test
@@ -1219,7 +1219,7 @@ public class WikiTest
         // Check namespace filtering
         rc = enWiki.recentChanges(10, new int[] { Wiki.TALK_NAMESPACE });
         for (Wiki.Revision rev : rc)
-            assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getPage()));
+            assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getTitle()));
         // check options filtering
         Map<String, Boolean> options = new HashMap<>();
         options.put("minor", Boolean.FALSE);

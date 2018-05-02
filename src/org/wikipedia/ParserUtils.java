@@ -82,7 +82,7 @@ public class ParserUtils
                 buffer.append(". ");
             
             buffer.append("[[");
-            buffer.append(rev.getPage());
+            buffer.append(rev.getTitle());
             buffer.append("]] .. ");
             
             // user
@@ -145,7 +145,7 @@ public class ParserUtils
             colored = !colored;
             
             // diff link
-            String page = recode(rev.getPage());
+            String page = recode(rev.getTitle());
             String revurl = "<a href=\"" + rev.permanentURL();
             buffer.append(revurl);
             buffer.append("&diff=prev\">prev</a>) ");

@@ -61,7 +61,7 @@ public class WMFWikiTest
         Wiki.LogEntry ale = afl.get(0);
         assertEquals("abuse log: id", 20838976L, ale.getID());
         assertEquals("abuse log: username", "Miniapolis", ale.getUser());
-        assertEquals("abuse log: target", "Catopsbaatar", ale.getTarget());
+        assertEquals("abuse log: target", "Catopsbaatar", ale.getTitle());
         assertEquals("abuse log: timestamp", OffsetDateTime.parse("2018-04-05T22:58:14Z"), ale.getTimestamp());
         assertEquals("abuse log: action", "edit", ale.getAction());
         // TODO: test details when they are overhauled

@@ -307,7 +307,7 @@ public class ContributionSurveyor
             Map<String, List<Wiki.Revision>> results = edits[i].stream()
                 .filter(rev -> rev.getSizeDiff() >= minsizediff)
                 .sorted(Comparator.comparingInt(Wiki.Revision::getSizeDiff).reversed())
-                .collect(Collectors.groupingBy(Wiki.Revision::getPage, LinkedHashMap::new, Collectors.toList()));
+                .collect(Collectors.groupingBy(Wiki.Revision::getTitle, LinkedHashMap::new, Collectors.toList()));
             ret.put(users[i], results);
         }
         return ret;
@@ -339,7 +339,7 @@ public class ContributionSurveyor
         {
             if (nominor && rev.isMinor())
                 continue;
-            String page = rev.getPage();
+            String page = rev.getTitle();
             if (!ret.containsKey(page))
                 ret.put(page, new ArrayList<>());
             ret.get(page).add(rev);
@@ -361,7 +361,7 @@ public class ContributionSurveyor
         // fetch local uploads
         HashSet<String> localuploads = new HashSet<>(10000);
         for (Wiki.LogEntry upload : wiki.getUploads(user, earliestdate, latestdate))
-            localuploads.add(upload.getTarget());
+            localuploads.add(upload.getTitle());
 
         // fetch commons uploads
         Wiki commons = Wiki.createInstance("commons.wikimedia.org");
@@ -369,7 +369,7 @@ public class ContributionSurveyor
         HashSet<String> comuploads = new HashSet<>(10000);
         if (comuser != null)
             for (Wiki.LogEntry upload : commons.getUploads(user, earliestdate, latestdate))
-                comuploads.add(upload.getTarget());
+                comuploads.add(upload.getTitle());
 
         // fetch transferred commons uploads
         HashSet<String> commonsTransfer = new HashSet<>(10000);

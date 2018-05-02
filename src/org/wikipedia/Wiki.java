@@ -3484,9 +3484,9 @@ public class Wiki implements Comparable<Wiki>
         // Perform the rollback.
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "rollback");
-        getparams.put("title", normalize(revision.getPage()));
+        getparams.put("title", normalize(revision.getTitle()));
         Map<String, Object> postparams = new HashMap<>();
-        postparams.put("title", normalize(revision.getPage()));
+        postparams.put("title", normalize(revision.getTitle()));
         postparams.put("user", revision.getUser());
         postparams.put("token", getToken("rollback"));
         if (bot && user.isAllowedTo("markbotedits"))
@@ -3505,7 +3505,7 @@ public class Wiki implements Comparable<Wiki>
         // probably not ignorable (otherwise success)
         else if (!response.contains("rollback title="))
             checkErrorsAndUpdateStatus(response, "rollback");
-        log(Level.INFO, "rollback", "Successfully reverted edits by " + user + " on " + revision.getPage());
+        log(Level.INFO, "rollback", "Successfully reverted edits by " + user + " on " + revision.getTitle());
     }
 
     /**
@@ -3659,11 +3659,11 @@ public class Wiki implements Comparable<Wiki>
         throttle();
 
         // check here to see whether the titles correspond
-        if (to != null && !rev.getPage().equals(to.getPage()))
+        if (to != null && !rev.getTitle().equals(to.getTitle()))
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
         // protection
-        Map<String, Object> info = getPageInfo(rev.getPage());
+        Map<String, Object> info = getPageInfo(rev.getTitle());
         if (!checkRights(info, "edit"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -3674,9 +3674,9 @@ public class Wiki implements Comparable<Wiki>
         // send data
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "edit");
-        getparams.put("title", rev.getPage());
+        getparams.put("title", rev.getTitle());
         Map<String, Object> postparams = new HashMap<>();
-        postparams.put("title", rev.getPage());
+        postparams.put("title", rev.getTitle());
         if (!reason.isEmpty())
             postparams.put("summary", reason);
         postparams.put("undo", rev.getID());
@@ -3691,7 +3691,7 @@ public class Wiki implements Comparable<Wiki>
 
         // done
         if (response.contains("error code=\"editconflict\""))
-            throw new ConcurrentModificationException("Edit conflict on " + rev.getPage());
+            throw new ConcurrentModificationException("Edit conflict on " + rev.getTitle());
         checkErrorsAndUpdateStatus(response, "undo");
 
         String log = "Successfully undid revision(s) " + rev.getID();
@@ -4122,7 +4122,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "imageinfo");
         getparams.put("iilimit", "max");
         getparams.put("iiprop", "timestamp|url|archivename");
-        getparams.put("titles", normalize(entry.getTarget()));
+        getparams.put("titles", normalize(entry.getTitle()));
         String line = makeHTTPRequest(query, getparams, null, "getOldImage");
 
         // find the correct log entry by comparing timestamps
@@ -4146,7 +4146,7 @@ public class Wiki implements Comparable<Wiki>
                 // scrape archive name for logging purposes
                 String archive = parseAttribute(line, "archivename", 0);
                 if (archive == null)
-                    archive = entry.getTarget();
+                    archive = entry.getTitle();
                 log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
                 return true;
             }
@@ -6904,7 +6904,7 @@ public class Wiki implements Comparable<Wiki>
             List<Wiki.Revision>[] contribs = Wiki.this.contribs(new String[] { username }, "", null, null, options, ns);
             String[] ret = new String[contribs[0].size()];
             for (int i = 0; i < contribs[0].size(); i++)
-                ret[i] = contribs[0].get(i).getPage();
+                ret[i] = contribs[0].get(i).getTitle();
             return ret;
         }
 
@@ -6984,6 +6984,7 @@ public class Wiki implements Comparable<Wiki>
         private final long id;
         private final OffsetDateTime timestamp;
         private final String user;
+        private final String title;
         private final String comment;
         private final String parsedcomment;
         private boolean commentDeleted = false, userDeleted = false,
@@ -6994,15 +6995,17 @@ public class Wiki implements Comparable<Wiki>
          *  @param id the unique ID of the event
          *  @param timestamp the timestamp at which it occurred
          *  @param user the user or IP address performing the event
+         *  @param title the title of the page affected
          *  @param comment the comment left by the user when performing the
          *  event (e.g. an edit summary)
          *  @param parsedcomment comment, but parsed into HTML
          */
-        protected Event(long id, OffsetDateTime timestamp, String user, String comment, String parsedcomment)
+        protected Event(long id, OffsetDateTime timestamp, String user, String title, String comment, String parsedcomment)
         {
             this.id = id;
             this.timestamp = Objects.requireNonNull(timestamp);
             this.user = user;
+            this.title = title;
             this.comment = comment;
             // parsedcomments contain relative hyperlinks to other pages... this
             // is completely meaningless outside of GUI mode
@@ -7068,6 +7071,18 @@ public class Wiki implements Comparable<Wiki>
         public boolean isUserDeleted()
         {
             return userDeleted;
+        }
+        
+        /**
+         *  Returns the page affected by this event. May be {@code null} for
+         *  certain types of LogEntry and/or if the LogEntry is RevisionDeleted
+         *  and you don't have the ability to access it.
+         *  @return (see above)
+         *  @see #isContentDeleted() 
+         */
+        public String getTitle()
+        {
+            return title;
         }
 
         /**
@@ -7135,7 +7150,7 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Returns {@code true} if the content of this event has been
          *  RevisionDeleted. For a {@link Wiki.LogEntry}, this refers to the
-         *  target of the logged action and the logged action performed (e.g.
+         *  page the logged action affects and the logged action performed (e.g.
          *  "unblock" or "delete").
          *  @return (see above)
          */
@@ -7158,6 +7173,7 @@ public class Wiki implements Comparable<Wiki>
                + "timestamp=" + timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + ','
                + "user=\"" + ((user == null) ? "[DELETED]" : user) + "\","
                + "userDeleted=" + userDeleted + ','
+               + "title=" + ((title == null) ? "[null or deleted]" : title)
                + "comment=\"" + ((comment == null) ? "[DELETED]" : comment) + "\","
                + "commentDeleted=" + commentDeleted + ','
                + "contentDeleted=" + contentDeleted + ']';
@@ -7165,7 +7181,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Determines whether this Event is equal to some other object. This
-         *  method checks the timestamp, user, comment and ID.
+         *  method checks the ID, timestamp, user, title and comment.
          *  @param other the other object to compare to
          *  @return whether this instance is equal to that object
          */
@@ -7178,12 +7194,13 @@ public class Wiki implements Comparable<Wiki>
             return id == event.id
                 && Objects.equals(timestamp, event.timestamp)
                 && Objects.equals(user, event.user)
+                && Objects.equals(title, event.title)
                 && Objects.equals(comment, event.comment);
         }
 
         /**
          *  Returns a hash code for this object based on the ID, timestamp,
-         *  user and comment.
+         *  user, title and comment.
          *  @return (see above)
          */
         @Override
@@ -7192,6 +7209,7 @@ public class Wiki implements Comparable<Wiki>
             int hc = Long.hashCode(id);
             hc = 127 * hc + timestamp.hashCode();
             hc = 127 * hc + (user == null ? 0 : user.hashCode());
+            hc = 127 * hc + (title == null ? 0 : title.hashCode());
             hc = 127 * hc + (comment == null ? 0 : comment.hashCode());
             return hc;
         }
@@ -7224,7 +7242,6 @@ public class Wiki implements Comparable<Wiki>
     {
         private final String type;
         private String action;
-        private final String target;
         private Object details;
 
         /**
@@ -7248,10 +7265,9 @@ public class Wiki implements Comparable<Wiki>
         protected LogEntry(long id, OffsetDateTime timestamp, String user, String comment,
             String parsedcomment, String type, String action, String target, Object details)
         {
-            super(id, timestamp, user, comment, parsedcomment);
+            super(id, timestamp, user, target, comment, parsedcomment);
             this.type = Objects.requireNonNull(type);
             this.action = action;
-            this.target = target;
             this.details = details;
         }
 
@@ -7335,10 +7351,12 @@ public class Wiki implements Comparable<Wiki>
          *  have access to the content.
          *  @return the target of this log entry
          *  @since 0.08
+         *  @deprecated renamed to getTitle
          */
+        @Deprecated
         public String getTarget()
         {
-            return target;
+            return getTitle();
         }
 
         /**
@@ -7391,8 +7409,6 @@ public class Wiki implements Comparable<Wiki>
             s.append(type);
             s.append(",action=");
             s.append(action == null ? "[DELETED]" : action);
-            s.append(",target=");
-            s.append(target == null ? "[DELETED]" : target);
             s.append("\",details=");
             if (details instanceof Object[])
                 s.append(Arrays.asList((Object[])details)); // crude formatting hack
@@ -7404,7 +7420,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Determines whether two LogEntries are equal based on the underlying
-         *  {@linkplain Event#equals(Object) Event}, type, action and target.
+         *  {@linkplain Event#equals(Object) Event}, type and action.
          *  @param other some object to compare to
          *  @return (see above)
          *  @since 0.33
@@ -7418,13 +7434,12 @@ public class Wiki implements Comparable<Wiki>
                 return false;
             LogEntry le = (LogEntry)other;
             return Objects.equals(type, le.type)
-                && Objects.equals(action, le.action)
-                && Objects.equals(target, le.target);
+                && Objects.equals(action, le.action);
         }
 
         /**
          *  Computes a hashcode for this LogEntry based on the underlying
-         *  {@linkplain Event#hashCode() Event}, type, action and target.
+         *  {@linkplain Event#hashCode() Event}, type and action.
          *  @return (see above)
          *  @since 0.35
          */
@@ -7434,7 +7449,6 @@ public class Wiki implements Comparable<Wiki>
             int hc = super.hashCode();
             hc = 127 * hc + type.hashCode();
             hc = 127 * hc + (action == null ? 0 : action.hashCode());
-            hc = 127 * hc + (target == null ? 0 : target.hashCode());
             return hc;
         }
     }
@@ -7447,7 +7461,6 @@ public class Wiki implements Comparable<Wiki>
     {
         private final boolean minor, bot, rvnew;
         private final String sha1;
-        private final String title;
         private long rcid = -1;
         private long previous = 0, next = 0;
         private int size = 0, sizediff = 0;
@@ -7474,10 +7487,9 @@ public class Wiki implements Comparable<Wiki>
             String parsedcomment, String title, String sha1, boolean minor, boolean bot,
             boolean rvnew, int size)
         {
-            super(revid, timestamp, user, comment, parsedcomment);
+            super(revid, timestamp, user, Objects.requireNonNull(title), comment, parsedcomment);
             this.sha1 = sha1;
             this.minor = minor;
-            this.title = Objects.requireNonNull(title);
             this.bot = bot;
             this.rvnew = rvnew;
             this.size = size;
@@ -7616,7 +7628,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Determines whether this Revision is equal to another based on the
-         *  underlying {@linkplain Event#equals(Object) Event} and title.
+         *  underlying {@linkplain Event#equals(Object) Event} and SHA-1.
          *  @param o an object
          *  @return whether o is equal to this object
          *  @since 0.17
@@ -7629,12 +7641,12 @@ public class Wiki implements Comparable<Wiki>
             if (!(o instanceof Revision))
                 return false;
             Revision rev = (Revision)o;
-            return Objects.equals(title, rev.title);
+            return Objects.equals(sha1, rev.sha1);
         }
 
         /**
          *  Returns a hash code of this revision based on the underlying
-         *  {@linkplain Event#hashCode() Event} and title.
+         *  {@linkplain Event#hashCode() Event} and SHA-1.
          *  @return a hash code
          *  @since 0.17
          */
@@ -7642,7 +7654,7 @@ public class Wiki implements Comparable<Wiki>
         public int hashCode()
         {
             int hc = super.hashCode();
-            hc = 127 * hc + title.hashCode();
+            hc = 127 * hc + (sha1 == null ? 0 : sha1.hashCode());
             return hc;
         }
 
@@ -7723,10 +7735,12 @@ public class Wiki implements Comparable<Wiki>
          *  Returns the page to which this revision was made.
          *  @return the page
          *  @since 0.17
+         *  @deprecated renamed to getTitle()
          */
+        @Deprecated
         public String getPage()
         {
-            return title;
+            return getTitle();
         }
 
         /**
@@ -7773,8 +7787,6 @@ public class Wiki implements Comparable<Wiki>
         {
             StringBuilder sb = new StringBuilder(super.toString());
             sb.deleteCharAt(sb.length() - 1);
-            sb.append(",page=\"");
-            sb.append(title);
             sb.append(",minor=");
             sb.append(minor);
             sb.append(",bot=");
