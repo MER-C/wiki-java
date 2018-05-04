@@ -1315,7 +1315,13 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Parses wikitext, revisions or pages.  Deleted pages, revisions to
      *  deleted pages and RevisionDeleted revisions are not allowed if you
-     *  don't have the rights to view them. Does not include "edit" links.
+     *  don't have the rights to view them. 
+     * 
+     *  <p>
+     *  The returned HTML does not include "edit" links. Hyperlinks are 
+     *  rewritten from useless relative links to other wiki pages to full URLs.
+     *  References to resources using protocol relative URLs are rewritten to 
+     *  use {@linkplain #getProtocol() this wiki's protocol}.
      *
      *  <p>
      *  <b>WARNING</b>: the parameters to this method will be changed when the time
@@ -1380,7 +1386,13 @@ public class Wiki implements Comparable<Wiki>
             return null;
         int y = response.indexOf('>', response.indexOf("<text")) + 1;
         int z = response.indexOf("</text>");
-        return decode(response.substring(y, z));
+        
+        // Rewrite URLs to replace useless relative links and make images work on
+        // locally saved copies of wiki pages.
+        String html = decode(response.substring(y, z));
+        html = html.replace("href=\"/wiki", "href=\"" + protocol + domain + "/wiki");
+        html = html.replace(" src=\"//", " src=\"" + protocol); // a little fragile for my liking, but will do
+        return html;
     }
 
     /**
@@ -7015,8 +7027,8 @@ public class Wiki implements Comparable<Wiki>
             this.user = user;
             this.title = title;
             this.comment = comment;
-            // parsedcomments contain relative hyperlinks to other pages... this
-            // is completely meaningless outside of GUI mode
+            // Rewrite parsedcomments to fix useless relative hyperlinks to
+            // other wiki pages
             if (parsedcomment == null)
                 this.parsedcomment = null;
             else
@@ -7109,9 +7121,12 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Gets the comment for this event, with limited parsing into HTML.
-         *  WARNING: returns {@code null} if the reason was RevisionDeleted and
-         *  you lack the necessary privileges. Not available through {@link
-         *  #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
+         *  Hyperlinks in the returned HTML are rewritten from useless relative
+         *  URLs to full URLs that point to the wiki page in question. Returns 
+         *  {@code null} if {@linkplain #isCommentDeleted() the comment was 
+         *  RevisionDeleted} and you lack the necessary privileges. WARNING: Not 
+         *  available through {@link #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
+         *  
          *  @return the comment associated with the event, parsed into HTML
          *  @see #getComment()
          */
