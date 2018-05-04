@@ -28,7 +28,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import javax.security.auth.login.CredentialNotFoundException;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -38,19 +37,14 @@ import static org.junit.Assert.*;
  */
 public class WikiTest
 {
-    private static Wiki enWiki, deWiki, arWiki, testWiki, enWikt;
-    private static MessageDigest sha256;
-
-    public WikiTest()
-    {
-    }
+    private final Wiki enWiki, deWiki, arWiki, testWiki, enWikt;
+    private final MessageDigest sha256;
 
     /**
-     *  Initialize wiki objects.
+     *  Construct wiki objects for each test so that tests are independent.
      *  @throws Exception if a network error occurs
      */
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    public WikiTest() throws Exception
     {
         enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
@@ -63,7 +57,7 @@ public class WikiTest
         enWikt = Wiki.createInstance("en.wiktionary.org");
         enWikt.setMaxLag(-1);
         enWikt.getSiteInfo();
-
+        
         sha256 = MessageDigest.getInstance("SHA-256");
     }
 
@@ -140,7 +134,6 @@ public class WikiTest
         catch (AssertionError expected)
         {
         }
-        enWiki.setAssertionMode(Wiki.ASSERT_NONE);
     }
 
     @Test
@@ -165,8 +158,6 @@ public class WikiTest
         pages = new String[] { "Main page", "Main Page" };
         List<String>[] y = enWiki.getTemplates(pages);
         assertEquals("resolveredirects/getTemplates", y[1], y[0]);
-        testWiki.setResolveRedirects(false);
-        enWiki.setResolveRedirects(false);
     }
 
     @Test
@@ -245,7 +236,6 @@ public class WikiTest
         assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page").length);
         assertEquals("querylimits: listPages", 500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).length);
         assertEquals("querylimits: after listPages", 530, enWiki.getPageHistory("Main Page").length);
-        enWiki.setQueryLimit(Integer.MAX_VALUE);
     }
 
     @Test
@@ -483,7 +473,7 @@ public class WikiTest
         byte[] hash = sha256.digest(imageData);
         assertEquals("getImage", "fc63c250bfce3f3511ccd144ca99b451111920c100ac55aaf3381aec98582035",
             String.format("%064x", new BigInteger(1, hash)));
-        tempfile.delete();
+        Files.delete(tempfile.toPath());
     }
 
     @Test

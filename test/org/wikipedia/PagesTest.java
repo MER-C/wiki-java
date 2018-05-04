@@ -29,14 +29,12 @@ import static org.junit.Assert.*;
  */
 public class PagesTest
 {
-    private static Wiki testWiki;
+    private final Wiki testWiki;
     
     /**
-     *  Initialize wiki objects.
-     *  @throws Exception if a network error occurs
+     *  Construct wiki objects for each test so that tests are independent.
      */
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    public PagesTest()
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);

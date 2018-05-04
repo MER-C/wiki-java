@@ -21,7 +21,6 @@
 package org.wikipedia.tools;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.*;
 import org.junit.*;
@@ -34,14 +33,12 @@ import static org.junit.Assert.*;
  */
 public class UserLinkAdditionFinderTest
 {
-    private static Wiki testWiki, enWiki;
+    private final Wiki testWiki, enWiki;
 
     /**
-     *  Initialize wiki objects.
-     *  @throws Exception if a network error occurs
+     *  Construct a new wiki connection to make sure tests are independent.
      */
-    @BeforeClass
-    public static void setUpClass() throws Exception
+    public UserLinkAdditionFinderTest()
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
         enWiki = Wiki.createInstance("en.wikipedia.org");

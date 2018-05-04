@@ -31,25 +31,17 @@ import org.wikipedia.Wiki;
  */
 public class ExternalLinkPopularityTest
 {
-    private static Wiki testWiki;
-    private ExternalLinkPopularity elp;
+    private final Wiki testWiki;
+    private final ExternalLinkPopularity elp;
     
     /**
-     *  Sets up a shared connection to testWiki for testing.
+     *  Construct a tool object and wiki connection for every test so that tests
+     *  are independent.
      */
-    @BeforeClass
-    public static void setUpClass()
+    public ExternalLinkPopularityTest()
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
-    }
-    
-    /**
-     *  Construct a tool object for every test so that tests are independent.
-     */
-    @Before
-    public void setUp()
-    {
         elp = new ExternalLinkPopularity(testWiki);
     }
     

@@ -29,25 +29,17 @@ import org.wikipedia.Wiki;
  */
 public class ContributionSurveyorTest 
 {
-    private static Wiki enWiki;
-    private ContributionSurveyor surveyor;
+    private final Wiki enWiki;
+    private final ContributionSurveyor surveyor;
     
     /**
-     *  Sets up a shared connection to enWiki for testing.
+     *  Constructs a tool object and wiki connection for every test so that 
+     *  tests are independent.
      */
-    @BeforeClass
-    public static void setUpClass()
+    public ContributionSurveyorTest()
     {
         enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-    }
-    
-    /**
-     *  Construct a tool object for every test so that tests are independent.
-     */
-    @Before
-    public void beforeEach()
-    {
         surveyor = new ContributionSurveyor(enWiki);
     }
 

@@ -31,28 +31,21 @@ import org.wikipedia.Wiki;
  */
 public class ArticleEditorIntersectorTest
 {
-    private static Wiki enWiki, testWiki;
-    private ArticleEditorIntersector intersector, intersector_enWiki;
+    private final Wiki enWiki, testWiki;
+    private final ArticleEditorIntersector intersector, intersector_enWiki;
     
     /**
-     *  Sets up shared connections to enWiki and testWiki for testing.
+     *  Constructs a tool object and wiki connections for every test so that 
+     *  tests are independent.
      */
-    @BeforeClass
-    public static void setUpClass()
+    public ArticleEditorIntersectorTest()
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
         
         enWiki = Wiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-    }
-    
-    /**
-     *  Construct tool objects for every test so that tests are independent.
-     */
-    @Before
-    public void setUp()
-    {
+        
         intersector = new ArticleEditorIntersector(testWiki);
         intersector_enWiki = new ArticleEditorIntersector(enWiki);
     }

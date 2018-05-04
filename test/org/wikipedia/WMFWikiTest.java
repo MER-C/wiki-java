@@ -31,10 +31,12 @@ import static org.junit.Assert.*;
  */
 public class WMFWikiTest
 {
-    private static WMFWiki enWiki;
+    private final WMFWiki enWiki;
     
-    @BeforeClass
-    public static void setUpClass()
+    /**
+     *  Construct wiki objects for each test so that tests are independent.
+     */
+    public WMFWikiTest()
     {
         enWiki = WMFWiki.createInstance("en.wikipedia.org");
         enWiki.setMaxLag(-1);
