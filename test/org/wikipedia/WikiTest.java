@@ -27,7 +27,6 @@ import java.security.MessageDigest;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import javax.security.auth.login.CredentialNotFoundException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -338,7 +337,7 @@ public class WikiTest
             enWiki.changeUserPrivileges(user, granted, Collections.emptyList(), Collections.emptyList(), "dummy reason");
             fail("Attempted to set user privileges when logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -538,7 +537,7 @@ public class WikiTest
             enWiki.getDeletedHistory("Main Page");
             fail("Attempted to view deleted revisions while logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -589,7 +588,7 @@ public class WikiTest
             enWiki.delete("User:MER-C", "Not a reason");
             fail("Attempted to delete while logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -619,7 +618,7 @@ public class WikiTest
             enWiki.undelete("User:MER-C", "Not a reason");
             fail("Attempted to undelete while logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -641,7 +640,7 @@ public class WikiTest
             enWiki.block("MER-C", "Not a reason", null, null);
             fail("Attempted to block while logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -655,7 +654,7 @@ public class WikiTest
             enWiki.unblock("MER-C", "Not a reason");
             fail("Attempted to unblock while logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -682,7 +681,7 @@ public class WikiTest
             testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Not a reason", Boolean.FALSE, Arrays.asList(revision));
             fail("Attempted to RevisionDelete while logged out.");
         }
-        catch (CredentialNotFoundException expected)
+        catch (SecurityException expected)
         {
         }
     }
@@ -1162,13 +1161,21 @@ public class WikiTest
         HashMap<String, Object> content = new HashMap<>();
         content.put("title", "Hello");
         assertNull("parse: no such section", enWiki.parse(content, 50, true));
+        // FIXME: currently broken because makeHTTPRequest swallows the API error
+        // content.put("title", "Create a page");
+        // assertNull("parse: deleted page", enWiki.parse(content, -1, true));
         content.clear();
         content.put("revid", 1L << 62);
         assertNull("parse: bad revid", enWiki.parse(content, -1, true));
-        // FIXME: currently broken because makeHTTPRequest swallows the API error
-        // assertNull("parse: deleted page", enWiki.parse(-1L, "Create a page", null, -1));
-        // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
-        // assertNull("parse: revisiondeleted revision", enWiki.parse(596714684L, null, null, -1));
+        // https://en.wikipedia.org/w/index.php?oldid=596714684
+        try
+        {
+            content.put("revid", 596714684L);
+            assertNull("parse: revisiondeleted revision", enWiki.parse(content, -1, true));
+        }
+        catch (SecurityException expected)
+        {
+        }
         try
         {
             enWiki.parse(Collections.emptyMap(), -1, true);

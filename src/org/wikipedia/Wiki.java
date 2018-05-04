@@ -463,7 +463,7 @@ public class Wiki implements Comparable<Wiki>
     // wiki properties
     private boolean wgCapitalLinks = true;
     private ZoneId timezone = ZoneId.of("UTC");
-    private Locale locale;
+    private Locale locale = Locale.ENGLISH;
 
     // user management
     private final CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
@@ -1313,9 +1313,8 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Parses wikitext, revisions or pages.  Deleted pages, revisions to
-     *  deleted pages and RevisionDeleted revisions are not allowed if you
-     *  don't have the rights to view them. 
+     *  Parses wikitext, revisions or pages. Deleted pages and revisions to
+     *  deleted pages are not allowed if you don't have the rights to view them.
      * 
      *  <p>
      *  The returned HTML does not include "edit" links. Hyperlinks are 
@@ -1324,10 +1323,13 @@ public class Wiki implements Comparable<Wiki>
      *  use {@linkplain #getProtocol() this wiki's protocol}.
      *
      *  <p>
-     *  <b>WARNING</b>: the parameters to this method will be changed when the time
-     *  comes for JDK11 refactoring to accept Map.Entry instead. (I also haven't
-     *  decided how many more boolean parameters to add, and what format they will
-     *  take.)
+     *  <b>Warnings</b>:
+     *  <ul>
+     *  <li>The parameters to this method will be changed when the time comes 
+     *      for JDK11 refactoring to accept Map.Entry instead. I also haven't
+     *      decided how many more boolean parameters to add, and what format 
+     *      they will take.
+     *  </ul>
      *
      *  @param content a Map following the same scheme as specified by
      *  {@link #diff(Map, int, Map, int)}
@@ -1336,6 +1338,8 @@ public class Wiki implements Comparable<Wiki>
      *  @return the parsed wikitext
      *  @throws NoSuchElementException or IllegalArgumentException if no content
      *  was supplied for parsing
+     *  @throws SecurityException if you pass a RevisionDeleted revision and 
+     *  lack the necessary privileges
      *  @throws IOException if a network error occurs
      *  @see #parse(String)
      *  @see #getRenderedText(String)
@@ -1378,11 +1382,9 @@ public class Wiki implements Comparable<Wiki>
 
         String response = makeHTTPRequest(apiUrl, getparams, postparams, "parse");
         if (response.contains("error code=\""))
-            // Bad section numbers, revids, deleted pages, RevisionDeleted
-            // revisions should all end up here.
-            // FIXME: makeHTTPRequest() swallows the API errors "missingtitle" (deleted
-            // pages) and "permissiondenied" (fetching deleted content) to throw
-            // an UnknownError instead.
+            // Bad section numbers, revids, deleted pages should all end up here.
+            // FIXME: makeHTTPRequest() swallows the API error "missingtitle" 
+            // (deleted pages) to throw an UnknownError instead.
             return null;
         int y = response.indexOf('>', response.indexOf("<text")) + 1;
         int z = response.indexOf("</text>");
@@ -2250,8 +2252,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param title the page to delete
      *  @param reason the reason for deletion
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if the user lacks the permission to
-     *  delete
+     *  @throws SecurityException if the user lacks the privileges to delete
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
@@ -2263,7 +2264,7 @@ public class Wiki implements Comparable<Wiki>
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
         if (user == null || !user.isAllowedTo("delete"))
-            throw new CredentialNotFoundException("Cannot delete: Permission denied");
+            throw new SecurityException("Cannot delete: Permission denied");
         throttle();
 
         // edit token
@@ -2297,7 +2298,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param reason the reason for undeletion
      *  @param revisions a list of revisions for selective undeletion
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot undelete
+     *  @throws SecurityException if the user lacks the privileges to undelete
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if user is blocked
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
@@ -2309,7 +2310,7 @@ public class Wiki implements Comparable<Wiki>
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
         if (user == null || !user.isAllowedTo("undelete"))
-            throw new CredentialNotFoundException("Cannot undelete: Permission denied");
+            throw new SecurityException("Cannot undelete: Permission denied");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -2960,12 +2961,12 @@ public class Wiki implements Comparable<Wiki>
      *  @param title a page
      *  @return the deleted revisions of that page in that time span
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws SecurityException if we cannot obtain deleted revisions
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
      *  or Media page
      *  @since 0.30
      */
-    public Revision[] getDeletedHistory(String title) throws IOException, CredentialNotFoundException
+    public Revision[] getDeletedHistory(String title) throws IOException
     {
         return getDeletedHistory(title, null, null, false);
     }
@@ -2980,18 +2981,18 @@ public class Wiki implements Comparable<Wiki>
      *  in the JDK.
      *  @return the deleted revisions of that page in that time span
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws SecurityException if we cannot obtain deleted revisions
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
      *  or Media page
      *  @since 0.30
      */
     public Revision[] getDeletedHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse)
-        throws IOException, CredentialNotFoundException
+        throws IOException
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
         if (user == null || !user.isAllowedTo("deletedhistory"))
-            throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
+            throw new SecurityException("Permission denied: not able to view deleted history");
 
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "deletedrevisions");
@@ -3037,10 +3038,10 @@ public class Wiki implements Comparable<Wiki>
      *  @param u a user
      *  @return the deleted contributions of that user
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws SecurityException if we cannot obtain deleted revisions
      *  @since 0.30
      */
-    public Revision[] deletedContribs(String u) throws IOException, CredentialNotFoundException
+    public Revision[] deletedContribs(String u) throws IOException
     {
         return deletedContribs(u, null, null, false);
     }
@@ -3057,16 +3058,16 @@ public class Wiki implements Comparable<Wiki>
      *  @param namespace a list of namespaces
      *  @return the deleted contributions of that user
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws SecurityException if we cannot obtain deleted revisions
      *  @since 0.30
      */
     public Revision[] deletedContribs(String username, OffsetDateTime end, OffsetDateTime start, boolean reverse, int... namespace)
-        throws IOException, CredentialNotFoundException
+        throws IOException
     {
         // FIXME: parameters are in the wrong order!
         // admin queries are annoying
         if (user == null || !user.isAllowedTo("deletedhistory"))
-            throw new CredentialNotFoundException("Permission denied: not able to view deleted history");
+            throw new SecurityException("Permission denied: not able to view deleted history");
 
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "alldeletedrevisions");
@@ -3118,14 +3119,14 @@ public class Wiki implements Comparable<Wiki>
      *  @param namespace one (and only one) namespace -- not ALL_NAMESPACES
      *  @return (see above)
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot view deleted pages
+     *  @throws SecurityException if we cannot view deleted pages
      *  @throws IllegalArgumentException if namespace == ALL_NAMESPACES
      *  @since 0.31
      */
-    public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException, CredentialNotFoundException
+    public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException
     {
         if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
-            throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
+            throw new SecurityException("Permission denied: not able to view deleted history or text.");
 
         // disallow ALL_NAMESPACES, this query is extremely slow and likely to error out.
         if (namespace == ALL_NAMESPACES)
@@ -3156,13 +3157,13 @@ public class Wiki implements Comparable<Wiki>
      *  @param page a page
      *  @return the deleted text, or null if there is no deleted text to retrieve
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if we cannot obtain deleted revisions
+     *  @throws SecurityException if we cannot obtain deleted revisions
      *  @since 0.30
      */
-    public String getDeletedText(String page) throws IOException, CredentialNotFoundException
+    public String getDeletedText(String page) throws IOException
     {
         if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
-            throw new CredentialNotFoundException("Permission denied: not able to view deleted history or text.");
+            throw new SecurityException("Permission denied: not able to view deleted history or text.");
 
         // TODO: this can be multiquery(?)
         Map<String, String> getparams = new HashMap<>();
@@ -3195,7 +3196,7 @@ public class Wiki implements Comparable<Wiki>
      *  Special or Media namespaces. MediaWiki does not support moving of
      *  these pages.
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't move it
      *  @since 0.16
@@ -3222,7 +3223,7 @@ public class Wiki implements Comparable<Wiki>
      *  Special or Media namespaces. MediaWiki does not support moving of these
      *  pages.
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws CredentialException if page is protected and we can't move it
      *  @since 0.16
@@ -3232,16 +3233,10 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Tried to move a Special or Media page.");
-
-        throttle();
-        // check for log in
         if (user == null || !user.isAllowedTo("move"))
-        {
-            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot move pages.");
-            log(Level.SEVERE, "move", "Cannot move - permission denied: " + ex);
-            throw ex;
-        }
-
+            throw new SecurityException("Permission denied: cannot move pages.");
+        throttle();
+        
         // protection and token
         Map<String, Object> info = getPageInfo(title);
         // determine whether the page exists
@@ -3300,13 +3295,13 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws CredentialNotFoundException if we cannot protect
+     *  @throws SecurityException if we cannot protect
      *  @since 0.30
      */
     public synchronized void protect(String page, Map<String, Object> protectionstate, String reason) throws IOException, LoginException
     {
         if (user == null || !user.isAllowedTo("protect"))
-            throw new CredentialNotFoundException("Cannot protect: permission denied.");
+            throw new SecurityException("Cannot protect: permission denied.");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -3355,7 +3350,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @throws AccountLockedException if user is blocked
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws CredentialNotFoundException if we cannot protect
+     *  @throws SecurityException if we cannot protect
      *  @since 0.30
      */
     public void unprotect(String page, String reason) throws IOException, LoginException
@@ -3462,7 +3457,7 @@ public class Wiki implements Comparable<Wiki>
      *  the corresponding page must be made by this revision's user in order for
      *  the rollback to succeed.
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if the user is not an admin
+     *  @throws SecurityException if we do not have the privileges to rollback
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if the user is blocked
      *  @since 0.19
@@ -3488,7 +3483,7 @@ public class Wiki implements Comparable<Wiki>
      *  default ([[MediaWiki:Revertpage]]).
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
-     *  @throws CredentialNotFoundException if the user cannot rollback
+     *  @throws SecurityException if we do not have the privileges to rollback
      *  @throws AccountLockedException if the user is blocked
      *  @see <a href="https://mediawiki.org/wiki/Manual:Parameters_to_index.php#rollback">
      *  MediaWiki documentation</a>
@@ -3496,9 +3491,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void rollback(Revision revision, boolean bot, String reason) throws IOException, LoginException
     {
-        // check rights
         if (user == null || !user.isAllowedTo("rollback"))
-            throw new CredentialNotFoundException("Permission denied: cannot rollback.");
+            throw new SecurityException("Permission denied: cannot rollback.");
         // This method is intentionally NOT throttled.
 
         // Perform the rollback.
@@ -3543,8 +3537,8 @@ public class Wiki implements Comparable<Wiki>
      *  the same type (no mixing Revisions or LogEntries). Pseudo-LogEntries and
      *  revisions to deleted pages are currently not allowed.
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if you do not have the rights to
-     *  delete revisions or log entries
+     *  @throws SecurityException if we do not have the privileges to delete
+     *  Revisions or LogEntries
      *  @throws AccountLockedException if the user is blocked
      *  @see <a href="https://mediawiki.org/wiki/Help:RevisionDelete">MediaWiki
      *  help page</a>
@@ -3574,7 +3568,7 @@ public class Wiki implements Comparable<Wiki>
             ids[i] = temp.getID();
         }
         if (user == null || !user.isAllowedTo("deleterevision", "deletelogentry"))
-            throw new CredentialNotFoundException("Permission denied: cannot revision delete.");
+            throw new SecurityException("Permission denied: cannot revision delete.");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -3726,9 +3720,9 @@ public class Wiki implements Comparable<Wiki>
      *  Returns the empty string for moves, protections and similar dummy edits
      *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
      *  and pairs of revisions where there is no difference. Returns
-     *  {@code null} for bad section numbers and revision IDs. Deleted pages,
-     *  revisions to deleted pages and RevisionDeleted revisions are all not
-     *  allowed if you don't have the rights to see them.
+     *  {@code null} for bad section numbers and revision IDs. Deleted pages and
+     *  revisions to deleted pages are not allowed if you don't have the
+     *  necessary privileges.
      *
      *  <p>
      *  <var>from</var> refers to content on the left side of the diff table
@@ -3758,6 +3752,8 @@ public class Wiki implements Comparable<Wiki>
      *  edits or null as described above
      *  @throws NoSuchElementException or IllegalArgumentException if no from or
      *  to content is specified
+     *  @throws SecurityException if you pass a RevisionDeleted revision and 
+     *  don't have the necessary privileges
      *  @throws IOException if a network error occurs
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
      *  @since 0.35
@@ -3837,11 +3833,9 @@ public class Wiki implements Comparable<Wiki>
             // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
             return "";
         else
-            // Bad section numbers, revids, deleted pages, RevisionDeleted
-            // revisions should all end up here.
-            // FIXME: fetch() swallows the API errors "missingtitle" (deleted
-            // pages) and "permissiondenied" (fetching deleted content) to throw
-            // an UnknownError instead.
+            // Bad section numbers, revids, deleted pages should all end up here.
+            // FIXME: fetch() swallows the API error "missingtitle" (deleted
+            // pages) to throw an UnknownError instead.
             return null;
     }
 
@@ -4241,7 +4235,7 @@ public class Wiki implements Comparable<Wiki>
      *  if overwriting an existing file
      *  @param reason an upload summary (defaults to <var>contents</var>, use ""
      *  to not specify one)
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
@@ -4254,11 +4248,7 @@ public class Wiki implements Comparable<Wiki>
     {
         // check for log in
         if (user == null || !user.isAllowedTo("upload"))
-        {
-            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot upload files.");
-            log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
-            throw ex;
-        }
+            throw new SecurityException("Permission denied: cannot upload files.");
         filename = removeNamespace(filename);
         throttle();
 
@@ -4367,7 +4357,7 @@ public class Wiki implements Comparable<Wiki>
      *  if overwriting an existing file
      *  @param reason an upload summary (defaults to <var>contents</var>, use ""
      *  to not specify one)
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @throws CredentialException if (page is protected OR file is on a central
      *  repository) and we can't upload
      *  @throws CredentialExpiredException if cookies have expired
@@ -4381,11 +4371,7 @@ public class Wiki implements Comparable<Wiki>
     {
         // check for log in
         if (user == null || !user.isAllowedTo("upload_by_url"))
-        {
-            CredentialNotFoundException ex = new CredentialNotFoundException("Permission denied: cannot upload files via URL.");
-            log(Level.SEVERE, "upload", "Cannot upload - permission denied." + ex);
-            throw ex;
-        }
+            throw new SecurityException("Permission denied: cannot upload files via URL.");
         filename = removeNamespace(filename);
         throttle();
 
@@ -4977,6 +4963,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param message the plain text message
      *  @param emailme whether to send a copy of the message to your email address
      *  @throws IOException if a network error occurs
+     *  @throws SecurityException if we cannot send email
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked from sending email
      *  @throws UnsupportedOperationException if email is disabled or if you do
@@ -4987,16 +4974,15 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void emailUser(User usertomail, String message, String subject, boolean emailme) throws IOException, LoginException
     {
-        if (this.user == null || !user.isAllowedTo("sendemail"))
-            throw new CredentialNotFoundException("Permission denied: cannot email.");
-        throttle();
-
         if (!usertomail.canBeEmailed())
         {
             // should throw an exception here
             log(Level.WARNING, "emailUser", "User " + user.getUsername() + " is not emailable");
             return;
         }
+        if (user == null || !user.isAllowedTo("sendemail"))
+            throw new SecurityException("Permission denied: cannot email.");
+        throttle();
 
         // post email
         Map<String, String> getparams = new HashMap<>();
@@ -5040,7 +5026,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param expiry when the block expires (use {@code null} for indefinite)
      *  @param blockoptions (see above)
      *  @throws IllegalArgumentException if <var>expiry</var> is in the past
-     *  @throws CredentialNotFoundException if not an admin
+     *  @throws SecurityException if the user lacks the privileges to block
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
@@ -5056,7 +5042,7 @@ public class Wiki implements Comparable<Wiki>
         if (expiry != null && expiry.isBefore(OffsetDateTime.now()))
             throw new IllegalArgumentException("Cannot set a block with a past expiry time!");
         if (user == null || !user.isA("sysop"))
-            throw new CredentialNotFoundException("Cannot unblock: permission denied!");
+            throw new SecurityException("Cannot unblock: permission denied!");
         throttle();
 
         // send request
@@ -5088,7 +5074,7 @@ public class Wiki implements Comparable<Wiki>
      *  Unblocks a user. This method is {@linkplain #setThrottle(int) throttled}.
      *  @param blockeduser the user to unblock
      *  @param reason the reason for unblocking
-     *  @throws CredentialNotFoundException if not an admin
+     *  @throws SecurityException if the user lacks the privileges to unblock
      *  @throws IOException if a network error occurs
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
@@ -5099,7 +5085,7 @@ public class Wiki implements Comparable<Wiki>
     public synchronized void unblock(String blockeduser, String reason) throws IOException, LoginException
     {
         if (user == null || !user.isA("sysop"))
-            throw new CredentialNotFoundException("Cannot unblock: permission denied!");
+            throw new SecurityException("Cannot unblock: permission denied!");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -5141,7 +5127,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IllegalArgumentException if expiry.length != 0, 1 or
      *  addedgroups.length or if any expiry time is in the past
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if you are not logged in
+     *  @throws SecurityException if you are not logged in
      *  @throws CredentialExpiredException if cookies have expired
      *  @throws AccountLockedException if you have been blocked
      *  @since 0.35
@@ -5159,7 +5145,7 @@ public class Wiki implements Comparable<Wiki>
         if (expiry.stream().anyMatch(date -> date.isBefore(now)))
             throw new IllegalArgumentException("Supplied dates must be in the future!");
         if (user == null)
-            throw new CredentialNotFoundException("You need to be logged in to change user privileges.");
+            throw new SecurityException("You need to be logged in to change user privileges.");
         
         // warn for ignored groups
         List<String> groups = u.getGroups();
@@ -5196,11 +5182,11 @@ public class Wiki implements Comparable<Wiki>
      *  Adds a page to the watchlist. You need to be logged in to use this.
      *  @param titles the pages to add to the watchlist
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @see #unwatch
      *  @since 0.18
      */
-    public void watch(String... titles) throws IOException, CredentialNotFoundException
+    public void watch(String... titles) throws IOException
     {
         watchInternal(false, titles);
         watchlist.addAll(Arrays.asList(titles));
@@ -5212,11 +5198,11 @@ public class Wiki implements Comparable<Wiki>
      *
      *  @param titles the pages to remove from the watchlist.
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @see #watch
      *  @since 0.18
      */
-    public void unwatch(String... titles) throws IOException, CredentialNotFoundException
+    public void unwatch(String... titles) throws IOException
     {
         watchInternal(true, titles);
         watchlist.removeAll(Arrays.asList(titles));
@@ -5229,12 +5215,12 @@ public class Wiki implements Comparable<Wiki>
      *  @param titles the titles to (un)watch
      *  @param unwatch whether we should unwatch these pages
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @see #watch
      *  @see #unwatch
      *  @since 0.18
      */
-    protected void watchInternal(boolean unwatch, String... titles) throws IOException, CredentialNotFoundException
+    protected void watchInternal(boolean unwatch, String... titles) throws IOException
     {
         // create the watchlist cache
         String state = unwatch ? "unwatch" : "watch";
@@ -5259,10 +5245,10 @@ public class Wiki implements Comparable<Wiki>
      *  Equivalent to [[Special:Watchlist/raw]].
      *  @return the contents of the watchlist
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @since 0.18
      */
-    public String[] getRawWatchlist() throws IOException, CredentialNotFoundException
+    public String[] getRawWatchlist() throws IOException
     {
         return getRawWatchlist(true);
     }
@@ -5274,14 +5260,14 @@ public class Wiki implements Comparable<Wiki>
      *  (no online activity, if the cache exists)
      *  @return the contents of the watchlist
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @since 0.18
      */
-    public String[] getRawWatchlist(boolean cache) throws IOException, CredentialNotFoundException
+    public String[] getRawWatchlist(boolean cache) throws IOException
     {
         // filter anons
         if (user == null)
-            throw new CredentialNotFoundException("The watchlist is available for registered users only.");
+            throw new SecurityException("The watchlist is available for registered users only.");
 
         // cache
         if (watchlist != null && cache)
@@ -5313,10 +5299,10 @@ public class Wiki implements Comparable<Wiki>
      *  @param title the title to be checked
      *  @return whether that page is watched
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @since 0.18
      */
-    public boolean isWatched(String title) throws IOException, CredentialNotFoundException
+    public boolean isWatched(String title) throws IOException
     {
         // populate the watchlist cache
         if (watchlist == null)
@@ -5333,10 +5319,10 @@ public class Wiki implements Comparable<Wiki>
      *
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @since 0.27
      */
-    public Revision[] watchlist() throws IOException, CredentialNotFoundException
+    public Revision[] watchlist() throws IOException
     {
         return watchlist(null);
     }
@@ -5358,13 +5344,13 @@ public class Wiki implements Comparable<Wiki>
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if not logged in
+     *  @throws SecurityException if not logged in
      *  @since 0.27
      */
-    public Revision[] watchlist(Map<String, Boolean> options, int... ns) throws IOException, CredentialNotFoundException
+    public Revision[] watchlist(Map<String, Boolean> options, int... ns) throws IOException
     {
         if (user == null)
-            throw new CredentialNotFoundException("Not logged in");
+            throw new SecurityException("Not logged in");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlist");
         getparams.put("wlprop", "ids|title|timestamp|user|comment|parsedcomment|sizes");
@@ -5720,10 +5706,14 @@ public class Wiki implements Comparable<Wiki>
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
      *  Returns a list of pairs, where the first item is a page and the second
      *  the relevant url. Wildcards (*) are only permitted at the start of the
-     *  search string. Searching by namespace is unreliable if <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode is
-     *  enabled</a>. This includes pretty much all Wikimedia wikis and any
-     *  frequently visited site.
+     *  search string. 
+     * 
+     *  <p><b>Warnings:</b>
+     *  <ul>
+     *  <li>Searching by namespace with a query limit won't return that many 
+     *      results if <a href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode 
+     *      is enabled</a>. This is the case for most large wikis.
+     *  </ul>
      *
      *  @param pattern the pattern (String) to search for (e.g. example.com,
      *  *.example.com)
@@ -5890,6 +5880,8 @@ public class Wiki implements Comparable<Wiki>
      *  one.
      *  @param target the target of the action(s).
      *  @throws IOException if a network error occurs
+     *  @throws SecurityException if the user lacks the credentials needed to
+     *  access a privileged log
      *  @return the specified log entries
      *  @since 0.08
      */
@@ -5908,6 +5900,8 @@ public class Wiki implements Comparable<Wiki>
      *  {@code null} to not specify one
      *  @param amount the number of entries to get (overrides global limits)
      *  @throws IOException if a network error occurs
+     *  @throws SecurityException if the user lacks the credentials needed to
+     *  access a privileged log
      *  @throws IllegalArgumentException if the log type doesn't exist
      *  @return the specified log entries
      */
@@ -5938,7 +5932,9 @@ public class Wiki implements Comparable<Wiki>
      *  be used with target.
      *  @throws IOException if a network error occurs
      *  @throws IllegalArgumentException if {@code start.isAfter(end)}
-     *  or amount &lt; 1
+     *  or {@literal amount < 1}
+     *  @throws SecurityException if the user lacks the credentials needed to
+     *  access a privileged log
      *  @return the specified log entries
      *  @since 0.08
      */
@@ -6298,28 +6294,26 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Fetches data from one of a set of miscellaneous special pages.
-     *  WARNING: some of these may be *CACHED*, *DISABLED* and/or *LIMITED* on
-     *  large wikis.
+     *  
+     *  <p><b>Warnings:</b>
+     *  <ul>
+     *  <li>Many reports may be cached, limited and/or disabled if <a 
+     *      href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode
+     *      is enabled</a>. This is the case for most large wikis.
+     *  </ul>
      *
-     *  @param page one of { Ancientpages, BrokenRedirects, Deadendpages,
-     *  Disambiguations, DoubleRedirects, Listredirects, Lonelypages, Longpages,
-     *  Mostcategories, Mostimages, Mostinterwikis, Mostlinkedcategories,
-     *  Mostlinkedtemplates, Mostlinked, Mostrevisions, Fewestrevisions, Shortpages,
-     *  Uncategorizedcategories, Uncategorizedpages, Uncategorizedimages,
-     *  Uncategorizedtemplates, Unusedcategories, Unusedimages, Wantedcategories,
-     *  Wantedfiles, Wantedpages, Wantedtemplates, Unwatchedpages, Unusedtemplates,
-     *  Withoutinterwiki }. This parameter is *case sensitive*.
+     *  @param page one of the qppage values specifed by the documentation below
+     *  (case sensitive)
      *  @return the list of pages returned by that particular special page
      *  @throws IOException if a network error occurs
-     *  @throws CredentialNotFoundException if page=Unwatchedpages and we cannot
-     *  read it
+     *  @throws SecurityException if the user lacks the privileges necessary to
+     *  view a report (e.g. unwatchedpages)
      *  @since 0.28
+     *  @see <a href="https://mediawiki.org/w/api.php?action=help&modules=query%2Bquerypage">
+     *  MediaWiki documentation</a>
      */
-    public String[] queryPage(String page) throws IOException, CredentialNotFoundException
+    public String[] queryPage(String page) throws IOException
     {
-        if (page.equals("Unwatchedpages") && (user == null || !user.isAllowedTo("unwatchedpages")))
-            throw new CredentialNotFoundException("User does not have the \"unwatchedpages\" permission.");
-
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "querypage");
         getparams.put("qppage", page);
@@ -7124,8 +7118,12 @@ public class Wiki implements Comparable<Wiki>
          *  Hyperlinks in the returned HTML are rewritten from useless relative
          *  URLs to full URLs that point to the wiki page in question. Returns 
          *  {@code null} if {@linkplain #isCommentDeleted() the comment was 
-         *  RevisionDeleted} and you lack the necessary privileges. WARNING: Not 
-         *  available through {@link #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
+         *  RevisionDeleted} and you lack the necessary privileges. 
+         * 
+         *  <p><b>Warnings:</b>
+         *  <ul>
+         *  <li>Not available through {@link #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
+         *  </ul>
          *  
          *  @return the comment associated with the event, parsed into HTML
          *  @see #getComment()
@@ -7570,8 +7568,14 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Returns the SHA-1 hash (base 16, lower case) of the content of this
          *  revision, or {@code null} if the revision content is RevisionDeleted
-         *  and we cannot access it. Warning: not accessible from watchlist or
-         *  contribs (blame the MediaWiki API for this).
+         *  and we cannot access it. 
+         * 
+         *  <p><b>Warnings:</b>
+         *  <ul>
+         *  <li>Not available through {@link #watchlist(Map, int...)} or {@link
+         *      #contribs(String[], String, OffsetDateTime, OffsetDateTime, Map, int...)}.
+         *  </ul>
+         * 
          *  @return (see above)
          *  @since 0.35
          */
@@ -7581,17 +7585,14 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Returns a HTML rendered diff table of this revision to <var>other</var>;
-         *  see the table at the <a href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns the empty string for moves, protections and similar dummy
-         *  edits (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
-         *  and pairs of revisions where there is no difference. Revisions to
-         *  deleted pages and RevisionDeleted revisions if you don't have the
-         *  rights to see them are both not allowed.
+         *  Returns a HTML rendered diff table of this revision to <var>other</var>.
+         *  See {@link #diff(Map, int, Map, int)} for full documentation.
          *
          *  @param other another revision on the same page.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
+         *  @throws SecurityException if this or the other revision is 
+         *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.21
          */
         public String diff(Revision other) throws IOException
@@ -7612,6 +7613,8 @@ public class Wiki implements Comparable<Wiki>
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
+         *  @throws SecurityException if this or the other revision is 
+         *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.21
          */
         public String diff(String text) throws IOException
@@ -7625,19 +7628,16 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Returns a HTML rendered diff table from this revision to the given
-         *  <var>oldid</var>; see the table at the <a
-         *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
-         *  Returns the empty string for moves, protections and similar dummy edits
-         *  (<a href="https://en.wikipedia.org/w/index.php?oldid=738178354&diff=prev">example</a>)
-         *  and pairs of revisions where there is no difference. Revisions to
-         *  deleted pages and RevisionDeleted revisions if you don't have the
-         *  rights to see them are both not allowed.
+         *  <var>oldid</var>. See {@link #diff(Map, int, Map, int)} for full 
+         *  documentation.
          *
          *  @param oldid the oldid of a revision on the same page. {@link
          *  Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION} and {@link
          *  Wiki#CURRENT_REVISION} can be used here for obvious effect.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
+         *  @throws SecurityException if this or the other revision is 
+         *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.26
          */
         public String diff(long oldid) throws IOException
@@ -7704,12 +7704,15 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Determines whether this revision created a new page. <br>
-         *  WARNING: Will return false for all revisions prior to 2007
-         *  (I think?) -- this is a MediaWiki problem.<br>
-         *  WARNING: Returning true does not imply this is the bottommost
-         *  revision on the page due to histmerges.<br>
-         *  WARNING: Not accessible through getPageHistory() -- a MW problem.
+         *  Determines whether this revision created a new page. 
+         * 
+         *  <p><b>Warnings:</b>
+         *  <ul>
+         *  <li>Returning {@code true} does not imply this is the bottommost
+         *  revision on the page due to histmerges.
+         *  <li>Not available through {@link #getPageHistory(String, OffsetDateTime, OffsetDateTime, boolean)}
+         *  </ul>
+         * 
          *  @return (see above)
          *  @since 0.27
          */
@@ -7888,8 +7891,7 @@ public class Wiki implements Comparable<Wiki>
          *  Reverts this revision using the rollback method.
          *
          *  @throws IOException if a network error occurs
-         *  @throws CredentialNotFoundException if not logged in or user is not
-         *  an admin
+         *  @throws SecurityException if the user lacks the privileges to rollback
          *  @throws CredentialExpiredException if cookies have expired
          *  @throws AccountLockedException if the user is blocked
          *  @see Wiki#rollback(org.wikipedia.Wiki.Revision)
@@ -7906,8 +7908,7 @@ public class Wiki implements Comparable<Wiki>
          *  @param bot mark this and the reverted revision(s) as bot edits
          *  @param reason (optional) a custom reason
          *  @throws IOException if a network error occurs
-         *  @throws CredentialNotFoundException if not logged in or user is not
-         *  an admin
+         *  @throws SecurityException if the user lacks the privileges to rollback
          *  @throws CredentialExpiredException if cookies have expired
          *  @throws AccountLockedException if the user is blocked
          *  @see Wiki#rollback(org.wikipedia.Wiki.Revision)
@@ -7936,6 +7937,8 @@ public class Wiki implements Comparable<Wiki>
      *  API into things we want, dumping them into the given List
      *  @return the query results
      *  @throws IOException if a network error occurs
+     *  @throws SecurityException if we don't have the credentials to perform a
+     *  privileged action (mostly avoidable)
      *  @since 0.34
      */
     protected <T> List<T> makeListQuery(String queryPrefix, String urlbase, Map<String, String> getparams,
@@ -8008,6 +8011,8 @@ public class Wiki implements Comparable<Wiki>
      *  @param caller the caller of this method
      *  @return the server response
      *  @throws IOException if a network error occurs
+     *  @throws SecurityException if we don't have the credentials to perform a
+     *  privileged action (mostly avoidable)
      *  @throws AssertionError if assert=user|bot fails
      *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
      *  @since 0.18
@@ -8175,12 +8180,12 @@ public class Wiki implements Comparable<Wiki>
         if (response.contains("<error code="))
         {
             String error = parseAttribute(response, "code", 0);
+            String description = parseAttribute(response, "info", 0);
             switch (error)
             {
                 case "assertbotfailed":
-                    throw new AssertionError("Bot privileges missing or revoked, or session expired.");
                 case "assertuserfailed":
-                    throw new AssertionError("Session expired.");
+                    throw new AssertionError(description);
                 // harmless, pass error to calling method
                 case "nosuchsection":     // getSectionText(), parse()
                 case "nosuchfromsection": // diff()
@@ -8190,6 +8195,8 @@ public class Wiki implements Comparable<Wiki>
                 // Something *really* bad happened. Most of these are self-explanatory
                 // and are indicative of bugs (not necessarily in this framework) or
                 // can be avoided entirely.
+                case "permissiondenied":
+                    throw new SecurityException(description);
                 default:
                     throw new UnknownError("MW API error. Server response was: " + response);
             }
@@ -8285,7 +8292,7 @@ public class Wiki implements Comparable<Wiki>
      *
      *  @param line the response from the server to analyze
      *  @param caller what we tried to do
-     *  @throws CredentialNotFoundException if permission denied
+     *  @throws CredentialException if the page is protected
      *  @throws AccountLockedException if the user is blocked
      *  @throws HttpRetryException if the database is locked or action was
      *  throttled and a retry failed
@@ -8331,7 +8338,7 @@ public class Wiki implements Comparable<Wiki>
             case "customjsprotected":
             case "customcssjsprotected":
             case "cascadeprotected":
-                throw new CredentialNotFoundException("Page is protected.");
+                throw new CredentialException("Page is protected.");
             // banned accounts
             case "blocked":
             case "blockedfrommail":

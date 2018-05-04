@@ -1,6 +1,6 @@
 /**
  *  @(#)WMFWiki.java 0.01 29/03/2011
- *  Copyright (C) 2011 - 2017 MER-C and contributors
+ *  Copyright (C) 2011 - 2018 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -44,6 +44,13 @@ public class WMFWiki extends Wiki
      *  @see #getAbuseLogEntries(int[], String, String, OffsetDateTime, OffsetDateTime) 
      */
     public static final String ABUSE_LOG = "abuselog";
+    
+    /**
+     *  Denotes entries in the spam blacklist log. This is a privileged log type.
+     *  Requires extension SpamBlacklist.
+     *  @see Wiki#getLogEntries
+     */
+    public static final String SPAM_BLACKLIST_LOG = "spamblacklist";
     
     /**
      *  Creates a new WMF wiki that represents the English Wikipedia.

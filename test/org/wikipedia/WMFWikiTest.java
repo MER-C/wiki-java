@@ -49,12 +49,32 @@ public class WMFWikiTest
         assertTrue(enWiki.isSpamBlacklisted("youtu.be"));
     }
     
+    /**
+     *  Attempts to access a privileged log that isn't available in vanilla
+     *  MediaWiki.
+     *  @throws Exception if a network error occurs
+     */
+    @Test
+    public void getLogEntries() throws Exception
+    {
+        try
+        {
+            enWiki.getLogEntries(WMFWiki.SPAM_BLACKLIST_LOG, null, 10);
+        }
+        catch (SecurityException expected)
+        {
+        }
+    }
+    
+    /**
+     *  Test fetching the abuse log. This is a semi-privileged action that 
+     *  requires the test runner to be not blocked (even though login is not 
+     *  required). CI services (Travis, Codeship, etc) run on colocation 
+     *  facilities which are blocked as proxies, causing the test to fail.
+     *  @throws Exception if a network error occurs
+     */
     @Test
     @Ignore
-    // This is a semi-privileged action that requires the test runner to be not
-    // blocked (even though login is not required). CI services (Travis,  
-    // Codeship, etc) run on colocation facilities which are blocked as proxies,
-    // causing the test to fail.
     public void getAbuseFilterLogs() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:AbuseLog?wpSearchUser=Miniapolis&wpSearchTitle=Catopsbaatar&wpSearchFilter=1

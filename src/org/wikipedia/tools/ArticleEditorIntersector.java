@@ -138,7 +138,7 @@ public class ArticleEditorIntersector
                 {
                     stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user, editsafter, editsbefore, false)));
                 }
-                catch (CredentialNotFoundException ex)
+                catch (SecurityException ex)
                 {
                     System.err.println("Permission denied: Cannot retrieve deleted revisions.");
                     System.exit(2);
@@ -354,7 +354,7 @@ public class ArticleEditorIntersector
                     if (adminmode)
                         str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article, earliestdate, latestdate, false)));
                 }
-                catch (IOException | CredentialNotFoundException ignored)
+                catch (IOException | SecurityException ignored)
                 {
                     // If a network error occurs when fetching the live history,
                     // that page will be skipped. If a network or privilege error 
@@ -453,7 +453,7 @@ public class ArticleEditorIntersector
                 {
                     return Arrays.stream(wiki.deletedContribs(user));
                 }
-                catch (IOException | CredentialNotFoundException ex)
+                catch (IOException | SecurityException ex)
                 {
                     // If a network or privilege error occurs when fetching 
                     // deleted contributions, that will be skipped with live 
