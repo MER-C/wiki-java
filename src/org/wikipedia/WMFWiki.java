@@ -94,6 +94,7 @@ public class WMFWiki extends Wiki
     public static WMFWiki[] getSiteMatrix() throws IOException
     {
         WMFWiki wiki = createInstance("en.wikipedia.org");
+        wiki.requiresExtension("SiteMatrix");
         wiki.setMaxLag(0);
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
@@ -120,21 +121,42 @@ public class WMFWiki extends Wiki
         temp.log(Level.INFO, "WMFWiki.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
         return wikis.toArray(new WMFWiki[size]);
     }
+
+    /**
+     *  Require the given extension be installed on this wiki, or throw an 
+     *  UnsupportedOperationException if it isn't.
+     *  @param extension the name of the extension to check
+     *  @throws UnsupportedOperationException if that extension is not
+     *  installed on this wiki
+     *  @throws UncheckedIOException if the site info cache is not populated
+     *  and a network error occurs when populating it
+     *  @see Wiki#installedExtensions
+     */
+    public void requiresExtension(String extension)
+    {
+        if (!installedExtensions().contains(extension))
+            throw new UnsupportedOperationException("Extension \"" + extension
+                + "\" is not installed on " + getDomain() + ". "
+                + "Please check the extension name and [[Special:Version]].");
+    }
     
     /**
-     *  Get the global usage for a file (requires extension GlobalUsage).
+     *  Get the global usage for a file.
      * 
      *  @param title the title of the page (must contain "File:")
      *  @return the global usage of the file, including the wiki and page the file is used on
      *  @throws IOException if a network error occurs
-     *  @throws UnsupportedOperationException if <code>{@link Wiki#namespace(String) 
+     *  @throws IllegalArgumentException if <code>{@link Wiki#namespace(String) 
      *  namespace(title)} != {@link Wiki#FILE_NAMESPACE}</code>
+     *  @throws UnsupportedOperationException if the GlobalUsage extension is 
+     *  not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:GlobalUsage">Extension:GlobalUsage</a>
      */
     public String[][] getGlobalUsage(String title) throws IOException
     {
+        requiresExtension("Global Usage");
     	if (namespace(title) != FILE_NAMESPACE)
-            throw new UnsupportedOperationException("Cannot retrieve Globalusage for pages other than File pages!");
+            throw new IllegalArgumentException("Cannot retrieve Globalusage for pages other than File pages!");
         
     	Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "globalusage");
@@ -154,14 +176,17 @@ public class WMFWiki extends Wiki
     
     /**
      *  Determines whether a site is on the spam blacklist, modulo Java/PHP 
-     *  regex differences (requires extension SpamBlacklist).
+     *  regex differences.
      *  @param site the site to check
-     *  @throws IOException if a network error occurs
      *  @return whether a site is on the spam blacklist
+     *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if the SpamBlacklist extension
+     *  is not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
      */
     public boolean isSpamBlacklisted(String site) throws IOException
     {
+        requiresExtension("SpamBlacklist");
         if (globalblacklist == null)
         {
             WMFWiki meta = createInstance("meta.wikimedia.org");
@@ -208,11 +233,13 @@ public class WMFWiki extends Wiki
      *  null to skip)
      *  @return the abuse filter log entries
      *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws UnsupportedOperationException if the AbuseFilter extension
+     *  is not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:AbuseFilter">Extension:AbuseFilter</a>
      */
     public List<LogEntry> getAbuseLogEntries(int[] filters, String user, String title, OffsetDateTime earliest, OffsetDateTime latest) throws IOException
     {
-        // WARNING: don't use a BotPassword for this! See https://phabricator.wikimedia.org/T191703
+        requiresExtension("Abuse Filter");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "abuselog");
         if (filters.length > 0)

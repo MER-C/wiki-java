@@ -16,6 +16,21 @@ modules are required.
 Latest stable version: [0.34](https://github.com/MER-C/wiki-java/releases/tag/0.34) -- 
 MediaWiki versions 1.28+
 
+## Dependencies
+
+| Class/Package            | Java          | MediaWiki extensions |
+| ------------------------ |-------------- | -------------------- |
+| org.wikipedia.Wiki       | None          | None                 |
+| org.wikipedia.WMFWiki    | None          | As indicated. Works on WMF sites. |
+| org.wikipedia.*Utils     | None          | None                 |
+| org.wikipedia.tools.*    | None          | See below.           |
+| org.wikipedia.servlets.* | javax.servlet | See below.           |
+
+Note: Some tools and servlets are hardcoded to work on WMF sites only, and in
+some cases for just the English Wikipedia. (Some tools solve en.wp specific
+problems). They should all work on WMF sites. If you would like tool coverage 
+for your wiki, please file a bug report.
+
 ## Bug reports
 
 Bug reports may be filed in the Issue tracker or at [my talk page](https://en.wikipedia.org/wiki/User_talk:MER-C). 

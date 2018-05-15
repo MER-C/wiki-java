@@ -40,7 +40,9 @@ import javax.security.auth.login.*;
  *  Requires JDK 1.8 or greater. Uses the <a
  *  href="https://mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.31), otherwise some functions may not work.
+ *  of MediaWiki (1.31), otherwise some functions may not work. This framework
+ *  requires no dependencies outside the core JDK and does not implement any
+ *  functionality added by MediaWiki extensions.
  *  <p>
  *  Extended documentation is available
  *  <a href="https://github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>.
@@ -49,7 +51,7 @@ import javax.security.auth.login.*;
  *  </p>
  *  Please file bug reports <a href="https://en.wikipedia.org/wiki/User_talk:MER-C">here</a>
  *  or at the <a href="https://github.com/MER-C/wiki-java/issues">Github issue
- * tracker</a>.
+ *  tracker</a>.
  *
  *  @author MER-C and contributors
  *  @version 0.34
@@ -461,19 +463,21 @@ public class Wiki implements Comparable<Wiki>
     protected String query;
 
     // wiki properties
+    private boolean siteinfofetched = false;
     private boolean wgCapitalLinks = true;
+    private String mwVersion;
     private ZoneId timezone = ZoneId.of("UTC");
     private Locale locale = Locale.ENGLISH;
+    private List<String> extensions = Collections.emptyList();
+    private LinkedHashMap<String, Integer> namespaces = null;
+    private ArrayList<Integer> ns_subpages = null;
 
     // user management
     private final CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
     private User user;
     private int statuscounter = 0;
 
-    // various caches
-    private Map<String, Object> siteinfo = null;
-    private LinkedHashMap<String, Integer> namespaces = null;
-    private ArrayList<Integer> ns_subpages = null;
+    // watchlist cache
     private List<String> watchlist = null;
 
     // preferences
@@ -807,15 +811,19 @@ public class Wiki implements Comparable<Wiki>
      *  @return (see above)
      *  @since 0.30
      *  @throws IOException if a network error occurs
+     *  @deprecated This method is likely going to get renamed with the return
+     *  type changed to void once I finish cleaning up the site info caching
+     *  mechanism. Use the specialized methods instead.
      */
+    @Deprecated
     public synchronized Map<String, Object> getSiteInfo() throws IOException
     {
-        if (siteinfo == null)
+        Map<String, Object> siteinfo = new HashMap<>();
+        if (!siteinfofetched)
         {
-            siteinfo = new HashMap<>();
             Map<String, String> getparams = new HashMap<>();
             getparams.put("meta", "siteinfo");
-            getparams.put("siprop", "namespaces|namespacealiases|general");
+            getparams.put("siprop", "namespaces|namespacealiases|general|extensions");
             String line = makeHTTPRequest(query, getparams, null, "getSiteInfo");
 
             // general site info
@@ -825,10 +833,19 @@ public class Wiki implements Comparable<Wiki>
             siteinfo.put("scriptpath", scriptPath);
             timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
             siteinfo.put("timezone", timezone);
-            siteinfo.put("version", parseAttribute(bits, "generator", 0));
+            mwVersion = parseAttribute(bits, "generator", 0);
+            siteinfo.put("version", mwVersion);
             locale = new Locale(parseAttribute(bits, "lang", 0));
             siteinfo.put("locale", locale);
-
+            
+            // parse extensions
+            bits = line.substring(line.indexOf("<extensions>"), line.indexOf("</extensions>"));
+            extensions = new ArrayList<>();
+            String[] unparsed = bits.split("<ext ");
+            for (int i = 1; i < unparsed.length; i++)
+                extensions.add(parseAttribute(unparsed[i], "name", 0));
+            siteinfo.put("extensions", extensions);
+                        
             // populate namespace cache
             namespaces = new LinkedHashMap<>(30);
             ns_subpages = new ArrayList<>(30);
@@ -857,9 +874,82 @@ public class Wiki implements Comparable<Wiki>
                     ns_subpages.add(ns);
             }
             initVars();
+            siteinfofetched = true;
             log(Level.INFO, "getSiteInfo", "Successfully retrieved site info for " + getDomain());
         }
-        return new HashMap<>(siteinfo);
+        return siteinfo;
+    }
+    
+    /**
+     *  Gets the version of MediaWiki this wiki runs e.g. 1.20wmf5 (54b4fcb).
+     *  See [[Special:Version]] on your wiki.
+     *  @return (see above)
+     *  @throws UncheckedIOException if the site info cache has not been 
+     *  populated and a network error occurred when populating it
+     *  @since 0.14
+     *  @see <a href="https://gerrit.wikimedia.org/">MediaWiki Git</a>
+     */
+    public String version()
+    {
+        ensureNamespaceCache();
+        return mwVersion;
+    }
+    
+    /**
+     *  Detects whether a wiki forces upper case for the first character in a
+     *  title. Example: en.wikipedia = true, en.wiktionary = false.
+     *  @return (see above)
+     *  @throws UncheckedIOException if the site info cache has not been 
+     *  populated and a network error occurred when populating it
+     *  @see <a href="https://mediawiki.org/wiki/Manual:$wgCapitalLinks">MediaWiki 
+     *  documentation</a>
+     *  @since 0.30
+     */
+    public boolean usesCapitalLinks()
+    {
+        ensureNamespaceCache();
+        return wgCapitalLinks;
+    }
+    
+    /**
+     *  Returns the list of extensions installed on this wiki.
+     *  @return (see above)
+     *  @throws UncheckedIOException if the site info cache has not been 
+     *  populated and a network error occurred when populating it
+     *  @see <a href="https://www.mediawiki.org/wiki/Manual:Extensions">MediaWiki 
+     *  documentation</a>
+     *  @since 0.35
+     */
+    public List<String> installedExtensions()
+    {
+        ensureNamespaceCache();
+        return new ArrayList<>(extensions);
+    }
+    
+    /**
+     *  Gets the timezone of this wiki
+     *  @return (see above)
+     *  @throws UncheckedIOException if the site info cache has not been 
+     *  populated and a network error occurred when populating it
+     *  @since 0.35
+     */
+    public ZoneId timezone()
+    {
+        ensureNamespaceCache();
+        return timezone;
+    }
+    
+    /**
+     *  Gets the locale of this wiki.
+     *  @return (see above)
+     *  @throws UncheckedIOException if the site info cache has not been 
+     *  populated and a network error occurred when populating it
+     *  @since 0.35
+     */
+    public Locale locale()
+    {
+        ensureNamespaceCache();
+        return locale;
     }
 
     /**

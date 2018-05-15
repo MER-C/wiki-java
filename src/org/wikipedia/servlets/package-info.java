@@ -24,6 +24,11 @@
  *  backends for these tools reside in {@link org.wikipedia.tools}. The tools
  *  are hosted on <a href="https://wikipediatools.appspot.com">
  *  wikipediatools.appspot.com</a> (there is no dependence on any Google API).
+ *
+ *  <p>
+ *  As the name suggests, this package requires a compliant implementation of
+ *  the <a href="https://jcp.org/en/jsr/detail?id=369">Java servlet API.</a>
+ *  There are no other dependencies other than the core JDK.
  * 
  *  @see <a href="https://wikipediatools.appspot.com">wikipediatools.appspot.com</a>
  *  @see org.wikipedia.tools

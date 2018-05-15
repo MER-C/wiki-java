@@ -874,17 +874,32 @@ public class WikiTest
     }
 
     @Test
-    public void getSiteInfo() throws Exception
+    public void timezone()
     {
-        Map<String, Object> info = enWiki.getSiteInfo();
-        assertTrue("siteinfo: caplinks true", (Boolean)info.get("usingcapitallinks"));
-        assertEquals("siteinfo: scriptpath", "/w", (String)info.get("scriptpath"));
-        assertEquals("siteinfo: timezone", ZoneId.of("UTC"), info.get("timezone"));
-        assertEquals("siteinfo: locale", Locale.ENGLISH, info.get("locale"));
-        info = enWikt.getSiteInfo();
-        assertFalse("siteinfo: caplinks false", (Boolean)info.get("usingcapitallinks"));
-        info = deWiki.getSiteInfo();
-        assertEquals("siteinfo: locale (2)", Locale.GERMAN, info.get("locale"));
+        assertEquals(ZoneId.of("UTC"), enWiki.timezone());
+    }
+    
+    @Test
+    public void usesCapitalLinks()
+    {
+        assertTrue("capital links: en.wp", enWiki.usesCapitalLinks());
+        assertFalse("capital links: en.wikt", enWikt.usesCapitalLinks());
+    }
+    
+    @Test
+    public void getLocale()
+    {
+        assertEquals("locale: en.wp", Locale.ENGLISH, enWiki.locale());
+        assertEquals("locale: de.wp", Locale.GERMAN, deWiki.locale());
+    }
+    
+    @Test
+    public void getInstalledExtensions()
+    {
+        List<String> extensions = enWiki.installedExtensions();
+        assertTrue(extensions.contains("Math"));
+        assertTrue(extensions.contains("SpamBlacklist"));
+        assertFalse(extensions.contains("NotAnExtension"));
     }
 
     @Test

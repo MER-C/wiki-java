@@ -1,14 +1,18 @@
 ## Design philosophy
 
-Wiki.java is a bot framework contained entirely within one file, with minimal 
-(currently no) dependencies. Only vanilla MediaWiki is supported in Wiki.java. 
-Any WMF specific stuff ([Echo](https://mediawiki.org/wiki/Extension:Echo), 
+Wiki.java is a bot framework contained entirely within one file, with no dependencies.
+Only vanilla MediaWiki is supported in Wiki.java. Any WMF specific stuff
+([Echo](https://mediawiki.org/wiki/Extension:Echo), 
 [GlobalUsage](https://mediawiki.org/wiki/Extension:GlobalUsage), etc.) should go
-to WMFWiki.java. 
+to WMFWiki.java. Any support for extensions not on WMF sites will go in separate
+classes.
+
+Please do not add any dependencies on Java libraries or MediaWiki extensions to
+any class without asking first.
 
 Servlets currently run on [Google App Engine](https://cloud.google.com/appengine/docs). 
 They should not use any Google-specfic classes and fit entirely within the free
-quotas.
+quotas. There is a soft cap of 80 network requests per servlet invocation.
 
 ## Tests
 

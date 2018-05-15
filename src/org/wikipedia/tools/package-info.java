@@ -23,6 +23,15 @@
  *  as backends for the online tools at <a href="https://wikipediatools.appspot.com">
  *  wikipediatools.appspot.com</a>.
  *
+ *  <p>
+ *  This package does not, and will not, have any dependencies outside of the
+ *  core JDK. Only the java.base, java.logging and java.desktop modules are 
+ *  required.
+ *
+ *  <p>
+ *  It should be noted that many of these tools have hard-coded URLs that
+ *  point to WMF wikis, and in particular, the English Wikipedia.
+ *
  *  @see <a href="https://wikipediatools.appspot.com">Online versions of these 
  *  programs</a>
  *  @see org.wikipedia.servlets

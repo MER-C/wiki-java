@@ -66,6 +66,38 @@ public class WMFWikiTest
         }
     }
     
+    @Test
+    public void requiresExtension()
+    {
+        // https://en.wikipedia.org/wiki/Special:Version
+        enWiki.requiresExtension("SpamBlacklist");
+        enWiki.requiresExtension("CheckUser");
+        enWiki.requiresExtension("Abuse Filter");
+        try
+        {
+            enWiki.requiresExtension("This extension does not exist.");
+            fail("Required a non-existing extension.");
+        }
+        catch (UnsupportedOperationException expected)
+        {
+        }
+    }
+    
+    @Test
+    public void getGlobalUsage() throws Exception
+    {
+        try
+        {
+            enWiki.getGlobalUsage("Not an image");
+            fail("Tried to get global usage for a non-file page");
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
+        // YARR!
+        assertEquals("getGlobalUsage: non-existing file", 0, enWiki.getGlobalUsage("File:Pirated Movie Full HD Stream.mp4").length);
+    }
+    
     /**
      *  Test fetching the abuse log. This is a semi-privileged action that 
      *  requires the test runner to be not blocked (even though login is not 

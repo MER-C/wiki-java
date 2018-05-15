@@ -21,5 +21,14 @@
 /**
  *  A collection of MediaWiki/Wikimedia related utilities, including a rather
  *  sketchy bot framework that consists of only one file.
+ *
+ *  <p>
+ *  This package does not, and will not, have any dependencies outside of the
+ *  core JDK. Only the java.base and java.logging modules are required.
+ *
+ *  <p>
+ *  All methods should work on a vanilla installation of MediaWiki with the 
+ *  exception of {@link WMFWiki}. Required extension(s) for any given method 
+ *  are denoted in the documentation.
  */
 package org.wikipedia;
