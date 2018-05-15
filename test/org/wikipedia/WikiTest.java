@@ -750,10 +750,6 @@ public class WikiTest
         assertEquals("getLogEntries/move: action", "move", le[0].getAction());
         // TODO: test for new title, redirect suppression
 
-        // Patrol log
-        assertEquals("getLogEntries/patrol: log", Wiki.PATROL_LOG, le[1].getType());
-        assertEquals("getLogEntries/patrol: action", "autopatrol", le[1].getAction());
-
         // RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&letitle=User%3AMER-C%2FTest
         le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:MER-C/Test");
