@@ -929,6 +929,39 @@ public class WikiTest
         assertFalse("pageHasTemplate: false", b[1]);
         assertFalse("pageHasTemplate: non-existent", b[2]);
     }
+    
+    @Test
+    public void whatTranscludesHere() throws Exception
+    {
+        String title = "Wikipedia:Articles for deletion/MegaMeeting.com";
+        String[] results = enWiki.whatTranscludesHere(title);
+        assertArrayEquals("transclusions", new String[] { "Wikipedia:Articles for deletion/Log/2018 April 23" }, results);
+        assertEquals("transclusions: namespace filter", 0, enWiki.whatTranscludesHere(title, Wiki.MAIN_NAMESPACE).length);
+    }
+    
+    @Test
+    public void getUploads() throws Exception
+    {
+        Wiki.User[] users = enWiki.getUsers(new String[]
+        {
+            "LakeishaDurham0", // blocked spambot
+            "Mifter" // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
+        }); 
+        assertEquals("getUploads: no uploads", 0, enWiki.getUploads(users[0]).length);
+        OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
+        try
+        {
+            enWiki.getUploads(users[1], odt, odt.minusMinutes(20));
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
+        Wiki.LogEntry[] results = enWiki.getUploads(users[1], odt, odt.plusMinutes(20));
+        assertEquals("getUploads: functionality check (0)", 3, results.length);
+        assertEquals("getUploads: functionality check (1)", "File:Padlock-blue.svg", results[0].getTitle());
+        assertEquals("getUploads: functionality check (2)", "File:Padlock-silver-light.svg", results[1].getTitle());
+        assertEquals("getUploads: functionality check (3)", "File:Padlock-pink.svg", results[2].getTitle());
+    }
 
     @Test
     public void getRevision() throws Exception
@@ -1106,6 +1139,7 @@ public class WikiTest
         temp = Arrays.asList("apihighlimits", "delete", "block", "editinterface");
         assertTrue("getUsers: groups", rights.containsAll(temp));
 
+        assertEquals("getUsers: username(2)", usernames[3], users[3].getUsername());
         assertEquals("getUsers: editcount", 2, users[3].countEdits());
         assertTrue("getUsers: actually blocked", users[3].isBlocked());
     }

@@ -4259,7 +4259,8 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the (non-deleted) uploads of a user.
+     *  Gets the (non-deleted) uploads of a user. Results are sorted in
+     *  chronological order (earliest first).
      *  @param user the user to get uploads for
      *  @return a list of all live images the user has uploaded
      *  @throws IOException if a network error occurs
@@ -4272,6 +4273,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the (non-deleted) uploads of a user between the specified times.
+     *  Results are sorted in chronological order (earliest first).
      *  @param user the user to get uploads for
      *  @param start the date to start enumeration (use {@code null} to not
      *  specify one)
@@ -4283,8 +4285,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public LogEntry[] getUploads(User user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
-        if (start != null && end != null && start.isBefore(end))
-            throw new IllegalArgumentException("Specified start date is before specified end date!");
+        if (start != null && end != null && start.isAfter(end))
+            throw new IllegalArgumentException("Specified start date is after specified end date!");
 
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "allimages");
@@ -7071,10 +7073,10 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public String toString()
         {
-            return getClass().getName() + "["
-                + "username=" + username + ","
-                + "registration=" + (registration != null ? registration.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) : "unset") + ","
-                + "groups=" + Arrays.toString(groups.toArray()) + "]";
+            return getClass().getName()
+                + "[username=" + username
+                + ",registration=" + (registration != null ? registration.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) : "unset")
+                + ",groups=" + Arrays.toString(groups.toArray()) + "]";
         }
     }
 
@@ -7279,15 +7281,15 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public String toString()
         {
-            return getClass().getName() + '['
-               + "id=" + id + ','
-               + "timestamp=" + timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + ','
-               + "user=\"" + ((user == null) ? "[DELETED]" : user) + "\","
-               + "userDeleted=" + userDeleted + ','
-               + "title=" + ((title == null) ? "[null or deleted]" : title)
-               + "comment=\"" + ((comment == null) ? "[DELETED]" : comment) + "\","
-               + "commentDeleted=" + commentDeleted + ','
-               + "contentDeleted=" + contentDeleted + ']';
+            return getClass().getName()
+               + "[id=" + id
+               + ",timestamp=" + timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+               + ",user=\"" + ((user == null) ? "[DELETED]" : user) + "\""
+               + ",userDeleted=" + userDeleted
+               + ",title=\"" + ((title == null) ? "[null or deleted]" : title) + "\""
+               + ",comment=\"" + ((comment == null) ? "[DELETED]" : comment) + "\""
+               + ",commentDeleted=" + commentDeleted
+               + ",contentDeleted=" + contentDeleted + ']';
         }
 
         /**
@@ -7520,7 +7522,7 @@ public class Wiki implements Comparable<Wiki>
             s.append(type);
             s.append(",action=");
             s.append(action == null ? "[DELETED]" : action);
-            s.append("\",details=");
+            s.append(",details=");
             if (details instanceof Object[])
                 s.append(Arrays.asList((Object[])details)); // crude formatting hack
             else
