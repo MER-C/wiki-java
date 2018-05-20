@@ -51,24 +51,12 @@ public class WMFWiki extends Wiki
      *  @see Wiki#getLogEntries
      */
     public static final String SPAM_BLACKLIST_LOG = "spamblacklist";
-    
-    /**
-     *  Creates a new WMF wiki that represents the English Wikipedia.
-     *  @deprecated use WMFWiki#createInstance instead
-     */
-    @Deprecated
-    public WMFWiki()
-    {
-        super("en.wikipedia.org");
-    }
 
     /**
      *  Creates a new WMF wiki that has the given domain name.
      *  @param domain a WMF wiki domain name e.g. en.wikipedia.org
-     *  @deprecated use WMFWiki#createInstance instead; this will be made private
      */
-    @Deprecated
-    public WMFWiki(String domain)
+    protected WMFWiki(String domain)
     {
         super(domain, "/w", "https://");
     }

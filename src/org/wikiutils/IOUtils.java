@@ -70,34 +70,6 @@ public class IOUtils
 		return l.toArray(new String[0]);
 	}
 	
-	
-	/**
-	 * Copies a file.
-	 * 
-	 * @param src The path of the source file
-	 * @param dest The location to copy the file to.
-	 * 
-	 * @throws FileNotFoundException If the source file could not be found
-	 * @throws IOException If we encountered some sort of read/write error
-         * @deprecated use <code>Files.copy(Paths.get(src), Paths.get(dest))</code>
-         * in the <code>java.nio.file</code> package.
-	 */
-        @Deprecated
-	public static void copyFile(String src, String dest) throws FileNotFoundException, IOException
-	{
-		FileInputStream in = new FileInputStream(new File(src));
-		FileOutputStream out = new FileOutputStream(new File(dest));
-
-		byte[] buf = new byte[1024];
-		int len;
-		while ((len = in.read(buf)) > 0)
-			out.write(buf, 0, len);
-
-		in.close();
-		out.close();
-	}
-	
-	
 	/**
 	 * Reads the contents of a file into a String. Use with a <tt>.txt</tt> files for best results.
 	 * There seems to be an issue with reading in non-standard ascii characters at the moment.

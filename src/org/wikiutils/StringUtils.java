@@ -42,22 +42,6 @@ public class StringUtils
 		return text.toUpperCase().contains(s2.toUpperCase());
 	}
 	
-	
-	/**
-	 * Determines if two arrays of Strings share at least one element.
-	 * 
-	 * @param a1 The first array
-	 * @param a2 The second array
-	 * 
-	 * @return True if the arrays share at least one element
-	 * @deprecated Duplicate of {@link CollectionUtils#arraysShareElement(java.lang.String[], java.lang.String[]) }
-	 */
-        @Deprecated
-	public static boolean arraysShareElement(String[] a1, String[] a2)
-	{
-		return ArrayUtils.intersection(a1, a2).length > 0;
-	}
-	
 	/**
 	 * Parses a String, assumed to be a list, into a String array. Each item in the list must be
 	 * separated by a newline character. Space characters are ignored. The ignore list is case

@@ -514,76 +514,25 @@ public class Wiki implements Comparable<Wiki>
     // CONSTRUCTORS AND CONFIGURATION
 
     /**
-     *  Creates a new connection to the English Wikipedia via HTTPS.
-     *  @since 0.02
-     *  @deprecated use Wiki#createInstance instead
-     */
-    @Deprecated
-    public Wiki()
-    {
-        this("en.wikipedia.org", "/w");
-    }
-
-    /**
-     *  Creates a new connection to a wiki via HTTPS. WARNING: if the wiki uses
-     *  a $wgScriptpath other than the default <tt>/w</tt>, you need to call
-     *  <tt>getScriptPath()</tt> to automatically set it. Alternatively, you
-     *  can use the constructor below if you know it in advance.
-     *
-     *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
-     *  en.wikipedia.org)
-     *  @deprecated use Wiki#createInstance instead
-     */
-    @Deprecated
-    public Wiki(String domain)
-    {
-        this(domain, "/w");
-    }
-
-    /**
-     *  Creates a new connection to a wiki with $wgScriptpath set to
-     *  <tt>scriptPath</tt> via HTTPS.
-     *
-     *  @param domain the wiki domain name
-     *  @param scriptPath the script path
-     *  @since 0.14
-     *  @deprecated use Wiki#createInstance instead
-     */
-    @Deprecated
-    public Wiki(String domain, String scriptPath)
-    {
-        this(domain, scriptPath, "https://");
-    }
-
-    /**
-     *  Creates a new connection to a wiki with $wgScriptpath set to
-     *  <tt>scriptPath</tt> via the specified protocol.
+     *  Creates a new connection to a wiki with <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
+     *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the
+     *  specified protocol.
      *
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
      *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
      *  @since 0.31
-     *  @deprecated use Wiki#createInstance instead; this will be made private
-     *  for the reason in the TODO comment below
      */
-    @Deprecated
-    public Wiki(String domain, String scriptPath, String protocol)
+    protected Wiki(String domain, String scriptPath, String protocol)
     {
-        if (domain == null || domain.isEmpty())
-            domain = "en.wikipedia.org";
         this.domain = Objects.requireNonNull(domain);
         this.scriptPath = Objects.requireNonNull(scriptPath);
         this.protocol = Objects.requireNonNull(protocol);
 
-        // init variables
-        // This is fine as long as you do not have parameters other than domain
-        // and scriptpath in constructors and do not do anything else than super(x)!
-        // http://stackoverflow.com/questions/3404301/whats-wrong-with-overridable-method-calls-in-constructors
-        // TODO: remove this
         logger.setLevel(loglevel);
         logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
         CookieHandler.setDefault(cookies);
-        initVars();
     }
 
     /**
