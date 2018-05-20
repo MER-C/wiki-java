@@ -689,18 +689,18 @@ public class WikiTest
     }
 
     @Test
-    public void getIPBlockList() throws Exception
+    public void getBlockList() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
         // see also getLogEntries() below
-        Wiki.LogEntry[] le = enWiki.getBlockList("Nimimaan");
-        assertEquals("getIPBlockList: ID not available", -1, le[0].getID());
-        assertEquals("getIPBlockList: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertEquals("getIPBlockList: user", "MER-C", le[0].getUser());
-        assertEquals("getIPBlockList: log", Wiki.BLOCK_LOG, le[0].getType());
-        assertEquals("getIPBlockList: action", "block", le[0].getAction());
-        assertEquals("getIPBlockList: target", "User:Nimimaan", le[0].getTitle());
-        assertEquals("getIPBlockList: reason", "spambot", le[0].getComment());
+        List<Wiki.LogEntry> le = enWiki.getBlockList("Nimimaan", null);
+        assertEquals("getBlockList: ID not available", -1, le.get(0).getID());
+        assertEquals("getBlockList: timestamp", "2016-06-21T13:14:54Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertEquals("getBlockList: user", "MER-C", le.get(0).getUser());
+        assertEquals("getBlockList: log", Wiki.BLOCK_LOG, le.get(0).getType());
+        assertEquals("getBlockList: action", "block", le.get(0).getAction());
+        assertEquals("getBlockList: target", "User:Nimimaan", le.get(0).getTitle());
+        assertEquals("getBlockList: reason", "spambot", le.get(0).getComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
 //            false, true, // autoblock enabled, email disabled
@@ -708,8 +708,8 @@ public class WikiTest
 //        }, le[0].getDetails());
 
         // This IP address should not be blocked (it is reserved)
-        le = enWiki.getBlockList("0.0.0.0");
-        assertEquals("getIPBlockList: not blocked", 0, le.length);
+        le = enWiki.getBlockList("0.0.0.0", null);
+        assertTrue("getBlockList: not blocked", le.isEmpty());
     }
 
     @Test

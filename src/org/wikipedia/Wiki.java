@@ -5773,63 +5773,36 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Looks up a particular user in the list of current blocks, i.e. whether
-     *  a user is currently blocked. Equivalent to [[Special:BlockList]].
-     *
-     *  @param user a username or IP (e.g. "127.0.0.1")
-     *  @return the block log entry
-     *  @throws IOException if a network error occurs
-     *  @since 0.12
-     */
-    public LogEntry[] getBlockList(String user) throws IOException
-    {
-        return getBlockList(user, null, null);
-    }
-
-    /**
-     *  Lists currently operating blocks that were made in the specified
-     *  interval. Equivalent to [[Special:BlockList]].
-     *
-     *  @param start the start date
-     *  @param end the end date
-     *  @return the currently operating blocks that were made in that interval
-     *  @throws IOException if a network error occurs
-     *  @since 0.12
-     */
-    public LogEntry[] getBlockList(OffsetDateTime start, OffsetDateTime end) throws IOException
-    {
-        return getBlockList("", start, end);
-    }
-
-    /**
      *  Fetches part of the list of currently operational blocks. Equivalent to
      *  [[Special:BlockList]]. WARNING: cannot tell whether a particular IP
      *  is autoblocked as this is non-public data (see [[wmf:Privacy policy]]).
-     *  Don't call this directly, use one of the two above methods instead.
+     *  Accepted parameters from <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  </ul>
      *
-     *  @param user a particular user that might have been blocked. Use "" to
+     *  @param user a particular user that might have been blocked. Use null to
      *  not specify one. May be an IP (e.g. "127.0.0.1") or a CIDR range (e.g.
      *  "127.0.0.0/16") but not an autoblock (e.g. "#123456").
-     *  @param start what timestamp to start. Use null to not specify one.
-     *  @param end what timestamp to end. Use null to not specify one.
-     *  @return a LogEntry[] of the blocks
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
+     *  @return a list of the blocks
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
-    public LogEntry[] getBlockList(String user, OffsetDateTime start, OffsetDateTime end) throws IOException
+    public List<LogEntry> getBlockList(String user, Wiki.RequestHelper helper) throws IOException
     {
-        // quick param check
-        if (start != null && end != null && start.isBefore(end))
-            throw new IllegalArgumentException("Specified start date is before specified end date!");
-
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "blocks");
-        if (end != null)
-            getparams.put("bkend", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (start != null)
-            getparams.put("bkstart", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (!user.isEmpty())
+        if (helper != null)
+        {
+            helper.setRequestType("bk");
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addReverseParameter());
+        }
+        if (user != null)
             getparams.put("bkusers", normalize(user));
 
         // connection
@@ -5857,29 +5830,8 @@ public class Wiki implements Comparable<Wiki>
             }
         });
 
-        // log statement
-        StringBuilder logRecord = new StringBuilder("Successfully fetched IP block list ");
-        if (!user.isEmpty())
-        {
-            logRecord.append(" for ");
-            logRecord.append(user);
-        }
-        if (start != null)
-        {
-            logRecord.append(" from ");
-            logRecord.append(start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        }
-        if (end != null)
-        {
-            logRecord.append(" to ");
-            logRecord.append(end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        }
-        int size = entries.size();
-        logRecord.append(" (");
-        logRecord.append(size);
-        logRecord.append(" entries)");
-        log(Level.INFO, "getIPBlockList", logRecord.toString());
-        return entries.toArray(new LogEntry[size]);
+        log(Level.INFO, "getBlockList", "Successfully fetched block list " + entries.size() + " entries)");
+        return entries;
     }
 
     /**
