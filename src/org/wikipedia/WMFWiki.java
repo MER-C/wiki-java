@@ -207,39 +207,43 @@ public class WMFWiki extends Wiki
      *  of the page, <var>action</var> set to the action that was attempted (e.g.  
      *  "edit") and {@code null} (parsed)comment. <var>details</var> are a Map
      *  containing <var>filter_id</var>, <var>revid</var> if the edit was 
-     *  successful and <var>result</var> (what happened). All parameters are 
-     *  optional, but you should set at least one or a query limit.
+     *  successful and <var>result</var> (what happened). 
+     * 
+     *  <p>
+     *  Accepted parameters from <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#byTitle(String) title}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  </ul>
      *  
      *  @param filters fetch log entries triggered by these filters (optional, 
      *  use null or empty list to get all filters)
-     *  @param user fetch log entries triggered by this user or IP (optional, use
-     *  null to skip)
-     *  @param title fetch log entries for this page (optional, use null to skip)
-     *  @param earliest fetch log entries no earlier than this date (optional, 
-     *  use null to skip)
-     *  @param latest fetch log entries no later than this date (optional, use 
-     *  null to skip)
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @return the abuse filter log entries
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws UnsupportedOperationException if the AbuseFilter extension
      *  is not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:AbuseFilter">Extension:AbuseFilter</a>
      */
-    public List<LogEntry> getAbuseLogEntries(int[] filters, String user, String title, OffsetDateTime earliest, OffsetDateTime latest) throws IOException
+    public List<LogEntry> getAbuseLogEntries(int[] filters, Wiki.RequestHelper helper) throws IOException
     {
         requiresExtension("Abuse Filter");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "abuselog");
         if (filters.length > 0)
             getparams.put("aflfilter", constructNamespaceString(filters));
-        if (user != null)
-            getparams.put("afluser", user);
-        if (title != null)
-            getparams.put("afltitle", normalize(title));
-        if (earliest != null)
-            getparams.put("aflend", earliest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (latest != null)
-            getparams.put("aflstart", latest.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        if (helper != null)
+        {
+            helper.setRequestType("afl");
+            getparams.putAll(helper.addUserParameter());
+            getparams.putAll(helper.addTitleParameter());
+            getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addDateRangeParameters());
+        }
         
         List<LogEntry> filterlog = makeListQuery("afl", query, getparams, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
         {
