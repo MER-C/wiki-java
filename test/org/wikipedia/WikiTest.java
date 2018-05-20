@@ -231,7 +231,7 @@ public class WikiTest
         // check whether queries that set a separate limit function correctly
         assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(10).length);
         assertEquals("querylimits: after recentchanges", 530, enWiki.getPageHistory("Main Page").length);
-        assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", 10).length);
+        assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", null, 10).size());
         assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page").length);
         assertEquals("querylimits: listPages", 500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).length);
         assertEquals("querylimits: after listPages", 530, enWiki.getPageHistory("Main Page").length);
@@ -663,12 +663,14 @@ public class WikiTest
     public void revisionDelete() throws Exception
     {
         Wiki.Revision revision = testWiki.getRevision(349877L);
-        Wiki.LogEntry[] logs = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C",
-            "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"),
-            OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
+        Wiki.RequestHelper rh = testWiki.new RequestHelper()
+            .byUser("MER-C")
+            .byTitle("File:Wiki.java test5.jpg")
+            .withinDateRange(OffsetDateTime.parse("2018-03-16T00:00:00Z"), OffsetDateTime.parse("2018-03-18T00:00:00Z"));
+        List<Wiki.LogEntry> logs = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
         try
         {
-            List<Wiki.Event> events = Arrays.asList(revision, logs[0]);
+            List<Wiki.Event> events = Arrays.asList(revision, logs.get(0));
             testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Not a reason", Boolean.FALSE, events);
             fail("Can't mix revisions and log entries in RevisionDelete.");
         }
@@ -713,20 +715,22 @@ public class WikiTest
     @Test
     public void getLogEntries() throws Exception
     {
-        // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User:Nimimaan&format=xmlfm
+        // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User:Nimimaan
 
         // Block log
         OffsetDateTime c = OffsetDateTime.parse("2016-06-30T23:59:59Z");
-        Wiki.LogEntry[] le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:Nimimaan", c,
-            null, 5, Wiki.ALL_NAMESPACES);
-        assertEquals("getLogEntries: ID", 75695806L, le[0].getID());
-        assertEquals("getLogEntries: timestamp", "2016-06-21T13:14:54Z", le[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertEquals("getLogEntries/block: user", "MER-C", le[0].getUser());
-        assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le[0].getType());
-        assertEquals("getLogEntries/block: action", "block", le[0].getAction());
-        assertEquals("getLogEntries: target", "User:Nimimaan", le[0].getTitle());
-        assertEquals("getLogEntries: reason", "spambot", le[0].getComment());
-        assertEquals("getLogEntries: parsed reason", "spambot", le[0].getParsedComment());
+        Wiki.RequestHelper rh = enWiki.new RequestHelper()
+            .byTitle("User:Nimimaan")
+            .withinDateRange(null, c);
+        List<Wiki.LogEntry> le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 5);
+        assertEquals("getLogEntries: ID", 75695806L, le.get(0).getID());
+        assertEquals("getLogEntries: timestamp", "2016-06-21T13:14:54Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertEquals("getLogEntries/block: user", "MER-C", le.get(0).getUser());
+        assertEquals("getLogEntries/block: log", Wiki.BLOCK_LOG, le.get(0).getType());
+        assertEquals("getLogEntries/block: action", "block", le.get(0).getAction());
+        assertEquals("getLogEntries: target", "User:Nimimaan", le.get(0).getTitle());
+        assertEquals("getLogEntries: reason", "spambot", le.get(0).getComment());
+        assertEquals("getLogEntries: parsed reason", "spambot", le.get(0).getParsedComment());
 //        assertEquals("getLogEntries/block: parameters", new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
 //            false, true, // autoblock enabled, email disabled
@@ -734,38 +738,41 @@ public class WikiTest
 //        }, le[0].getDetails());
 
         // New user log
-        assertEquals("getLogEntries/newusers: user", "Nimimaan", le[1].getUser());
-        assertEquals("getLogEntries/newusers: log", Wiki.USER_CREATION_LOG, le[1].getType());
-        assertEquals("getLogEntries/newusers: action", "create", le[1].getAction());
-        assertEquals("getLogEntries/newusers: reason", "", le[1].getComment());
-        assertEquals("getLogEntries/newusers: reason", "", le[1].getParsedComment());
-//        assertNull("getLogEntries/newusers: parameters", le[1].getDetails());
+        assertEquals("getLogEntries/newusers: user", "Nimimaan", le.get(1).getUser());
+        assertEquals("getLogEntries/newusers: log", Wiki.USER_CREATION_LOG, le.get(1).getType());
+        assertEquals("getLogEntries/newusers: action", "create", le.get(1).getAction());
+        assertEquals("getLogEntries/newusers: reason", "", le.get(1).getComment());
+        assertEquals("getLogEntries/newusers: reason", "", le.get(1).getParsedComment());
+//        assertNull("getLogEntries/newusers: parameters", le.get(1).getDetails());
 
-        // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp&format=xmlfm
+        // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp
 
         // Move log
-        le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "Talk:96th Test Wing/Temp",
-            c, null, 5, Wiki.ALL_NAMESPACES);
-        assertEquals("getLogEntries/move: log", Wiki.MOVE_LOG, le[0].getType());
-        assertEquals("getLogEntries/move: action", "move", le[0].getAction());
+        rh = enWiki.new RequestHelper()
+            .byTitle("Talk:96th Test Wing/Temp")
+            .withinDateRange(null, c);
+        le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 5);
+        assertEquals("getLogEntries/move: log", Wiki.MOVE_LOG, le.get(0).getType());
+        assertEquals("getLogEntries/move: action", "move", le.get(0).getAction());
         // TODO: test for new title, redirect suppression
 
         // RevisionDeleted log entries, no access
-        // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&letitle=User%3AMER-C%2FTest
-        le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:MER-C/Test");
-        assertNull("getLogEntries: reason hidden", le[0].getComment());
-        assertNull("getLogEntries: reason hidden", le[0].getParsedComment());
-        assertTrue("getLogEntries: reason hidden", le[0].isCommentDeleted());
-        assertNull("getLogEntries: user hidden", le[0].getUser());
-        assertTrue("getLogEntries: user hidden", le[0].isUserDeleted());
-        // https://test.wikipedia.org/w/api.php?format=xmlfm&action=query&list=logevents&leuser=MER-C
+        // https://test.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User%3AMER-C%2FTest
+        rh = testWiki.new RequestHelper().byTitle("User:MER-C/Test");
+        le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 500);
+        assertNull("getLogEntries: reason hidden", le.get(0).getComment());
+        assertNull("getLogEntries: reason hidden", le.get(0).getParsedComment());
+        assertTrue("getLogEntries: reason hidden", le.get(0).isCommentDeleted());
+        assertNull("getLogEntries: user hidden", le.get(0).getUser());
+        assertTrue("getLogEntries: user hidden", le.get(0).isUserDeleted());
+        // https://test.wikipedia.org/w/api.php?action=query&list=logevents&leuser=MER-C
         //     &lestart=20161002050030&leend=20161002050000&letype=delete
-        le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, "MER-C", null,
-            OffsetDateTime.parse("2016-10-02T05:00:30Z"),
-            OffsetDateTime.parse("2016-10-02T05:00:00Z"),
-            Integer.MAX_VALUE, Wiki.ALL_NAMESPACES);
-        assertNull("getLogEntries: action hidden", le[0].getTitle());
-        assertTrue("getLogEntries: action hidden", le[0].isContentDeleted());
+        rh = testWiki.new RequestHelper()
+            .byUser("MER-C")
+            .withinDateRange(OffsetDateTime.parse("2016-10-02T05:00:00Z"), OffsetDateTime.parse("2016-10-02T05:30:00Z"));
+        le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, rh, Integer.MAX_VALUE);
+        assertNull("getLogEntries: action hidden", le.get(1).getTitle());
+        assertTrue("getLogEntries: action hidden", le.get(1).isContentDeleted());
     }
 
     @Test

@@ -47,11 +47,12 @@ public class AdminUnitTests
     public void getLogEntries() throws Exception
     {
         // https://test.wikipedia.org/w/index.php?title=Special%3ALog&page=User%3AMER-C%2FTest
-        Wiki.LogEntry[] le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, null, "User:MER-C/Test");
+        Wiki.RequestHelper rh = testWiki.new RequestHelper().byTitle("User:MER-C/Test");
+        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 100);
         assertEquals("getLogEntries: RevisionDeleted reason, can access", 
-            "create a log entry for testing RevisionDelete on", le[0].getComment());
+            "create a log entry for testing RevisionDelete on", le.get(0).getComment());
         assertEquals("getLogEntries: RevisionDeleted user, can access", "MER-C", 
-            le[0].getUser());
+            le.get(0).getUser());
     }
     
     @Test
@@ -104,19 +105,19 @@ public class AdminUnitTests
         assertTrue("RevisionDelete: check userDeleted on-wiki", revision.isUserDeleted());
         
         // https://test.wikipedia.org/w/index.php?title=Special%3ALog&type=delete&user=&page=File%3AWiki.java+test5.jpg&year=2018&month=3
-        Wiki.LogEntry[] le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
-            "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"),
-            OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
+        Wiki.RequestHelper rh = testWiki.new RequestHelper()
+            .byUser("MER-C")
+            .byTitle("File:Wiki.java test5.jpg")
+            .withinDateRange(OffsetDateTime.parse("2018-03-16T00:00:00Z"), OffsetDateTime.parse("2018-03-18T00:00:00Z"));
+        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
         testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, 
-            "Unit testing WOOP WOOP WOOP", Boolean.FALSE, Arrays.asList(le[0]));
+            "Unit testing WOOP WOOP WOOP", Boolean.FALSE, le.subList(0, 1));
         // local state is controlled by a superclass, no need to test again
         // still need to check whether ths state was actually changed on-wiki
-        le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
-            "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"),
-            OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
-        assertTrue("RevisionDelete: check commentDeleted on-wiki", le[0].isCommentDeleted());
-        assertTrue("RevisionDelete: check contentDeleted on-wiki", le[0].isContentDeleted());
-        assertTrue("RevisionDelete: check userDeleted on-wiki", le[0].isUserDeleted());
+        le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
+        assertTrue("RevisionDelete: check commentDeleted on-wiki", le.get(0).isCommentDeleted());
+        assertTrue("RevisionDelete: check contentDeleted on-wiki", le.get(0).isContentDeleted());
+        assertTrue("RevisionDelete: check userDeleted on-wiki", le.get(0).isUserDeleted());
     }
     
     @AfterClass
@@ -128,10 +129,13 @@ public class AdminUnitTests
             Boolean.FALSE, Arrays.asList(revision));
         
         // undo RevisionDelete test on LogEntry
-        Wiki.LogEntry[] le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", "MER-C", 
-            "File:Wiki.java test5.jpg", OffsetDateTime.parse("2018-03-18T00:00:00Z"),
-            OffsetDateTime.parse("2018-03-16T00:00:00Z"), 50, Wiki.ALL_NAMESPACES);
+        Wiki.RequestHelper rh = testWiki.new RequestHelper()
+            .byUser("MER-C")
+            .byTitle("File:Wiki.java test5.jpg")
+            .withinDateRange(OffsetDateTime.parse("2018-03-16T00:00:00Z"), OffsetDateTime.parse("2018-03-18T00:00:00Z"));
+        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
+        
         testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", 
-            Boolean.FALSE, Arrays.asList(le[0]));
+            Boolean.FALSE, le.subList(0, 1));
     }
 }

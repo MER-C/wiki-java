@@ -5817,7 +5817,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IllegalArgumentException if start date is before end date
      *  @since 0.12
      */
-    protected LogEntry[] getBlockList(String user, OffsetDateTime start, OffsetDateTime end) throws IOException
+    public LogEntry[] getBlockList(String user, OffsetDateTime start, OffsetDateTime end) throws IOException
     {
         // quick param check
         if (start != null && end != null && start.isBefore(end))
@@ -5883,75 +5883,36 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the log entries representing actions that were performed on a
-     *  specific target. Equivalent to [[Special:Log]].
-     *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
-     *  @param action what action to get (e.g. delete, undelete, etc.), use
-     *  null to not specify one
-     *  @param user the user performing the action. Use null not to specify
-     *  one.
-     *  @param target the target of the action(s).
-     *  @throws IOException if a network error occurs
-     *  @throws SecurityException if the user lacks the credentials needed to
-     *  access a privileged log
-     *  @return the specified log entries
-     *  @since 0.08
-     */
-    public LogEntry[] getLogEntries(String logtype, String action, String user, String target) throws IOException
-    {
-        return getLogEntries(logtype, action, user, target, null, null, Integer.MAX_VALUE, ALL_NAMESPACES);
-    }
-
-    /**
-     *  Gets the last how ever many log entries in the specified log. Equivalent
-     *  to [[Special:Log]] and [[Special:Newimages]] when
-     *  {@code type.equals({@link #UPLOAD_LOG})}.
-     *
-     *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
-     *  @param action what action to get (e.g. delete, undelete, etc.), use
-     *  {@code null} to not specify one
-     *  @param amount the number of entries to get (overrides global limits)
-     *  @throws IOException if a network error occurs
-     *  @throws SecurityException if the user lacks the credentials needed to
-     *  access a privileged log
-     *  @throws IllegalArgumentException if the log type doesn't exist
-     *  @return the specified log entries
-     */
-    public LogEntry[] getLogEntries(String logtype, String action, int amount) throws IOException
-    {
-        return getLogEntries(logtype, action, null, null, null, null, amount, ALL_NAMESPACES);
-    }
-
-    /**
      *  Gets the specified amount of log entries between the given times by
      *  the given user on the given target. Equivalent to [[Special:Log]].
-     *  WARNING: the start date is the most recent of the dates given, and
-     *  the order of enumeration is from newest to oldest.
+     *  Accepted parameters from <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#byTitle(String) title}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces} (one 
+     *      namespace only, must not be used if a title is specified)
+     *  </ul>
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
      *  @param action what action to get (e.g. delete, undelete, etc.), use
      *  {@code null} to not specify one
-     *  @param user the user performing the action. Use {@code null} not to specify
-     *  one.
-     *  @param target the target of the action. Use {@code null} not to specify one.
-     *  @param start what timestamp to start. Use {@code null} to not specify one.
-     *  @param end what timestamp to end. Use {@code null} to not specify one.
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @param amount the amount of log entries to get. If both start and
      *  end are defined, this is ignored. Use {@code Integer.MAX_VALUE} to not
      *  specify one (overrides global limits)
-     *  @param namespace filters by namespace. Returns empty if namespace
-     *  doesn't exist. Use {@link #ALL_NAMESPACES} to not specify one. Must not
-     *  be used with target.
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if {@code start.isAfter(end)}
-     *  or {@literal amount < 1}
+     *  @throws IllegalArgumentException if {@literal amount < 1}
      *  @throws SecurityException if the user lacks the credentials needed to
      *  access a privileged log
      *  @return the specified log entries
      *  @since 0.08
      */
-    public LogEntry[] getLogEntries(String logtype, String action, String user, String target,
-        OffsetDateTime start, OffsetDateTime end, int amount, int namespace) throws IOException
+    public List<LogEntry> getLogEntries(String logtype, String action, Wiki.RequestHelper helper,
+        int amount) throws IOException
     {
         // check for amount
         if (amount < 1)
@@ -5967,20 +5928,15 @@ public class Wiki implements Comparable<Wiki>
             else
                 getparams.put("leaction", logtype + "/" + action);
         }
-        if (namespace != ALL_NAMESPACES)
-            getparams.put("lenamespace", String.valueOf(namespace));
-        if (user != null)
-            getparams.put("leuser", normalize(user));
-        if (target != null)
-            getparams.put("letitle", normalize(target));
-        if (start != null)
+        if (helper != null)
         {
-            if (end != null && start.isBefore(end)) //aargh
-                throw new IllegalArgumentException("Specified start date is before specified end date!");
-            getparams.put("lestart", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            helper.setRequestType("le");
+            getparams.putAll(helper.addTitleParameter());
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addUserParameter());
+            getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addNamespaceParameter());
         }
-        if (end != null)
-            getparams.put("leend", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
 
         int originallimit = getQueryLimit();
         setQueryLimit(Math.min(amount, originallimit));
@@ -5998,12 +5954,11 @@ public class Wiki implements Comparable<Wiki>
         // log the success
         StringBuilder console = new StringBuilder("Successfully retrieved log (type=");
         console.append(logtype);
-        int size = entries.size();
         console.append(", ");
-        console.append(size);
+        console.append(entries.size());
         console.append(" entries)");
         log(Level.INFO, "getLogEntries", console.toString());
-        return entries.toArray(new LogEntry[size]);
+        return entries;
     }
 
     /**
@@ -6899,9 +6854,10 @@ public class Wiki implements Comparable<Wiki>
          *  @throws IOException if something goes wrong
          *  @since 0.08
          */
-        public LogEntry[] blockLog() throws IOException
+        public List<LogEntry> blockLog() throws IOException
         {
-            return Wiki.this.getLogEntries(Wiki.BLOCK_LOG, null, null, "User:" + username);
+            Wiki.RequestHelper rh = new RequestHelper().byTitle("User:" + username);
+            return Wiki.this.getLogEntries(Wiki.BLOCK_LOG, null, rh, Integer.MAX_VALUE);
         }
 
         /**
@@ -6943,9 +6899,10 @@ public class Wiki implements Comparable<Wiki>
          *  @throws IOException if a network error occurs
          *  @since 0.33
          */
-        public LogEntry[] getLogEntries(String logtype, String action) throws IOException
+        public List<LogEntry> getLogEntries(String logtype, String action) throws IOException
         {
-            return Wiki.this.getLogEntries(logtype, action, username, null);
+            Wiki.RequestHelper rh = new RequestHelper().byUser(username);
+            return Wiki.this.getLogEntries(logtype, action, rh, Integer.MAX_VALUE);
         }
 
         /**
