@@ -7960,6 +7960,184 @@ public class Wiki implements Comparable<Wiki>
             Wiki.this.rollback(this, bot, reason);
         }
     }
+    
+    /**
+     *  Vehicle for stuffing standard optional parameters into Wiki queries. 
+     *  {@code RequestHelper} objects are reusable. The following example 
+     *  fetches articles from the back of the new pages queue on the 
+     *  English Wikipedia.
+     *
+     *  <pre>
+     *  Wiki.RequestHelper rh = enWiki.new RequestHelper()
+     *      .inNamespaces(Wiki.MAIN_NAMESPACE)
+     *      .reverse();
+     *  List<Wiki.Revision> newpages = enWiki.newPages(rh);
+     *  </pre>
+     *
+     *  @since 0.36
+     */
+    public class RequestHelper
+    {
+        private String title;
+        private String byuser;
+        private OffsetDateTime earliest, latest;
+        private int[] localns = new int[0];
+        private boolean reverse = false;
+        private String requestType;
+    
+        /**
+         *  Creates a new RequestHelper.
+         */
+        public RequestHelper()
+        {
+        }
+        
+        /**
+         *  Limits query results to Events occuring on the given title. If a 
+         *  query mandates a title parameter (e.g. {@link #getPageHistory(String, 
+         *  RequestHelper)}, don't use this. Use the parameter in the query 
+         *  method instead.
+         *  @param title a page title
+         *  @return this RequestHelper
+         */
+        public RequestHelper byTitle(String title)
+        {
+            this.title = (title == null) ? null : normalize(title);
+            return this;
+        }
+	
+        /**
+         *  Limits query results to Events triggered by the given user. If a query
+         *  mandates a user parameter (e.g. {@link #contribs(List, RequestHelper)},
+         *  don't use this. Use the parameter in the query method instead.
+         *  @param byuser some username or IP address
+         *  @return this RequestHelper
+         */
+        public RequestHelper byUser(String byuser)
+        {
+            this.byuser = (byuser == null) ? null : normalize(byuser);
+            return this;
+        }
+	
+        /**
+         *  Limit results to be within this date range.
+         *  @param earliest the lower (earliest) date bound, use {@code null} to
+         *  not set one
+         *  @param latest the higher (latest) date bound, use {@code null} to
+         *  not set one
+         *  @throws IllegalArgumentException if {@code earliest.isAfter(latest)}
+         *  @return this RequestHelper
+         */
+        public RequestHelper withinDateRange(OffsetDateTime earliest, OffsetDateTime latest)
+        {
+            if (earliest != null && latest != null && earliest.isAfter(latest))
+                throw new IllegalArgumentException("Earliest date must be before latest date!");
+            this.earliest = earliest;
+            this.latest = latest;
+            return this;
+        }
+	
+        /**
+         *  Limits query results to the given namespaces.
+         *  @param ns a list of namespaces
+         *  @return this RequestHelper
+         */
+        public RequestHelper inNamespaces(int... ns)
+        {
+            localns = ns;
+            return this;
+        }
+	
+        /**
+         *  Should we perform this query in reverse order (earliest first).
+         *  @param reverse whether to reverse this query
+         *  @return this RequestHelper
+         */
+        public RequestHelper reverse(boolean reverse)
+        {
+            this.reverse = reverse;
+            return this;
+        }
+	
+        /**
+         *  Sets the prefix of API request parameters (the XX in XXlimit, XXdir, 
+         *  XXnamespace and so forth). Internal use only.
+         *  @param prefix the prefix to use (must not be null)
+         */
+        protected void setRequestType(String prefix)
+        {
+            requestType = Objects.requireNonNull(prefix);
+        }
+	
+        /**
+         *  Returns a HTTP request parameter containing the title to get
+         *  events for, or an empty map if not wanted.
+         *  @return (see above)
+         */
+        protected Map<String, String> addTitleParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (title != null)
+                temp.put(requestType + "title", title);
+            return temp;
+        }
+	
+        /**
+         *  Returns a HTTP request parameter containing the user to filter
+         *  returned events by, or an empty map if not wanted.
+         *  @return (see above)
+         */
+        protected Map<String, String> addUserParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (byuser != null)
+                temp.put(requestType + "user", byuser);
+            return temp;
+        }
+	
+        /**
+         *  Returns a HTTP request parameter containing the dates to start 
+         *  and end enumeration, or an empty map if not wanted.
+         *  @return (see above)
+         */
+        protected Map<String, String> addDateRangeParameters()
+        {
+            Map<String, String> temp = new HashMap<>();
+            OffsetDateTime odt = reverse ? earliest : latest;
+            if (odt != null)
+                temp.put(requestType + "start", odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            odt = reverse ? latest : earliest;
+            if (odt != null)
+                temp.put(requestType + "end", odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            return temp;
+        }
+	
+        /**
+         *  Returns a HTTP request parameter containing the namespaces to limit 
+         *  this query to, or an empty map if not wanted. 
+         *  @return (see above)
+         */
+        protected Map<String, String> addNamespaceParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (localns.length != 0)
+                temp.put(requestType + "namespace", constructNamespaceString(localns));
+            return temp;
+        }
+	
+        /**
+         *  Returns a HTTP request parameter instructing the API to reverse the
+         *  query, or an empty map if not wanted. 
+         *  @return (see above)
+         */
+        protected Map<String, String> addReverseParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (reverse)
+                temp.put(requestType + "dir", "older");
+            return temp;
+        }
+    }
 
     // INTERNALS
 
