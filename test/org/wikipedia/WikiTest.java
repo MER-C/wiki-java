@@ -1,5 +1,5 @@
 /**
- *  @(#)WikiTest.java 0.34 13/01/2018
+ *  @(#)WikiTest.java 0.35 20/05/2018
  *  Copyright (C) 2014-2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or

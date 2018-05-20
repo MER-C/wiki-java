@@ -13,8 +13,8 @@ https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces.
 Requires JDK >= 1.8. For those using Java 9, only the java.base and java.logging
 modules are required.
 
-Latest stable version: [0.34](https://github.com/MER-C/wiki-java/releases/tag/0.34) -- 
-MediaWiki versions 1.28+
+Latest stable version: [0.35](https://github.com/MER-C/wiki-java/releases/tag/0.35) -- 
+MediaWiki versions 1.31+
 
 ## Dependencies
 

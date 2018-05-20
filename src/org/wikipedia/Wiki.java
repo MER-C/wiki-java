@@ -1,5 +1,5 @@
 /**
- *  @(#)Wiki.java 0.34 13/01/2018
+ *  @(#)Wiki.java 0.35 20/05/2018
  *  Copyright (C) 2007 - 2018 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
@@ -54,7 +54,7 @@ import javax.security.auth.login.*;
  *  tracker</a>.
  *
  *  @author MER-C and contributors
- *  @version 0.34
+ *  @version 0.35
  */
 public class Wiki implements Comparable<Wiki>
 {
@@ -423,7 +423,7 @@ public class Wiki implements Comparable<Wiki>
         unknown;
     }
 
-    private static final String version = "0.34";
+    private static final String version = "0.35";
 
     // fundamental URL strings
     private final String protocol, domain, scriptPath;
