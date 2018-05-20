@@ -525,7 +525,7 @@ public class WikiTest
         }
         try
         {
-            enWiki.getDeletedHistory("Media:Example.png");
+            enWiki.getDeletedHistory("Media:Example.png", null);
             fail("Attempted to get the deleted history of a special page.");
         }
         catch (UnsupportedOperationException expected)
@@ -534,7 +534,7 @@ public class WikiTest
         // Test runs without logging in, therefore expect failure.
         try
         {
-            enWiki.getDeletedHistory("Main Page");
+            enWiki.getDeletedHistory("Main Page", null);
             fail("Attempted to view deleted revisions while logged out.");
         }
         catch (SecurityException expected)

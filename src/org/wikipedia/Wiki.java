@@ -2996,37 +2996,29 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the deleted history of a page.
-     *  @param title a page
-     *  @return the deleted revisions of that page in that time span
+     *  Gets the deleted history of a page. Accepted parameters from 
+     *  <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  </ul>
+     * 
+     *  @param title a page (mandatory)
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
+     *  @return the deleted revisions of that page subject to the optional
+     *  constraints in helper
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws SecurityException if we cannot obtain deleted revisions
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
      *  or Media page
      *  @since 0.30
+     *  @see <a href="https://mediawiki.org/wiki/API:Deletedrevisions">MediaWiki 
+     *  documentation</a>
      */
-    public Revision[] getDeletedHistory(String title) throws IOException
-    {
-        return getDeletedHistory(title, null, null, false);
-    }
-
-    /**
-     *  Gets the deleted history of a page.
-     *  @param title a page
-     *  @param start the EARLIEST of the two dates
-     *  @param end the LATEST of the two dates
-     *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work) DEPRECATED: use {@code Collections.reverse()}
-     *  in the JDK.
-     *  @return the deleted revisions of that page in that time span
-     *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @throws SecurityException if we cannot obtain deleted revisions
-     *  @throws UnsupportedOperationException if <var>title</var> is a Special
-     *  or Media page
-     *  @since 0.30
-     */
-    public Revision[] getDeletedHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse)
-        throws IOException
+    public List<Revision> getDeletedHistory(String title, Wiki.RequestHelper helper) throws IOException
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
@@ -3036,15 +3028,13 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "deletedrevisions");
         getparams.put("drvprop", "ids|user|flags|size|comment|parsedcomment|sha1");
-        if (reverse)
+        if (helper != null)
         {
-            log(Level.WARNING, "getDeletedHistory", "Parameter reverse is deprecated");
-            getparams.put("drvdir", "newer");
+            helper.setRequestType("drv");
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addUserParameter());
         }
-        if (start != null)
-            getparams.put(reverse ? "drvstart" : "drvend", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (end != null)
-            getparams.put(reverse ? "drvend" : "drvstart", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         getparams.put("titles", normalize(title));
 
         List<Revision> delrevs = makeListQuery("drv", query, getparams, null, "getDeletedHistory", (response, results) ->
@@ -3066,64 +3056,46 @@ public class Wiki implements Comparable<Wiki>
             }
         });
 
-        int size = delrevs.size();
-        log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
-        return delrevs.toArray(new Revision[size]);
+        log(Level.INFO, "Successfully fetched " + delrevs.size() + " deleted revisions.", "deletedRevs");
+        return delrevs;
     }
 
     /**
-     *  Gets the deleted contributions of a user. Equivalent to
-     *  [[Special:Deletedcontributions]].
-     *  @param u a user
+     *  Gets the deleted contributions of a user in the given namespace. 
+     *  Equivalent to [[Special:Deletedcontributions]]. Accepted parameters from 
+     *  <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
+     *  </ul>
+     * 
+     *  @param username a user (mandatory)
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @return the deleted contributions of that user
      *  @throws IOException if a network error occurs
      *  @throws SecurityException if we cannot obtain deleted revisions
      *  @since 0.30
+     *  @see <a href="https://mediawiki.org/wiki/API:Alldeletedrevisions">MediaWiki
+     *  documentation</a>
      */
-    public Revision[] deletedContribs(String u) throws IOException
+    public List<Revision> deletedContribs(String username, Wiki.RequestHelper helper) throws IOException
     {
-        return deletedContribs(u, null, null, false);
-    }
-
-    /**
-     *  Gets the deleted contributions of a user in the given namespace. Equivalent to
-     *  [[Special:Deletedcontributions]].
-     *  @param username a user
-     *  @param start the EARLIEST of the two dates
-     *  @param end the LATEST of the two dates
-     *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work). DEPRECATED: use <code>Collections.reverse()</code>
-     *  in the JDK.
-     *  @param namespace a list of namespaces
-     *  @return the deleted contributions of that user
-     *  @throws IOException if a network error occurs
-     *  @throws SecurityException if we cannot obtain deleted revisions
-     *  @since 0.30
-     */
-    public Revision[] deletedContribs(String username, OffsetDateTime end, OffsetDateTime start, boolean reverse, int... namespace)
-        throws IOException
-    {
-        // FIXME: parameters are in the wrong order!
-        // admin queries are annoying
         if (user == null || !user.isAllowedTo("deletedhistory"))
             throw new SecurityException("Permission denied: not able to view deleted history");
 
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "alldeletedrevisions");
         getparams.put("adrprop", "ids|user|flags|size|comment|parsedcomment|timestamp|sha1");
-        if (reverse)
+        if (helper != null)
         {
-            log(Level.WARNING, "deletedContribs", "Parameter reverse is deprecated.");
-            getparams.put("adrdir", "newer");
+            helper.setRequestType("adr");
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addNamespaceParameter());
+            getparams.putAll(helper.addReverseParameter());
         }
-        if (start != null)
-            getparams.put(reverse ? "adrstart" : "adrend", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (end != null)
-            getparams.put(reverse ? "adrend" : "adrstart", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        getparams.put("adruser", normalize(username));
-        if (namespace.length > 0)
-            getparams.put("adrnamespace", constructNamespaceString(namespace));
-
+        
         List<Revision> delrevs = makeListQuery("adr", query, getparams, null, "deletedContribs", (response, results) ->
         {
             int x = response.indexOf("<alldeletedrevisions>");
@@ -3143,9 +3115,8 @@ public class Wiki implements Comparable<Wiki>
             }
         });
 
-        int size = delrevs.size();
-        log(Level.INFO, "Successfully fetched " + size + " deleted revisions.", "deletedRevs");
-        return delrevs.toArray(new Revision[size]);
+        log(Level.INFO, "Successfully fetched " + delrevs.size() + " deleted revisions.", "deletedRevs");
+        return delrevs;
     }
 
     /**

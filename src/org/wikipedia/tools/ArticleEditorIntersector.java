@@ -131,12 +131,14 @@ public class ArticleEditorIntersector
         // grab user contributions
         if (user != null)
         {
+            Wiki.RequestHelper rh = wiki.new RequestHelper()
+                .withinDateRange(editsafter, editsbefore);
             Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user, editsafter, editsbefore, null));
             if (adminmode)
             {
                 try
                 {
-                    stuff = Stream.concat(stuff, Arrays.stream(wiki.deletedContribs(user, editsafter, editsbefore, false)));
+                    stuff = Stream.concat(stuff, wiki.deletedContribs(user, rh).stream());
                 }
                 catch (SecurityException ex)
                 {
@@ -336,6 +338,9 @@ public class ArticleEditorIntersector
     public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
     {
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .withinDateRange(earliestdate, latestdate);
+                
         // remove duplicates and fail quickly if less than two pages
         Set<String> pageset = Arrays.stream(articles)
             .filter(article -> wiki.namespace(article) >= 0) // remove Special: and Media: pages
@@ -352,7 +357,7 @@ public class ArticleEditorIntersector
                 {
                     str = Arrays.stream(wiki.getPageHistory(article, earliestdate, latestdate, false));
                     if (adminmode)
-                        str = Stream.concat(str, Arrays.stream(wiki.getDeletedHistory(article, earliestdate, latestdate, false)));
+                        str = Stream.concat(str, wiki.getDeletedHistory(article, rh).stream());
                 }
                 catch (IOException | SecurityException ignored)
                 {
@@ -438,6 +443,9 @@ public class ArticleEditorIntersector
      */
     public Map<String, List<Wiki.Revision>> intersectEditors(String[] users) throws IOException
     {
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .withinDateRange(earliestdate, latestdate);
+                
         // fetch the list of (deleted) edits
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
@@ -451,7 +459,7 @@ public class ArticleEditorIntersector
             {
                 try
                 {
-                    return Arrays.stream(wiki.deletedContribs(user));
+                    return wiki.deletedContribs(user, rh).stream();
                 }
                 catch (IOException | SecurityException ex)
                 {

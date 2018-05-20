@@ -330,8 +330,10 @@ public class ContributionSurveyor
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
-        Wiki.Revision[] delcontribs = wiki.deletedContribs(username, latestdate,
-            earliestdate, false, ns);
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .withinDateRange(earliestdate, latestdate)
+            .inNamespaces(ns);
+        List<Wiki.Revision> delcontribs = wiki.deletedContribs(username, rh);
         LinkedHashMap<String, List<Wiki.Revision>> ret = new LinkedHashMap<>();
 
         // group contributions by page
