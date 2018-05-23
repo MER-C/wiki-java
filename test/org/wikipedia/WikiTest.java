@@ -1081,36 +1081,35 @@ public class WikiTest
     @Test
     public void contribs() throws Exception
     {
-        String[] users = new String[]
-        {
+        List<String> users = Arrays.asList(
             "Dsdlgfkjsdlkfdjilgsujilvjcl", // should not exist
             "0.0.0.0", // IP address
             "Allancake" // revision deleted
-        };
-        List<Wiki.Revision>[] edits = enWiki.contribs(users, "", null, null, null);
+        );
+        List<List<Wiki.Revision>> edits = enWiki.contribs(users, null, null, null);
 
-        assertTrue("contribs: non-existent user", edits[0].isEmpty());
-        assertTrue("contribs: IP address with no edits", edits[1].isEmpty());
-        edits[2].forEach(rev ->
+        assertTrue("contribs: non-existent user", edits.get(0).isEmpty());
+        assertTrue("contribs: IP address with no edits", edits.get(1).isEmpty());
+        for (Wiki.Revision rev : edits.get(2))
         {
             if (rev.getID() == 724989913L)
             {
                 assertTrue("contribs: summary deleted", rev.isContentDeleted());
                 assertTrue("contribs: content deleted", rev.isContentDeleted());
             }
-        });
+        }
 
         // check rcoptions and namespace filter
         // https://test.wikipedia.org/wiki/Blah_blah_2
-        users = new String[] { "MER-C" };
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
         options.put("top", Boolean.TRUE);
-        edits = testWiki.contribs(users, "", null, null, options, Wiki.MAIN_NAMESPACE);
-        assertEquals("contribs: filtered", 120919L, edits[0].get(0).getID());
+        Wiki.RequestHelper rh = testWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
+        edits = testWiki.contribs(Arrays.asList("MER-C"), null, rh, options);
+        assertEquals("contribs: filtered", 120919L, edits.get(0).get(0).getID());
         // not implemented in MediaWiki API
-        // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits[0].get(0).getSha1());
-        for (Wiki.Revision rev : edits[0])
+        // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits.get(0).get(0).getSha1());
+        for (Wiki.Revision rev : edits.get(0))
             assertEquals("contribs: namespace", Wiki.MAIN_NAMESPACE, testWiki.namespace(rev.getTitle()));
     }
 
@@ -1381,7 +1380,7 @@ public class WikiTest
     public void userCreatedPages() throws Exception
     {
         Wiki.User me = testWiki.getUser("MER-C");
-        String[] pages = me.createdPages(Wiki.MAIN_NAMESPACE);
-        assertEquals("createdPages", "Wiki.java Test Page", pages[pages.length - 1]);
+        List<String> pages = me.createdPages(Wiki.MAIN_NAMESPACE);
+        assertEquals("createdPages", "Wiki.java Test Page", pages.get(pages.size() - 1));
     }
 }

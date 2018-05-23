@@ -123,7 +123,7 @@ public class CCIAnalyzer
                 continue;
             }
             // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
-            diff = diff.toLowerCase();
+            diff = diff.toLowerCase(enWiki.locale());
             diff = diff.replace(deltaend + " " + deltabegin, " ");
             // If the diff is empty (see https://en.wikipedia.org/w/index.php?diff=343490272)
             // it will not contain diffaddedbegin -> default major to true.

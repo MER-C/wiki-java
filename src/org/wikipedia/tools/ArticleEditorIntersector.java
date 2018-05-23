@@ -133,7 +133,7 @@ public class ArticleEditorIntersector
         {
             Wiki.RequestHelper rh = wiki.new RequestHelper()
                 .withinDateRange(editsafter, editsbefore);
-            Stream<Wiki.Revision> stuff = Arrays.stream(wiki.contribs(user, editsafter, editsbefore, null));
+            Stream<Wiki.Revision> stuff = wiki.contribs(user, rh).stream();
             if (adminmode)
             {
                 try
@@ -441,7 +441,7 @@ public class ArticleEditorIntersector
      *  @return a map with page &#8594; list of revisions made
      *  @throws IOException if a network error occurs
      */
-    public Map<String, List<Wiki.Revision>> intersectEditors(String[] users) throws IOException
+    public Map<String, List<Wiki.Revision>> intersectEditors(List<String> users) throws IOException
     {
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .withinDateRange(earliestdate, latestdate);
@@ -450,12 +450,12 @@ public class ArticleEditorIntersector
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
             options.put("minor", Boolean.FALSE);
-        List<Wiki.Revision>[] revisions = wiki.contribs(users, "", earliestdate, latestdate, options);
-        Stream<Wiki.Revision> revstream = Arrays.stream(revisions).flatMap(List::stream);
+        List<List<Wiki.Revision>> revisions = wiki.contribs(users, null, rh, options);
+        Stream<Wiki.Revision> revstream = revisions.stream().flatMap(List::stream);
         
         if (adminmode)
         {
-            Stream<Wiki.Revision> revstream2 = Arrays.stream(users).flatMap(user -> 
+            Stream<Wiki.Revision> revstream2 = users.stream().flatMap(user -> 
             {
                 try
                 {

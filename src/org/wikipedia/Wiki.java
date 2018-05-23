@@ -2733,8 +2733,12 @@ public class Wiki implements Comparable<Wiki>
 
         // fill the return list
         List<List<String>> ret = new ArrayList<>();
-        for (String unused : titles)
+        List<String> normtitles = new ArrayList<>();
+        for (String localtitle : titles2)
+        {
+            normtitles.add(normalize(localtitle));
             ret.add(new ArrayList<>());
+        }
         // then retrieve the results from the intermediate list of maps,
         // ensuring results correspond to inputs
         stuff.forEach(map ->
@@ -2742,7 +2746,7 @@ public class Wiki implements Comparable<Wiki>
             String parsedtitle = map.keySet().iterator().next();
             List<String> templates = map.get(parsedtitle);
             for (int i = 0; i < titles2.length; i++)
-                if (normalize(titles2[i]).equals(parsedtitle))
+                if (normtitles.get(i).equals(parsedtitle))
                     ret.get(i).addAll(templates);
         });
         log(Level.INFO, "getExternalLinksOnPage", "Successfully retrieved external links used on " + titles2.length + " pages.");
@@ -4749,24 +4753,6 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the contributions of a user, IP address or range of IP addresses
-     *  in a particular namespace. Equivalent to [[Special:Contributions]]. Be
-     *  careful when using this method on large wikis because more than 100000
-     *  edits may be returned for certain values of <var>user</var>.
-     *
-     *  @param user the user, IP or IP range to get contributions for
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return contributions of this user, or a zero-length array if the user
-     *  does not exist
-     *  @throws IOException if a network error occurs
-     *  @since 0.17
-     */
-    public Revision[] contribs(String user, int... ns) throws IOException
-    {
-        return contribs(user, null, null, ns);
-    }
-
-    /**
      *  Gets the contributions by a range of IP addresses. Supported ranges are
      *  a whole number of bytes (/8, /16, /24, /32, /40, etc.), anything not a
      *  whole number of bytes is rounded down. WARNING: calls for large IP
@@ -4782,7 +4768,7 @@ public class Wiki implements Comparable<Wiki>
      *  @deprecated As of MediaWiki 1.31, you can call {@code contribs(range)}.
      */
     @Deprecated
-    public Revision[] rangeContribs(String range) throws IOException
+    public List<Revision> rangeContribs(String range) throws IOException
     {
         String[] parts = range.split("/");
         String ip = parts[0];
@@ -4819,44 +4805,41 @@ public class Wiki implements Comparable<Wiki>
                     contribuser.append(".");
             }
         }
-        return prefixContribs(contribuser.toString(), null, null);
+        return prefixContribs(contribuser.toString(), null);
     }
 
     /**
-     *  Gets contributions for all users starting with <var>prefix</var>. Be
-     *  careful when using this method on large wikis as
+     *  Gets contributions for all users starting with <var>prefix</var>. See
+     *  {@link #contribs(List, String, RequestHelper, Map)} for full 
+     *  documentation.
+     * 
      *  @param prefix a prefix of usernames.
-     *  @param start fetch edits no newer than this date
-     *  @param end fetch edits no older than this date
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @return contributions of users with this prefix
      *  @throws IOException if a network error occurs
      */
-    public Revision[] prefixContribs(String prefix, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
+    public List<Revision> prefixContribs(String prefix, Wiki.RequestHelper helper) throws IOException
     {
-        List<Revision> list = contribs(new String[0], prefix, end, start, null, ns)[0];
-        return list.toArray(new Revision[list.size()]);
+        return contribs(Collections.emptyList(), prefix, helper, null).get(0);
     }
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. Equivalent to [[Special:Contributions]]. Be
-     *  careful when using this method on large wikis because more than 100000
-     *  edits may be returned for certain values of <var>user</var>.
+     *  addresses. See {@link #contribs(List, String, RequestHelper, Map)} for 
+     *  full documentation.
      *
      *  @param user the user, IP address or IP range to get contributions for
-     *  @param start fetch edits no newer than this date
-     *  @param end fetch edits no older than this date
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return contributions of this user, or a zero-length array if the user
-     *  does not exist
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
+     *  @return contributions of this user, or an empty list if the user does
+     *  not exist
      *  @throws IOException if a network error occurs
      *  @since 0.17
      */
-    public Revision[] contribs(String user, OffsetDateTime end, OffsetDateTime start, int... ns) throws IOException
+    public List<Revision> contribs(String user, Wiki.RequestHelper helper) throws IOException
     {
-        List<Revision> list = contribs(new String[] { user }, "", end, start, null, ns)[0];
-        return list.toArray(new Revision[list.size()]);
+        return contribs(Arrays.asList(user), null, helper, null).get(0);
     }
 
     /**
@@ -4865,6 +4848,15 @@ public class Wiki implements Comparable<Wiki>
      *  using <var>prefix</var> and <var>users</var> on large wikis because more
      *  than 100000 edits may be returned for certain values of <var>users</var>.
      *
+     *  <p>
+     *  Accepted parameters from <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  </ul>
+     * 
      *  <p>
      *  Available keys for <var>options</var> include "minor", "top", "new" and
      *  "patrolled" for vanilla MediaWiki (extensions may define their own).their own).
@@ -4877,34 +4869,30 @@ public class Wiki implements Comparable<Wiki>
      *
      *  @param users a list of users, IP addresses or IP ranges to get
      *  contributions for
-     *  @param start fetch edits no newer than this date
-     *  @param end fetch edits no older than this date
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use ""
+     *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use null
      *  to not specify one.
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @param options a Map dictating which revisions to select. Key not present
      *  = don't care.
      *  @return contributions of <var>users</var> in the same order as
-     *  <var>users</var>, or a zero-length array where the user does not exist
+     *  <var>users</var>, or an empty list where the user does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.34
      */
-    public List<Revision>[] contribs(String[] users, String prefix, OffsetDateTime end, OffsetDateTime start,
-        Map<String, Boolean> options, int... ns) throws IOException
+    public List<List<Revision>> contribs(List<String> users, String prefix, Wiki.RequestHelper helper,
+        Map<String, Boolean> options) throws IOException
     {
-        // end refers to the *oldest* allowable edit and vice versa
-        if (start != null && end != null && start.isBefore(end))
-            throw new IllegalArgumentException("Specified start date is before specified end date!");
-
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "usercontribs");
         getparams.put("ucprop", "title|timestamp|flags|comment|parsedcomment|ids|size|sizediff|sha1");
-        if (end != null)
-            getparams.put("ucend", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (start != null)
-            getparams.put("ucstart", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (ns.length > 0)
-            getparams.put("ucnamespace", constructNamespaceString(ns));
+        if (helper != null)
+        {
+            helper.setRequestType("uc");
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addNamespaceParameter());
+            getparams.putAll(helper.addReverseParameter());
+        }
         if (options != null && !options.isEmpty())
         {
             StringBuilder temp = new StringBuilder();
@@ -4932,7 +4920,7 @@ public class Wiki implements Comparable<Wiki>
         {
             Map<String, Object> postparams = new HashMap<>();
             List<Revision> revisions = new ArrayList<>();
-            for (String userstring : constructTitleString(users))
+            for (String userstring : constructTitleString(users.toArray(new String[0])))
             {
                 postparams.put("ucuser", userstring);
                 revisions.addAll(makeListQuery("uc", query, getparams, postparams, "contribs", parser));
@@ -4940,26 +4928,27 @@ public class Wiki implements Comparable<Wiki>
             // group and reorder
             // implementation note: the API does not distinguish between users/IPs
             // with zero edits and users that do not exist
-            List<Revision>[] ret = new ArrayList[users.length];
-            Arrays.setAll(ret, ArrayList::new);
-            revisions.forEach(revision ->
+            List<List<Revision>> ret = new ArrayList<>();
+            List<String> normusers = new ArrayList<>();
+            for (String localuser : users)
             {
-                for (int i = 0; i < users.length; i++)
-                    if (normalize(users[i]).equals(revision.getUser()))
-                        ret[i].add(revision);
-            });
-            log(Level.INFO, "contribs", "Successfully retrived contributions for " + Arrays.toString(users));
+                normusers.add(normalize(localuser));
+                ret.add(new ArrayList<>());
+            }
+            for (Wiki.Revision revision : revisions)
+                for (int i = 0; i < users.size(); i++)
+                    if (normusers.get(i).equals(revision.getUser()))
+                        ret.get(i).add(revision);
+
+            log(Level.INFO, "contribs", "Successfully retrived contributions for " + users.size() + " users.");
             return ret;
         }
         else
         {
             getparams.put("ucuserprefix", prefix);
             List<Revision> revisions = makeListQuery("uc", query, getparams, null, "contribs", parser);
-            int size = revisions.size();
-            log(Level.INFO, "prefixContribs", "Successfully retrived contributions for " + prefix + " (" + size + " edits)");
-            List<Revision>[] ret = new ArrayList[1];
-            ret[0] = revisions;
-            return ret;
+            log(Level.INFO, "prefixContribs", "Successfully retrived prefix contributions (" + revisions.size() + " edits)");
+            return Arrays.asList(revisions);
         }
     }
 
@@ -6819,9 +6808,10 @@ public class Wiki implements Comparable<Wiki>
          *  @throws IOException if a network error occurs
          *  @since 0.17
          */
-        public Revision[] contribs(int... ns) throws IOException
+        public List<Revision> contribs(int... ns) throws IOException
         {
-            return Wiki.this.contribs(username, ns);
+            Wiki.RequestHelper rh = new RequestHelper().inNamespaces(ns);
+            return Wiki.this.contribs(username, rh);
         }
 
         /**
@@ -6831,14 +6821,15 @@ public class Wiki implements Comparable<Wiki>
          *  @throws IOException if a network error occurs
          *  @since 0.35
          */
-        public String[] createdPages(int... ns) throws IOException
+        public List<String> createdPages(int... ns) throws IOException
         {
             Map<String, Boolean> options = new HashMap<>();
             options.put("new", Boolean.TRUE);
-            List<Wiki.Revision>[] contribs = Wiki.this.contribs(new String[] { username }, "", null, null, options, ns);
-            String[] ret = new String[contribs[0].size()];
-            for (int i = 0; i < contribs[0].size(); i++)
-                ret[i] = contribs[0].get(i).getTitle();
+            Wiki.RequestHelper rh = new RequestHelper().inNamespaces(ns);
+            List<Wiki.Revision> contribs = Wiki.this.contribs(username, rh);
+            List<String> ret = new ArrayList<>();
+            for (Wiki.Revision rev : contribs)
+                ret.add(rev.getTitle());
             return ret;
         }
 

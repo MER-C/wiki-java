@@ -52,11 +52,10 @@ public class ContributionSurveyorTest
     @Test
     public void contributionSurvey() throws Exception
     {
-        String[] users = 
-        { 
+        List<String> users = Arrays.asList(
             "HilStev", // no edits: https://en.wikipedia.org/wiki/Special:Contributions/HilStev
             "OfficialPankajPatidar" // no mainspace edits: https://en.wikipedia.org/wiki/Special:Contributions/OfficialPankajPatidar
-        };
+        );
         Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue("User with no edits", results.get("HilStev").isEmpty());
         assertTrue("Check namespace filter", results.get("OfficialPankajPatidar").isEmpty());
@@ -75,8 +74,7 @@ public class ContributionSurveyorTest
         
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-01&end=2018-01-24
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-07&end=2018-01-17
-        String[] users = { "Jimbo Wales" };
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(Arrays.asList("Jimbo Wales"), Wiki.MAIN_NAMESPACE);
         assertTrue("Check date/time bounds", results.get("Jimbo Wales").isEmpty());
     }
 }

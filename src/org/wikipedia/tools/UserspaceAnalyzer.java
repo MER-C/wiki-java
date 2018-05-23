@@ -80,8 +80,8 @@ public class UserspaceAnalyzer
             }
             if (userinfo[i].countEdits() > 50)
                 continue;
-            Wiki.Revision[] contribs = wiki.contribs(usernames[i]);
-            if (contribs.length == 0)
+            List<Wiki.Revision> contribs = wiki.contribs(usernames[i], null);
+            if (contribs.isEmpty())
                 continue; // all deleted
             int mainspace = 0, userspace = 0;
             for (Wiki.Revision edit : contribs)
@@ -96,11 +96,11 @@ public class UserspaceAnalyzer
             if (userspace == 0)
                 continue;
             
-            String lastedit = contribs[0].getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            String lastedit = contribs.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
             
             System.out.println("|-");
             System.out.printf("| [[User:%s]] ([[Special:Contributions/%s|contribs]]) || %s || %d || %d \n", 
-                usernames[i], usernames[i], lastedit, contribs.length, mainspace);
+                usernames[i], usernames[i], lastedit, contribs.size(), mainspace);
         }
         System.out.println("|}");
     }

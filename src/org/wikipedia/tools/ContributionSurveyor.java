@@ -165,7 +165,7 @@ public class ContributionSurveyor
         surveyor.setIgnoringMinorEdits(nominor);
         try (BufferedWriter outwriter = Files.newBufferedWriter(out))
         {
-            outwriter.write(surveyor.massContributionSurvey(users.toArray(new String[users.size()]), images, ns));
+            outwriter.write(surveyor.massContributionSurvey(users, images, ns));
         }
     }
 
@@ -295,20 +295,23 @@ public class ContributionSurveyor
      *  @throws IOException if a network error occurs
      *  @since 0.04
      */
-    public Map<String, Map<String, List<Wiki.Revision>>> contributionSurvey(String[] users, int... ns) throws IOException
+    public Map<String, Map<String, List<Wiki.Revision>>> contributionSurvey(List<String> users, int... ns) throws IOException
     {
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
             options.put("minor", Boolean.FALSE);
-        List<Wiki.Revision>[] edits = wiki.contribs(users, "", earliestdate, latestdate, options, ns);
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .inNamespaces(ns)
+            .withinDateRange(earliestdate, latestdate);
+        List<List<Wiki.Revision>> edits = wiki.contribs(users, null, rh, options);
         Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
-        for (int i = 0; i < users.length; i++)
+        for (int i = 0; i < users.size(); i++)
         {
-            Map<String, List<Wiki.Revision>> results = edits[i].stream()
+            Map<String, List<Wiki.Revision>> results = edits.get(i).stream()
                 .filter(rev -> rev.getSizeDiff() >= minsizediff)
                 .sorted(Comparator.comparingInt(Wiki.Revision::getSizeDiff).reversed())
                 .collect(Collectors.groupingBy(Wiki.Revision::getTitle, LinkedHashMap::new, Collectors.toList()));
-            ret.put(users[i], results);
+            ret.put(users.get(i), results);
         }
         return ret;
     }
@@ -555,11 +558,11 @@ public class ContributionSurveyor
      *  @throws IOException if a network error occurs
      *  @since 0.02
      */
-    public String massContributionSurvey(String[] usernames, boolean images, int... ns) throws IOException
+    public String massContributionSurvey(List<String> usernames, boolean images, int... ns) throws IOException
     {
         StringBuilder out = new StringBuilder();
         Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(usernames, ns);
-        Wiki.User[] userinfo = wiki.getUsers(usernames);
+        Wiki.User[] userinfo = wiki.getUsers(usernames.toArray(new String[0]));
 
         Iterator<Map.Entry<String, Map<String, List<Wiki.Revision>>>> iter = results.entrySet().iterator();
         int userindex = 0;

@@ -221,9 +221,12 @@ public class UserLinkAdditionFinder
      */
     public static Map<Wiki.Revision, List<String>> getLinksAdded(List<String> users, OffsetDateTime earliest) throws IOException
     {
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .inNamespaces(Wiki.MAIN_NAMESPACE)
+            .withinDateRange(earliest, null);
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
-        List<Wiki.Revision>[] contribs = wiki.contribs(users.toArray(new String[0]), "", null, earliest, null, Wiki.MAIN_NAMESPACE);
-        List<Wiki.Revision> revisions = Arrays.stream(contribs)
+        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh, null);
+        List<Wiki.Revision> revisions = contribs.stream()
             .flatMap(List::stream)
             .filter(revision -> !revision.isContentDeleted())
             .collect(Collectors.toList());
@@ -262,7 +265,7 @@ public class UserLinkAdditionFinder
         Pattern pattern = Pattern.compile("https?://.+?\\..{2,}?(?:\\s|]|<|$)");
 
         // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
-        diff = diff.toLowerCase();
+        diff = diff.toLowerCase(wiki.locale());
         diff = diff.replace(deltaend + " " + deltabegin, " ");
         diff = diff.replace("&lt;", "<");
         for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))

@@ -19,6 +19,7 @@ package org.wikipedia.tools;
 
 import java.io.*;
 import java.time.*;
+import java.util.*;
 import javax.swing.JOptionPane;
 import org.wikipedia.*;
 
@@ -42,11 +43,12 @@ public class PrefixContribs
         String prefix = JOptionPane.showInputDialog(null, "Enter query string");
         if (prefix == null)
             System.exit(0);
-        OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(7);
-        Wiki.Revision[] revisions = enWiki.prefixContribs(prefix, cutoff, null);
-        if (revisions.length == 0)
+        Wiki.RequestHelper rh = enWiki.new RequestHelper()
+            .withinDateRange(OffsetDateTime.now(ZoneOffset.UTC).minusDays(7), null);
+        List<Wiki.Revision> revisions = enWiki.prefixContribs(prefix, rh);
+        if (revisions.isEmpty())
             System.out.println("No contributions found.");
         else
-            System.out.println(ParserUtils.revisionsToHTML(enWiki, revisions));
+            System.out.println(ParserUtils.revisionsToHTML(enWiki, revisions.toArray(new Wiki.Revision[0])));
     }
 }
