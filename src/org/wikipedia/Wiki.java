@@ -2912,35 +2912,26 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the entire revision history of a page. Be careful when using
-     *  this method as some pages (such as [[Wikipedia:Administrators'
-     *  noticeboard/Incidents]] have ~10^6 revisions.
-     *
+     *  Gets the revision history of a page. Accepted parameters from 
+     *  <var>helper</var> are:
+     * 
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  </ul>
+     * 
      *  @param title a page
-     *  @return the revisions of that page
-     *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @since 0.19
-     */
-    public Revision[] getPageHistory(String title) throws IOException
-    {
-        return getPageHistory(title, null, null, false);
-    }
-
-    /**
-     *  Gets the revision history of a page between two dates.
-     *  @param title a page
-     *  @param start the EARLIEST of the two dates
-     *  @param end the LATEST of the two dates
-     *  @param reverse whether to put the oldest first (default = false, newest
-     *  first is how history pages work). DEPRECATED: use {@code Collections.reverse()}
-     *  in the JDK.
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @return the revisions of that page in that time span
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
      *  or Media page
      *  @since 0.19
      */
-    public Revision[] getPageHistory(String title, OffsetDateTime start, OffsetDateTime end, boolean reverse) throws IOException
+    public List<Revision> getPageHistory(String title, Wiki.RequestHelper helper) throws IOException
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
@@ -2949,15 +2940,13 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "revisions");
         getparams.put("titles", normalize(title));
         getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1");
-        if (reverse)
+        if (helper != null)
         {
-            log(Level.WARNING, "getPageHistory", "Parameter reverse is deprecated.");
-            getparams.put("rvdir", "newer");
+            helper.setRequestType("rv");
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addUserParameter());
         }
-        if (start != null)
-            getparams.put(reverse ? "rvstart" : "rvend", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (end != null)
-            getparams.put(reverse ? "rvend" : "rvstart", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
 
         List<Revision> revisions = makeListQuery("rv", query, getparams, null, "getPageHistory", (line, results) ->
         {
@@ -2970,33 +2959,34 @@ public class Wiki implements Comparable<Wiki>
 
         // populate previous/next
         int size = revisions.size();
-        Revision[] temp = revisions.toArray(new Revision[size]);
-        if (reverse)
+        if (helper == null || helper.addReverseParameter().isEmpty())
         {
             for (int i = 0; i < size; i++)
             {
-                if (i == 0)
-                    temp[i].sizediff = temp[i].size;
+                Wiki.Revision rev = revisions.get(i);
+                if (i == size - 1)
+                    rev.sizediff = rev.size;
                 else
-                    temp[i].sizediff = temp[i].size - temp[i - 1].size;
-                if (i != size - 1)
-                    temp[i].next = temp[i + 1].getID();
+                    rev.sizediff = rev.size - revisions.get(i + 1).size;
+                if (i != 0)
+                    rev.next = revisions.get(i - 1).getID();
             }
         }
         else
         {
             for (int i = 0; i < size; i++)
             {
-                if (i == size - 1)
-                    temp[i].sizediff = temp[i].size;
+                Wiki.Revision rev = revisions.get(i);
+                if (i == 0)
+                    rev.sizediff = rev.size;
                 else
-                    temp[i].sizediff = temp[i].size - temp[i + 1].size;
-                if (i != 0)
-                    temp[i].next = temp[i - 1].getID();
+                    rev.sizediff = rev.size - revisions.get(i - 1).size;
+                if (i != size - 1)
+                    rev.next = revisions.get(i + 1).getID();
             }
         }
         log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
-        return temp;
+        return revisions;
     }
 
     /**

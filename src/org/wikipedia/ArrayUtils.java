@@ -93,17 +93,17 @@ public class ArrayUtils
     /**
      *  Removes reverts from a list of revisions. A revert is defined as any 
      *  revision on a page that has the same SHA-1 as any previous (as in time) 
-     *  revision on that page. As a side effect, the returned array is sorted
+     *  revision on that page. As a side effect, the returned list is sorted
      *  by timestamp with the earliest revision first and with duplicates 
      *  removed.
      * 
      *  @param revisions the revisions to remove reverts from
-     *  @return the array of revisions with reverts removed
+     *  @return a copy of the list of revisions with reverts removed
      */
-    public static Wiki.Revision[] removeReverts(Wiki.Revision[] revisions)
+    public static List<Wiki.Revision> removeReverts(List<Wiki.Revision> revisions)
     {
         // Group revisions by page, then sort so that the oldest edits are first.
-        Map<String, Set<Wiki.Revision>> stuff = Arrays.stream(revisions)
+        Map<String, Set<Wiki.Revision>> stuff = revisions.stream()
             .collect(Collectors.groupingBy(Wiki.Revision::getTitle, Collectors.toCollection(TreeSet::new)));
         Set<Wiki.Revision> ret = new LinkedHashSet<>();
         stuff.forEach((page, listofrevisions) ->
@@ -122,6 +122,6 @@ public class ArrayUtils
             }
             ret.addAll(listofrevisions);
         });
-        return ret.toArray(new Wiki.Revision[ret.size()]);
+        return new ArrayList<>(ret);
     }
 }

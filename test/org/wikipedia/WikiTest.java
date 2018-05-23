@@ -227,14 +227,14 @@ public class WikiTest
         }
         enWiki.setQueryLimit(530);
         assertEquals("querylimits", 530, enWiki.getQueryLimit());
-        assertEquals("querylimits: length", 530, enWiki.getPageHistory("Main Page").length);
+        assertEquals("querylimits: length", 530, enWiki.getPageHistory("Main Page", null).size());
         // check whether queries that set a separate limit function correctly
         assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(10).length);
-        assertEquals("querylimits: after recentchanges", 530, enWiki.getPageHistory("Main Page").length);
+        assertEquals("querylimits: after recentchanges", 530, enWiki.getPageHistory("Main Page", null).size());
         assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", null, 10).size());
-        assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page").length);
+        assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page", null).size());
         assertEquals("querylimits: listPages", 500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).length);
-        assertEquals("querylimits: after listPages", 530, enWiki.getPageHistory("Main Page").length);
+        assertEquals("querylimits: after listPages", 530, enWiki.getPageHistory("Main Page", null).size());
     }
 
     @Test
@@ -480,7 +480,7 @@ public class WikiTest
     {
         try
         {
-            enWiki.getPageHistory("Special:SpecialPages");
+            enWiki.getPageHistory("Special:SpecialPages", null);
             fail("Attempted to get the page history of a special page.");
         }
         catch (UnsupportedOperationException expected)
@@ -488,18 +488,18 @@ public class WikiTest
         }
         try
         {
-            enWiki.getPageHistory("Media:Example.png");
+            enWiki.getPageHistory("Media:Example.png", null);
             fail("Attempted to get the page history of a media page.");
         }
         catch (UnsupportedOperationException expected)
         {
         }
 
-        assertArrayEquals("getPageHistory: non-existent page", new Wiki.Revision[0], enWiki.getPageHistory("EOTkd&ssdf"));
+        assertTrue("getPageHistory: non-existent page", enWiki.getPageHistory("EOTkd&ssdf", null).isEmpty());
 
         // test for RevisionDeleted revisions
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-        Wiki.Revision[] history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete");
+        List<Wiki.Revision> history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete", null);
         for (Wiki.Revision rev : history)
         {
             if (rev.getID() == 275553L)
@@ -517,7 +517,7 @@ public class WikiTest
     {
         try
         {
-            enWiki.getPageHistory("Special:SpecialPages");
+            enWiki.getDeletedHistory("Special:SpecialPages", null);
             fail("Attempted to get the deleted history of a special page.");
         }
         catch (UnsupportedOperationException expected)
@@ -1346,7 +1346,9 @@ public class WikiTest
         // https://test.wikipedia.org/wiki/Special:Permanentlink/275553
         // RevisionDeleted, therefore need to test for NPEs
         rev1 = testWiki.getRevision(275553L);
-        rev2 = testWiki.getPageHistory("User:MER-C/UnitTests/Delete", OffsetDateTime.parse("2016-01-01T00:00:00Z"), OffsetDateTime.parse("2016-06-16T08:40:00Z"), false)[0];
+        Wiki.RequestHelper rh = testWiki.new RequestHelper()
+            .withinDateRange(OffsetDateTime.parse("2016-01-01T00:00:00Z"), OffsetDateTime.parse("2016-06-16T08:40:00Z"));
+        rev2 = testWiki.getPageHistory("User:MER-C/UnitTests/Delete", rh).get(0);
         assertEquals("Revision.equals (NPE)", rev1, rev2);
         assertEquals("Revision.hashCode (NPE)", rev1.hashCode(), rev2.hashCode());
     }

@@ -66,8 +66,9 @@ public class ArrayUtilsTest
     public void removeReverts() throws Exception
     {
         // https://en.wikipedia.org/w/index.php?title=Azerbaijan&offset=20180125204500&action=history
-        Wiki.Revision[] revisions = enWiki.getPageHistory("Azerbaijan", OffsetDateTime.parse("2018-01-16T00:00:00Z"), 
-            OffsetDateTime.parse("2018-01-25T20:45:00Z"), false);
+        Wiki.RequestHelper rh = enWiki.new RequestHelper()
+            .withinDateRange(OffsetDateTime.parse("2018-01-16T00:00:00Z"), OffsetDateTime.parse("2018-01-25T20:45:00Z"));
+        List<Wiki.Revision> revisions = enWiki.getPageHistory("Azerbaijan", rh);
         long[] oldids = new long[] 
         {
             822342083L, //  0: state  3, reverts 822341440L
@@ -87,7 +88,7 @@ public class ArrayUtilsTest
             821171155L, // 14: state  2
             821170526L  // 15: state  1
         };
-        assertArrayEquals("removereverts: setup", oldids, Arrays.stream(revisions).mapToLong(Wiki.Revision::getID).toArray());
+        assertArrayEquals("removereverts: setup", oldids, revisions.stream().mapToLong(Wiki.Revision::getID).toArray());
         long[] expected = new long[] 
         {
             821170526L, // 14: state  1
@@ -100,15 +101,15 @@ public class ArrayUtilsTest
             822338419L, //  4: state  6
             822338691L  //  3: state  7
         };
-        Wiki.Revision[] revertsremoved = ArrayUtils.removeReverts(revisions);
-        assertArrayEquals("removereverts", expected, Arrays.stream(revertsremoved).mapToLong(Wiki.Revision::getID).toArray());
+        List<Wiki.Revision> revertsremoved = ArrayUtils.removeReverts(revisions);
+        assertArrayEquals("removereverts", expected, revertsremoved.stream().mapToLong(Wiki.Revision::getID).toArray());
         // two identical edits on different pages are not reverts
         oldids = new long[]
         {
             823352879L, // https://en.wikipedia.org/w/index.php?oldid=823352879
             823352525L  // https://en.wikipedia.org/w/index.php?oldid=823352525
         };
-        revisions = enWiki.getRevisions(oldids);
-        assertArrayEquals("removereverts: different pages, same content", revisions, ArrayUtils.removeReverts(revisions));
+        revisions = Arrays.asList(enWiki.getRevisions(oldids));
+        assertEquals("removereverts: different pages, same content", revisions, ArrayUtils.removeReverts(revisions));
     }
 }

@@ -355,7 +355,7 @@ public class ArticleEditorIntersector
                 Stream<Wiki.Revision> str = Stream.empty();
                 try
                 {
-                    str = Arrays.stream(wiki.getPageHistory(article, earliestdate, latestdate, false));
+                    str = wiki.getPageHistory(article, rh).stream();
                     if (adminmode)
                         str = Stream.concat(str, wiki.getDeletedHistory(article, rh).stream());
                 }
@@ -371,7 +371,7 @@ public class ArticleEditorIntersector
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
         if (noreverts)
-            revstream = Arrays.stream(ArrayUtils.removeReverts(revstream.toArray(x -> new Wiki.Revision[x])));
+            revstream = ArrayUtils.removeReverts(revstream.collect(Collectors.toList())).stream();
         Map<String, List<Wiki.Revision>> results = revstream.collect(Collectors.groupingBy(Wiki.Revision::getUser));
         
         Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = results.entrySet().iterator();
