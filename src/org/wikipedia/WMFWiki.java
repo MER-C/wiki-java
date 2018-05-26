@@ -86,7 +86,7 @@ public class WMFWiki extends Wiki
         wiki.setMaxLag(0);
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
-        String line = wiki.makeHTTPRequest(wiki.apiUrl, getparams, null, "WMFWiki.getSiteMatrix");
+        String line = wiki.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
         ArrayList<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
@@ -150,7 +150,7 @@ public class WMFWiki extends Wiki
         getparams.put("prop", "globalusage");
         getparams.put("titles", normalize(title));
     	
-        List<String[]> usage = makeListQuery("gu", query, getparams, null, "getGlobalUsage", (line, results) ->
+        List<String[]> usage = makeListQuery("gu", getparams, null, "getGlobalUsage", (line, results) ->
         {
             for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
                 results.add(new String[] {
@@ -245,7 +245,7 @@ public class WMFWiki extends Wiki
             getparams.putAll(helper.addDateRangeParameters());
         }
         
-        List<LogEntry> filterlog = makeListQuery("afl", query, getparams, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
+        List<LogEntry> filterlog = makeListQuery("afl", getparams, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
         {
             String[] items = line.split("<item ");
             for (int i = 1; i < items.length; i++)

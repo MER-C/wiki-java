@@ -106,7 +106,7 @@ public class WMFWikiTest
      *  @throws Exception if a network error occurs
      */
     @Test
-    // @Ignore
+    @Ignore
     public void getAbuseFilterLogs() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:AbuseLog?wpSearchUser=Miniapolis&wpSearchTitle=Catopsbaatar&wpSearchFilter=1

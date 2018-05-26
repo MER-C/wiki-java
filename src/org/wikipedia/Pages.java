@@ -166,12 +166,12 @@ public class Pages
             return ""; // no talk pages yet
         try
         {
-            String indexPHPURL = wiki.getIndexPHPURL();
+            String indexPHPURL = wiki.getIndexPhpUrl();
             String pageenc = URLEncoder.encode(page, "UTF-8");
             
-            return "<a href=\"" + wiki.getPageURL(page) + "\">" + page + "</a> ("
+            return "<a href=\"" + wiki.getPageUrl(page) + "\">" + page + "</a> ("
                 + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=edit\">edit</a> | "
-                + "<a href=\"" + wiki.getPageURL(wiki.getTalkPage(page)) + "\">talk</a> | "
+                + "<a href=\"" + wiki.getPageUrl(wiki.getTalkPage(page)) + "\">talk</a> | "
                 + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "
                 + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=" + pageenc + "\">logs</a>)";
         }

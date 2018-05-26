@@ -297,7 +297,7 @@ public class ExternalLinkPopularity
             if (pagedomaintourls.isEmpty())
                 return;
             sb.append("<h2><a href=\"");
-            sb.append(wiki.getPageURL(page));
+            sb.append(wiki.getPageUrl(page));
             sb.append("\">");
             sb.append(page);
             sb.append("</a></h2>\n");
@@ -320,9 +320,9 @@ public class ExternalLinkPopularity
                 else
                     sb.append(" links; Linksearch: ");
                 sb.append("<a href=\"");
-                sb.append(wiki.getPageURL("Special:Linksearch/*." + domain));
+                sb.append(wiki.getPageUrl("Special:Linksearch/*." + domain));
                 sb.append("\">http</a> <a href=\"");
-                sb.append(wiki.getPageURL("Special:Linksearch/https://*." + domain));
+                sb.append(wiki.getPageUrl("Special:Linksearch/https://*." + domain));
                 sb.append("\">https</a>)\n");
                 scores.accept(numlinks);
                 dss.accept(numlinks);

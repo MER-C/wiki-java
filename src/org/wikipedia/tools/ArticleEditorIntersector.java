@@ -472,7 +472,7 @@ public class ArticleEditorIntersector
             revstream = Stream.concat(revstream, revstream2);
         }
         // we cannot filter by sizediff here, the MediaWiki API does not return
-        // this information for deleted revisions
+        // this information for page histories or deleted revisions
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
         return revstream.collect(Collectors.groupingBy(Wiki.Revision::getTitle));

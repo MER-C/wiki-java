@@ -28,6 +28,7 @@ import java.text.Normalizer;
 import java.time.*;
 import java.time.format.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.*;
 import java.util.logging.*;
 import java.util.stream.*;
@@ -427,40 +428,27 @@ public class Wiki implements Comparable<Wiki>
 
     // fundamental URL strings
     private final String protocol, domain, scriptPath;
+    private String base, articleUrl;
 
     /**
-     *  URL for index.php. (Needs to be accessible to subclasses.)
-     *  @see #initVars()
-     *  @see #apiUrl
-     *  @see #query
-     *  @see <a href="https://mediawiki.org/wiki/Manual:Index.php">MediaWiki
-     *  documentation</a>
-     *  @deprecated replace with getIndexPHPURL(). Will be made private.
+     *  Stores default HTTP parameters for API calls. Contains {@linkplain 
+     *  #setMaxLag(int) maxlag}, {@linkplain #setResolveRedirects(boolean) redirect 
+     *  resolution} and {@linkplain #setAssertionMode(int) user and bot assertions}
+     *  when wanted by default. Add stuff to this map if you want to add parameters
+     *  to every API call.
+     *  @see #makeApiCall(Map, Map, String) 
      */
-    @Deprecated
-    protected String base;
+    protected ConcurrentHashMap<String, String> defaultApiParams;
 
     /**
-     *  URL entrypoint for the MediaWiki API.  (Needs to be accessible to
+     *  URL entrypoint for the MediaWiki API. (Needs to be accessible to
      *  subclasses.)
      *  @see #initVars()
-     *  @see #base
-     *  @see #query
+     *  @see #getApiUrl() 
      *  @see <a href="https://mediawiki.org/wiki/Manual:Api.php">MediaWiki
      *  documentation</a>
      */
     protected String apiUrl;
-
-    /**
-     *  Base URL for action=query type requests from the API.  (Needs to be
-     *  accessible to subclasses.)
-     *  @see #initVars()
-     *  @see #base
-     *  @see #apiUrl
-     *  @see <a href="https://www.mediawiki.org/wiki/API:Query">MediaWiki
-     *  documentation</a>
-     */
-    protected String query;
 
     // wiki properties
     private boolean siteinfofetched = false;
@@ -530,6 +518,10 @@ public class Wiki implements Comparable<Wiki>
         this.scriptPath = Objects.requireNonNull(scriptPath);
         this.protocol = Objects.requireNonNull(protocol);
 
+        defaultApiParams = new ConcurrentHashMap<>();
+        defaultApiParams.put("format", "xml");
+        defaultApiParams.put("maxlag", String.valueOf(maxlag));
+        
         logger.setLevel(loglevel);
         logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
         CookieHandler.setDefault(cookies);
@@ -578,42 +570,16 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Edit this if you need to change the API and human interface url
-     *  configuration of the wiki. One example use is server-side cache
-     *  management (maxage and smaxage API parameters).
+     *  configuration of the wiki. One example use is to change the port number.
      *
      *  <p>Contributed by Tedder
      *  @since 0.24
      */
     protected void initVars()
     {
-        StringBuilder basegen = new StringBuilder(protocol);
-        basegen.append(domain);
-        basegen.append(scriptPath);
-        StringBuilder apigen = new StringBuilder(basegen);
-        apigen.append("/api.php?format=xml");
-        // MediaWiki has inbuilt maxlag functionality, see [[mw:Manual:Maxlag
-        // parameter]]. Let's exploit it.
-        if (maxlag >= 0)
-        {
-            apigen.append("&maxlag=");
-            apigen.append(maxlag);
-            basegen.append("/index.php?maxlag=");
-            basegen.append(maxlag);
-            basegen.append("&title=");
-        }
-        else
-            basegen.append("/index.php?title=");
-        base = basegen.toString();
-        // use inbuilt assertions
-        if ((assertion & ASSERT_BOT) == ASSERT_BOT)
-            apigen.append("&assert=bot");
-        else if ((assertion & ASSERT_USER) == ASSERT_USER)
-            apigen.append("&assert=user");
-        apiUrl = apigen.toString();
-        apigen.append("&action=query");
-        if (resolveredirect)
-            apigen.append("&redirects");
-        query = apigen.toString();
+        base = protocol + domain + scriptPath + "/index.php";
+        apiUrl = protocol + domain + scriptPath + "/api.php";
+        articleUrl = protocol + domain + "/wiki/";
     }
 
     /**
@@ -708,10 +674,21 @@ public class Wiki implements Comparable<Wiki>
      *  MediaWiki documentation</a>
      *  @since 0.35
      */
-    public String getIndexPHPURL()
+    public String getIndexPhpUrl()
     {
-        // TODO: replace with base once it is made private and stripped of junk
-        return protocol + domain + scriptPath + "/index.php";
+        return base;
+    }
+    
+    /**
+     *  Gets the URL of api.php.
+     *  @return (see above)
+     *  @see <a href="https://mediawiki.org/wiki/Manual:Api.php">MediaWiki 
+     *  documentation</a>
+     *  @since 0.36
+     */
+    public String getApiUrl()
+    {
+        return apiUrl;
     }
 
     /**
@@ -771,9 +748,10 @@ public class Wiki implements Comparable<Wiki>
         if (!siteinfofetched)
         {
             Map<String, String> getparams = new HashMap<>();
+            getparams.put("action", "query");
             getparams.put("meta", "siteinfo");
             getparams.put("siprop", "namespaces|namespacealiases|general|extensions");
-            String line = makeHTTPRequest(query, getparams, null, "getSiteInfo");
+            String line = makeApiCall(getparams, null, "getSiteInfo");
 
             // general site info
             String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
@@ -964,7 +942,10 @@ public class Wiki implements Comparable<Wiki>
     public void setResolveRedirects(boolean b)
     {
         resolveredirect = b;
-        initVars();
+        if (b)
+            defaultApiParams.put("redirects", "1");
+        else
+            defaultApiParams.remove("redirects");
     }
 
     /**
@@ -1099,7 +1080,10 @@ public class Wiki implements Comparable<Wiki>
     {
         maxlag = lag;
         log(Level.CONFIG, "setMaxLag", "Setting maximum allowable database lag to " + lag);
-        initVars();
+        if (maxlag >= 0)
+            defaultApiParams.put("maxlag", String.valueOf(maxlag));
+        else
+            defaultApiParams.remove("maxlag");
     }
 
     /**
@@ -1124,7 +1108,13 @@ public class Wiki implements Comparable<Wiki>
     {
         assertion = mode;
         log(Level.CONFIG, "setAssertionMode", "Set assertion mode to " + mode);
-        initVars();
+        
+        if ((assertion & ASSERT_BOT) == ASSERT_BOT)
+            defaultApiParams.put("assert", "bot");
+        else if ((assertion & ASSERT_USER) == ASSERT_USER)
+            defaultApiParams.put("assert", "user");
+        else
+            defaultApiParams.remove("assert");
     }
 
     /**
@@ -1193,7 +1183,7 @@ public class Wiki implements Comparable<Wiki>
         postparams.put("lgname", username);
         postparams.put("lgpassword", new String(password));
         postparams.put("lgtoken", getToken("login"));
-        String line = makeHTTPRequest(apiUrl, getparams, postparams, "login");
+        String line = makeApiCall(getparams, postparams, "login");
         Arrays.fill(password, '0');
 
         // check for success
@@ -1268,7 +1258,7 @@ public class Wiki implements Comparable<Wiki>
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "logout");
-        makeHTTPRequest(apiUrl, getparams, null, "logoutServerSide");
+        makeApiCall(getparams, null, "logoutServerSide");
         logout(); // destroy local cookies
     }
 
@@ -1282,9 +1272,10 @@ public class Wiki implements Comparable<Wiki>
     public boolean hasNewMessages() throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("meta", "userinfo");
         getparams.put("uiprop", "hasmsg");
-        return makeHTTPRequest(query, getparams, null, "hasNewMessages").contains("messages=\"\"");
+        return makeApiCall(getparams, null, "hasNewMessages").contains("messages=\"\"");
     }
 
     /**
@@ -1300,9 +1291,10 @@ public class Wiki implements Comparable<Wiki>
     public int getCurrentDatabaseLag() throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("meta", "siteinfo");
         getparams.put("siprop", "dbrepllag");
-        String line = makeHTTPRequest(query, getparams, null, "getCurrentDatabaseLag");
+        String line = makeApiCall(getparams, null, "getCurrentDatabaseLag");
         String lag = parseAttribute(line, "lag", 0);
         log(Level.INFO, "getCurrentDatabaseLag", "Current database replication lag is " + lag + " seconds");
         return Integer.parseInt(lag);
@@ -1321,9 +1313,10 @@ public class Wiki implements Comparable<Wiki>
     public Map<String, Integer> getSiteStatistics() throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("meta", "siteinfo");
         getparams.put("siprop", "statistics");
-        String text = makeHTTPRequest(query, getparams, null, "getSiteStatistics");
+        String text = makeApiCall(getparams, null, "getSiteStatistics");
         Map<String, Integer> ret = new HashMap<>(20);
         ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
         ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
@@ -1419,7 +1412,7 @@ public class Wiki implements Comparable<Wiki>
         if (section >= 0)
             getparams.put("section", String.valueOf(section));
 
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "parse");
+        String response = makeApiCall(getparams, postparams, "parse");
         if (response.contains("error code=\""))
             // Bad section numbers, revids, deleted pages should all end up here.
             // FIXME: makeHTTPRequest() swallows the API error "missingtitle"
@@ -1480,10 +1473,11 @@ public class Wiki implements Comparable<Wiki>
 
         // no bulk queries here because they are deterministic
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("list", "random");
         if (ns[0] != ALL_NAMESPACES)
             getparams.put("rnnamespace", constructNamespaceString(ns));
-        String line = makeHTTPRequest(query, getparams, null, "random");
+        String line = makeApiCall(getparams, null, "random");
         return parseAttribute(line, "title", 0);
     }
 
@@ -1498,9 +1492,10 @@ public class Wiki implements Comparable<Wiki>
     public String getToken(String type) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("meta", "tokens");
         getparams.put("type", type);
-        String content = makeHTTPRequest(query, getparams, null, "getToken");
+        String content = makeApiCall(getparams, null, "getToken");
         return parseAttribute(content, type + "token", 0);
     }
 
@@ -1582,12 +1577,12 @@ public class Wiki implements Comparable<Wiki>
      *  @return (see above)
      *  @since 0.35
      */
-    public String getPageURL(String page)
+    public String getPageUrl(String page)
     {
         try
         {
             page = normalize(page).replace(' ', '_');
-            return protocol + domain + "/wiki/" + URLEncoder.encode(page, "UTF-8");
+            return articleUrl + URLEncoder.encode(page, "UTF-8");
         }
         catch (IOException ex)
         {
@@ -1659,6 +1654,7 @@ public class Wiki implements Comparable<Wiki>
     public Map<String, Object>[] getPageInfo(String[] pages) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "info");
         getparams.put("inprop", "protection|displaytitle|watchers");
         Map<String, Object> postparams = new HashMap<>();
@@ -1668,7 +1664,7 @@ public class Wiki implements Comparable<Wiki>
         for (String temp : constructTitleString(pages))
         {
             postparams.put("titles", temp);
-            String line = makeHTTPRequest(query, getparams, postparams, "getPageInfo");
+            String line = makeApiCall(getparams, postparams, "getPageInfo");
             if (resolveredirect)
                 resolveRedirectParser(pages2, line);
 
@@ -1961,6 +1957,7 @@ public class Wiki implements Comparable<Wiki>
 
         Map<String, String> pageTexts = new HashMap<>(2 * count);
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "revisions");
         getparams.put("rvprop", "ids|content");
         if (section >= 0)
@@ -1971,7 +1968,7 @@ public class Wiki implements Comparable<Wiki>
         for (String chunk : chunks)
         {
             postparams.put(isrevisions ? "revids" : "titles", chunk);
-            String temp = makeHTTPRequest(query, getparams, postparams, "getPageText");
+            String temp = makeApiCall(getparams, postparams, "getPageText");
             String[] results = temp.split(isrevisions ? "<rev " : "<page ");
             if (!isrevisions && resolveredirect)
                 resolveRedirectParser(titles2, results[0]);
@@ -2223,7 +2220,7 @@ public class Wiki implements Comparable<Wiki>
         }
         else if (section != -2)
             postparams.put("section", section);
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "edit");
+        String response = makeApiCall(getparams, postparams, "edit");
 
         // done
         if (response.contains("error code=\"editconflict\""))
@@ -2320,7 +2317,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("reason", reason);
         postparams.put("token", getToken("csrf"));
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "delete");
+        String response = makeApiCall(getparams, postparams, "delete");
 
         // done
         if (!response.contains("<delete title="))
@@ -2366,7 +2363,7 @@ public class Wiki implements Comparable<Wiki>
                 sj.add(revision.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             postparams.put("timestamps", sj.toString());
         }
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "undelete");
+        String response = makeApiCall(getparams, postparams, "undelete");
 
         // done
         checkErrorsAndUpdateStatus(response, "undelete");
@@ -2394,7 +2391,7 @@ public class Wiki implements Comparable<Wiki>
         for (String x : constructTitleString(titles))
         {
             postparams.put("title", x);
-            makeHTTPRequest(query, getparams, postparams, "purge");
+            makeApiCall(getparams, postparams, "purge");
         }
         log(Level.INFO, "purge", "Successfully purged " + titles.length + " pages.");
     }
@@ -2415,7 +2412,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "images");
         getparams.put("titles", normalize(title));
 
-        List<String> images = makeListQuery("im", query, getparams, null, "getImagesOnPage", (line, results) ->
+        List<String> images = makeListQuery("im", getparams, null, "getImagesOnPage", (line, results) ->
         {
             // xml form: <im ns="6" title="File:Example.jpg" />
             for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
@@ -2462,7 +2459,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.put("clprop", "sortkey|hidden");
         getparams.put("titles", normalize(title));
 
-        List<String> categories = makeListQuery("cl", query, getparams, null, "getCategories", (line, results) ->
+        List<String> categories = makeListQuery("cl", getparams, null, "getCategories", (line, results) ->
         {
             // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
             // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
@@ -2565,7 +2562,7 @@ public class Wiki implements Comparable<Wiki>
         for (String temp : constructTitleString(titles))
         {
             postparams.put("titles", temp);
-            stuff.addAll(makeListQuery("tl", query, getparams, postparams, "getTemplates", (line, results) ->
+            stuff.addAll(makeListQuery("tl", getparams, postparams, "getTemplates", (line, results) ->
             {
                 // Split the result into individual listings for each article.
                 String[] x = line.split("<page ");
@@ -2619,7 +2616,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "langlinks");
         getparams.put("titles", normalize(title));
 
-        List<String[]> blah = makeListQuery("ll", query, getparams, null, "getInterWikiLinks", (line, results) ->
+        List<String[]> blah = makeListQuery("ll", getparams, null, "getInterWikiLinks", (line, results) ->
         {
             // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
             for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
@@ -2653,7 +2650,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "links");
         getparams.put("titles", normalize(title));
 
-        List<String> links = makeListQuery("pl", query, getparams, null, "getLinksOnPage", (line, results) ->
+        List<String> links = makeListQuery("pl", getparams, null, "getLinksOnPage", (line, results) ->
         {
             // xml form: <pl ns="6" title="page name" />
             for (int a = line.indexOf("<pl "); a > 0; a = line.indexOf("<pl ", ++a))
@@ -2705,7 +2702,7 @@ public class Wiki implements Comparable<Wiki>
         for (String temp : constructTitleString(titles2))
         {
             postparams.put("titles", temp);
-            stuff.addAll(makeListQuery("el", query, getparams, postparams, "getExternalLinksOnPage", (line, results) ->
+            stuff.addAll(makeListQuery("el", getparams, postparams, "getExternalLinksOnPage", (line, results) ->
             {
                 // Split the result into individual listings for each article.
                 String[] x = line.split("<page ");
@@ -2777,7 +2774,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("action", "parse");
         getparams.put("prop", "sections");
         getparams.put("text", "{{:" + normalize(page) + "}}__TOC__");
-        String line = makeHTTPRequest(query, getparams, null, "getSectionMap");
+        String line = makeApiCall(getparams, null, "getSectionMap");
 
         // xml form: <s toclevel="1" level="2" line="How to nominate" number="1" />
         LinkedHashMap<String, String> map = new LinkedHashMap<>(30);
@@ -2806,11 +2803,12 @@ public class Wiki implements Comparable<Wiki>
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "revisions");
         getparams.put("rvlimit", "1");
         getparams.put("titles", normalize(title));
         getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1");
-        String line = makeHTTPRequest(query, getparams, null, "getTopRevision");
+        String line = makeApiCall(getparams, null, "getTopRevision");
         int a = line.indexOf("<rev "); // important space
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
@@ -2833,12 +2831,13 @@ public class Wiki implements Comparable<Wiki>
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "revisions");
         getparams.put("rvlimit", "1");
         getparams.put("rvdir", "newer");
         getparams.put("titles", normalize(title));
         getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1");
-        String line = makeHTTPRequest(query, getparams, null, "getFirstRevision");
+        String line = makeApiCall(getparams, null, "getFirstRevision");
         int a = line.indexOf("<rev "); // important space!
         int b = line.indexOf("/>", a);
         if (a < 0) // page does not exist
@@ -2872,6 +2871,7 @@ public class Wiki implements Comparable<Wiki>
     public String[] resolveRedirects(String[] titles) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         if (!resolveredirect)
             getparams.put("redirects", "");
         Map<String, Object> postparams = new HashMap<>();
@@ -2879,7 +2879,7 @@ public class Wiki implements Comparable<Wiki>
         for (String blah : constructTitleString(titles))
         {
             postparams.put("titles", blah);
-            String line = makeHTTPRequest(query, getparams, postparams, "resolveRedirects");
+            String line = makeApiCall(getparams, postparams, "resolveRedirects");
             resolveRedirectParser(ret, line);
         }
         return ret;
@@ -2954,7 +2954,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addTagParameter());
         }
 
-        List<Revision> revisions = makeListQuery("rv", query, getparams, null, "getPageHistory", (line, results) ->
+        List<Revision> revisions = makeListQuery("rv", getparams, null, "getPageHistory", (line, results) ->
         {
             for (int a = line.indexOf("<rev "); a > 0; a = line.indexOf("<rev ", ++a))
             {
@@ -3015,7 +3015,7 @@ public class Wiki implements Comparable<Wiki>
         }
         getparams.put("titles", normalize(title));
 
-        List<Revision> delrevs = makeListQuery("drv", query, getparams, null, "getDeletedHistory", (response, results) ->
+        List<Revision> delrevs = makeListQuery("drv", getparams, null, "getDeletedHistory", (response, results) ->
         {
             int x = response.indexOf("<deletedrevs>");
             if (x < 0) // no deleted history
@@ -3077,7 +3077,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addTagParameter());
         }
 
-        List<Revision> delrevs = makeListQuery("adr", query, getparams, null, "deletedContribs", (response, results) ->
+        List<Revision> delrevs = makeListQuery("adr", getparams, null, "deletedContribs", (response, results) ->
         {
             int x = response.indexOf("<alldeletedrevisions>");
             if (x < 0) // no deleted history
@@ -3131,7 +3131,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("gadrprefix", prefix);
         getparams.put("gadrnamespace", String.valueOf(namespace));
 
-        List<String> pages = makeListQuery("gadr", query, getparams, null, "deletedPrefixIndex", (text, results) ->
+        List<String> pages = makeListQuery("gadr", getparams, null, "deletedPrefixIndex", (text, results) ->
         {
             for (int x = text.indexOf("<page ", 0); x > 0; x = text.indexOf("<page ", ++x))
                 results.add(parseAttribute(text, "title", x));
@@ -3158,13 +3158,14 @@ public class Wiki implements Comparable<Wiki>
 
         // TODO: this can be multiquery(?)
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "deletedrevisions");
         getparams.put("drvlimit", "1");
         getparams.put("drvprop", "content");
         getparams.put("titles", normalize(page));
 
         // expected form: <rev timestamp="2009-04-05T22:40:35Z" xml:space="preserve">TEXT OF PAGE</rev>
-        String line = makeHTTPRequest(query, getparams, null, "getDeletedText");
+        String line = makeApiCall(getparams, null, "getDeletedText");
         int a = line.indexOf("<rev ");
         if (a < 0)
             return null;
@@ -3254,7 +3255,7 @@ public class Wiki implements Comparable<Wiki>
             postparams.put("noredirect", "1");
         if (movesubpages && user.isAllowedTo("move-subpages"))
             postparams.put("movesubpages", "1");
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "move");
+        String response = makeApiCall(getparams, postparams, "move");
 
         // done
         if (!response.contains("move from"))
@@ -3325,7 +3326,7 @@ public class Wiki implements Comparable<Wiki>
         exp.delete(exp.length() - 3, exp.length());
         postparams.put("protections", pro);
         postparams.put("expiry", exp);
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "protect");
+        String response = makeApiCall(getparams, postparams, "protect");
 
         // done
         if (!response.contains("<protect "))
@@ -3366,10 +3367,11 @@ public class Wiki implements Comparable<Wiki>
     public String export(String title) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("export", "");
         getparams.put("exportnowrap", "");
         getparams.put("titles", normalize(title));
-        return makeHTTPRequest(query, getparams, null, "export");
+        return makeApiCall(getparams, null, "export");
     }
 
     // REVISION METHODS
@@ -3404,6 +3406,7 @@ public class Wiki implements Comparable<Wiki>
     {
         // build url and connect
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "revisions");
         getparams.put("rvprop", "ids|timestamp|user|comment|parsedcomment|flags|size|sha1");
         Map<String, Object> postparams = new HashMap<>();
@@ -3413,7 +3416,7 @@ public class Wiki implements Comparable<Wiki>
         for (String chunk : constructRevisionString(oldids))
         {
             postparams.put("revids", chunk);
-            String line = makeHTTPRequest(query, getparams, postparams, "getRevision");
+            String line = makeApiCall(getparams, postparams, "getRevision");
 
             for (int i = line.indexOf("<page "); i > 0; i = line.indexOf("<page ", ++i))
             {
@@ -3498,7 +3501,7 @@ public class Wiki implements Comparable<Wiki>
             postparams.put("markbot", "1");
         if (!reason.isEmpty())
             postparams.put("summary", reason);
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "rollback");
+        String response = makeApiCall(getparams, postparams, "rollback");
 
         // done
         // ignorable errors
@@ -3602,7 +3605,7 @@ public class Wiki implements Comparable<Wiki>
         {
             postparams.put("token", getToken("csrf"));
             postparams.put("ids", revstring);
-            String response = makeHTTPRequest(apiUrl, getparams, postparams, "revisionDelete");
+            String response = makeApiCall(getparams, postparams, "revisionDelete");
 
             if (!response.contains("<revisiondelete "))
                 checkErrorsAndUpdateStatus(response, "revisionDelete");
@@ -3692,7 +3695,7 @@ public class Wiki implements Comparable<Wiki>
         if (bot)
             postparams.put("bot", "1");
         postparams.put("token", getToken("csrf"));
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "undo");
+        String response = makeApiCall(getparams, postparams, "undo");
 
         // done
         if (response.contains("error code=\"editconflict\""))
@@ -3806,7 +3809,7 @@ public class Wiki implements Comparable<Wiki>
         if (tosection >= 0)
             postparams.put("tosection", tosection);
 
-        String line = makeHTTPRequest(apiUrl, getparams, postparams, "diff");
+        String line = makeApiCall(getparams, postparams, "diff");
 
         // strip extraneous information
         if (line.contains("</compare>"))
@@ -3955,12 +3958,13 @@ public class Wiki implements Comparable<Wiki>
     {
         // this is a two step process - first we fetch the image url
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "imageinfo");
         getparams.put("iiprop", "url");
         getparams.put("titles", "File:" + removeNamespace(normalize(title)));
         getparams.put("iiurlwidth", String.valueOf(width));
         getparams.put("iiurlheight", String.valueOf(height));
-        String line = makeHTTPRequest(query, getparams, null, "getImage");
+        String line = makeApiCall(getparams, null, "getImage");
         if (!line.contains("<imageinfo>"))
             return false;
         String url2 = parseAttribute(line, "url", 0);
@@ -3999,10 +4003,11 @@ public class Wiki implements Comparable<Wiki>
         // This seems a good candidate for bulk queries.
         // Support for videos is blocked on https://phabricator.wikimedia.org/T89971
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "imageinfo");
         getparams.put("iiprop", "size|sha1|mime|metadata");
         getparams.put("titles", removeNamespace(normalize(file)));
-        String line = makeHTTPRequest(query, getparams, null, "getFileMetadata");
+        String line = makeApiCall(getparams, null, "getFileMetadata");
         if (line.contains("missing=\"\""))
             return null;
         Map<String, Object> metadata = new HashMap<>(30);
@@ -4044,7 +4049,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "duplicatefiles");
         getparams.put("titles", "File:" + removeNamespace(normalize(file)));
 
-        List<String> duplicates = makeListQuery("df", query, getparams, null, "getDuplicates", (line, results) ->
+        List<String> duplicates = makeListQuery("df", getparams, null, "getDuplicates", (line, results) ->
         {
             if (line.contains("missing=\"\""))
                 return;
@@ -4078,7 +4083,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("titles", "File:" + removeNamespace(normalize(title)));
 
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
-        List<LogEntry> history = makeListQuery("ii", query, getparams, null, "getImageHistory", (line, results) ->
+        List<LogEntry> history = makeListQuery("ii", getparams, null, "getImageHistory", (line, results) ->
         {
             if (line.contains("missing=\"\""))
                 return;
@@ -4124,11 +4129,12 @@ public class Wiki implements Comparable<Wiki>
             throw new IllegalArgumentException("You must provide an upload log entry!");
         // no thumbnails for image history, sorry.
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("prop", "imageinfo");
         getparams.put("iilimit", "max");
         getparams.put("iiprop", "timestamp|url|archivename");
         getparams.put("titles", normalize(entry.getTitle()));
-        String line = makeHTTPRequest(query, getparams, null, "getOldImage");
+        String line = makeApiCall(getparams, null, "getOldImage");
 
         // find the correct log entry by comparing timestamps
         // xml form: <ii timestamp="2010-05-23T05:48:43Z" user="Prodego" comment="Match to new version" />
@@ -4199,7 +4205,7 @@ public class Wiki implements Comparable<Wiki>
         if (end != null)
             getparams.put("aiend", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
 
-        List<LogEntry> uploads = makeListQuery("ai", query, getparams, null, "getUploads", (line, results) ->
+        List<LogEntry> uploads = makeListQuery("ai", getparams, null, "getUploads", (line, results) ->
         {
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
@@ -4297,7 +4303,7 @@ public class Wiki implements Comparable<Wiki>
                 }
 
                 // done
-                String response = makeHTTPRequest(apiUrl, getparams, postparams, "upload");
+                String response = makeApiCall(getparams, postparams, "upload");
 
                 // look for filekey
                 if (chunks > 1)
@@ -4332,7 +4338,7 @@ public class Wiki implements Comparable<Wiki>
                 postparams.put("comment", reason);
             postparams.put("ignorewarnings", "true");
             postparams.put("filekey", filekey);
-            String response = makeHTTPRequest(apiUrl, getparams, postparams, "upload");
+            String response = makeApiCall(getparams, postparams, "upload");
             checkErrorsAndUpdateStatus(response, "upload");
         }
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
@@ -4387,7 +4393,7 @@ public class Wiki implements Comparable<Wiki>
         postparams.put("text", contents);
         postparams.put("comment", reason);
         postparams.put("url", url.toExternalForm());
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "upload");
+        String response = makeApiCall(getparams, postparams, "upload");
 
         if (response.contains("error code=\"fileexists-shared-forbidden\""))
         {
@@ -4531,6 +4537,7 @@ public class Wiki implements Comparable<Wiki>
         String excludegroup, String rights, boolean activeonly, boolean skipzero) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("list", "allusers");
         String next = "";
         if (prefix.isEmpty())
@@ -4558,7 +4565,7 @@ public class Wiki implements Comparable<Wiki>
         {
             if (!next.isEmpty())
                 getparams.put("aufrom", normalize(next));
-            String line = makeHTTPRequest(query, getparams, null, "allUsers");
+            String line = makeApiCall(getparams, null, "allUsers");
 
             // bail if nonsense groups/rights
             if (line.contains("Unrecognized values for parameter"))
@@ -4643,6 +4650,7 @@ public class Wiki implements Comparable<Wiki>
     public Map<String, Object>[] getUserInfo(String... usernames) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
         getparams.put("list", "users");
         getparams.put("usprop", "editcount|groups|rights|emailable|blockinfo|gender|registration");
         Map<String, Object> postparams = new HashMap<>();
@@ -4650,7 +4658,7 @@ public class Wiki implements Comparable<Wiki>
         for (String fragment : constructTitleString(usernames))
         {
             postparams.put("ususers", fragment);
-            String line = makeHTTPRequest(query, getparams, postparams, "getUserInfo");
+            String line = makeApiCall(getparams, postparams, "getUserInfo");
             String[] results = line.split("<user ");
             for (int i = 1; i < results.length; i++)
             {
@@ -4902,7 +4910,7 @@ public class Wiki implements Comparable<Wiki>
             for (String userstring : constructTitleString(users.toArray(new String[0])))
             {
                 postparams.put("ucuser", userstring);
-                revisions.addAll(makeListQuery("uc", query, getparams, postparams, "contribs", parser));
+                revisions.addAll(makeListQuery("uc", getparams, postparams, "contribs", parser));
             }
             // group and reorder
             // implementation note: the API does not distinguish between users/IPs
@@ -4925,7 +4933,7 @@ public class Wiki implements Comparable<Wiki>
         else
         {
             getparams.put("ucuserprefix", prefix);
-            List<Revision> revisions = makeListQuery("uc", query, getparams, null, "contribs", parser);
+            List<Revision> revisions = makeListQuery("uc", getparams, null, "contribs", parser);
             log(Level.INFO, "prefixContribs", "Successfully retrived prefix contributions (" + revisions.size() + " edits)");
             return Arrays.asList(revisions);
         }
@@ -4974,7 +4982,7 @@ public class Wiki implements Comparable<Wiki>
             postparams.put("ccme", "1");
         postparams.put("text", message);
         postparams.put("subject", subject);
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "emailUser");
+        String response = makeApiCall(getparams, postparams, "emailUser");
 
         // check for errors
         checkErrorsAndUpdateStatus(response, "email");
@@ -5042,7 +5050,7 @@ public class Wiki implements Comparable<Wiki>
                     postparams.put(key, "1");
             });
         }
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "block");
+        String response = makeApiCall(getparams, postparams, "block");
 
         // done
         if (!response.contains("<block "))
@@ -5074,7 +5082,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("reason", reason);
         postparams.put("token", getToken("csrf"));
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "unblock");
+        String response = makeApiCall(getparams, postparams, "unblock");
 
         // done
         if (!response.contains("<unblock "))
@@ -5150,7 +5158,7 @@ public class Wiki implements Comparable<Wiki>
         postparams.put("add", granted);
         postparams.put("expiry", numexpirydates == 0 ? "indefinite" : expiry);
         postparams.put("remove", revoked);
-        String response = makeHTTPRequest(apiUrl, getparams, postparams, "changeUserPrivileges");
+        String response = makeApiCall(getparams, postparams, "changeUserPrivileges");
         if (!response.contains("<userrights "))
             checkErrorsAndUpdateStatus(response, "changeUserPrivileges");
         log(Level.INFO, "changeUserPrivileges", "Successfully changed privileges of user " + u.getUsername());
@@ -5215,7 +5223,7 @@ public class Wiki implements Comparable<Wiki>
         {
             postparams.put("titles", titlestring);
             postparams.put("token", getToken("watch"));
-            makeHTTPRequest(apiUrl, getparams, postparams, state);
+            makeApiCall(getparams, postparams, state);
         }
         log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
     }
@@ -5256,7 +5264,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlistraw");
 
-        watchlist = makeListQuery("wr", query, getparams, null, "getRawWatchlist", (line, results) ->
+        watchlist = makeListQuery("wr", getparams, null, "getRawWatchlist", (line, results) ->
         {
             // xml form: <wr ns="14" title="Categorie:Even more things"/>
             for (int a = line.indexOf("<wr "); a > 0; a = line.indexOf("<wr ", ++a))
@@ -5355,7 +5363,7 @@ public class Wiki implements Comparable<Wiki>
             }
         }
 
-        List<Revision> wl = makeListQuery("wl", query, getparams, null, "watchlist", (line, results) ->
+        List<Revision> wl = makeListQuery("wl", getparams, null, "watchlist", (line, results) ->
         {
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
@@ -5409,7 +5417,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("srsearch", search);
         getparams.put("srnamespace", constructNamespaceString(namespaces));
 
-        List<Map<String, Object>> results = makeListQuery("sr", query, getparams, null, "search", (line, list) ->
+        List<Map<String, Object>> results = makeListQuery("sr", getparams, null, "search", (line, list) ->
         {
             // xml form: <p ns="0" title="Main Page" snippet="Blah blah blah" sectiontitle="Section"/>
             for (int x = line.indexOf("<p "); x > 0; x = line.indexOf("<p ", ++x))
@@ -5451,7 +5459,7 @@ public class Wiki implements Comparable<Wiki>
         if (ns.length > 0)
             getparams.put("iunamespace", constructNamespaceString(ns));
 
-        List<String> pages = makeListQuery("iu", query, getparams, null, "imageUsage", (line, results) ->
+        List<String> pages = makeListQuery("iu", getparams, null, "imageUsage", (line, results) ->
         {
             // xml form: <iu pageid="196465" ns="7" title="File talk:Wiki.png" />
             for (int x = line.indexOf("<iu "); x > 0; x = line.indexOf("<iu ", ++x))
@@ -5501,7 +5509,7 @@ public class Wiki implements Comparable<Wiki>
         if (redirects)
             getparams.put("blfilterredir", "redirects");
 
-        List<String> pages = makeListQuery("bl", query, getparams, null, "whatLinksHere", (line, results) ->
+        List<String> pages = makeListQuery("bl", getparams, null, "whatLinksHere", (line, results) ->
         {
             // xml form: <bl pageid="217224" ns="0" title="Mainpage" redirect="" />
             for (int x = line.indexOf("<bl "); x > 0; x = line.indexOf("<bl ", ++x))
@@ -5531,7 +5539,7 @@ public class Wiki implements Comparable<Wiki>
         if (ns.length > 0)
             getparams.put("einamespace", constructNamespaceString(ns));
 
-        List<String> pages = makeListQuery("ei", query, getparams, null, "whatTranscludesHere", (line, results) ->
+        List<String> pages = makeListQuery("ei", getparams, null, "whatTranscludesHere", (line, results) ->
         {
             // xml form: <ei pageid="7997510" ns="0" title="Maike Evers" />
             for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
@@ -5631,7 +5639,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.put("cmnamespace", constructNamespaceString(ns));
         final boolean nocat2 = nocat;
 
-        List<String> members = makeListQuery("cm", query, getparams, null, "getCategoryMembers", (line, results) ->
+        List<String> members = makeListQuery("cm", getparams, null, "getCategoryMembers", (line, results) ->
         {
             try
             {
@@ -5722,7 +5730,7 @@ public class Wiki implements Comparable<Wiki>
         if (ns.length > 0)
             getparams.put("eunamespace", constructNamespaceString(ns));
 
-        List<String[]> links = makeListQuery("eu", query, getparams, null, "linksearch", (line, results) ->
+        List<String[]> links = makeListQuery("eu", getparams, null, "linksearch", (line, results) ->
         {
             // xml form: <eu ns="0" title="Main Page" url="http://example.com" />
             for (int x = line.indexOf("<eu"); x > 0; x = line.indexOf("<eu ", ++x))
@@ -5774,7 +5782,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.put("bkusers", normalize(user));
 
         // connection
-        List<LogEntry> entries = makeListQuery("bk", query, getparams, null, "getIPBlockList", (line, results) ->
+        List<LogEntry> entries = makeListQuery("bk", getparams, null, "getIPBlockList", (line, results) ->
         {
             // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot"
             // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z"
@@ -5863,7 +5871,7 @@ public class Wiki implements Comparable<Wiki>
 
         int originallimit = getQueryLimit();
         setQueryLimit(Math.min(amount, originallimit));
-        List<LogEntry> entries = makeListQuery("le", query, getparams, null, "getLogEntries", (line, results) ->
+        List<LogEntry> entries = makeListQuery("le", getparams, null, "getLogEntries", (line, results) ->
         {
             String[] items = line.split("<item ");
             for (int i = 1; i < items.length; i++)
@@ -6169,7 +6177,7 @@ public class Wiki implements Comparable<Wiki>
         int originallimit = getQueryLimit();
         if (maximum < 0 && minimum < 0 && prefix.isEmpty() && protectionstate == null)
             setQueryLimit(max);
-        List<String> pages = makeListQuery("ap", query, getparams, null, "listPages", (line, results) ->
+        List<String> pages = makeListQuery("ap", getparams, null, "listPages", (line, results) ->
         {
             // xml form: <p pageid="1756320" ns="0" title="Kre'fey" />
             for (int a = line.indexOf("<p "); a > 0; a = line.indexOf("<p ", ++a))
@@ -6208,7 +6216,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("list", "querypage");
         getparams.put("qppage", page);
 
-        List<String> pages = makeListQuery("qp", query, getparams, null, "queryPage", (line, results) ->
+        List<String> pages = makeListQuery("qp", getparams, null, "queryPage", (line, results) ->
         {
             // xml form: <page value="0" ns="0" title="Anorthosis Famagusta FC in European football" />
             for (int x = line.indexOf("<page "); x > 0; x = line.indexOf("<page ", ++x))
@@ -6467,7 +6475,7 @@ public class Wiki implements Comparable<Wiki>
 
         int originallimit = getQueryLimit();
         setQueryLimit(amount);
-        List<Revision> revisions = makeListQuery("rc", query, getparams, null, newpages ? "newPages" : "recentChanges",
+        List<Revision> revisions = makeListQuery("rc", getparams, null, newpages ? "newPages" : "recentChanges",
             (line, results) ->
         {
             // xml form <rc type="edit" ns="0" title="Main Page" ... />
@@ -6559,7 +6567,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.put("iwbltitle", normalize(title));
         getparams.put("iwblprop", "iwtitle|iwprefix");
 
-        List<String[]> links = makeListQuery("iwbl", query, getparams, null, "getInterWikiBacklinks", (line, results) ->
+        List<String[]> links = makeListQuery("iwbl", getparams, null, "getInterWikiBacklinks", (line, results) ->
         {
             // xml form: <iw pageid="24163544" ns="0" title="Elisabeth_of_Wroclaw" iwprefix="pl" iwtitle="Main_Page" />
             for (int x = line.indexOf("<iw "); x > 0; x = line.indexOf("<iw ", ++x))
@@ -7428,10 +7436,11 @@ public class Wiki implements Comparable<Wiki>
             if (pageDeleted) // FIXME: broken if a page is live, but has deleted revisions
             {
                 Map<String, String> getparams = new HashMap<>();
+                getparams.put("action", "query");
                 getparams.put("prop", "deletedrevisions");
                 getparams.put("drvprop", "content");
                 getparams.put("revids", String.valueOf(getID()));
-                String temp = makeHTTPRequest(query, getparams, null, "Revision.getText");
+                String temp = makeApiCall(getparams, null, "Revision.getText");
                 int a = temp.indexOf("<rev ");
                 a = temp.indexOf('>', a) + 1;
                 int b = temp.indexOf("</rev>", a); // tag not present if revision has no content
@@ -7777,9 +7786,9 @@ public class Wiki implements Comparable<Wiki>
          *  @return (see above)
          *  @since 0.35
          */
-        public String permanentURL()
+        public String permanentUrl()
         {
-            return getIndexPHPURL() + "?oldid=" + getID();
+            return getIndexPhpUrl() + "?oldid=" + getID();
         }
 
         /**
@@ -8052,7 +8061,6 @@ public class Wiki implements Comparable<Wiki>
      *  @param <T> a class describing the parsed API results (e.g. String,
      *  LogEntry, Revision)
      *  @param queryPrefix the request type prefix (e.g. "pl" for prop=links)
-     *  @param urlbase the base of the query url
      *  @param getparams a bunch of parameters to send via HTTP GET
      *  @param postparams if not null, send these parameters via POST (see
      *  {@link #makeHTTPRequest(String, Map, Map, String) }).
@@ -8065,43 +8073,40 @@ public class Wiki implements Comparable<Wiki>
      *  privileged action (mostly avoidable)
      *  @since 0.34
      */
-    protected <T> List<T> makeListQuery(String queryPrefix, String urlbase, Map<String, String> getparams,
-        Map<String, Object> postparams, String caller, BiConsumer<String, List<T>> parser) throws IOException
+    protected <T> List<T> makeListQuery(String queryPrefix, Map<String, String> getparams, Map<String, Object> postparams, 
+        String caller, BiConsumer<String, List<T>> parser) throws IOException
     {
+        getparams.put("action", "query");
         List<T> results = new ArrayList<>(1333);
-        StringBuilder xxcontinue = new StringBuilder();
+        String xxcontinue = queryPrefix + "continue";
         String limitstring = queryPrefix + "limit";
         do
         {
             getparams.put(limitstring, String.valueOf(Math.min(querylimit - results.size(), max)));
-            String line = makeHTTPRequest(urlbase + xxcontinue.toString(), getparams, postparams, caller);
-            xxcontinue.setLength(0);
-
+            String line = makeApiCall(getparams, postparams, caller);
+            
             // Continuation parameter has form:
             // <continue rccontinue="20170924064528|986351741" continue="-||" />
             if (line.contains("<continue "))
             {
                 int a = line.indexOf("<continue ") + 10;
                 int b = line.indexOf("/>", a);
-                String[] temp = line.substring(a, b).split("\"");
-                xxcontinue.append("&");
-                xxcontinue.append(temp[0]);
-                xxcontinue.append(URLEncoder.encode(temp[1], "UTF-8"));
-                xxcontinue.append(temp[2].replace(" ", "&"));
-                xxcontinue.append(URLEncoder.encode(temp[3], "UTF-8"));
+                String cont = line.substring(a, b);
+                getparams.compute(xxcontinue, (unused1, unused2) -> parseAttribute(cont, xxcontinue, 0));
+                getparams.compute("continue", (unused1, unused2) -> parseAttribute(cont, " continue", 0));
             }
 
             parser.accept(line, results);
         }
-        while (xxcontinue.length() != 0 && results.size() < querylimit);
+        while (getparams.containsKey(xxcontinue) && results.size() < querylimit);
         return results;
     }
 
     // miscellany
 
     /**
-     *  Constructs, sends and receives HTTP requests. May be useful for
-     *  subclasses.
+     *  Constructs, sends and handles calls to the MediaWiki API. This is a
+     *  low-level method for making your own, custom API calls.
      *
      *  <p>
      *  If <var>postparams</var> is not {@code null} or empty, the request is
@@ -8129,7 +8134,6 @@ public class Wiki implements Comparable<Wiki>
      *  <var>maxlag</var>, see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
      *  here</a> for how this works.
      *
-     *  @param urlbase the base url to use
      *  @param getparams append these parameters to the urlbase
      *  @param postparams if null, send the request using POST otherwise use GET
      *  @param caller the caller of this method
@@ -8141,10 +8145,11 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2">Multipart/form-data</a>
      *  @since 0.18
      */
-    protected String makeHTTPRequest(String urlbase, Map<String, String> getparams, Map<String, Object> postparams, String caller) throws IOException
+    public String makeApiCall(Map<String, String> getparams, Map<String, Object> postparams, String caller) throws IOException
     {
         // build the URL
-        StringBuilder urlbuilder = new StringBuilder(urlbase);
+        StringBuilder urlbuilder = new StringBuilder(apiUrl + "?");
+        getparams.putAll(defaultApiParams);
         for (Map.Entry<String, String> entry : getparams.entrySet())
         {
             urlbuilder.append('&');

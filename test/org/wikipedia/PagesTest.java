@@ -83,18 +83,18 @@ public class PagesTest
     public void generateSummaryLinks()
     {
         Pages testWikiPages = Pages.of(testWiki);
-        String indexPHPURL = testWiki.getIndexPHPURL();
+        String indexPHPURL = testWiki.getIndexPhpUrl();
         String expected = 
-              "<a href=\"" + testWiki.getPageURL("Test") + "\">Test</a> ("
+              "<a href=\"" + testWiki.getPageUrl("Test") + "\">Test</a> ("
             + "<a href=\"" + indexPHPURL + "?title=Test&action=edit\">edit</a> | "
-            + "<a href=\"" + testWiki.getPageURL("Talk:Test") + "\">talk</a> | "
+            + "<a href=\"" + testWiki.getPageUrl("Talk:Test") + "\">talk</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Test&action=history\">history</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=Test\">logs</a>)";
         assertEquals("generateLinks", expected, testWikiPages.generateSummaryLinks("Test"));
         
-        expected = "<a href=\"" + testWiki.getPageURL("A B の") + "\">A B の</a> ("
+        expected = "<a href=\"" + testWiki.getPageUrl("A B の") + "\">A B の</a> ("
             + "<a href=\"" + indexPHPURL + "?title=A+B+%E3%81%AE&action=edit\">edit</a> | "
-            + "<a href=\"" + testWiki.getPageURL("Talk:A B の") + "\">talk</a> | "
+            + "<a href=\"" + testWiki.getPageUrl("Talk:A B の") + "\">talk</a> | "
             + "<a href=\"" + indexPHPURL + "?title=A+B+%E3%81%AE&action=history\">history</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=A+B+%E3%81%AE\">logs</a>)";
         assertEquals("generateLinks: special characters", expected, testWikiPages.generateSummaryLinks("A B の"));

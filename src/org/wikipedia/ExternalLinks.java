@@ -123,7 +123,7 @@ public class ExternalLinks
         results.forEach((String[] result) ->
         {
             buffer.append("\t<li><a href=\"");
-            buffer.append(wiki.getPageURL(result[0]));
+            buffer.append(wiki.getPageUrl(result[0]));
             buffer.append("\">");
             buffer.append(result[0]);
             buffer.append("</a> uses link <a href=\"");

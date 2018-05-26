@@ -146,7 +146,7 @@ public class ParserUtils
             
             // diff link
             String page = recode(rev.getTitle());
-            String revurl = "<a href=\"" + rev.permanentURL();
+            String revurl = "<a href=\"" + rev.permanentUrl();
             buffer.append(revurl);
             buffer.append("&diff=prev\">prev</a>) ");
             
@@ -171,7 +171,7 @@ public class ParserUtils
             
             // page name
             buffer.append("<a href=\"");
-            buffer.append(wiki.getPageURL(page));
+            buffer.append(wiki.getPageUrl(page));
             buffer.append("\" class=\"pagename\">");
             buffer.append(page);
             buffer.append("</a> .. ");
@@ -182,13 +182,13 @@ public class ParserUtils
             {
                 temp = recode(temp);
                 buffer.append("<a href=\"");
-                buffer.append(wiki.getPageURL("User:" + temp));
+                buffer.append(wiki.getPageUrl("User:" + temp));
                 buffer.append("\">");
                 buffer.append(temp);
                 buffer.append("</a> (<a href=\"");
-                buffer.append(wiki.getPageURL("User talk:" + temp));
+                buffer.append(wiki.getPageUrl("User talk:" + temp));
                 buffer.append("\">talk</a> | <a href=\"");
-                buffer.append(wiki.getPageURL("Special:Contributions/" + temp));
+                buffer.append(wiki.getPageUrl("Special:Contributions/" + temp));
                 buffer.append("\">contribs</a>)");
             }
             else
@@ -230,14 +230,14 @@ public class ParserUtils
     {
         try
         {
-            String indexPHPURL = wiki.getIndexPHPURL();
+            String indexPHPURL = wiki.getIndexPhpUrl();
             String userenc = URLEncoder.encode(username, "UTF-8");
-            return "<a href=\"" + wiki.getPageURL("User:" + username) + "\">" + username + "</a> ("
-                +  "<a href=\"" + wiki.getPageURL("User talk:" + username) + "\">talk</a> | "
-                +  "<a href=\"" + wiki.getPageURL("Special:Contributions/" + username) + "\">contribs</a> | "
-                +  "<a href=\"" + wiki.getPageURL("Special:DeletedContributions/" + username) + "\">deleted contribs</a> | "
+            return "<a href=\"" + wiki.getPageUrl("User:" + username) + "\">" + username + "</a> ("
+                +  "<a href=\"" + wiki.getPageUrl("User talk:" + username) + "\">talk</a> | "
+                +  "<a href=\"" + wiki.getPageUrl("Special:Contributions/" + username) + "\">contribs</a> | "
+                +  "<a href=\"" + wiki.getPageUrl("Special:DeletedContributions/" + username) + "\">deleted contribs</a> | "
                 +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
-                +  "<a href=\"" + wiki.getPageURL("Special:Block/" + username) + "\">block</a> | "
+                +  "<a href=\"" + wiki.getPageUrl("Special:Block/" + username) + "\">block</a> | "
                 +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
         }
         catch (IOException ex)

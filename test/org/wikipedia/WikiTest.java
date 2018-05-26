@@ -61,12 +61,20 @@ public class WikiTest
     }
 
     @Test
-    public void testURLs()
+    public void testUrls()
     {
         Wiki dummy = Wiki.createInstance("example.com", "/scriptpath", "http://");
         assertEquals("protocol", "http://", dummy.getProtocol());
         assertEquals("domain", "example.com", dummy.getDomain());
         assertEquals("scriptPath", "/scriptpath", dummy.getScriptPath());
+        
+        // index.php URL
+        assertEquals("getIndexPhpUrl", "https://en.wikipedia.org/w/index.php", enWiki.getIndexPhpUrl());
+        assertEquals("getIndexPhpUrl", "http://example.com/scriptpath/index.php", dummy.getIndexPhpUrl());
+        
+        // API URL
+        assertEquals("getApiUrl", "https://en.wikipedia.org/w/api.php", enWiki.getApiUrl());
+        assertEquals("getApiUrl", "http://example.com/scriptpath/api.php", dummy.getApiUrl());
     }
 
     @Test
@@ -91,14 +99,6 @@ public class WikiTest
         Wiki dummy = Wiki.createInstance("en.wikipedia.org", "/example", "https://");
         int result_5 = enWiki.compareTo(dummy);
         assertTrue("compareTo: multiple instances on same domain", result_5 > 0);
-    }
-
-    @Test
-    public void getIndexPHPURL()
-    {
-        assertEquals("getIndexPHPURL", "https://en.wikipedia.org/w/index.php", enWiki.getIndexPHPURL());
-        Wiki dummy = Wiki.createInstance("example.com", "/scriptpath", "http://");
-        assertEquals("getIndexPHPURL", "http://example.com/scriptpath/index.php", dummy.getIndexPHPURL());
     }
 
     @Test
@@ -291,8 +291,8 @@ public class WikiTest
     @Test
     public void getPageURL() throws Exception
     {
-        assertEquals("getPageURL", "https://en.wikipedia.org/wiki/Hello_World", enWiki.getPageURL("Hello_World"));
-        assertEquals("getPageURL", "https://en.wikipedia.org/wiki/Hello_World", enWiki.getPageURL("Hello World"));
+        assertEquals("getPageURL", "https://en.wikipedia.org/wiki/Hello_World", enWiki.getPageUrl("Hello_World"));
+        assertEquals("getPageURL", "https://en.wikipedia.org/wiki/Hello_World", enWiki.getPageUrl("Hello World"));
     }
 
     @Test
@@ -1369,7 +1369,7 @@ public class WikiTest
     public void revisionPermanentURL() throws Exception
     {
         Wiki.Revision rev = enWiki.getRevision(822342083L);
-        assertEquals("Revision.permanentURL", "https://en.wikipedia.org/w/index.php?oldid=822342083", rev.permanentURL());
+        assertEquals("Revision.permanentURL", "https://en.wikipedia.org/w/index.php?oldid=822342083", rev.permanentUrl());
     }
 
     @Test
