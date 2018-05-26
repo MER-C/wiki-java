@@ -496,10 +496,22 @@ public class WikiTest
         }
 
         assertTrue("getPageHistory: non-existent page", enWiki.getPageHistory("EOTkd&ssdf", null).isEmpty());
+        
+        // test by user
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser("RetiredUser2");
+        List<Wiki.Revision> history = enWiki.getPageHistory("Main Page", rh);
+        assertEquals("getPageHistory: by user", 4, history.size());
+        assertEquals("getPageHistory: by user", 118014299L, history.get(0).getID());
+        assertEquals("getPageHistory: by user", 118014140L, history.get(1).getID());        
+        // test reverse
+        rh = rh.reverse(true);
+        List<Wiki.Revision> history2 = enWiki.getPageHistory("Main Page", rh);
+        Collections.reverse(history);
+        assertEquals("getPageHistory: reverse", history, history2);
 
         // test for RevisionDeleted revisions
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-        List<Wiki.Revision> history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete", null);
+        history = testWiki.getPageHistory("User:MER-C/UnitTests/Delete", null);
         for (Wiki.Revision rev : history)
         {
             if (rev.getID() == 275553L)

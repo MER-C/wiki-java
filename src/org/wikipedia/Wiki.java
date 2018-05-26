@@ -786,7 +786,7 @@ public class Wiki implements Comparable<Wiki>
             siteinfo.put("version", mwVersion);
             locale = new Locale(parseAttribute(bits, "lang", 0));
             siteinfo.put("locale", locale);
-            
+
             // parse extensions
             bits = line.substring(line.indexOf("<extensions>"), line.indexOf("</extensions>"));
             extensions = new ArrayList<>();
@@ -794,7 +794,7 @@ public class Wiki implements Comparable<Wiki>
             for (int i = 1; i < unparsed.length; i++)
                 extensions.add(parseAttribute(unparsed[i], "name", 0));
             siteinfo.put("extensions", extensions);
-                        
+
             // populate namespace cache
             namespaces = new LinkedHashMap<>(30);
             ns_subpages = new ArrayList<>(30);
@@ -828,12 +828,12 @@ public class Wiki implements Comparable<Wiki>
         }
         return siteinfo;
     }
-    
+
     /**
      *  Gets the version of MediaWiki this wiki runs e.g. 1.20wmf5 (54b4fcb).
      *  See [[Special:Version]] on your wiki.
      *  @return (see above)
-     *  @throws UncheckedIOException if the site info cache has not been 
+     *  @throws UncheckedIOException if the site info cache has not been
      *  populated and a network error occurred when populating it
      *  @since 0.14
      *  @see <a href="https://gerrit.wikimedia.org/">MediaWiki Git</a>
@@ -843,14 +843,14 @@ public class Wiki implements Comparable<Wiki>
         ensureNamespaceCache();
         return mwVersion;
     }
-    
+
     /**
      *  Detects whether a wiki forces upper case for the first character in a
      *  title. Example: en.wikipedia = true, en.wiktionary = false.
      *  @return (see above)
-     *  @throws UncheckedIOException if the site info cache has not been 
+     *  @throws UncheckedIOException if the site info cache has not been
      *  populated and a network error occurred when populating it
-     *  @see <a href="https://mediawiki.org/wiki/Manual:$wgCapitalLinks">MediaWiki 
+     *  @see <a href="https://mediawiki.org/wiki/Manual:$wgCapitalLinks">MediaWiki
      *  documentation</a>
      *  @since 0.30
      */
@@ -859,13 +859,13 @@ public class Wiki implements Comparable<Wiki>
         ensureNamespaceCache();
         return wgCapitalLinks;
     }
-    
+
     /**
      *  Returns the list of extensions installed on this wiki.
      *  @return (see above)
-     *  @throws UncheckedIOException if the site info cache has not been 
+     *  @throws UncheckedIOException if the site info cache has not been
      *  populated and a network error occurred when populating it
-     *  @see <a href="https://www.mediawiki.org/wiki/Manual:Extensions">MediaWiki 
+     *  @see <a href="https://www.mediawiki.org/wiki/Manual:Extensions">MediaWiki
      *  documentation</a>
      *  @since 0.35
      */
@@ -874,11 +874,11 @@ public class Wiki implements Comparable<Wiki>
         ensureNamespaceCache();
         return new ArrayList<>(extensions);
     }
-    
+
     /**
      *  Gets the timezone of this wiki
      *  @return (see above)
-     *  @throws UncheckedIOException if the site info cache has not been 
+     *  @throws UncheckedIOException if the site info cache has not been
      *  populated and a network error occurred when populating it
      *  @since 0.35
      */
@@ -887,11 +887,11 @@ public class Wiki implements Comparable<Wiki>
         ensureNamespaceCache();
         return timezone;
     }
-    
+
     /**
      *  Gets the locale of this wiki.
      *  @return (see above)
-     *  @throws UncheckedIOException if the site info cache has not been 
+     *  @throws UncheckedIOException if the site info cache has not been
      *  populated and a network error occurred when populating it
      *  @since 0.35
      */
@@ -1354,19 +1354,19 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Parses wikitext, revisions or pages. Deleted pages and revisions to
      *  deleted pages are not allowed if you don't have the rights to view them.
-     * 
+     *
      *  <p>
-     *  The returned HTML does not include "edit" links. Hyperlinks are 
+     *  The returned HTML does not include "edit" links. Hyperlinks are
      *  rewritten from useless relative links to other wiki pages to full URLs.
-     *  References to resources using protocol relative URLs are rewritten to 
+     *  References to resources using protocol relative URLs are rewritten to
      *  use {@linkplain #getProtocol() this wiki's protocol}.
      *
      *  <p>
      *  <b>Warnings</b>:
      *  <ul>
-     *  <li>The parameters to this method will be changed when the time comes 
+     *  <li>The parameters to this method will be changed when the time comes
      *      for JDK11 refactoring to accept Map.Entry instead. I also haven't
-     *      decided how many more boolean parameters to add, and what format 
+     *      decided how many more boolean parameters to add, and what format
      *      they will take.
      *  </ul>
      *
@@ -1377,7 +1377,7 @@ public class Wiki implements Comparable<Wiki>
      *  @return the parsed wikitext
      *  @throws NoSuchElementException or IllegalArgumentException if no content
      *  was supplied for parsing
-     *  @throws SecurityException if you pass a RevisionDeleted revision and 
+     *  @throws SecurityException if you pass a RevisionDeleted revision and
      *  lack the necessary privileges
      *  @throws IOException if a network error occurs
      *  @see #parse(String)
@@ -1422,12 +1422,12 @@ public class Wiki implements Comparable<Wiki>
         String response = makeHTTPRequest(apiUrl, getparams, postparams, "parse");
         if (response.contains("error code=\""))
             // Bad section numbers, revids, deleted pages should all end up here.
-            // FIXME: makeHTTPRequest() swallows the API error "missingtitle" 
+            // FIXME: makeHTTPRequest() swallows the API error "missingtitle"
             // (deleted pages) to throw an UnknownError instead.
             return null;
         int y = response.indexOf('>', response.indexOf("<text")) + 1;
         int z = response.indexOf("</text>");
-        
+
         // Rewrite URLs to replace useless relative links and make images work on
         // locally saved copies of wiki pages.
         String html = decode(response.substring(y, z));
@@ -2912,16 +2912,18 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the revision history of a page. Accepted parameters from 
+     *  Gets the revision history of a page. Accepted parameters from
      *  <var>helper</var> are:
-     * 
+     *
      *  <ul>
-     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
      *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#notByUser(String) not by user}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
      *  </ul>
-     * 
+     *
      *  @param title a page
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
@@ -2930,6 +2932,8 @@ public class Wiki implements Comparable<Wiki>
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
      *  or Media page
      *  @since 0.19
+     *  @see <a href="https://mediawiki.org/wiki/API:Revisions">MediaWiki 
+     *  documentation</a>
      */
     public List<Revision> getPageHistory(String title, Wiki.RequestHelper helper) throws IOException
     {
@@ -2946,6 +2950,8 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addDateRangeParameters());
             getparams.putAll(helper.addReverseParameter());
             getparams.putAll(helper.addUserParameter());
+            getparams.putAll(helper.addExcludeUserParameter());
+            getparams.putAll(helper.addTagParameter());
         }
 
         List<Revision> revisions = makeListQuery("rv", query, getparams, null, "getPageHistory", (line, results) ->
@@ -2957,48 +2963,24 @@ public class Wiki implements Comparable<Wiki>
             }
         });
 
-        // populate previous/next
-        int size = revisions.size();
-        if (helper == null || helper.addReverseParameter().isEmpty())
-        {
-            for (int i = 0; i < size; i++)
-            {
-                Wiki.Revision rev = revisions.get(i);
-                if (i == size - 1)
-                    rev.sizediff = rev.size;
-                else
-                    rev.sizediff = rev.size - revisions.get(i + 1).size;
-                if (i != 0)
-                    rev.next = revisions.get(i - 1).getID();
-            }
-        }
-        else
-        {
-            for (int i = 0; i < size; i++)
-            {
-                Wiki.Revision rev = revisions.get(i);
-                if (i == 0)
-                    rev.sizediff = rev.size;
-                else
-                    rev.sizediff = rev.size - revisions.get(i - 1).size;
-                if (i != size - 1)
-                    rev.next = revisions.get(i + 1).getID();
-            }
-        }
-        log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " + title + " (" + size + " revisions)");
+        log(Level.INFO, "getPageHistory", "Successfully retrieved page history of " 
+            + title + " (" + revisions.size() + " revisions)");
         return revisions;
     }
 
     /**
-     *  Gets the deleted history of a page. Accepted parameters from 
+     *  Gets the deleted history of a page. Accepted parameters from
      *  <var>helper</var> are:
+     * 
      *  <ul>
-     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
      *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#notByUser(String) not by user}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
      *  </ul>
-     * 
+     *
      *  @param title a page (mandatory)
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
@@ -3009,7 +2991,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws UnsupportedOperationException if <var>title</var> is a Special
      *  or Media page
      *  @since 0.30
-     *  @see <a href="https://mediawiki.org/wiki/API:Deletedrevisions">MediaWiki 
+     *  @see <a href="https://mediawiki.org/wiki/API:Deletedrevisions">MediaWiki
      *  documentation</a>
      */
     public List<Revision> getDeletedHistory(String title, Wiki.RequestHelper helper) throws IOException
@@ -3028,6 +3010,8 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addDateRangeParameters());
             getparams.putAll(helper.addReverseParameter());
             getparams.putAll(helper.addUserParameter());
+            getparams.putAll(helper.addExcludeUserParameter());
+            getparams.putAll(helper.addTagParameter());
         }
         getparams.put("titles", normalize(title));
 
@@ -3055,15 +3039,17 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the deleted contributions of a user in the given namespace. 
-     *  Equivalent to [[Special:Deletedcontributions]]. Accepted parameters from 
+     *  Gets the deleted contributions of a user in the given namespace.
+     *  Equivalent to [[Special:Deletedcontributions]]. Accepted parameters from
      *  <var>helper</var> are:
+     * 
      *  <ul>
      *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, OffsetDateTime) date range}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
+     *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
      *  </ul>
-     * 
+     *
      *  @param username a user (mandatory)
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
@@ -3088,8 +3074,9 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addDateRangeParameters());
             getparams.putAll(helper.addNamespaceParameter());
             getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addTagParameter());
         }
-        
+
         List<Revision> delrevs = makeListQuery("adr", query, getparams, null, "deletedContribs", (response, results) ->
         {
             int x = response.indexOf("<alldeletedrevisions>");
@@ -3240,7 +3227,7 @@ public class Wiki implements Comparable<Wiki>
         if (user == null || !user.isAllowedTo("move"))
             throw new SecurityException("Permission denied: cannot move pages.");
         throttle();
-        
+
         // protection and token
         Map<String, Object> info = getPageInfo(title);
         // determine whether the page exists
@@ -3756,7 +3743,7 @@ public class Wiki implements Comparable<Wiki>
      *  edits or null as described above
      *  @throws NoSuchElementException or IllegalArgumentException if no from or
      *  to content is specified
-     *  @throws SecurityException if you pass a RevisionDeleted revision and 
+     *  @throws SecurityException if you pass a RevisionDeleted revision and
      *  don't have the necessary privileges
      *  @throws IOException if a network error occurs
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
@@ -4800,9 +4787,9 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets contributions for all users starting with <var>prefix</var>. See
-     *  {@link #contribs(List, String, RequestHelper, Map)} for full 
+     *  {@link #contribs(List, String, RequestHelper, Map)} for full
      *  documentation.
-     * 
+     *
      *  @param prefix a prefix of usernames.
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
@@ -4816,7 +4803,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. See {@link #contribs(List, String, RequestHelper, Map)} for 
+     *  addresses. See {@link #contribs(List, String, RequestHelper, Map)} for
      *  full documentation.
      *
      *  @param user the user, IP address or IP range to get contributions for
@@ -4841,12 +4828,13 @@ public class Wiki implements Comparable<Wiki>
      *  <p>
      *  Accepted parameters from <var>helper</var> are:
      *  <ul>
-     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
      *  </ul>
-     * 
+     *
      *  <p>
      *  Available keys for <var>options</var> include "minor", "top", "new" and
      *  "patrolled" for vanilla MediaWiki (extensions may define their own).their own).
@@ -4882,6 +4870,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addDateRangeParameters());
             getparams.putAll(helper.addNamespaceParameter());
             getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addTagParameter());
         }
         if (options != null && !options.isEmpty())
         {
@@ -5137,7 +5126,7 @@ public class Wiki implements Comparable<Wiki>
             throw new IllegalArgumentException("Supplied dates must be in the future!");
         if (user == null)
             throw new SecurityException("You need to be logged in to change user privileges.");
-        
+
         // warn for ignored groups
         List<String> groups = u.getGroups();
         List<String> alreadyhas = new ArrayList<>(groups);
@@ -5697,12 +5686,12 @@ public class Wiki implements Comparable<Wiki>
      *  Searches the wiki for external links. Equivalent to [[Special:Linksearch]].
      *  Returns a list of pairs, where the first item is a page and the second
      *  the relevant url. Wildcards (*) are only permitted at the start of the
-     *  search string. 
-     * 
+     *  search string.
+     *
      *  <p><b>Warnings:</b>
      *  <ul>
-     *  <li>Searching by namespace with a query limit won't return that many 
-     *      results if <a href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode 
+     *  <li>Searching by namespace with a query limit won't return that many
+     *      results if <a href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode
      *      is enabled</a>. This is the case for most large wikis.
      *  </ul>
      *
@@ -5757,7 +5746,7 @@ public class Wiki implements Comparable<Wiki>
      *  is autoblocked as this is non-public data (see [[wmf:Privacy policy]]).
      *  Accepted parameters from <var>helper</var> are:
      *  <ul>
-     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  </ul>
@@ -5817,14 +5806,16 @@ public class Wiki implements Comparable<Wiki>
      *  Gets the specified amount of log entries between the given times by
      *  the given user on the given target. Equivalent to [[Special:Log]].
      *  Accepted parameters from <var>helper</var> are:
+     * 
      *  <ul>
-     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, 
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
      *  <li>{@link Wiki.RequestHelper#byUser(String) user}
      *  <li>{@link Wiki.RequestHelper#byTitle(String) title}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
-     *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces} (one 
+     *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces} (one
      *      namespace only, must not be used if a title is specified)
+     *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
      *  </ul>
      *
      *  @param logtype what log to get (e.g. {@link #DELETION_LOG})
@@ -5867,6 +5858,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addUserParameter());
             getparams.putAll(helper.addReverseParameter());
             getparams.putAll(helper.addNamespaceParameter());
+            getparams.putAll(helper.addTagParameter());
         }
 
         int originallimit = getQueryLimit();
@@ -6192,10 +6184,10 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Fetches data from one of a set of miscellaneous special pages.
-     *  
+     *
      *  <p><b>Warnings:</b>
      *  <ul>
-     *  <li>Many reports may be cached, limited and/or disabled if <a 
+     *  <li>Many reports may be cached, limited and/or disabled if <a
      *      href="https://mediawiki.org/wiki/Manual:$wgMiserMode">$wgMiserMode
      *      is enabled</a>. This is the case for most large wikis.
      *  </ul>
@@ -6207,8 +6199,8 @@ public class Wiki implements Comparable<Wiki>
      *  @throws SecurityException if the user lacks the privileges necessary to
      *  view a report (e.g. unwatchedpages)
      *  @since 0.28
-     *  @see <a href="https://mediawiki.org/w/api.php?action=help&modules=query%2Bquerypage">
-     *  MediaWiki documentation</a>
+     *  @see <a href="https://mediawiki.org/wiki/API:Querypage">MediaWiki 
+     *  documentation</a>
      */
     public String[] queryPage(String page) throws IOException
     {
@@ -6988,13 +6980,13 @@ public class Wiki implements Comparable<Wiki>
         {
             return userDeleted;
         }
-        
+
         /**
          *  Returns the page affected by this event. May be {@code null} for
          *  certain types of LogEntry and/or if the LogEntry is RevisionDeleted
          *  and you don't have the ability to access it.
          *  @return (see above)
-         *  @see #isContentDeleted() 
+         *  @see #isContentDeleted()
          */
         public String getTitle()
         {
@@ -7018,15 +7010,15 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Gets the comment for this event, with limited parsing into HTML.
          *  Hyperlinks in the returned HTML are rewritten from useless relative
-         *  URLs to full URLs that point to the wiki page in question. Returns 
-         *  {@code null} if {@linkplain #isCommentDeleted() the comment was 
-         *  RevisionDeleted} and you lack the necessary privileges. 
-         * 
+         *  URLs to full URLs that point to the wiki page in question. Returns
+         *  {@code null} if {@linkplain #isCommentDeleted() the comment was
+         *  RevisionDeleted} and you lack the necessary privileges.
+         *
          *  <p><b>Warnings:</b>
          *  <ul>
          *  <li>Not available through {@link #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
          *  </ul>
-         *  
+         *
          *  @return the comment associated with the event, parsed into HTML
          *  @see #getComment()
          */
@@ -7470,14 +7462,14 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Returns the SHA-1 hash (base 16, lower case) of the content of this
          *  revision, or {@code null} if the revision content is RevisionDeleted
-         *  and we cannot access it. 
-         * 
+         *  and we cannot access it.
+         *
          *  <p><b>Warnings:</b>
          *  <ul>
          *  <li>Not available through {@link #watchlist(Map, int...)} or {@link
          *      #contribs(String[], String, OffsetDateTime, OffsetDateTime, Map, int...)}.
          *  </ul>
-         * 
+         *
          *  @return (see above)
          *  @since 0.35
          */
@@ -7493,7 +7485,7 @@ public class Wiki implements Comparable<Wiki>
          *  @param other another revision on the same page.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
-         *  @throws SecurityException if this or the other revision is 
+         *  @throws SecurityException if this or the other revision is
          *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.21
          */
@@ -7515,7 +7507,7 @@ public class Wiki implements Comparable<Wiki>
          *  @param text some wikitext
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
-         *  @throws SecurityException if this or the other revision is 
+         *  @throws SecurityException if this or the other revision is
          *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.21
          */
@@ -7530,7 +7522,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Returns a HTML rendered diff table from this revision to the given
-         *  <var>oldid</var>. See {@link #diff(Map, int, Map, int)} for full 
+         *  <var>oldid</var>. See {@link #diff(Map, int, Map, int)} for full
          *  documentation.
          *
          *  @param oldid the oldid of a revision on the same page. {@link
@@ -7538,7 +7530,7 @@ public class Wiki implements Comparable<Wiki>
          *  Wiki#CURRENT_REVISION} can be used here for obvious effect.
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
-         *  @throws SecurityException if this or the other revision is 
+         *  @throws SecurityException if this or the other revision is
          *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.26
          */
@@ -7606,15 +7598,15 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Determines whether this revision created a new page. 
-         * 
+         *  Determines whether this revision created a new page.
+         *
          *  <p><b>Warnings:</b>
          *  <ul>
          *  <li>Returning {@code true} does not imply this is the bottommost
          *  revision on the page due to histmerges.
          *  <li>Not available through {@link #getPageHistory(String, OffsetDateTime, OffsetDateTime, boolean)}
          *  </ul>
-         * 
+         *
          *  @return (see above)
          *  @since 0.27
          */
@@ -7696,7 +7688,8 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Returns the change in page size caused by this revision.
+         *  Returns the change in page size caused by this revision. Not available
+         *  through getPageHistory or getDeletedHistory.
          *  @return see above
          *  @since 0.28
          */
@@ -7821,11 +7814,11 @@ public class Wiki implements Comparable<Wiki>
             Wiki.this.rollback(this, bot, reason);
         }
     }
-    
+
     /**
-     *  Vehicle for stuffing standard optional parameters into Wiki queries. 
-     *  {@code RequestHelper} objects are reusable. The following example 
-     *  fetches articles from the back of the new pages queue on the 
+     *  Vehicle for stuffing standard optional parameters into Wiki queries.
+     *  {@code RequestHelper} objects are reusable. The following example
+     *  fetches articles from the back of the new pages queue on the
      *  English Wikipedia.
      *
      *  <pre>
@@ -7844,19 +7837,21 @@ public class Wiki implements Comparable<Wiki>
         private OffsetDateTime earliest, latest;
         private int[] localns = new int[0];
         private boolean reverse = false;
+        private String notbyuser;
+        private String tag;
         private String requestType;
-    
+
         /**
          *  Creates a new RequestHelper.
          */
         public RequestHelper()
         {
         }
-        
+
         /**
-         *  Limits query results to Events occuring on the given title. If a 
-         *  query mandates a title parameter (e.g. {@link #getPageHistory(String, 
-         *  RequestHelper)}, don't use this. Use the parameter in the query 
+         *  Limits query results to Events occuring on the given title. If a
+         *  query mandates a title parameter (e.g. {@link #getPageHistory(String,
+         *  RequestHelper)}, don't use this. Use the parameter in the query
          *  method instead.
          *  @param title a page title
          *  @return this RequestHelper
@@ -7866,7 +7861,7 @@ public class Wiki implements Comparable<Wiki>
             this.title = (title == null) ? null : normalize(title);
             return this;
         }
-	
+
         /**
          *  Limits query results to Events triggered by the given user. If a query
          *  mandates a user parameter (e.g. {@link #contribs(List, RequestHelper)},
@@ -7879,7 +7874,7 @@ public class Wiki implements Comparable<Wiki>
             this.byuser = (byuser == null) ? null : normalize(byuser);
             return this;
         }
-	
+
         /**
          *  Limit results to be within this date range.
          *  @param earliest the lower (earliest) date bound, use {@code null} to
@@ -7897,7 +7892,7 @@ public class Wiki implements Comparable<Wiki>
             this.latest = latest;
             return this;
         }
-	
+
         /**
          *  Limits query results to the given namespaces.
          *  @param ns a list of namespaces
@@ -7908,7 +7903,7 @@ public class Wiki implements Comparable<Wiki>
             localns = ns;
             return this;
         }
-	
+
         /**
          *  Should we perform this query in reverse order (earliest first).
          *  @param reverse whether to reverse this query
@@ -7919,9 +7914,32 @@ public class Wiki implements Comparable<Wiki>
             this.reverse = reverse;
             return this;
         }
-	
+
         /**
-         *  Sets the prefix of API request parameters (the XX in XXlimit, XXdir, 
+         *  Limits query results to {@link Event Events} that have been tagged
+         *  with the given tag.
+         *  @param tag a change tag
+         *  @return this RequestHelper
+         */
+        public RequestHelper taggedWith(String tag)
+        {
+            this.tag = tag;
+            return this;
+        }
+
+        /**
+         *  Limits query results to Events NOT triggered by the given user.
+         *  @param notbyuser some username or IP address to exclude
+         *  @return this RequestHelper
+         */
+        public RequestHelper notByUser(String notbyuser)
+        {
+            this.notbyuser = (notbyuser == null) ? null : normalize(notbyuser);
+            return this;
+        }
+
+        /**
+         *  Sets the prefix of API request parameters (the XX in XXlimit, XXdir,
          *  XXnamespace and so forth). Internal use only.
          *  @param prefix the prefix to use (must not be null)
          */
@@ -7929,7 +7947,7 @@ public class Wiki implements Comparable<Wiki>
         {
             requestType = Objects.requireNonNull(prefix);
         }
-	
+
         /**
          *  Returns a HTTP request parameter containing the title to get
          *  events for, or an empty map if not wanted.
@@ -7942,7 +7960,7 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "title", title);
             return temp;
         }
-	
+
         /**
          *  Returns a HTTP request parameter containing the user to filter
          *  returned events by, or an empty map if not wanted.
@@ -7955,9 +7973,9 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "user", byuser);
             return temp;
         }
-	
+
         /**
-         *  Returns a HTTP request parameter containing the dates to start 
+         *  Returns a HTTP request parameter containing the dates to start
          *  and end enumeration, or an empty map if not wanted.
          *  @return (see above)
          */
@@ -7972,10 +7990,10 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "end", odt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             return temp;
         }
-	
+
         /**
-         *  Returns a HTTP request parameter containing the namespaces to limit 
-         *  this query to, or an empty map if not wanted. 
+         *  Returns a HTTP request parameter containing the namespaces to limit
+         *  this query to, or an empty map if not wanted.
          *  @return (see above)
          */
         protected Map<String, String> addNamespaceParameter()
@@ -7985,17 +8003,43 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "namespace", constructNamespaceString(localns));
             return temp;
         }
-	
+
         /**
          *  Returns a HTTP request parameter instructing the API to reverse the
-         *  query, or an empty map if not wanted. 
+         *  query, or an empty map if not wanted.
          *  @return (see above)
          */
         protected Map<String, String> addReverseParameter()
         {
             Map<String, String> temp = new HashMap<>();
             if (reverse)
-                temp.put(requestType + "dir", "older");
+                temp.put(requestType + "dir", "newer");
+            return temp;
+        }
+
+        /**
+         *  Returns a HTTP request parameter containing the tag to limit
+         *  returned events to, or an empty map if not wanted.
+         *  @return (see above)
+         */
+        protected Map<String, String> addTagParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (tag != null)
+                temp.put(requestType + "tag", tag);
+            return temp;
+        }
+
+        /**
+         *  Returns a HTTP request parameter containing the user to exclude
+         *  when returning events, or an empty map if not wanted.
+         *  @return (see above)
+         */
+        protected Map<String, String> addExcludeUserParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (notbyuser != null)
+                temp.put(requestType + "excludeuser", notbyuser);
             return temp;
         }
     }
