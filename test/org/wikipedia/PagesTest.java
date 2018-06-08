@@ -49,10 +49,17 @@ public class PagesTest
         
         String expected = "*[[:File:Example.png]]\n*[[:Main Page]]\n"
             + "*[[:Category:Example]]\n*[[:*-algebra]]\n";
-        assertEquals("toWikitextList, unnumbered", expected, Pages.toWikitextList(articles, false));
+        assertEquals("toWikitextList, unnumbered", expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, false));
         expected = "#[[:File:Example.png]]\n#[[:Main Page]]\n#[[:Category:Example]]\n"
             + "#[[:*-algebra]]\n";
-        assertEquals("toWikitextList, numbered", expected, Pages.toWikitextList(articles, true));
+        assertEquals("toWikitextList, numbered", expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, true));
+        
+        articles = Arrays.asList("example.com", "example.net");
+        expected = "*{{spamlink|1=example.com}}\n*{{spamlink|1=example.net}}\n";
+        assertEquals("toWikitextTemplateList, unnumbered", expected, Pages.toWikitextTemplateList(articles, "spamlink", false));
+        expected = "#{{TEST|1=Hello world}}\n#{{TEST|1=Just testing}}\n";
+        articles = Arrays.asList("Hello world", "Just testing");
+        assertEquals("toWikitextTemplateList, numbered", expected, Pages.toWikitextTemplateList(articles, "TEST", true));
     }
     
     @Test

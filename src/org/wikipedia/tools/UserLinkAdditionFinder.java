@@ -37,7 +37,7 @@ import org.wikipedia.*;
 public class UserLinkAdditionFinder
 {
     private static int threshold = 50;
-    private static WMFWiki wiki = WMFWiki.createInstance("en.wikipedia.org");
+    private static WMFWiki wiki;
 
     /**
      *  Runs this program.
@@ -52,6 +52,7 @@ public class UserLinkAdditionFinder
             .description("Finds the set of links added by a list of users.")
             .addHelp()
             .addVersion("UserLinkAdditionFinder v0.02\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--user", "user", "Get links for this user only.")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
@@ -59,6 +60,7 @@ public class UserLinkAdditionFinder
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
 
+        wiki = WMFWiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         String user = parsedargs.get("--user");
@@ -192,8 +194,7 @@ public class UserLinkAdditionFinder
         System.out.println("|}");
 
         System.out.println("== Domain list ==");
-        for (String domain : domains.keySet())
-            System.out.println("*{{spamlink|" + domain + "}}");
+        System.out.println(Pages.toWikitextTemplateList(domains.keySet(), "spamlink", false));
         System.out.println();
 
         System.out.println("== Blacklist log ==");

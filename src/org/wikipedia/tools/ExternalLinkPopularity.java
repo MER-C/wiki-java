@@ -51,6 +51,7 @@ public class ExternalLinkPopularity
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.ExternalLinkPopularity", "[options]")
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
+            .addSingleArgumentFlag("--category", "Example category", "Analyze all articles in [[Category:Example category]] (not recursive)")
             .addSingleArgumentFlag("--title", "wikipage", "The wiki page to get links from")
             .addSingleArgumentFlag("--limit", "n", "Fetch no more than n links (default: 500)")
             .parse(args);
@@ -60,15 +61,21 @@ public class ExternalLinkPopularity
         ExternalLinkPopularity elp = new ExternalLinkPopularity(wiki);
         // meta-domains (edwardbetts.com = {{orphan}}
         elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
-        
         elp.setMaxLinks(Integer.parseInt(parsedargs.getOrDefault("--limit", "500")));
+        
+        List<String> pages = new ArrayList<>();
+        String category = parsedargs.get("--category");
+        if (category != null)
+            pages.addAll(Arrays.asList(wiki.getCategoryMembers(category, Wiki.MAIN_NAMESPACE)));
         String article = parsedargs.get("--title");
-        if (article == null)
+        if (article != null)
+            pages.add(article);
+        if (pages.isEmpty())
         {
-            System.out.println("No article specified!");
+            System.out.println("No articles specified!");
             System.exit(1);
         }
-        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(Arrays.asList(article));
+        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(pages);
         Map<String, Map<String, Integer>> popresults = elp.determineLinkPopularity(results);
         System.out.println(elp.exportResultsAsWikitext(results, popresults));
         
