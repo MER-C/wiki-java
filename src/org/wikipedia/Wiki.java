@@ -756,14 +756,9 @@ public class Wiki implements Comparable<Wiki>
             // general site info
             String bits = line.substring(line.indexOf("<general "), line.indexOf("</general>"));
             wgCapitalLinks = parseAttribute(bits, "case", 0).equals("first-letter");
-            siteinfo.put("usingcapitallinks", wgCapitalLinks);
-            siteinfo.put("scriptpath", scriptPath);
             timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
-            siteinfo.put("timezone", timezone);
             mwVersion = parseAttribute(bits, "generator", 0);
-            siteinfo.put("version", mwVersion);
             locale = new Locale(parseAttribute(bits, "lang", 0));
-            siteinfo.put("locale", locale);
 
             // parse extensions
             bits = line.substring(line.indexOf("<extensions>"), line.indexOf("</extensions>"));
@@ -771,7 +766,6 @@ public class Wiki implements Comparable<Wiki>
             String[] unparsed = bits.split("<ext ");
             for (int i = 1; i < unparsed.length; i++)
                 extensions.add(parseAttribute(unparsed[i], "name", 0));
-            siteinfo.put("extensions", extensions);
 
             // populate namespace cache
             namespaces = new LinkedHashMap<>(30);
@@ -800,10 +794,15 @@ public class Wiki implements Comparable<Wiki>
                 if (items[i].contains("subpages=\"\""))
                     ns_subpages.add(ns);
             }
-            initVars();
             siteinfofetched = true;
             log(Level.INFO, "getSiteInfo", "Successfully retrieved site info for " + getDomain());
         }
+        siteinfo.put("usingcapitallinks", wgCapitalLinks);
+        siteinfo.put("scriptpath", scriptPath);
+        siteinfo.put("timezone", timezone);
+        siteinfo.put("version", mwVersion);
+        siteinfo.put("locale", locale);
+        siteinfo.put("extensions", extensions);
         return siteinfo;
     }
 

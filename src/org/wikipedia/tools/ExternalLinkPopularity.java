@@ -76,7 +76,13 @@ public class ExternalLinkPopularity
             System.exit(1);
         }
         Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(pages);
-        Map<String, Map<String, Integer>> popresults = elp.determineLinkPopularity(results);
+        Set<String> domains = new HashSet<>();
+        results.forEach((page, pagedomaintourls) ->
+        {
+            // full URL and page information is not necessary, discard them
+            domains.addAll(pagedomaintourls.keySet());
+        });
+        Map<String, Integer> popresults = elp.determineLinkPopularity(domains);
         System.out.println(elp.exportResultsAsWikitext(results, popresults));
         
         // String[] spampages = enWiki.getCategoryMembers("Category:Wikipedia articles with undisclosed paid content from March 2018", Wiki.MAIN_NAMESPACE);
@@ -188,22 +194,17 @@ public class ExternalLinkPopularity
     /**
      *  Determine a list of sites' popularity as external links. Each popularity
      *  score is capped at {@link #getMaxLinks()} because some domains are used 
-     *  very frequently and we don't want to be here forever. <var>data</var>
-     *  is of the form unique String &#8594; domain &#8594; links and can be
-     *  the results from {@link #fetchExternalLinks(List)}.
+     *  very frequently and we don't want to be here forever. 
      * 
-     *  @param data a Map with unique String &#8594; domain &#8594; links
-     *  @return a Map with page &#8594; domain &#8594; popularity
+     *  @param data a list of domains to determine popularity for
+     *  @return a Map with domain &#8594; popularity
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Map<String, Integer>> determineLinkPopularity(Map<String, Map<String, List<String>>> data) throws IOException
+    public Map<String, Integer> determineLinkPopularity(Collection<String> data) throws IOException
     {
         // deduplicate domains
         Set<String> domains = new LinkedHashSet<>();
-        data.forEach((page, pagedomaintourls) ->
-        {
-            domains.addAll(pagedomaintourls.keySet());
-        });
+        domains.addAll(data);
         domains.removeIf(domain -> exclude.stream().anyMatch(exc -> domain.contains(exc)));
 
         // linksearch the domains to determine popularity
@@ -222,21 +223,10 @@ public class ExternalLinkPopularity
             lsresults.put(domain, Math.min(count, maxlinks));
         }
         wiki.setQueryLimit(Integer.MAX_VALUE);
-        
-        Map<String, Map<String, Integer>> ret = new HashMap<>();
-        data.forEach((page, pagedomaintourls) ->
-        {
-            Map<String, Integer> temp = new HashMap<>();
-            pagedomaintourls.keySet().forEach(domain ->
-            {
-                temp.put(domain, lsresults.get(domain));
-            });
-            ret.put(page, temp);
-        });
-        return ret;
+        return lsresults;
     }
     
-    public String exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
+    public String exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Integer> popularity)
     {
         StringBuilder sb = new StringBuilder();
         urldata.forEach((page, pagedomaintourls) ->
@@ -250,7 +240,7 @@ public class ExternalLinkPopularity
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
             pagedomaintourls.forEach((domain, listoflinks) ->
             {
-                Integer numlinks = popularity.get(page).get(domain);
+                Integer numlinks = popularity.get(domain);
                 sb.append("*");
                 sb.append(domain);
                 if (numlinks >= maxlinks)
@@ -295,7 +285,7 @@ public class ExternalLinkPopularity
         return sb.toString();
     }
     
-    public String exportResultsAsHTML(Map<String, Map<String, List<String>>> urldata, Map<String, Map<String, Integer>> popularity)
+    public String exportResultsAsHTML(Map<String, Map<String, List<String>>> urldata, Map<String, Integer> popularity)
     {
         Pages pageUtils = Pages.of(wiki);
         StringBuilder sb = new StringBuilder();
@@ -314,7 +304,7 @@ public class ExternalLinkPopularity
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
             pagedomaintourls.forEach((domain, listoflinks) ->
             {
-                Integer numlinks = popularity.get(page).get(domain);
+                Integer numlinks = popularity.get(domain);
                 sb.append("<li>");
                 sb.append(domain);
                 if (numlinks >= maxlinks)
