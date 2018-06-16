@@ -1201,6 +1201,9 @@ public class WikiTest
     @Test
     public void getText() throws Exception
     {
+        assertEquals(0, testWiki.getText(new String[0], null, -1).length);
+        assertEquals(0, testWiki.getText(null, new long[0], -1).length);
+        
         long[] ids =
         {
             230472L, // https://test.wikipedia.org/w/index.php?oldid=230472 (decoding test)

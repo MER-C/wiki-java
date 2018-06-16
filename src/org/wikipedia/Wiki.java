@@ -1918,9 +1918,8 @@ public class Wiki implements Comparable<Wiki>
      *  revision doesn't exist or is deleted, return {@code null}.
      *  RevisionDeleted revisions are not allowed.
      *
-     *  @param titles a list of titles (use null or zero length to skip,
-     *  overrides revids).
-     *  @param revids a list of revids (use null or zero length to skip)
+     *  @param titles a list of titles (use null to skip, overrides revids)
+     *  @param revids a list of revids (use null to skip)
      *  @param section a section number. This section number must exist in all
      *  titles or revids otherwise you will get vast swathes of your results
      *  being erroneously null. Optional, use -1 to skip.
@@ -1935,7 +1934,7 @@ public class Wiki implements Comparable<Wiki>
         boolean isrevisions;
         int count = 0;
         String[] titles2 = null;
-        if (titles != null && titles.length > 0)
+        if (titles != null)
         {
             // validate titles
             for (String title : titles)
@@ -1946,13 +1945,15 @@ public class Wiki implements Comparable<Wiki>
             // copy because redirect resolver overwrites
             titles2 = Arrays.copyOf(titles, count);
         }
-        else if (revids != null && revids.length > 0)
+        else if (revids != null)
         {
             isrevisions = true;
             count = revids.length;
         }
         else
             throw new IllegalArgumentException("Either titles or revids must be specified!");
+        if (count == 0)
+            return new String[0];
 
         Map<String, String> pageTexts = new HashMap<>(2 * count);
         Map<String, String> getparams = new HashMap<>();
