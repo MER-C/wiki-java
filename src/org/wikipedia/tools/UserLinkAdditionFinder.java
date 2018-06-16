@@ -37,8 +37,8 @@ import org.wikipedia.*;
 public class UserLinkAdditionFinder
 {
     private static int threshold = 50;
-    private static WMFWiki wiki;
-
+    private final WMFWiki wiki;
+    
     /**
      *  Runs this program.
      *  @param args the command line arguments (see code for documentation)
@@ -60,13 +60,17 @@ public class UserLinkAdditionFinder
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
 
-        wiki = WMFWiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        WMFWiki thiswiki = WMFWiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         String user = parsedargs.get("--user");
         String datestring = parsedargs.get("--fetchafter");
         String filename = parsedargs.get("default");
         OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
+        
+        UserLinkAdditionFinder finder = new UserLinkAdditionFinder(thiswiki);
+        ExternalLinkPopularity elp = new ExternalLinkPopularity(thiswiki);
+        elp.setMaxLinks(threshold);
 
         // read in from file
         List<String> users;
@@ -87,129 +91,86 @@ public class UserLinkAdditionFinder
         else
             users = Arrays.asList(user);
 
-        // fetch and parse edits
-        Map<Wiki.Revision, List<String>> results = getLinksAdded(users, date);
+        // Map structure:
+        // * results: revid -> links added in that revision
+        // * linkdomains: link -> domain
+        // * linkcounts: domain -> count of links
+        // * stillthere: page name -> link -> whether it is still there
+        Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, date);
         if (results.isEmpty())
         {
             System.out.println("No links found.");
             System.exit(0);
         }
-
-        // then transform to a map with domain -> spammers and domain -> link count
-        Map<String, Set<String>> domains = new HashMap<>();
-        Map<String, Integer> linkcounts = new HashMap<>();
-        wiki.setQueryLimit(threshold);
-        Iterator<Map.Entry<Wiki.Revision, List<String>>> iter = results.entrySet().iterator();
-        while (iter.hasNext())
+        
+        Map<String, String> linkdomains = new HashMap<>();
+        for (Map.Entry<Wiki.Revision, List<String>> entry : results.entrySet())
         {
-            Map.Entry<Wiki.Revision, List<String>> entry = iter.next();
-            Wiki.Revision revision = entry.getKey();
-            Iterator<String> links = entry.getValue().iterator();
-            while (links.hasNext())
+            for (String link : entry.getValue())
             {
-                String link = links.next();
                 String domain = ExternalLinks.extractDomain(link);
-                // remove any dodgy links and any blacklisted links if asked for
-                if (domain == null
-                    || (removeblacklisted && wiki.isSpamBlacklisted(domain)))
-                {
-                    links.remove();
-                    continue;
-                }
-                if (domains.containsKey(domain))
-                {
-                    domains.get(domain).add(revision.getUser());
-                    continue;
-                }
-                // remove any frequently used domains if asked for
-                if (linksearch)
-                {
-                    int linkcount = wiki.linksearch("*." + domain).size();
-                    if (linkcount < threshold)
-                        linkcount += wiki.linksearch("*." + domain, "https").size();
-                    if (linkcount >= threshold)
-                    {
-                        links.remove();
-                        continue;
-                    }
-                    linkcounts.put(domain, linkcount);
-                }
-
-                HashSet<String> blah = new HashSet<>();
-                blah.add(revision.getUser());
-                domains.put(domain, blah);
+                if (domain != null) // must be parseable
+                    linkdomains.put(link, domain);
             }
         }
-        wiki.setQueryLimit(Integer.MAX_VALUE);
-
-        // check whether the links are still there
-        Map<String, List<String>> resultsbypage = new HashMap<>();
-        results.forEach((revision, listoflinks) ->
+        
+        // remove blacklisted links
+        Collection<String> domains = linkdomains.values();
+        if (removeblacklisted)
         {
-            String page = revision.getTitle();
-            List<String> list = resultsbypage.get(page);
-            if (list == null)
+            Iterator<String> iter = domains.iterator();
+            while (iter.hasNext())
             {
-                list = new ArrayList<>();
-                resultsbypage.put(page, list);
+                String link = iter.next();
+                if (thiswiki.isSpamBlacklisted(linkdomains.get(link)))
+                    iter.remove();
             }
-            list.addAll(listoflinks);
-        });
-        Map<String, Map<String, Boolean>> stillthere = Pages.of(wiki).containExternalLinks(resultsbypage);
-
-        // transform to wikitable
-        System.out.println("{| class=\"wikitable\"\n");
-        results.forEach((revision, links) ->
+        }
+        
+        // remove commonly used domains
+        Map<String, Integer> linkcounts = null;
+        if (linksearch)
         {
-            if (links.isEmpty())
-                return;
-            Map<String, Boolean> revlinkexists = stillthere.get(revision.getTitle());
-            StringBuilder temp = new StringBuilder("|-\n|| [[Special:Diff/");
-            temp.append(revision.getID());
-            temp.append("]]\n||\n");
-            for (int i = 0; i < links.size(); i++)
+            linkcounts = elp.determineLinkPopularity(domains);
+            Iterator<Map.Entry<String, Integer>> iter = linkcounts.entrySet().iterator();
+            while (iter.hasNext())
             {
-                String link = links.get(i);
-                temp.append("* ");
-                temp.append(link);
-                boolean remaining = revlinkexists.get(link);
-                temp.append(remaining ? " ('''STILL THERE'''" : " (removed");
-                if (linksearch)
+                Map.Entry<String, Integer> entry = iter.next();
+                if (entry.getValue() >= threshold)
                 {
-                    String domain = ExternalLinks.extractDomain(link);
-                    temp.append("; ");
-                    temp.append(linkcounts.get(domain));
-                    temp.append(" links: [[Special:Linksearch/*.");
-                    temp.append(domain);
-                    temp.append("|http]], [[Special:Linksearch/https://*.");
-                    temp.append(domain);
-                    temp.append("|https]])");
+                    iter.remove();
+                    domains.remove(entry.getKey());
                 }
-                else
-                    temp.append(")");
-                temp.append("\n");
             }
-            System.out.println(temp.toString());
-        });
-        System.out.println("|}");
-
+        }
+        Map<String, Map<String, Boolean>> stillthere = finder.checkIfLinksAreStillPresent(results);
+        
+        // output results
+        System.out.println(finder.outputWikitableResults(results, linkcounts, stillthere));
         System.out.println("== Domain list ==");
-        System.out.println(Pages.toWikitextTemplateList(domains.keySet(), "spamlink", false));
+        System.out.println(Pages.toWikitextTemplateList(domains, "spamlink", false));
         System.out.println();
-
         System.out.println("== Blacklist log ==");
-        domains.forEach((key, value) ->
-        {
-            String domain = key.replace(".", "\\.");
-            System.out.print(" \\b" + domain + "\\b");
-            for (int i = domain.length(); i < 35; i++)
-                System.out.print(' ');
-            System.out.print(" # ");
-            for (String spammer : value)
-                System.out.print("{{user|" + spammer + "}} ");
-            System.out.println();
-        });
+        System.out.println(finder.generateBlacklistLog(results, linkdomains));
         System.out.flush();
+    }
+    
+    /**
+     *  Creates a new instance of this tool.
+     *  @param wiki the wiki to fetch data from
+     */
+    public UserLinkAdditionFinder(WMFWiki wiki)
+    {
+        this.wiki = wiki;
+    }
+    
+    /**
+     *  Returns the wiki that this tool fetches data from.
+     *  @return (see above)
+     */
+    public Wiki getWiki()
+    {
+        return wiki;
     }
 
     /**
@@ -220,7 +181,7 @@ public class UserLinkAdditionFinder
      *  @return a Map: revision &#8594; added links
      *  @throws IOException if a network error occurs
      */
-    public static Map<Wiki.Revision, List<String>> getLinksAdded(List<String> users, OffsetDateTime earliest) throws IOException
+    public Map<Wiki.Revision, List<String>> getLinksAdded(List<String> users, OffsetDateTime earliest) throws IOException
     {
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .inNamespaces(Wiki.MAIN_NAMESPACE)
@@ -240,6 +201,114 @@ public class UserLinkAdditionFinder
         }
         return results;
     }
+    
+    /**
+     *  For a map that contains revision data &#8594; links added in that 
+     *  revision, check whether the links still exist in the current version of
+     *  the article. Such a map can be obtained by calling {@link 
+     *  #getLinksAdded(List, OffsetDateTime)}.
+     *  @param data a map containing revision data &#8594; links added in that 
+     *  revision
+     *  @return a map containing page &#8594; link &#8594; whether it is still 
+     *  there
+     *  @throws IOException if a network error occurs
+     */
+    public Map<String, Map<String, Boolean>> checkIfLinksAreStillPresent(Map<Wiki.Revision, List<String>> data) throws IOException
+    {
+        Map<String, List<String>> resultsbypage = new HashMap<>();
+        data.forEach((revision, listoflinks) ->
+        {
+            String page = revision.getTitle();
+            List<String> list = resultsbypage.get(page);
+            if (list == null)
+            {
+                list = new ArrayList<>();
+                resultsbypage.put(page, list);
+            }
+            list.addAll(listoflinks);
+        });
+        return Pages.of(wiki).containExternalLinks(resultsbypage);
+    }
+    
+    public String outputWikitableResults(Map<Wiki.Revision, List<String>> data, 
+        Map<String, Integer> linkcounts, Map<String, Map<String, Boolean>> stillthere)
+    {
+        StringBuilder builder = new StringBuilder(100000);
+        builder.append("{| class=\"wikitable\"\n");
+        for (Map.Entry<Wiki.Revision, List<String>> entry : data.entrySet())
+        {
+            Wiki.Revision revision = entry.getKey();
+            List<String> links = entry.getValue();
+            if (links.isEmpty())
+                continue;
+            Map<String, Boolean> revlinkexists = stillthere.get(revision.getTitle());
+            builder.append("|-\n|| [[Special:Diff/");
+            builder.append(revision.getID());
+            builder.append("]]\n||\n");
+            for (int i = 0; i < links.size(); i++)
+            {
+                String link = links.get(i);
+                builder.append("* ");
+                builder.append(link);
+                boolean remaining = revlinkexists.get(link);
+                builder.append(remaining ? " ('''STILL THERE'''" : " (removed");
+                if (linkcounts != null)
+                {
+                    String domain = ExternalLinks.extractDomain(link);
+                    builder.append("; ");
+                    builder.append(linkcounts.get(domain));
+                    builder.append(" links: [[Special:Linksearch/*.");
+                    builder.append(domain);
+                    builder.append("|http]], [[Special:Linksearch/https://*.");
+                    builder.append(domain);
+                    builder.append("|https]])");
+                }
+                else
+                    builder.append(")");
+                builder.append("\n");
+            }
+        }
+        builder.append("|}");
+        return builder.toString();
+    }
+    
+    public String generateBlacklistLog(Map<Wiki.Revision, List<String>> data, Map<String, String> domains)
+    {
+        // transform to domain -> spammers
+        Map<String, List<String>> spammers = new HashMap<>();
+        data.forEach((revision, listoflinks) ->
+        {
+            String user = revision.getUser();
+            for (String link : listoflinks)
+            {
+                String domain = domains.get(link);
+                List<String> users = spammers.getOrDefault(domain, new ArrayList<>());
+                users.add(user);
+                spammers.putIfAbsent(domain, users);
+            }
+        });
+        
+        // generate output
+        StringBuilder sb = new StringBuilder(100000);
+        spammers.forEach((key, value) ->
+        {
+            String domain = key.replace(".", "\\.");
+            sb.append(" \\b");
+            sb.append(domain);
+            sb.append("\\b");
+            for (int i = domain.length(); i < 35; i++)
+                sb.append(' ');
+            sb.append(" # ");
+            for (String spammer : value)
+            {
+                sb.append("{{user|");
+                sb.append(spammer);
+                sb.append("}} ");
+            }
+            sb.append("\n");
+        });
+        return sb.toString();
+    }
 
     /**
      *  Returns a list of external links added by a particular revision.
@@ -247,7 +316,7 @@ public class UserLinkAdditionFinder
      *  @return the list of added URLs
      *  @throws IOException if a network error occurs
      */
-    public static List<String> parseDiff(Wiki.Revision revision) throws IOException
+    public List<String> parseDiff(Wiki.Revision revision) throws IOException
     {
         // fetch the diff
         String diff = revision.isNew() ? revision.getText() : revision.diff(Wiki.PREVIOUS_REVISION);

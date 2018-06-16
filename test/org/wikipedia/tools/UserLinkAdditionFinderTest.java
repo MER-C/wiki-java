@@ -21,10 +21,12 @@
 package org.wikipedia.tools;
 
 import java.io.IOException;
+import java.time.*;
+import java.time.format.*;
 import java.util.*;
 import java.util.stream.*;
 import org.junit.*;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 import static org.junit.Assert.*;
 
 /**
@@ -33,26 +35,37 @@ import static org.junit.Assert.*;
  */
 public class UserLinkAdditionFinderTest
 {
-    private final Wiki testWiki, enWiki;
+    private final WMFWiki testWiki, enWiki;
+    private UserLinkAdditionFinder finder_test, finder_en;
 
     /**
      *  Construct a new wiki connection to make sure tests are independent.
      */
     public UserLinkAdditionFinderTest()
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        testWiki = WMFWiki.createInstance("test.wikipedia.org");
+        enWiki = WMFWiki.createInstance("en.wikipedia.org");
+        finder_test = new UserLinkAdditionFinder(testWiki);
+        finder_en = new UserLinkAdditionFinder(enWiki);
+    }
+            
+    @Test
+    public void getWiki() throws Exception
+    {
+        assertEquals("test.wikipedia.org", finder_test.getWiki().getDomain());
+        assertEquals("en.wikipedia.org", finder_en.getWiki().getDomain());
     }
 
     @Test
-    public void getLinkAdditions() throws Exception
+    public void getLinksAdded() throws Exception
     {
         // https://en.wikipedia.org/wiki/Special:Contributions/EDPerfect (no edits)
         // https://en.wikipedia.org/wiki/Special:Contributions/Shittipa (2 edits, only one adds links)
+        // https://en.wikipedia.org/wiki/Special:Contributions/EmanningKBRA (all link adding edits revision deleted)
         // remainder of users with one edit, one link
 
         List<String> users = Arrays.asList("Helonty", "ReteNsep", "Reyeilint", "Shittipa", "EDPerfect");
-        Map<Wiki.Revision, List<String>> linksadded = UserLinkAdditionFinder.getLinksAdded(users, null);
+        Map<Wiki.Revision, List<String>> linksadded = finder_en.getLinksAdded(users, null);
         Set<String> actual = linksadded.keySet().stream().map(rev -> String.valueOf(rev.getID())).collect(Collectors.toSet());
         assertEquals(4, actual.size());
         assertTrue(actual.containsAll(Arrays.asList("834061933", "823758919", "833871994", "834097191")));
@@ -75,6 +88,10 @@ public class UserLinkAdditionFinderTest
             else if (id == 834061933L)
                 assertEquals(Arrays.asList("http://www.drgoldman.com/"), links);
         }
+        
+        // check date cutoff (all users indeffed prior to this date, therefore empty)
+        linksadded = finder_en.getLinksAdded(users, OffsetDateTime.parse("2018-06-01T00:00:00Z"));
+        assertTrue(linksadded.isEmpty());
     }
 
     @Test
@@ -86,26 +103,26 @@ public class UserLinkAdditionFinderTest
         });
 
         // https://test.wikipedia.org/wiki/Special:Diff/244169
-        List<String> links = UserLinkAdditionFinder.parseDiff(revs[0]);
+        List<String> links = finder_test.parseDiff(revs[0]);
         assertNotNull(links);
         assertEquals(1, links.size());
         assertEquals("http://spam.example.com", links.get(0));
 
         // https://test.wikipedia.org/wiki/Special:Diff/244170
-        links = UserLinkAdditionFinder.parseDiff(revs[1]);
+        links = finder_test.parseDiff(revs[1]);
         assertEquals("https://en.wikipedia.org", links.get(0));
 
         // https://test.wikipedia.org/wiki/Special:Diff/244171
-        links = UserLinkAdditionFinder.parseDiff(revs[2]);
+        links = finder_test.parseDiff(revs[2]);
         assertEquals("http://www.example.net", links.get(0));
 
         // dummy edit
         // https://test.wikipedia.org/wiki/Special:Diff/320307
-        links = UserLinkAdditionFinder.parseDiff(revs[3]);
+        links = finder_test.parseDiff(revs[3]);
         assertEquals(0, links.size());
 
         // https://test.wikipedia.org/wiki/Special:Diff/350372
-        links = UserLinkAdditionFinder.parseDiff(revs[4]);
+        links = finder_test.parseDiff(revs[4]);
         assertEquals("http://template.example.com", links.get(0));
     }
 }
