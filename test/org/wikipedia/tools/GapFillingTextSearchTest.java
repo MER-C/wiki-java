@@ -61,12 +61,25 @@ public class GapFillingTextSearchTest
     }
 
     @Test
-    public void searchAndExtractSnippets()
+    public void searchAndExtractSnippets() throws Exception
     {
         // needs to handle no results
         assertTrue("searchAndExtractSnippets: no inputs", gfs.searchAndExtractSnippets(Collections.emptyMap(), "Blah", false).isEmpty());
         
-
+        Map<String, String> inputs = new HashMap<>();
+        String page = "Wikipedia:Articles for deletion/Dmarket";
+        String text = enWiki.getPageText(page);
+        inputs.put(page, text);
+        assertTrue("searchAndExtractSnippets: no results", gfs.searchAndExtractSnippets(inputs, "NotASearchTerm", false).isEmpty());
+        Map<String, String> results = gfs.searchAndExtractSnippets(inputs, "kamikaze", false);
+        assertEquals(1, results.size());
+        String expected = "talk:CASSIOPEIA|<b style=\"#0000FF\">talk</b>]])</sup> 14:45, 9 June 2018 (UTC)</small> "
+            + "*'''Delete''' this highly [[WP:PROMO|promotional]] text, created by a [[WP:SPA|kamikaze account]], "
+            + "about a subject lacking notability aside from mentions in a few trade blogs";
+        assertEquals("searchAndExtractSnippets: one result", expected, results.get(page));
+        assertTrue("searchAndExtractSnippets: case sensitive", gfs.searchAndExtractSnippets(inputs, "Kamikaze", true).isEmpty());
+        Map<String, String> results2 = gfs.searchAndExtractSnippets(inputs, "kamikaze", true);
+        assertEquals(results, results2);
     }
 
     @Test

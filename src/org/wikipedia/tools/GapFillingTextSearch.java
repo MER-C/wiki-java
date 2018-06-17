@@ -37,7 +37,9 @@ import org.wikipedia.*;
  */
 public class GapFillingTextSearch
 {
-    // TODO: Come to think about it, this class is a logical place to put string 
+    // TODO:
+    // 1) Servlet version
+    // 2) Come to think about it, this class is a logical place to put string 
     // contains/regex find and replacement methods.
     
     private final Wiki wiki;
@@ -53,7 +55,7 @@ public class GapFillingTextSearch
             .synopsis("org.wikipedia.tools.SearchArticlesCreated", "[options] query")
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--user", "Username", "Search articles created by Username")
-        //    .addSingleArgumentFlag("--title", "wikipage", "The wiki page to get links from")
+            .addSingleArgumentFlag("--linksfrom", "wikipage", "The wiki page to get links from")
             .addBooleanFlag("--regex", "Treat the query as a regular expression")
             .addBooleanFlag("--case-sensitive", "Treat the query as case sensitive")
             .parse(args);
@@ -63,23 +65,34 @@ public class GapFillingTextSearch
         GapFillingTextSearch gfs = new GapFillingTextSearch(thiswiki);
         
         String query = parsedargs.get("default");
-        if (query != null)
+        if (query == null)
         {
             System.out.println("No query specified!");
             System.exit(0);
         }
         
         String user = parsedargs.get("--user");
-        Map<Wiki.Revision, String> inputs = null;
+        String linksfrom = parsedargs.get("--linksfrom");
+        Map<?, String> inputs = null;
         if (user != null)
             inputs = gfs.fetchArticlesCreatedBy(user);
+        else if (linksfrom != null)
+        {
+            HashMap<String, String> temp = new HashMap<>();
+            String[] links = thiswiki.getLinksOnPage(linksfrom);
+            String[] content = thiswiki.getPageText(links);
+            for (int i = 0; i < links.length; i++)
+                if (content[i] != null)
+                    temp.put(links[i], content[i]);
+            inputs = temp;
+        }
         if (inputs == null)
         {
             System.out.println("No list of pages to search specified!");
             System.exit(0);
         }
         
-        Map<Wiki.Revision, String> results;
+        Map<?, String> results;
         if (regex)
         {
             Pattern pattern = casesensitive ? Pattern.compile(query) : Pattern.compile(query, Pattern.CASE_INSENSITIVE);
