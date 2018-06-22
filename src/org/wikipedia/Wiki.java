@@ -4722,7 +4722,7 @@ public class Wiki implements Comparable<Wiki>
                 info[i].put("inputname", usernames[i]);
             }
         }
-        log(Level.INFO, "getUserInfo", "Successfully retrieved user info for " + Arrays.toString(usernames));
+        log(Level.INFO, "getUserInfo", "Successfully retrieved user info for " + usernames.length + " users.");
         return info;
     }
 
@@ -8084,6 +8084,8 @@ public class Wiki implements Comparable<Wiki>
         {
             getparams.put(limitstring, String.valueOf(Math.min(querylimit - results.size(), max)));
             String line = makeApiCall(getparams, postparams, caller);
+            getparams.remove(xxcontinue);
+            getparams.remove("continue");
             
             // Continuation parameter has form:
             // <continue rccontinue="20170924064528|986351741" continue="-||" />
@@ -8092,8 +8094,8 @@ public class Wiki implements Comparable<Wiki>
                 int a = line.indexOf("<continue ") + 10;
                 int b = line.indexOf("/>", a);
                 String cont = line.substring(a, b);
-                getparams.compute(xxcontinue, (unused1, unused2) -> parseAttribute(cont, xxcontinue, 0));
-                getparams.compute("continue", (unused1, unused2) -> parseAttribute(cont, " continue", 0));
+                getparams.put(xxcontinue, parseAttribute(cont, xxcontinue, 0));
+                getparams.put("continue", parseAttribute(cont, " continue", 0));
             }
 
             parser.accept(line, results);

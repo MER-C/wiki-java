@@ -114,6 +114,7 @@
                             <include>**/ContributionSurveyorTest.java</include>
                             <include>**/UserLinkAdditionFinderTest.java</include>
                             <include>**/ExternalLinkPopularityTest.java</include>
+                            <include>**/GapFillingTextSearchTest.java</include>
                         </includes>
                     </configuration>
                 </plugin>
