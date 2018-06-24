@@ -582,7 +582,7 @@ public class ContributionSurveyor
             out.append("== ");
             out.append(username);
             out.append(" ==\n");
-            out.append(ParserUtils.generateUserLinksAsWikitext(username));
+            out.append(Users.generateWikitextSummaryLinks(username));
             out.append("\n");
             out.append(formatTextSurveyAsWikitext(username, survey));
 

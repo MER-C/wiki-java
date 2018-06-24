@@ -30,6 +30,7 @@ import static org.junit.Assert.*;
 public class PagesTest
 {
     private final Wiki testWiki;
+    private final Pages testWikiPages;
     
     /**
      *  Construct wiki objects for each test so that tests are independent.
@@ -38,6 +39,7 @@ public class PagesTest
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
         testWiki.setMaxLag(-1);
+        testWikiPages = Pages.of(testWiki);
     }
     
     @Test
@@ -89,7 +91,6 @@ public class PagesTest
     @Test
     public void generateSummaryLinks()
     {
-        Pages testWikiPages = Pages.of(testWiki);
         String indexPHPURL = testWiki.getIndexPhpUrl();
         String expected = 
               "<a href=\"" + testWiki.getPageUrl("Test") + "\">Test</a> ("
@@ -115,7 +116,7 @@ public class PagesTest
         List<String> links = Arrays.asList("http://spam.example.com", "http://absent.example.com");
         Map<String, List<String>> inputs = new HashMap<>();
         inputs.put(page, links);
-        Map<String, Map<String, Boolean>> actual = Pages.of(testWiki).containExternalLinks(inputs);
+        Map<String, Map<String, Boolean>> actual = testWikiPages.containExternalLinks(inputs);
         assertTrue(actual.get(page).get(links.get(0)));
         assertFalse(actual.get(page).get(links.get(1)));
     }

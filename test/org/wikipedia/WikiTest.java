@@ -1392,12 +1392,4 @@ public class WikiTest
         assertFalse("User.isA: false", me.isA("templateeditor"));
         assertFalse("User.isA: nonsense input", me.isA("sdlkghsdlkgsd"));
     }
-
-    @Test
-    public void userCreatedPages() throws Exception
-    {
-        Wiki.User me = testWiki.getUser("MER-C");
-        List<String> pages = me.createdPages(Wiki.MAIN_NAMESPACE);
-        assertEquals("createdPages", "Wiki.java Test Page", pages.get(pages.size() - 1));
-    }
 }

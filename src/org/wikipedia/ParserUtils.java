@@ -217,61 +217,7 @@ public class ParserUtils
         buffer.append("</ul>\n");
         return buffer.toString();
     }
-    
-    /**
-     *  Creates user links in HTML of the form <samp>User (talk | contribs | 
-     *  deletedcontribs | block | block log)</samp>
-     *  @param username the username
-     *  @param wiki the wiki to build links for
-     *  @return the generated HTML
-     *  @see #generateUserLinksAsWikitext(java.lang.String) 
-     */
-    public static String generateUserLinks(Wiki wiki, String username)
-    {
-        try
-        {
-            String indexPHPURL = wiki.getIndexPhpUrl();
-            String userenc = URLEncoder.encode(username, "UTF-8");
-            return "<a href=\"" + wiki.getPageUrl("User:" + username) + "\">" + username + "</a> ("
-                +  "<a href=\"" + wiki.getPageUrl("User talk:" + username) + "\">talk</a> | "
-                +  "<a href=\"" + wiki.getPageUrl("Special:Contributions/" + username) + "\">contribs</a> | "
-                +  "<a href=\"" + wiki.getPageUrl("Special:DeletedContributions/" + username) + "\">deleted contribs</a> | "
-                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
-                +  "<a href=\"" + wiki.getPageUrl("Special:Block/" + username) + "\">block</a> | "
-                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
-        }
-        catch (IOException ex)
-        {
-            throw new UncheckedIOException(ex); // seriously?
-        }
-    }
-    
-    /**
-     *  Creates user links in wikitext of the form <samp>User (talk | contribs | 
-     *  deletedcontribs | block | block log)</samp>
-     *  @param username the username
-     *  @return the generated wikitext
-     *  @see #generateUserLinks(org.wikipedia.Wiki, java.lang.String) 
-     */
-    public static String generateUserLinksAsWikitext(String username)
-    {
-        try
-        {
-            String userenc = URLEncoder.encode(username, "UTF-8");
-            return "* [[User:" + username + "|" + username + "]] (" 
-                +  "[[User talk:" + username + "|talk]] | "
-                +  "[[Special:Contributions/" + username + "|contribs]] | "
-                +  "[[Special:DeletedContributions/" + username + "|deleted contribs]] | "
-                +  "[{{fullurl:Special:Log|user=" + userenc + "}} logs] | "
-                +  "[[Special:Block/" + username + "|block]] | "
-                +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
-        }
-        catch (IOException ex)
-        {
-            throw new UncheckedIOException(ex); // seriously?
-        }
-    }
-    
+        
     /**
      *  Parses a wikilink into its target and linked text. Example: <kbd>[[Link]]</kbd>
      *  returns {@code { "Link", "Link" }} and <kbd>[[Link|Test]]</kbd> returns

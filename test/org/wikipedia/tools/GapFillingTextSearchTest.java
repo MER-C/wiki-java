@@ -52,15 +52,6 @@ public class GapFillingTextSearchTest
     }
 
     @Test
-    public void fetchArticlesCreatedBy() throws Exception
-    {
-        // no articles created
-        assertTrue("fetchArticlesCreated: no created articles", gfs.fetchArticlesCreatedBy("Constance94S").isEmpty());
-        // verify functionality
-        // Map<Wiki.Revision, String> results = gfs.fetchArticlesCreatedBy("SOMEONE");
-    }
-
-    @Test
     public void searchAndExtractSnippets() throws Exception
     {
         // needs to handle no results

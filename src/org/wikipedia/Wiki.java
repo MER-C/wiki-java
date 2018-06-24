@@ -6805,25 +6805,6 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Returns a list of pages created by this user in the given namespaces.
-         *  @param ns a list of namespaces to filter by, empty = all namespaces
-         *  @return the list of pages created by this user
-         *  @throws IOException if a network error occurs
-         *  @since 0.35
-         */
-        public List<String> createdPages(int... ns) throws IOException
-        {
-            Map<String, Boolean> options = new HashMap<>();
-            options.put("new", Boolean.TRUE);
-            Wiki.RequestHelper rh = new RequestHelper().inNamespaces(ns);
-            List<Wiki.Revision> contribs = Wiki.this.contribs(username, rh);
-            List<String> ret = new ArrayList<>();
-            for (Wiki.Revision rev : contribs)
-                ret.add(rev.getTitle());
-            return ret;
-        }
-
-        /**
          *  Returns the list of logged actions performed by this user.
          *  @param logtype what log to get ({@link Wiki#DELETION_LOG} etc.)
          *  @param action what action to get (e.g. delete, undelete), use
@@ -7554,7 +7535,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Determines whether this Revision is equal to another based on the
-         *  underlying {@linkplain Event#equals(Object) Event} and SHA-1.
+         *  underlying {@linkplain Event#equals(Object) Event}.
          *  @param o an object
          *  @return whether o is equal to this object
          *  @since 0.17
@@ -7562,25 +7543,28 @@ public class Wiki implements Comparable<Wiki>
         @Override
         public boolean equals(Object o)
         {
+            // Note to self: don't use SHA-1 until all API calls provide it.
             if (!super.equals(o))
                 return false;
             if (!(o instanceof Revision))
                 return false;
-            Revision rev = (Revision)o;
-            return Objects.equals(sha1, rev.sha1);
+            // Revision rev = (Revision)o;
+            // return Objects.equals(sha1, rev.sha1);
+            return true;
         }
 
         /**
          *  Returns a hash code of this revision based on the underlying
-         *  {@linkplain Event#hashCode() Event} and SHA-1.
+         *  {@linkplain Event#hashCode() Event}.
          *  @return a hash code
          *  @since 0.17
          */
         @Override
         public int hashCode()
         {
+            // Note to self: don't use SHA-1 until all API calls provide it.
             int hc = super.hashCode();
-            hc = 127 * hc + (sha1 == null ? 0 : sha1.hashCode());
+            hc = 127 * hc;
             return hc;
         }
 

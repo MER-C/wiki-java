@@ -74,8 +74,9 @@ public class GapFillingTextSearch
         String user = parsedargs.get("--user");
         String linksfrom = parsedargs.get("--linksfrom");
         Map<?, String> inputs = null;
+        Users userutils = Users.of(thiswiki);
         if (user != null)
-            inputs = gfs.fetchArticlesCreatedBy(user);
+            inputs = userutils.createdPagesWithText(Arrays.asList(user));
         else if (linksfrom != null)
         {
             HashMap<String, String> temp = new HashMap<>();
@@ -125,36 +126,7 @@ public class GapFillingTextSearch
     {
         return wiki;
     }
-    
-    /**
-     *  Fetches the articles created by the given user and the text of the 
-     *  current revision of those pages.
-     *  @param user the user to fetch articles for
-     *  @return a map containing revision the article was created -> 
-     *  current text of that page
-     *  @throws IOException if a network error occurs
-     */
-    public Map<Wiki.Revision, String> fetchArticlesCreatedBy(String user) throws IOException
-    {
-        Map<String, Boolean> options = new HashMap<>();
-        options.put("new", Boolean.TRUE);
-        Wiki.RequestHelper rh = wiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
-        List<Wiki.Revision> contribs = wiki.contribs(Arrays.asList(user), null, rh, options).get(0);
         
-        // get text of all articles
-        List<String> articles = new ArrayList<>();
-        for (Wiki.Revision revision : contribs)
-            articles.add(revision.getTitle());
-        String[] pagetexts = wiki.getPageText(articles.toArray(new String[0]));        
-        Map<Wiki.Revision, String> ret = new HashMap<>();
-        for (int i = 0; i < contribs.size(); i++)
-        {
-            Wiki.Revision revision = contribs.get(i);
-            ret.putIfAbsent(revision, pagetexts[i]);
-        }
-        return ret;
-    }
-    
     /**
      *  Searches for the given <var>query</var> term by performing a string 
      *  contains operation on the text contained in each entry of the search 
