@@ -47,8 +47,10 @@ public class AdminUnitTests
     public void getLogEntries() throws Exception
     {
         // https://test.wikipedia.org/w/index.php?title=Special%3ALog&page=User%3AMER-C%2FTest
-        Wiki.RequestHelper rh = testWiki.new RequestHelper().byTitle("User:MER-C/Test");
-        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 100);
+        Wiki.RequestHelper rh = testWiki.new RequestHelper()
+            .byTitle("User:MER-C/Test")
+            .limitedTo(100);
+        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
         assertEquals("getLogEntries: RevisionDeleted reason, can access", 
             "create a log entry for testing RevisionDelete on", le.get(0).getComment());
         assertEquals("getLogEntries: RevisionDeleted user, can access", "MER-C", 
@@ -109,12 +111,12 @@ public class AdminUnitTests
             .byUser("MER-C")
             .byTitle("File:Wiki.java test5.jpg")
             .withinDateRange(OffsetDateTime.parse("2018-03-16T00:00:00Z"), OffsetDateTime.parse("2018-03-18T00:00:00Z"));
-        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
+        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh);
         testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, 
             "Unit testing WOOP WOOP WOOP", Boolean.FALSE, le.subList(0, 1));
         // local state is controlled by a superclass, no need to test again
         // still need to check whether ths state was actually changed on-wiki
-        le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
+        le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh);
         assertTrue("RevisionDelete: check commentDeleted on-wiki", le.get(0).isCommentDeleted());
         assertTrue("RevisionDelete: check contentDeleted on-wiki", le.get(0).isContentDeleted());
         assertTrue("RevisionDelete: check userDeleted on-wiki", le.get(0).isUserDeleted());
@@ -133,7 +135,7 @@ public class AdminUnitTests
             .byUser("MER-C")
             .byTitle("File:Wiki.java test5.jpg")
             .withinDateRange(OffsetDateTime.parse("2018-03-16T00:00:00Z"), OffsetDateTime.parse("2018-03-18T00:00:00Z"));
-        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
+        List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh);
         
         testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", 
             Boolean.FALSE, le.subList(0, 1));

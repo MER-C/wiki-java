@@ -59,7 +59,7 @@ public class WMFWikiTest
     {
         try
         {
-            enWiki.getLogEntries(WMFWiki.SPAM_BLACKLIST_LOG, null, null, 10);
+            enWiki.getLogEntries(WMFWiki.SPAM_BLACKLIST_LOG, null, null);
         }
         catch (SecurityException expected)
         {

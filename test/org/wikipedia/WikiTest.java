@@ -229,9 +229,10 @@ public class WikiTest
         assertEquals("querylimits", 530, enWiki.getQueryLimit());
         assertEquals("querylimits: length", 530, enWiki.getPageHistory("Main Page", null).size());
         // check whether queries that set a separate limit function correctly
-        assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(10).length);
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().limitedTo(10);
+        assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(rh, null).size());
         assertEquals("querylimits: after recentchanges", 530, enWiki.getPageHistory("Main Page", null).size());
-        assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", null, 10).size());
+        assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh).size());
         assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page", null).size());
         assertEquals("querylimits: listPages", 500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).length);
         assertEquals("querylimits: after listPages", 530, enWiki.getPageHistory("Main Page", null).size());
@@ -679,7 +680,7 @@ public class WikiTest
             .byUser("MER-C")
             .byTitle("File:Wiki.java test5.jpg")
             .withinDateRange(OffsetDateTime.parse("2018-03-16T00:00:00Z"), OffsetDateTime.parse("2018-03-18T00:00:00Z"));
-        List<Wiki.LogEntry> logs = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh, 50);
+        List<Wiki.LogEntry> logs = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh);
         try
         {
             List<Wiki.Event> events = Arrays.asList(revision, logs.get(0));
@@ -734,7 +735,7 @@ public class WikiTest
         Wiki.RequestHelper rh = enWiki.new RequestHelper()
             .byTitle("User:Nimimaan")
             .withinDateRange(null, c);
-        List<Wiki.LogEntry> le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 5);
+        List<Wiki.LogEntry> le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
         assertEquals("getLogEntries: ID", 75695806L, le.get(0).getID());
         assertEquals("getLogEntries: timestamp", "2016-06-21T13:14:54Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("getLogEntries/block: user", "MER-C", le.get(0).getUser());
@@ -763,7 +764,7 @@ public class WikiTest
         rh = enWiki.new RequestHelper()
             .byTitle("Talk:96th Test Wing/Temp")
             .withinDateRange(null, c);
-        le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 5);
+        le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
         assertEquals("getLogEntries/move: log", Wiki.MOVE_LOG, le.get(0).getType());
         assertEquals("getLogEntries/move: action", "move", le.get(0).getAction());
         // TODO: test for new title, redirect suppression
@@ -771,7 +772,7 @@ public class WikiTest
         // RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User%3AMER-C%2FTest
         rh = testWiki.new RequestHelper().byTitle("User:MER-C/Test");
-        le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh, 500);
+        le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
         assertNull("getLogEntries: reason hidden", le.get(0).getComment());
         assertNull("getLogEntries: reason hidden", le.get(0).getParsedComment());
         assertTrue("getLogEntries: reason hidden", le.get(0).isCommentDeleted());
@@ -782,7 +783,7 @@ public class WikiTest
         rh = testWiki.new RequestHelper()
             .byUser("MER-C")
             .withinDateRange(OffsetDateTime.parse("2016-10-02T05:00:00Z"), OffsetDateTime.parse("2016-10-02T05:30:00Z"));
-        le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, rh, Integer.MAX_VALUE);
+        le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, rh);
         assertNull("getLogEntries: action hidden", le.get(1).getTitle());
         assertTrue("getLogEntries: action hidden", le.get(1).isContentDeleted());
     }
@@ -1257,12 +1258,13 @@ public class WikiTest
     {
         Map<String, Object>[] results = testWiki.search("dlgsjdglsjdgljsgljsdlg", Wiki.MEDIAWIKI_NAMESPACE);
         assertEquals("search: no results", 0, results.length);
-        https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User:%20subpageof:MER-C/UnitTests%20delete
-        results = testWiki.search("User: subpageof:MER-C/UnitTests delete", Wiki.USER_NAMESPACE);
+        // https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User:%20subpageof:MER-C/UnitTests%20revision%20delete
+        results = testWiki.search("User: subpageof:MER-C/UnitTests revision delete", Wiki.USER_NAMESPACE);
         assertEquals("search: results", 2, results.length);
         Map<String, Object> result = results[0];
         assertEquals("search: title", "User:MER-C/UnitTests/Delete", result.get("title"));
-        assertEquals("search: snippet", "This revision is not <span class=\"searchmatch\">deleted</span>!", result.get("snippet"));
+        assertEquals("search: snippet", "This <span class=\"searchmatch\">revision</span> is not <span class=\"searchmatch\">deleted</span>!",
+            result.get("snippet"));
         assertEquals("search: size", 29, result.get("size"));
         assertEquals("search: word count", 5, result.get("wordcount"));
         assertEquals("search: lastedittime", OffsetDateTime.parse("2016-06-16T08:40:17Z"), result.get("lastedittime"));
@@ -1274,20 +1276,22 @@ public class WikiTest
         // The results of this query will never be known in advance, so this is
         // by necessity an incomplete test. That said, there are a few things we
         // can test for...
-        Wiki.Revision[] rc = enWiki.recentChanges(10);
-        assertEquals("recentchanges: length", rc.length, 10);
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().limitedTo(10);
+        List<Wiki.Revision> rc = enWiki.recentChanges(rh, null);
+        assertEquals("recentchanges: length", 10, rc.size());
         // Check if the changes are actually recent (i.e. in the last 10 minutes).
         assertTrue("recentchanges: recentness",
-            rc[9].getTimestamp().isAfter(OffsetDateTime.now(ZoneId.of("UTC")).minusMinutes(10)));
+            rc.get(9).getTimestamp().isAfter(OffsetDateTime.now(ZoneId.of("UTC")).minusMinutes(10)));
         // Check namespace filtering
-        rc = enWiki.recentChanges(10, new int[] { Wiki.TALK_NAMESPACE });
+        rh = rh.inNamespaces(Wiki.TALK_NAMESPACE);
+        rc = enWiki.recentChanges(rh, null);
         for (Wiki.Revision rev : rc)
             assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getTitle()));
         // check options filtering
         Map<String, Boolean> options = new HashMap<>();
         options.put("minor", Boolean.FALSE);
         options.put("bot", Boolean.TRUE);
-        rc = enWiki.recentChanges(10, options);
+        rc = enWiki.recentChanges(rh, options);
         for (Wiki.Revision rev : rc)
         {
             assertTrue("recentchanges: options", rev.isBot());

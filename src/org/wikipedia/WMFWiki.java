@@ -150,7 +150,7 @@ public class WMFWiki extends Wiki
         getparams.put("prop", "globalusage");
         getparams.put("titles", normalize(title));
     	
-        List<String[]> usage = makeListQuery("gu", getparams, null, "getGlobalUsage", (line, results) ->
+        List<String[]> usage = makeListQuery("gu", getparams, null, "getGlobalUsage", Integer.MAX_VALUE, (line, results) ->
         {
             for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
                 results.add(new String[] {
@@ -217,6 +217,7 @@ public class WMFWiki extends Wiki
      *  <li>{@link Wiki.RequestHelper#byUser(String) user}
      *  <li>{@link Wiki.RequestHelper#byTitle(String) title}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#limitTo(int) local query limit}
      *  </ul>
      *  
      *  @param filters fetch log entries triggered by these filters (optional, 
@@ -232,6 +233,7 @@ public class WMFWiki extends Wiki
     public List<LogEntry> getAbuseLogEntries(int[] filters, Wiki.RequestHelper helper) throws IOException
     {
         requiresExtension("Abuse Filter");
+        int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "abuselog");
         if (filters.length > 0)
@@ -243,9 +245,10 @@ public class WMFWiki extends Wiki
             getparams.putAll(helper.addTitleParameter());
             getparams.putAll(helper.addReverseParameter());
             getparams.putAll(helper.addDateRangeParameters());
+            limit = helper.limit();
         }
         
-        List<LogEntry> filterlog = makeListQuery("afl", getparams, null, "WMFWiki.getAbuseLogEntries", (line, results) ->
+        List<LogEntry> filterlog = makeListQuery("afl", getparams, null, "WMFWiki.getAbuseLogEntries", limit, (line, results) ->
         {
             String[] items = line.split("<item ");
             for (int i = 1; i < items.length; i++)

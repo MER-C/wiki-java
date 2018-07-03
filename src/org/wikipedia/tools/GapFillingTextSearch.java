@@ -76,7 +76,8 @@ public class GapFillingTextSearch
         Map<?, String> inputs = null;
         Users userutils = Users.of(thiswiki);
         if (user != null)
-            inputs = userutils.createdPagesWithText(Arrays.asList(user));
+            inputs = userutils.createdPagesWithText(Arrays.asList(user), 
+                thiswiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE));
         else if (linksfrom != null)
         {
             HashMap<String, String> temp = new HashMap<>();

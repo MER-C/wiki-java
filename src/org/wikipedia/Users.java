@@ -107,17 +107,17 @@ public class Users
      *  Returns a list of pages created by this user in the given namespaces
      *  with full revision metadata.
      *  @param users the users to fetch page creations for
-     *  @param ns a list of namespaces to filter by, empty = all namespaces
+     *  @param rh a {@link Wiki.RequestHelper} object that is passed to {@link
+     *  Wiki#contribs(List, String, Wiki.RequestHelper, Map)}
      *  @return the list of pages created by this user with revision metadata
      *  for the corresponding revisions
      *  @throws IOException if a network error occurs
      *  @see #createdPagesWithText(List, int...) 
      */
-    public List<Wiki.Revision> createdPages(List<String> users, int... ns) throws IOException
+    public List<Wiki.Revision> createdPages(List<String> users, Wiki.RequestHelper rh) throws IOException
     {
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
-        Wiki.RequestHelper rh = wiki.new RequestHelper().inNamespaces(ns);
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh, options);
         List<Wiki.Revision> ret = new ArrayList<>();
         for (List<Wiki.Revision> rev : contribs)
@@ -129,17 +129,17 @@ public class Users
      *  Fetches the pages created by the given users and the text of the current
      *  revision of those pages.
      *  @param users the users to fetch page creations for
-     *  @param ns a list of namespaces to filter by, empty = all namespaces
+     *  @param rh a {@link Wiki.RequestHelper} object that is passed to {@link
+     *  Wiki#contribs(List, String, Wiki.RequestHelper, Map)}
      *  @return a map containing revision the page was created &#8594; current 
      *  text of that page
      *  @throws IOException if a network error occurs
      *  @see #createdPages(List, int...) 
      */
-    public Map<Wiki.Revision, String> createdPagesWithText(List<String> users, int... ns) throws IOException
+    public Map<Wiki.Revision, String> createdPagesWithText(List<String> users, Wiki.RequestHelper rh) throws IOException
     {
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
-        Wiki.RequestHelper rh = wiki.new RequestHelper().inNamespaces(ns);
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh, options);
         
         // get text of all pages

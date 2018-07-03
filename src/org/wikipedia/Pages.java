@@ -165,6 +165,8 @@ public class Pages
      *  </pre>
      *
      *  @param pages a list of page titles
+     *  @param template the template of which the input titles are the first and 
+     *  only argument
      *  @param numbered whether this is a numbered list
      *  @return the list, exported as wikitext
      */

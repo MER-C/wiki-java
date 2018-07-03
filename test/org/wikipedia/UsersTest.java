@@ -46,12 +46,15 @@ public class UsersTest
     public void createdPages() throws Exception
     {
         // no pages created
-        assertTrue("createdPages: no pages", enWikiUsers.createdPages(Arrays.asList("Constance94S")).isEmpty());
-        List<Wiki.Revision> pages = enWikiUsers.createdPages(Arrays.asList("Watsonboy12"), Wiki.MEDIAWIKI_NAMESPACE);
+        assertTrue("createdPages: no pages", 
+            enWikiUsers.createdPages(Arrays.asList("Constance94S"), null).isEmpty());
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MEDIAWIKI_NAMESPACE);
+        List<Wiki.Revision> pages = enWikiUsers.createdPages(Arrays.asList("Watsonboy12"), rh);
         assertTrue("createdPages: no pages in namespace", pages.isEmpty());
 
         // verify functionality
-        pages = testWikiUsers.createdPages(Arrays.asList("MER-C"), Wiki.MAIN_NAMESPACE);
+        rh = testWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
+        pages = testWikiUsers.createdPages(Arrays.asList("MER-C"), rh);
         Wiki.Revision last = pages.get(pages.size() - 1);
         assertEquals("createdPages", "Wiki.java Test Page", last.getTitle());
         assertEquals("createdPages", 28164L, last.getID());
@@ -61,12 +64,14 @@ public class UsersTest
     public void createdPagesWithText() throws Exception
     {
         // no articles created
-        assertTrue("createdPagesWithText: no pages", enWikiUsers.createdPagesWithText(Arrays.asList("Constance94S")).isEmpty());
-        Map<Wiki.Revision, String> creations = enWikiUsers.createdPagesWithText(Arrays.asList("Watsonboy12"), Wiki.MEDIAWIKI_NAMESPACE);
+        assertTrue("createdPagesWithText: no pages", 
+            enWikiUsers.createdPagesWithText(Arrays.asList("Constance94S"), null).isEmpty());
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MEDIAWIKI_NAMESPACE);
+        Map<Wiki.Revision, String> creations = enWikiUsers.createdPagesWithText(Arrays.asList("Watsonboy12"), rh);
         assertTrue("createdPages: no pages in namespace", creations.isEmpty());
                 
         // verify functionality
-        creations = testWikiUsers.createdPagesWithText(Arrays.asList("81.245.42.185"));
+        creations = testWikiUsers.createdPagesWithText(Arrays.asList("81.245.42.185"), null);
         Wiki.Revision revision = testWiki.getRevision(24764L);
         String text = revision.getText();
         assertEquals("createdPagesWithText", text, creations.get(revision));
