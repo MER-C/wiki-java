@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.function.*;
+import java.util.regex.*;
 import javax.security.auth.login.*;
 
 /**
@@ -174,6 +175,40 @@ public class Pages
     {
         return toWikitextList(pages, page -> "{{" + template + "|1=" + page + "}}", numbered);
     }
+
+    /**
+     *  Given a list of templates, fetch the only argument of the given template.
+     *  This is deliberately simple because we don't want to wade into the mess  
+     *  that is parsing metatemplates for this common use case. For instance:
+     *  <kbd>{{user|A}} {{user|B}} {{user|C}}</kbd> becomes the list {@code 
+     *  {"A", "B", "C"}}. This can be used to reverse {@link 
+     *  toWikitextTemplateList(Iterable, String, boolean)}.
+     *
+     *  @param wikitext the wikitext to parse
+     *  @param template the template to look for
+     *  @return the list of arguments, assuming each template has a single argument
+     */
+    public static List<String> parseWikitextTemplateList(String wikitext, String template)
+    {
+        Pattern pattern = Pattern.compile("\\{\\{\\s*" + template + "\\s*", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(wikitext);
+        List<String> arguments = new ArrayList<>();
+        while (matcher.find())
+        {
+            int index = matcher.start();
+            int start = wikitext.indexOf("|", index) + 1;
+            int end = wikitext.indexOf("}}", index);
+            int arg = wikitext.indexOf("=", index) + 1;
+            if (arg < end)
+                start = Math.max(start, arg);
+            if (start >= 1 && start < end)
+                arguments.add(wikitext.substring(start, end).trim());
+            else if (start == 0)
+                arguments.add("");
+        }
+        return arguments;
+    }
+
     
     /**
      *  For a given list of pages, determine whether the supplied external links

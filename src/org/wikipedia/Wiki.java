@@ -4134,46 +4134,42 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the (non-deleted) uploads of a user. Results are sorted in
-     *  chronological order (earliest first).
+     *  Gets the (non-deleted) uploads of a user between the specified times.
+     *  Results are sorted in chronological order.
+     * 
+     *  <p>
+     *  Accepted parameters from <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
+     *  </ul>
+     * 
      *  @param user the user to get uploads for
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @return a list of all live images the user has uploaded
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public LogEntry[] getUploads(User user) throws IOException
+    public List<LogEntry> getUploads(User user, Wiki.RequestHelper helper) throws IOException
     {
-        return getUploads(user, null, null);
-    }
-
-    /**
-     *  Gets the (non-deleted) uploads of a user between the specified times.
-     *  Results are sorted in chronological order (earliest first).
-     *  @param user the user to get uploads for
-     *  @param start the date to start enumeration (use {@code null} to not
-     *  specify one)
-     *  @param end the date to end enumeration (use {@code null} to not specify one)
-     *  @return a list of all live images the user has uploaded
-     *  @throws IllegalArgumentException if <var>start</var> and <var>end</var>
-     *  are present and {@code start.isAfter(end)}
-     *  @throws IOException if a network error occurs
-     */
-    public LogEntry[] getUploads(User user, OffsetDateTime start, OffsetDateTime end) throws IOException
-    {
-        if (start != null && end != null && start.isAfter(end))
-            throw new IllegalArgumentException("Specified start date is after specified end date!");
-
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "allimages");
         getparams.put("aisort", "timestamp");
         getparams.put("aiprop", "timestamp|comment|parsedcomment");
         getparams.put("aiuser", user.getUsername());
-        if (start != null)
-            getparams.put("aistart", start.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        if (end != null)
-            getparams.put("aiend", end.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        int limit = -1;
+        if (helper != null)
+        {
+            helper.setRequestType("ai");
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addReverseParameter());
+            limit = helper.limit();
+        }
 
-        List<LogEntry> uploads = makeListQuery("ai", getparams, null, "getUploads", -1, (line, results) ->
+        List<LogEntry> uploads = makeListQuery("ai", getparams, null, "getUploads", limit, (line, results) ->
         {
             for (int i = line.indexOf("<img "); i > 0; i = line.indexOf("<img ", ++i))
             {
@@ -4184,9 +4180,8 @@ public class Wiki implements Comparable<Wiki>
             }
         });
 
-        int size = uploads.size();
-        log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + size + " uploads)");
-        return uploads.toArray(new LogEntry[size]);
+        log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + uploads.size() + " uploads)");
+        return uploads;
     }
 
     /**
@@ -5807,7 +5802,6 @@ public class Wiki implements Comparable<Wiki>
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
      *  @throws IOException if a network error occurs
-     *  @throws IllegalArgumentException if {@literal amount < 1}
      *  @throws SecurityException if the user lacks the credentials needed to
      *  access a privileged log
      *  @return the specified log entries
@@ -7845,8 +7839,7 @@ public class Wiki implements Comparable<Wiki>
         protected Map<String, String> addReverseParameter()
         {
             Map<String, String> temp = new HashMap<>();
-            if (reverse)
-                temp.put(requestType + "dir", "newer");
+            temp.put(requestType + "dir", reverse ? "newer" : "older");
             return temp;
         }
 

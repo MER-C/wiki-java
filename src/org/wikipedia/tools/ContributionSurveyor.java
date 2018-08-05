@@ -364,8 +364,9 @@ public class ContributionSurveyor
     public String[][] imageContributionSurvey(Wiki.User user) throws IOException
     {
         // fetch local uploads
+        Wiki.RequestHelper rh = wiki.new RequestHelper().withinDateRange(earliestdate, latestdate);
         HashSet<String> localuploads = new HashSet<>(10000);
-        for (Wiki.LogEntry upload : wiki.getUploads(user, earliestdate, latestdate))
+        for (Wiki.LogEntry upload : wiki.getUploads(user, rh))
             localuploads.add(upload.getTitle());
 
         // fetch commons uploads
@@ -373,7 +374,7 @@ public class ContributionSurveyor
         Wiki.User comuser = commons.getUser(user.getUsername());
         HashSet<String> comuploads = new HashSet<>(10000);
         if (comuser != null)
-            for (Wiki.LogEntry upload : commons.getUploads(user, earliestdate, latestdate))
+            for (Wiki.LogEntry upload : commons.getUploads(user, rh))
                 comuploads.add(upload.getTitle());
 
         // fetch transferred commons uploads

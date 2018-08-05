@@ -967,20 +967,14 @@ public class WikiTest
             "LakeishaDurham0", // blocked spambot
             "Mifter" // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
         }); 
-        assertEquals("getUploads: no uploads", 0, enWiki.getUploads(users[0]).length);
+        assertTrue("getUploads: no uploads", enWiki.getUploads(users[0], null).isEmpty());
         OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
-        try
-        {
-            enWiki.getUploads(users[1], odt, odt.minusMinutes(20));
-        }
-        catch (IllegalArgumentException expected)
-        {
-        }
-        Wiki.LogEntry[] results = enWiki.getUploads(users[1], odt, odt.plusMinutes(20));
-        assertEquals("getUploads: functionality check (0)", 3, results.length);
-        assertEquals("getUploads: functionality check (1)", "File:Padlock-blue.svg", results[0].getTitle());
-        assertEquals("getUploads: functionality check (2)", "File:Padlock-silver-light.svg", results[1].getTitle());
-        assertEquals("getUploads: functionality check (3)", "File:Padlock-pink.svg", results[2].getTitle());
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().withinDateRange(odt, odt.plusMinutes(20));
+        List<Wiki.LogEntry> results = enWiki.getUploads(users[1], rh);
+        assertEquals("getUploads: functionality check (0)", 3, results.size());
+        assertEquals("getUploads: functionality check (1)", "File:Padlock-pink.svg", results.get(0).getTitle());
+        assertEquals("getUploads: functionality check (2)", "File:Padlock-silver-light.svg", results.get(1).getTitle());        
+        assertEquals("getUploads: functionality check (3)", "File:Padlock-blue.svg", results.get(2).getTitle());        
     }
 
     @Test
@@ -1395,5 +1389,18 @@ public class WikiTest
         assertTrue("User.isA: true", me.isA("sysop"));
         assertFalse("User.isA: false", me.isA("templateeditor"));
         assertFalse("User.isA: nonsense input", me.isA("sdlkghsdlkgsd"));
+    }
+    
+    @Test
+    public void requestHelperDates()
+    {
+        try
+        {
+            OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
+            Wiki.RequestHelper rh = enWiki.new RequestHelper().withinDateRange(odt, odt.minusMinutes(20));
+        }
+        catch (IllegalArgumentException expected)
+        {
+        }
     }
 }

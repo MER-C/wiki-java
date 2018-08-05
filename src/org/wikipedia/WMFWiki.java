@@ -25,7 +25,6 @@ import java.util.*;
 import java.util.logging.*;
 import java.util.stream.*;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 
 /**
  *  Stuff specific to Wikimedia wikis.
@@ -150,7 +149,7 @@ public class WMFWiki extends Wiki
         getparams.put("prop", "globalusage");
         getparams.put("titles", normalize(title));
     	
-        List<String[]> usage = makeListQuery("gu", getparams, null, "getGlobalUsage", Integer.MAX_VALUE, (line, results) ->
+        List<String[]> usage = makeListQuery("gu", getparams, null, "getGlobalUsage", -1, (line, results) ->
         {
             for (int i = line.indexOf("<gu"); i > 0; i = line.indexOf("<gu", ++i))
                 results.add(new String[] {
@@ -217,7 +216,7 @@ public class WMFWiki extends Wiki
      *  <li>{@link Wiki.RequestHelper#byUser(String) user}
      *  <li>{@link Wiki.RequestHelper#byTitle(String) title}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
-     *  <li>{@link Wiki.RequestHelper#limitTo(int) local query limit}
+     *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
      *  
      *  @param filters fetch log entries triggered by these filters (optional, 
