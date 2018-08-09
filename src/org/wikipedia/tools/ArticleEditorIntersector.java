@@ -371,7 +371,7 @@ public class ArticleEditorIntersector
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
         if (noreverts)
-            revstream = ArrayUtils.removeReverts(revstream.collect(Collectors.toList())).stream();
+            revstream = Revisions.removeReverts(revstream.collect(Collectors.toList())).stream();
         Map<String, List<Wiki.Revision>> results = revstream.collect(Collectors.groupingBy(Wiki.Revision::getUser));
         
         Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = results.entrySet().iterator();

@@ -1,6 +1,6 @@
 /**
- *  @(#)ParserUtils.java 0.02 23/12/2016
- *  Copyright (C) 2012-2018 MER-C
+ *  @(#)Revisions.java 0.01 07/08/2018
+ *  Copyright (C) 2018-20XX MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -17,26 +17,68 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
+
 package org.wikipedia;
 
-import java.io.*;
-import java.net.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.*;
 
-/**
- *  Various parsing methods that turn Wiki.java objects into wikitext and HTML
- *  and vice versa.
- *  @author MER-C
- *  @version 0.02
- */
-public class ParserUtils
+public class Revisions
 {
+    private final Wiki wiki;
+    
+    private Revisions(Wiki wiki)
+    {
+        this.wiki = wiki;
+    }
+    
     /**
-     *  Standard markup for RevDeleted stuff. (The class name, <tt>history-deleted</tt>
-     *  comes from MediaWiki.)
+     *  Creates an instance of this class bound to a particular wiki (required
+     *  for methods that make network requests to a wiki or access wiki state).
+     * 
+     *  @param wiki the wiki to bind to
+     *  @return an instance of this utility class that is bound to that wiki
      */
-    private static final String DELETED = "<span class=\"history-deleted\">deleted</span>";
+    public static Revisions of(Wiki wiki)
+    {
+        return new Revisions(wiki);
+    }
+    
+    /**
+     *  Removes reverts from a list of revisions. A revert is defined as any 
+     *  revision on a page that has the same SHA-1 as any previous (as in time) 
+     *  revision on that page. As a side effect, the returned list is sorted
+     *  by timestamp with the earliest revision first and with duplicates 
+     *  removed.
+     * 
+     *  @param revisions the revisions to remove reverts from
+     *  @return a copy of the list of revisions with reverts removed
+     */
+    public static List<Wiki.Revision> removeReverts(List<Wiki.Revision> revisions)
+    {
+        // Group revisions by page, then sort so that the oldest edits are first.
+        Map<String, Set<Wiki.Revision>> stuff = revisions.stream()
+            .collect(Collectors.groupingBy(Wiki.Revision::getTitle, Collectors.toCollection(TreeSet::new)));
+        Set<Wiki.Revision> ret = new LinkedHashSet<>();
+        stuff.forEach((page, listofrevisions) ->
+        {
+            // Therefore, if a sha1 matches any previous revisions it is a revert.
+            Set<String> hashes = new HashSet<>();
+            Iterator<Wiki.Revision> iter = listofrevisions.iterator();
+            while (iter.hasNext())
+            {
+                String sha1 = iter.next().getSha1();
+                if (sha1 == null)
+                    continue;
+                if (hashes.contains(sha1))
+                    iter.remove();
+                hashes.add(sha1);
+            }
+            ret.addAll(listofrevisions);
+        });
+        return new ArrayList<>(ret);
+    }
     
     /**
      *  Turns a list of revisions into human-readable wikitext. Be careful, as
@@ -44,14 +86,13 @@ public class ParserUtils
      *  this method, or by the wiki trying to parse it. Takes the form of:
      *
      *  <p>*(diff link) 2009-01-01 00:00 User (talk | contribs) (edit summary)
-     *  @param wiki the parent wiki
      *  @param revisions a list of revisions
      *  @return those revisions as wikitext
      *  @since Wiki.java 0.20
      */
-    public static String revisionsToWikitext(Wiki wiki, Wiki.Revision[] revisions)
+    public static String toWikitext(Iterable<Wiki.Revision> revisions)
     {
-        StringBuilder buffer = new StringBuilder(revisions.length * 100);
+        StringBuilder buffer = new StringBuilder(100000);
         buffer.append("<div style=\"font-family: monospace; font-size: 120%\">\n");
         for (Wiki.Revision rev : revisions)
         {
@@ -100,7 +141,7 @@ public class ParserUtils
                 buffer.append("|contribs]])");
             }
             else
-                buffer.append(DELETED);
+                buffer.append(Events.DELETED_EVENT_HTML);
             
             // size
             buffer.append(" .. (");
@@ -112,7 +153,7 @@ public class ParserUtils
             buffer.append(") .. (");
             String summary = rev.getComment();
             if (summary == null)
-                buffer.append(DELETED);
+                buffer.append(Events.DELETED_EVENT_HTML);
             // kill wikimarkup
             buffer.append("<nowiki>");
             buffer.append(summary);
@@ -124,13 +165,12 @@ public class ParserUtils
     
     /**
      *  Generates HTML from Wiki.Revisions. Output is similar to parsed wikitext
-     *  returned by <tt>revisionsToWikitext()</tt>.
-     *  @param wiki the parent wiki of the revisions
+     *  returned by {@link #toWikitext(Iterable)}.
      *  @param revisions the revisions to convert
      *  @return (see above)
-     *  @see #revisionsToWikitext(Wiki wiki, Wiki.Revision[] revisions)
+     *  @see #toWikitext(Iterable)
      */
-    public static String revisionsToHTML(Wiki wiki, Wiki.Revision[] revisions)
+    public String toHTML(Iterable<Wiki.Revision> revisions)
     {
         StringBuilder buffer = new StringBuilder(100000);
         buffer.append("<ul class=\"htmlrevisions\">\n");
@@ -145,7 +185,6 @@ public class ParserUtils
             colored = !colored;
             
             // diff link
-            String page = recode(rev.getTitle());
             String revurl = "<a href=\"" + rev.permanentUrl();
             buffer.append(revurl);
             buffer.append("&diff=prev\">prev</a>) ");
@@ -170,21 +209,21 @@ public class ParserUtils
                 buffer.append(". ");
             
             // page name
+            String page = rev.getTitle();
             buffer.append("<a href=\"");
             buffer.append(wiki.getPageUrl(page));
             buffer.append("\" class=\"pagename\">");
-            buffer.append(page);
+            buffer.append(WikitextUtils.recode(page));
             buffer.append("</a> .. ");
             
             // user links
             String temp = rev.getUser();
             if (temp != null)
             {
-                temp = recode(temp);
                 buffer.append("<a href=\"");
                 buffer.append(wiki.getPageUrl("User:" + temp));
                 buffer.append("\">");
-                buffer.append(temp);
+                buffer.append(WikitextUtils.recode(temp));
                 buffer.append("</a> (<a href=\"");
                 buffer.append(wiki.getPageUrl("User talk:" + temp));
                 buffer.append("\">talk</a> | <a href=\"");
@@ -192,7 +231,7 @@ public class ParserUtils
                 buffer.append("\">contribs</a>)");
             }
             else
-                buffer.append(DELETED);
+                buffer.append(Events.DELETED_EVENT_HTML);
             
             // size
             buffer.append(" .. (");
@@ -211,56 +250,10 @@ public class ParserUtils
             if (rev.getParsedComment() != null)
                 buffer.append(rev.getParsedComment());
             else
-                buffer.append(DELETED);
+                buffer.append(Events.DELETED_EVENT_HTML);
             buffer.append(")\n");
         }
         buffer.append("</ul>\n");
         return buffer.toString();
-    }
-        
-    /**
-     *  Parses a wikilink into its target and linked text. Example: <kbd>[[Link]]</kbd>
-     *  returns {@code { "Link", "Link" }} and <kbd>[[Link|Test]]</kbd> returns
-     *  {@code { "Link", "Test" }}. Can also be used to get sortkeys from 
-     *  categorizations. Use with caution on file uses because they can
-     *  contain their own wikilinks.
-     *  @param wikitext the wikitext to parse
-     *  @return first element = the target of the link, the second being the
-     *  description
-     *  @throws IllegalArgumentException if wikitext is not a valid wikilink
-     */
-    public static List<String> parseWikilink(String wikitext)
-    {
-        int wikilinkstart = wikitext.indexOf("[[");
-        int wikilinkend = wikitext.indexOf("]]", wikilinkstart);
-        if (wikilinkstart < 0 || wikilinkend < 0)
-            throw new IllegalArgumentException("\"" + wikitext + "\" is not a valid wikilink.");
-        // strip escaping of categories and files
-        String linktext = wikitext.substring(wikilinkstart + 2, wikilinkend).trim();
-        if (linktext.startsWith(":"))
-            linktext = linktext.substring(1);
-        // check for description, if not there then set it to the target
-        int pipe = linktext.indexOf('|');
-        if (pipe >= 0)
-            return Arrays.asList(linktext.substring(0, pipe).trim(), linktext.substring(pipe + 1).trim());
-        else
-        {
-            String temp = linktext.trim();
-            return Arrays.asList(temp, temp);
-        }        
-    }
-        
-    /**
-     *  Reverse of Wiki.decode()
-     *  @param in input string
-     *  @return recoded input string
-     */
-    public static String recode(String in)
-    {
-        in = in.replace("&", "&amp;");
-        in = in.replace("<", "&lt;").replace(">", "&gt;"); // html tags
-        in = in.replace("\"", "&quot;");
-        in = in.replace("'", "&#039;");
-        return in;
     }
 }

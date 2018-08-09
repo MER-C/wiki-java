@@ -108,8 +108,9 @@
                             <include>**/EventsTest.java</include>
                             <include>**/ExternalLinksTest.java</include>
                             <include>**/PagesTest.java</include>
+                            <include>**/RevisionsTest.java</include>
                             <include>**/UsersTest.java</include>
-                            <include>**/ParserUtilsTest.java</include>
+                            <include>**/WikitextUtilsTest.java</include>
                             <include>**/ArrayUtilsTest.java</include>
                             <include>**/ArticleEditorIntersectorTest.java</include>
                             <include>**/CommandLineParserTest.java</include>

@@ -24,12 +24,19 @@ import java.util.*;
 import java.time.*;
 
 /**
- *  Utility class for {@link Wiki.Event}s.
+ *  Utility class for {@link Wiki.Event}s. For utility methods and data specific 
+ *  to {@link Wiki.Revision}s, see {@link Revisions}.
  *  @author MER-C
  *  @version 0.01
  */
 public class Events
 {
+    /**
+     *  Standard HTML for RevisionDeleted fields. (The class name, 
+     *  <code>history-deleted</code>, comes from MediaWiki.)
+     */
+    public static final String DELETED_EVENT_HTML = "<span class=\"history-deleted\">deleted</span>";
+    
     /**
      *  Computes the time elapsed between each of a list of {@link Wiki.Event}s.
      *  The return list has length {@code events.size() - 1}, with the first

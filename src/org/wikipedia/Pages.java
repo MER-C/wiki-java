@@ -92,7 +92,7 @@ public class Pages
             int wikilinkend = line.indexOf("]]");
             if (wikilinkstart < 0 || wikilinkend < 0)
                 continue;
-            titles.add(ParserUtils.parseWikilink(line.substring(wikilinkstart, wikilinkend + 2)).get(0));
+            titles.add(WikitextUtils.parseWikilink(line.substring(wikilinkstart, wikilinkend + 2)).get(0));
         }
         return titles;
     }

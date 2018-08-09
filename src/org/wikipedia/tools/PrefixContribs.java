@@ -49,6 +49,6 @@ public class PrefixContribs
         if (revisions.isEmpty())
             System.out.println("No contributions found.");
         else
-            System.out.println(ParserUtils.revisionsToHTML(enWiki, revisions.toArray(new Wiki.Revision[0])));
+            System.out.println(Revisions.of(enWiki).toHTML(revisions));
     }
 }

@@ -1,5 +1,5 @@
 /**
- *  @(#)ParserUtilsUnitTest.java 0.02 23/12/2016
+ *  @(#)WikitextUtilsTest.java 0.02 23/12/2016
  *  Copyright (C) 2017 - 2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ import java.util.Arrays;
  *  Unit tests for org.wikipedia.ParserUtils
  *  @author MER-C
  */
-public class ParserUtilsTest
+public class WikitextUtilsTest
 {
     private static Wiki testWiki;
     
@@ -48,9 +48,9 @@ public class ParserUtilsTest
     @Test
     public void parseWikilink()
     {
-        assertEquals("link", Arrays.asList("Link", "Link"), ParserUtils.parseWikilink("[[ Link ]]"));
-        assertEquals("link with colon", Arrays.asList("Link", "Link"), ParserUtils.parseWikilink("[[:Link]]"));
-        assertEquals("link with description", Arrays.asList("Link", "Description"), ParserUtils.parseWikilink("[[ Link | Description ]]"));
-        assertEquals("link with description and colon", Arrays.asList("Link", "Description"), ParserUtils.parseWikilink("[[:Link|Description]]"));
+        assertEquals("link", Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[ Link ]]"));
+        assertEquals("link with colon", Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[:Link]]"));
+        assertEquals("link with description", Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[ Link | Description ]]"));
+        assertEquals("link with description and colon", Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[:Link|Description]]"));
     }
 }

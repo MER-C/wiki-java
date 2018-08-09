@@ -25,8 +25,7 @@ import java.util.*;
 import java.util.logging.*;
 import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
-import org.wikipedia.ParserUtils;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  Identifies trivial diffs in a contributor copyright investigation.
@@ -234,7 +233,7 @@ public class CCIAnalyzer
             int j = temp.indexOf("]]", i);
             if (j < 0) // unbalanced brackets
                 break;
-            List<String> parsedlink = ParserUtils.parseWikilink(temp.substring(i, j + 2));
+            List<String> parsedlink = WikitextUtils.parseWikilink(temp.substring(i, j + 2));
             if (parsedlink.get(0).length() > 100)
                 // something has gone wrong here
                 break;
