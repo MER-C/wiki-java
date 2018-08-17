@@ -22,6 +22,7 @@
     String user = request.getParameter("user");
     String category = request.getParameter("category");
     boolean nominor = (request.getParameter("nominor") != null);
+    boolean noreverts = (request.getParameter("noreverts") != null);
 
     String homewiki = request.getParameter("wiki");
     homewiki = (homewiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(homewiki);
@@ -69,6 +70,7 @@
     if (request.getAttribute("error") == null && !users.isEmpty())
     {
         surveyor.setIgnoringMinorEdits(nominor);
+//        surveyor.setIgnoringReverts(noreverts);
         if (!earliest.isEmpty())
             surveyor.setEarliestDateTime(earliestdate);
         if (!latest.isEmpty())
@@ -125,6 +127,7 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <tr>
     <td colspan=2>Exclude:
     <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits</input>
+<!--        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts (partial)</input> -->
 <tr>
     <td colspan=2>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"></input> to 

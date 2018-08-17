@@ -1,5 +1,5 @@
 /**
- *  @(#)ContributionSurveyor.java 0.04 25/01/2018
+ *  @(#)ContributionSurveyor.java 0.05 17/08/2018
  *  Copyright (C) 2011-2018 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -46,7 +46,7 @@ public class ContributionSurveyor
 {
     private final Wiki wiki;
     private OffsetDateTime earliestdate, latestdate;
-    private boolean nominor = true;
+    private boolean nominor = true; // noreverts = true;
     private int minsizediff = 150;
 
     /**
@@ -73,6 +73,7 @@ public class ContributionSurveyor
             .addBooleanFlag("--images", "Survey images both on the home wiki and Commons.")
             .addBooleanFlag("--userspace", "Survey userspace as well.")
             .addBooleanFlag("--includeminor", "Include minor edits.")
+//            .addBooleanFlag("--includereverts", "Include reverts.")
             .addSingleArgumentFlag("--minsize", "size", "Only includes edits that add more than size bytes (default: 150).")
             .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
             .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
@@ -87,6 +88,7 @@ public class ContributionSurveyor
         boolean images = parsedargs.containsKey("--images");
         boolean userspace = parsedargs.containsKey("--userspace");
         boolean nominor = !parsedargs.containsKey("--includeminor");
+//        boolean noreverts = !parsedargs.containsKey("--includereverts");
         int minsize = Integer.parseInt(parsedargs.getOrDefault("--minsize", "150"));
         String earliestdatestring = parsedargs.get("--editsafter");
         String latestdatestring = parsedargs.get("--editsbefore");
@@ -163,6 +165,7 @@ public class ContributionSurveyor
         surveyor.setEarliestDateTime(editsafter);
         surveyor.setLatestDateTime(editsbefore);
         surveyor.setIgnoringMinorEdits(nominor);
+//        surveyor.setIgnoringReverts(noreverts);
         try (BufferedWriter outwriter = Files.newBufferedWriter(out))
         {
             outwriter.write(surveyor.massContributionSurvey(users, images, ns));
@@ -210,6 +213,34 @@ public class ContributionSurveyor
     {
         return nominor;
     }
+
+    // Not effective until https://phabricator.wikimedia.org/T185809 is resolved
+    // and being able to get tags of revisions.
+    
+    /*
+     *  Sets whether surveys ignore reverts. Default = true.
+     *  @param ignorereverts (see above)
+     *  @see #isIgnoringReverts()
+     *  @see Revisions#removeReverts
+     *  @since 0.05
+     *
+    public void setIgnoringReverts(boolean ignorereverts)
+    {
+        noreverts = ignorereverts;
+    }
+    
+    /*
+     *  Gets whether surveys ignore reverts. Default = true.
+     *  @return (see above)
+     *  @see #setIgnoringReverts(boolean)
+     *  @see Revisions#removeReverts
+     *  @since 0.04
+     *
+    public boolean isIgnoringReverts()
+    {
+        return noreverts;
+    }
+    */
 
     /**
      *  Sets the date/time at which surveys start; no edits will be returned
@@ -308,7 +339,10 @@ public class ContributionSurveyor
         Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
         for (int i = 0; i < users.size(); i++)
         {
-            Map<String, List<Wiki.Revision>> results = edits.get(i).stream()
+            List<Wiki.Revision> useredits = edits.get(i);
+//            if (noreverts)
+//                useredits = Revisions.removeReverts(useredits);
+            Map<String, List<Wiki.Revision>> results = useredits.stream()
                 .filter(rev -> rev.getSizeDiff() >= minsizediff)
                 .sorted(Comparator.comparingInt(Wiki.Revision::getSizeDiff).reversed())
                 .collect(Collectors.groupingBy(Wiki.Revision::getTitle, LinkedHashMap::new, Collectors.toList()));
@@ -338,6 +372,8 @@ public class ContributionSurveyor
             .withinDateRange(earliestdate, latestdate)
             .inNamespaces(ns);
         List<Wiki.Revision> delcontribs = wiki.deletedContribs(username, rh);
+//        if (noreverts)
+//            delcontribs = Revisions.removeReverts(delcontribs);
         LinkedHashMap<String, List<Wiki.Revision>> ret = new LinkedHashMap<>();
 
         // group contributions by page
