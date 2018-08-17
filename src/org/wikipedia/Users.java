@@ -108,17 +108,18 @@ public class Users
      *  with full revision metadata.
      *  @param users the users to fetch page creations for
      *  @param rh a {@link Wiki.RequestHelper} object that is passed to {@link
-     *  Wiki#contribs(List, String, Wiki.RequestHelper, Map)}
+     *  Wiki#contribs(List, String, Wiki.RequestHelper)}
      *  @return the list of pages created by this user with revision metadata
      *  for the corresponding revisions
      *  @throws IOException if a network error occurs
-     *  @see #createdPagesWithText(List, int...) 
+     *  @see #createdPagesWithText(List, Wiki.RequestHelper) 
      */
     public List<Wiki.Revision> createdPages(List<String> users, Wiki.RequestHelper rh) throws IOException
     {
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
-        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh, options);
+        rh = rh.filterRevisions(options);
+        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         List<Wiki.Revision> ret = new ArrayList<>();
         for (List<Wiki.Revision> rev : contribs)
             ret.addAll(rev);
@@ -130,17 +131,18 @@ public class Users
      *  revision of those pages.
      *  @param users the users to fetch page creations for
      *  @param rh a {@link Wiki.RequestHelper} object that is passed to {@link
-     *  Wiki#contribs(List, String, Wiki.RequestHelper, Map)}
+     *  Wiki#contribs(List, String, Wiki.RequestHelper)}
      *  @return a map containing revision the page was created &#8594; current 
      *  text of that page
      *  @throws IOException if a network error occurs
-     *  @see #createdPages(List, int...) 
+     *  @see #createdPages(List, Wiki.RequestHelper) 
      */
     public Map<Wiki.Revision, String> createdPagesWithText(List<String> users, Wiki.RequestHelper rh) throws IOException
     {
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
-        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh, options);
+        rh = rh.filterRevisions(options);
+        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         
         // get text of all pages
         List<Wiki.Revision> temp = new ArrayList<>();

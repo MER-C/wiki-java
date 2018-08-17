@@ -40,7 +40,7 @@ public class WMFWiki extends Wiki
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
      *  through [[Special:Log]] or getLogEntries.
-     *  @see #getAbuseLogEntries(int[], String, String, OffsetDateTime, OffsetDateTime) 
+     *  @see #getAbuseLogEntries(int[], Wiki.RequestHelper) 
      */
     public static final String ABUSE_LOG = "abuselog";
     

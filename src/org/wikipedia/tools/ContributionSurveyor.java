@@ -302,8 +302,9 @@ public class ContributionSurveyor
             options.put("minor", Boolean.FALSE);
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .inNamespaces(ns)
-            .withinDateRange(earliestdate, latestdate);
-        List<List<Wiki.Revision>> edits = wiki.contribs(users, null, rh, options);
+            .withinDateRange(earliestdate, latestdate)
+            .filterRevisions(options);
+        List<List<Wiki.Revision>> edits = wiki.contribs(users, null, rh);
         Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
         for (int i = 0; i < users.size(); i++)
         {
@@ -400,7 +401,7 @@ public class ContributionSurveyor
      *  @param username the relevant username (use {@code null} to omit)
      *  @param survey the survey, in form of page &#8594; edits
      *  @return the formatted survey in wikitext
-     *  @see #contributionSurvey(String[], int...)
+     *  @see #contributionSurvey(List, int...)
      *  @since 0.04
      */
     public String formatTextSurveyAsWikitext(String username, Map<String, List<Wiki.Revision>> survey)

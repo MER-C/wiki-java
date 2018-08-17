@@ -78,7 +78,7 @@ public class Pages
      *  flattened. Link descriptions are removed.
      *
      *  @param wikitext a wikitext list of pages as described above
-     *  @see #toWikitextList(Iterable, boolean)
+     *  @see #toWikitextList(Iterable, Function, boolean)
      *  @return a list of parsed titles
      *  @since Wiki.java 0.11
      */

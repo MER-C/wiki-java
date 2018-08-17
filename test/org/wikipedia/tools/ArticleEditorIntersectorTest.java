@@ -61,36 +61,33 @@ public class ArticleEditorIntersectorTest
     public void intersectArticles() throws Exception
     {
         // Need two articles to get a meaningful intersection
-        String[] articles = new String[0];
         try
         {
-            intersector.intersectArticles(articles, false, false, false);
+            intersector.intersectArticles(Collections.emptyList(), false, false, false);
             fail("Attempted to intersect edit histories of zero pages, at least two are required.");
         }
         catch (IllegalArgumentException expected)
         {
         }
-        articles = new String[] { "Main Page" };
         try
         {
-            intersector.intersectArticles(articles, false, false, false);
+            intersector.intersectArticles(Arrays.asList("Main Page"), false, false, false);
             fail("Attempted to intersect history of a single page, at least two are required.");
         }
         catch (IllegalArgumentException expected)
         {
         }
         // check if duplicates are removed
-        articles = new String[] { "Main Page", "Main Page" };
         try
         {
-            intersector.intersectArticles(articles, false, false, false);
+            intersector.intersectArticles(Arrays.asList("Main Page", "Main Page"), false, false, false);
             fail("Exact duplicates not removed before going online.");
         }
         catch (IllegalArgumentException expected)
         {
         }
         // check if Special: and Media: pages are removed
-        articles = new String[] { "Special:Recentchanges", "Media:Example.png", "Main Page" };
+        List<String> articles = Arrays.asList("Special:Recentchanges", "Media:Example.png", "Main Page");        
         try
         {
             intersector.intersectArticles(articles, false, false, false);
@@ -101,7 +98,7 @@ public class ArticleEditorIntersectorTest
         }
         
         // non-existing pages
-        articles = new String[] { "This page does not exist", "This page also does not exist" };
+        articles = Arrays.asList("This page does not exist", "This page also does not exist");
         Map<String, List<Wiki.Revision>> results = intersector.intersectArticles(articles, false, false, false);
         assertTrue("Intersection of non-existing pages", results.isEmpty());
         results = intersector.intersectArticles(articles, true, true, true);
@@ -110,19 +107,19 @@ public class ArticleEditorIntersectorTest
         // no intersection
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
         // https://test.wikipedia.org/wiki/User:NikiWiki/EmptyPage
-        articles = new String[] { "User:NikiWiki/EmptyPage", "User:MER-C/UnitTests/pagetext" };
+        articles = Arrays.asList("User:NikiWiki/EmptyPage", "User:MER-C/UnitTests/pagetext");
         results = intersector.intersectArticles(articles, false, false, false);
         assertTrue("Pages with no intersection", results.isEmpty());
         
         // page history contains usernames that have been RevisionDeleted or suppressed
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         // otherwise no intersection
-        articles = new String[] { "User:NikiWiki/EmptyPage", "User:MER-C/UnitTests/Delete" };
+        articles = Arrays.asList("User:NikiWiki/EmptyPage", "User:MER-C/UnitTests/Delete");
         results = intersector.intersectArticles(articles, false, false, false);
         assertTrue("Page with deleted/suppressed username", results.isEmpty());
         
         // check noadmin, expect no intersection
-        articles = new String[] { "User:MER-C/UnitTests/pagetext", "User:MER-C/UnitTests/Delete" };
+        articles = Arrays.asList("User:MER-C/UnitTests/pagetext", "User:MER-C/UnitTests/Delete");
         results = intersector.intersectArticles(articles, true, false, false);
         assertTrue("Check exclusion of admins", results.isEmpty());
     }
@@ -142,7 +139,7 @@ public class ArticleEditorIntersectorTest
         // we can get zero results.
         // https://en.wikipedia.org/w/index.php?title=Sainpasela&action=history
         // https://en.wikipedia.org/w/index.php?title=Qihe_County&action=history
-        String[] articles = { "Sainpasela", "Qihe County" };
+        List<String> articles = Arrays.asList("Sainpasela", "Qihe County");
         Map<String, List<Wiki.Revision>> results = intersector_enWiki.intersectArticles(articles, false, false, false);
         assertTrue("Check date/time bounds", results.isEmpty());
     }

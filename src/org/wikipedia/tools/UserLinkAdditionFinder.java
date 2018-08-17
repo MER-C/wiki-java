@@ -187,7 +187,7 @@ public class UserLinkAdditionFinder
             .inNamespaces(Wiki.MAIN_NAMESPACE)
             .withinDateRange(earliest, null);
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
-        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh, null);
+        List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         List<Wiki.Revision> revisions = contribs.stream()
             .flatMap(List::stream)
             .filter(revision -> !revision.isContentDeleted())

@@ -230,7 +230,7 @@ public class WikiTest
         assertEquals("querylimits: length", 530, enWiki.getPageHistory("Main Page", null).size());
         // check whether queries that set a separate limit function correctly
         Wiki.RequestHelper rh = enWiki.new RequestHelper().limitedTo(10);
-        assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(rh, null).size());
+        assertEquals("querylimits: recentchanges", 10, enWiki.recentChanges(rh).size());
         assertEquals("querylimits: after recentchanges", 530, enWiki.getPageHistory("Main Page", null).size());
         assertEquals("querylimits: getLogEntries", 10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh).size());
         assertEquals("querylimits: after getLogEntries", 530, enWiki.getPageHistory("Main Page", null).size());
@@ -1093,7 +1093,7 @@ public class WikiTest
             "0.0.0.0", // IP address
             "Allancake" // revision deleted
         );
-        List<List<Wiki.Revision>> edits = enWiki.contribs(users, null, null, null);
+        List<List<Wiki.Revision>> edits = enWiki.contribs(users, null, null);
 
         assertTrue("contribs: non-existent user", edits.get(0).isEmpty());
         assertTrue("contribs: IP address with no edits", edits.get(1).isEmpty());
@@ -1111,8 +1111,10 @@ public class WikiTest
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
         options.put("top", Boolean.TRUE);
-        Wiki.RequestHelper rh = testWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
-        edits = testWiki.contribs(Arrays.asList("MER-C"), null, rh, options);
+        Wiki.RequestHelper rh = testWiki.new RequestHelper()
+            .inNamespaces(Wiki.MAIN_NAMESPACE)
+            .filterRevisions(options);
+        edits = testWiki.contribs(Arrays.asList("MER-C"), null, rh);
         assertEquals("contribs: filtered", 120919L, edits.get(0).get(0).getID());
         // not implemented in MediaWiki API
         // assertEquals("contribs: sha1 present", "bcdb66a63846bacdf39f5c52a7d2cc5293dbde3e", edits.get(0).get(0).getSha1());
@@ -1271,21 +1273,22 @@ public class WikiTest
         // by necessity an incomplete test. That said, there are a few things we
         // can test for...
         Wiki.RequestHelper rh = enWiki.new RequestHelper().limitedTo(10);
-        List<Wiki.Revision> rc = enWiki.recentChanges(rh, null);
+        List<Wiki.Revision> rc = enWiki.recentChanges(rh);
         assertEquals("recentchanges: length", 10, rc.size());
         // Check if the changes are actually recent (i.e. in the last 10 minutes).
         assertTrue("recentchanges: recentness",
             rc.get(9).getTimestamp().isAfter(OffsetDateTime.now(ZoneId.of("UTC")).minusMinutes(10)));
         // Check namespace filtering
         rh = rh.inNamespaces(Wiki.TALK_NAMESPACE);
-        rc = enWiki.recentChanges(rh, null);
+        rc = enWiki.recentChanges(rh);
         for (Wiki.Revision rev : rc)
             assertEquals("recentchanges: namespace filter", Wiki.TALK_NAMESPACE, enWiki.namespace(rev.getTitle()));
         // check options filtering
         Map<String, Boolean> options = new HashMap<>();
         options.put("minor", Boolean.FALSE);
         options.put("bot", Boolean.TRUE);
-        rc = enWiki.recentChanges(rh, options);
+        rh = rh.filterRevisions(options);
+        rc = enWiki.recentChanges(rh);
         for (Wiki.Revision rev : rc)
         {
             assertTrue("recentchanges: options", rev.isBot());

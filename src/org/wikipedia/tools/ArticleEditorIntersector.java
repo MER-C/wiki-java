@@ -101,11 +101,11 @@ public class ArticleEditorIntersector
         
         OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
         OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
-        String[] articles = null;
+        List<String> articles = null;
         if (defaultstring != null)
-            articles = defaultstring.split("\\s");
+            articles = Arrays.asList(defaultstring.split("\\s"));
         if (filename != null)
-            articles = Files.readAllLines(Paths.get(filename)).toArray(new String[0]);
+            articles = Files.readAllLines(Paths.get(filename));
         
         ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
         aei.setIgnoringMinorEdits(nominor);
@@ -150,13 +150,13 @@ public class ArticleEditorIntersector
                 stuff = stuff.filter(rev -> !rev.isMinor());
             articles = stuff.map(Wiki.Revision::getTitle)
                 .distinct()
-                .toArray(String[]::new);
+                .collect(Collectors.toList());
         }
         // grab from category
         if (category != null)
-            articles = wiki.getCategoryMembers(category);
+            articles = Arrays.asList(wiki.getCategoryMembers(category));
         
-        if (articles.length == 0)
+        if (articles.isEmpty())
         {
             System.err.println("Input has no articles!");
             System.exit(3);
@@ -247,7 +247,7 @@ public class ArticleEditorIntersector
      *  that has a SHA-1 equal to a previous revision on the same page).
      *  @return whether reverts are ignored
      *  @see #setIgnoringReverts(boolean) 
-     *  @see ArrayUtils#removeReverts(Wiki.Revision[])
+     *  @see Revisions#removeReverts(List)
      *  @since 0.02
      */
     public boolean isIgnoringReverts()
@@ -260,7 +260,7 @@ public class ArticleEditorIntersector
      *  that has a SHA-1 equal to a previous revision on the same page).
      *  @param ignorereverts whether reverts will be ignored
      *  @see #isIgnoringReverts()
-     *  @see ArrayUtils#removeReverts(Wiki.Revision[])
+     *  @see Revisions#removeReverts(List)
      *  @since 0.02
      */
     public void setIgnoringReverts(boolean ignorereverts)
@@ -335,16 +335,17 @@ public class ArticleEditorIntersector
      *  @throws IllegalArgumentException if {@code articles.length < 2} after
      *  duplicates (as in {@code String.equals}) and Special/Media pages are removed
      */
-    public Map<String, List<Wiki.Revision>> intersectArticles(String[] articles, 
+    public Map<String, List<Wiki.Revision>> intersectArticles(Iterable<String> articles, 
         boolean noadmin, boolean nobot, boolean noanon) throws IOException
     {
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .withinDateRange(earliestdate, latestdate);
                 
         // remove duplicates and fail quickly if less than two pages
-        Set<String> pageset = Arrays.stream(articles)
-            .filter(article -> wiki.namespace(article) >= 0) // remove Special: and Media: pages
-            .collect(Collectors.toSet());
+        Set<String> pageset = new HashSet<>();
+        for (String article : articles)
+            if (wiki.namespace(article) >= 0) // remove Special: and Media: pages
+                pageset.add(article);
         if (pageset.size() < 2)
             throw new IllegalArgumentException("At least two articles are needed to derive a meaningful intersection.");
         
@@ -443,14 +444,15 @@ public class ArticleEditorIntersector
      */
     public Map<String, List<Wiki.Revision>> intersectEditors(List<String> users) throws IOException
     {
-        Wiki.RequestHelper rh = wiki.new RequestHelper()
-            .withinDateRange(earliestdate, latestdate);
-                
-        // fetch the list of (deleted) edits
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
             options.put("minor", Boolean.FALSE);
-        List<List<Wiki.Revision>> revisions = wiki.contribs(users, null, rh, options);
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .withinDateRange(earliestdate, latestdate)
+            .filterRevisions(options);
+                
+        // fetch the list of (deleted) edits
+        List<List<Wiki.Revision>> revisions = wiki.contribs(users, null, rh);
         Stream<Wiki.Revision> revstream = revisions.stream().flatMap(List::stream);
         
         if (adminmode)

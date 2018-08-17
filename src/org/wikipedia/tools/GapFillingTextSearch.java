@@ -132,16 +132,16 @@ public class GapFillingTextSearch
      *  Searches for the given <var>query</var> term by performing a string 
      *  contains operation on the text contained in each entry of the search 
      *  data and then extracts a snippet surrounding the first match.  
-     *  <var>searchdata</var> is of the form uniqueID -> page text associated 
-     *  with that uniqueID and can be the return value of {@link 
-     *  #fetchArticlesCreatedBy(String)}.
+     *  <var>searchdata</var> is of the form uniqueID &#8594; page text 
+     *  associated with that uniqueID and can be the return value of {@link 
+     *  Users#createdPagesWithText(List, Wiki.RequestHelper) }.
      * 
      *  @param <IDType> the type of uniqueID
-     *  @param searchdata a map of uniqueID -> article text associated with that
-     *  uniqueID
+     *  @param searchdata a map of uniqueID &#8594; article text associated with
+     *  that uniqueID
      *  @param query the search term to look for
      *  @param casesensitive whether the search should be case sensitive
-     *  @return a map: uniqueID -> snippet
+     *  @return a map: uniqueID &#8594; snippet
      */
     public <IDType> Map<IDType, String> searchAndExtractSnippets(Map<IDType, String> searchdata, String query, 
         boolean casesensitive)
@@ -172,15 +172,15 @@ public class GapFillingTextSearch
     /**
      *  Performs a regex match on the text contained in each entry of the 
      *  search data and then extracts a snippet surrounding the first match.  
-     *  <var>searchdata</var> is of the form uniqueID -> page text associated 
-     *  with that uniqueID and can be the return value of {@link 
-     *  #fetchArticlesCreatedBy(String)}.
+     *  <var>searchdata</var> is of the form uniqueID &#8594; page text 
+     *  associated with that uniqueID and can be the return value of {@link 
+     *  Users#createdPagesWithText(List, Wiki.RequestHelper)}.
      * 
      *  @param <IDType> the type of uniqueID
-     *  @param searchdata a map of uniqueID -> article text associated with that
-     *  uniqueID
+     *  @param searchdata a map of uniqueID &#8594; article text associated with 
+     *  that uniqueID
      *  @param pattern the regex pattern to match to
-     *  @return a map: uniqueID -> snippet
+     *  @return a map: uniqueID &#8594; snippet
      */
     public <IDType> Map<IDType, String> regexMatchAndExtractSnippets(Map<IDType, String> searchdata, Pattern pattern)
     {
@@ -203,7 +203,8 @@ public class GapFillingTextSearch
      *  @param text the text to extract a snippet for
      *  @param indexofmatch where to extract the snippet from
      *  @return the 30 word snippet
-     *  @throws StringIndexOutOfBoundsException 
+     *  @throws StringIndexOutOfBoundsException if indexofmatch is not within
+     *  <var>text</var>
      */
     public String extractSnippet(String text, int indexofmatch)
     {

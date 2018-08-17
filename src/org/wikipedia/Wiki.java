@@ -4758,28 +4758,27 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets contributions for all users starting with <var>prefix</var>. See
-     *  {@link #contribs(List, String, RequestHelper, Map)} for full
-     *  documentation.
+     *  {@link #contribs(List, String, RequestHelper)} for full documentation.
      *
      *  @param prefix a prefix of usernames.
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
-     *  provide any of the optional parameters noted above)
+     *  provide any optional parameters)
      *  @return contributions of users with this prefix
      *  @throws IOException if a network error occurs
      */
     public List<Revision> prefixContribs(String prefix, Wiki.RequestHelper helper) throws IOException
     {
-        return contribs(Collections.emptyList(), prefix, helper, null).get(0);
+        return contribs(Collections.emptyList(), prefix, helper).get(0);
     }
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. See {@link #contribs(List, String, RequestHelper, Map)} for
-     *  full documentation.
+     *  addresses. See {@link #contribs(List, String, RequestHelper)} for full
+     *  documentation.
      *
      *  @param user the user, IP address or IP range to get contributions for
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
-     *  provide any of the optional parameters noted above)
+     *  provide any optional parameters)
      *  @return contributions of this user, or an empty list if the user does
      *  not exist
      *  @throws IOException if a network error occurs
@@ -4787,7 +4786,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> contribs(String user, Wiki.RequestHelper helper) throws IOException
     {
-        return contribs(Arrays.asList(user), null, helper, null).get(0);
+        return contribs(Arrays.asList(user), null, helper).get(0);
     }
 
     /**
@@ -4804,34 +4803,23 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
+     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor", 
+     *  "top", "new", "patrolled"
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
-     *
-     *  <p>
-     *  Available keys for <var>options</var> include "minor", "top", "new" and
-     *  "patrolled" for vanilla MediaWiki (extensions may define their own).their own).
-     *  For example, {@code options = { top = true, new = true }} returns all
-     *  edits by a user that created pages which haven't been edited since.
-     *  Setting "patrolled" limits results to no older than <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in
-     *  the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
-     *  table</a>.
-     *
+     * 
      *  @param users a list of users, IP addresses or IP ranges to get
      *  contributions for
      *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use null
      *  to not specify one.
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
-     *  @param options a Map dictating which revisions to select. Key not present
-     *  = don't care.
      *  @return contributions of <var>users</var> in the same order as
      *  <var>users</var>, or an empty list where the user does not exist
      *  @throws IOException if a network error occurs
      *  @since 0.34
      */
-    public List<List<Revision>> contribs(List<String> users, String prefix, Wiki.RequestHelper helper,
-        Map<String, Boolean> options) throws IOException
+    public List<List<Revision>> contribs(List<String> users, String prefix, Wiki.RequestHelper helper) throws IOException
     {
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -4844,19 +4832,8 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addNamespaceParameter());
             getparams.putAll(helper.addReverseParameter());
             getparams.putAll(helper.addTagParameter());
+            getparams.putAll(helper.addShowParameter());
             limit = helper.limit();
-        }
-        if (options != null && !options.isEmpty())
-        {
-            StringBuilder temp = new StringBuilder();
-            options.forEach((key, value) ->
-            {
-                if (Boolean.FALSE.equals(value))
-                    temp.append('!');
-                temp.append(key);
-                temp.append("|");
-            });
-            getparams.put("ucshow", temp.substring(0, temp.length() - 1));
         }
 
         BiConsumer<String, List<Revision>> parser = (line, results) ->
@@ -5265,71 +5242,56 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Fetches the most recent changes to pages on your watchlist. Data is
-     *  retrieved from the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
-     *  recentchanges table</a> and hence cannot be retrieved after <a
-     *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">a certain amount
-     *  of time</a>.
-     *
-     *  @return list of changes to watched pages and their talk pages
-     *  @throws IOException if a network error occurs
-     *  @throws SecurityException if not logged in
-     *  @since 0.27
-     */
-    public Revision[] watchlist() throws IOException
-    {
-        return watchlist(null);
-    }
-
-    /**
      *  Fetches recent changes to pages on your watchlist. Data is
      *  retrieved from the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">
      *  recentchanges table</a> and hence cannot be retrieved after <a
      *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">a certain amount
      *  of time</a>.
-     *  <p>
-     *  Available keys for <var>options</var> include "minor", "bot", "anon",
-     *  "patrolled", "top" and "unread" for vanilla MediaWiki (extensions may
-     *  define their own). {@code options = { minor = true;, bot = false }}
-     *  returns all minor edits not made by bots.
      *
-     *  @param options a Map dictating which revisions to select. Key not present
-     *  = don't care.
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  <p>
+     *  Accepted parameters from <var>helper</var> are:
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
+     *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
+     *  <li>{@link Wiki.RequestHelper#byUser(String) user}
+     *  <li>{@link Wiki.RequestHelper#notByUser(String) not by user}
+     *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
+     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor",
+     *  "bot", "anon", "patrolled", "top", "unread"
+     *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
+     *  </ul>
+     *
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @return list of changes to watched pages and their talk pages
      *  @throws IOException if a network error occurs
      *  @throws SecurityException if not logged in
+     *  @see <a href="https://www.mediawiki.org/wiki/API:Watchlist">MediaWiki
+     *  documentation</a>
      *  @since 0.27
      */
-    public Revision[] watchlist(Map<String, Boolean> options, int... ns) throws IOException
+    public List<Revision> watchlist(Wiki.RequestHelper helper) throws IOException
     {
         if (user == null)
             throw new SecurityException("Not logged in");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlist");
         getparams.put("wlprop", "ids|title|timestamp|user|comment|parsedcomment|sizes");
-        if (ns.length > 0)
-            getparams.put("wlnamespace", constructNamespaceString(ns));
-        if (options != null)
+        int limit = -1;
+        if (helper != null)
         {
-            Boolean top = options.remove("top");
-            if (Boolean.TRUE.equals(top))
-                getparams.put("wlallrev", "1");
-            if (!options.isEmpty())
-            {
-                StringBuilder temp = new StringBuilder();
-                options.forEach((key, value) ->
-                {
-                    if (Boolean.FALSE.equals(value))
-                        temp.append('!');
-                    temp.append(key);
-                    temp.append("|");
-                });
-                getparams.put("wlshow", temp.substring(0, temp.length() - 1));
-            }
+            helper.setRequestType("wl");
+            helper.addDateRangeParameters();
+            helper.addNamespaceParameter();
+            helper.addUserParameter();
+            helper.addExcludeUserParameter();
+            helper.addReverseParameter();
+            helper.addShowParameter();
+            limit = helper.limit();
         }
 
-        List<Revision> wl = makeListQuery("wl", getparams, null, "watchlist", -1, (line, results) ->
+        List<Revision> wl = makeListQuery("wl", getparams, null, "watchlist", limit, (line, results) ->
         {
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
@@ -5339,9 +5301,8 @@ public class Wiki implements Comparable<Wiki>
             }
         });
 
-        int size = wl.size();
-        log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + size + " items)");
-        return wl.toArray(new Revision[size]);
+        log(Level.INFO, "watchlist", "Successfully retrieved watchlist (" + wl.size() + " items)");
+        return wl;
     }
 
     // LISTS
@@ -6189,40 +6150,34 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Fetches recently created pages. See {@link #recentChanges(Wiki.RequestHelper,
-     *  Map, boolean)} for full documentation. Equivalent to [[Special:Newpages]].
+     *  boolean)} for full documentation. Equivalent to [[Special:Newpages]].
      *
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
-     *  provide any of the optional parameters described in {@link
-     *  #recentChanges(Wiki.RequestHelper, Map, boolean)})
-     *  @param rcoptions a Map dictating which pages to select. Key not present
-     *  = don't care.
+     *  provide any optional parameters
      *  @return the revisions that created the pages satisfying the requirements
      *  above
      *  @throws IOException if a network error occurs
      *  @since 0.35
      */
-    public List<Revision> newPages(Wiki.RequestHelper helper, Map<String, Boolean> rcoptions) throws IOException
+    public List<Revision> newPages(Wiki.RequestHelper helper) throws IOException
     {
-        return recentChanges(helper, rcoptions, true);
+        return recentChanges(helper, true);
     }
 
     /**
      *  Fetches recent edits to this wiki. See {@link
-     *  #recentChanges(Wiki.RequestHelper, Map, boolean)} for full documentation.
+     *  #recentChanges(Wiki.RequestHelper, boolean)} for full documentation.
      *  Equivalent to [[Special:Recentchanges]].
      *
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
-     *  provide any of the optional parameters described in {@link
-     *  #recentChanges(Wiki.RequestHelper, Map, boolean)})
-     *  @param rcoptions a Map dictating which revisions to return. Key not
-     *  present = don't care.
+     *  provide any optional parameters
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public List<Revision> recentChanges(Wiki.RequestHelper helper, Map<String, Boolean> rcoptions) throws IOException
+    public List<Revision> recentChanges(Wiki.RequestHelper helper) throws IOException
     {
-        return recentChanges(helper, rcoptions, false);
+        return recentChanges(helper, false);
     }
 
     /**
@@ -6234,7 +6189,6 @@ public class Wiki implements Comparable<Wiki>
      *
      *  <p>
      *  Accepted parameters from <var>helper</var> are:
-     *
      *  <ul>
      *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
@@ -6243,28 +6197,22 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
      *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
+     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor",
+     *  "bot", "anon", "redirect", "patrolled"
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
      *
-     *  <p>
-     *  Available keys for <var>rcoptions</var> include "minor", "bot", "anon",
-     *  "redirect", "patrolled" for vanilla MediaWiki (extensions may define
-     *  their own). {@code rcoptions = { minor = true, anon = false, patrolled
-     *  = false}} returns all minor edits from logged in users that aren't
-     *  patrolled.
      *  <p>
      *  Note: Log entries in recent changes have a revid of 0!
      *
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters described above
-     *  @param rcoptions a Map dictating which revisions to return. Key not
-     *  present = don't care.
      *  @param newpages show new pages only
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.35
      */
-    protected List<Revision> recentChanges(Wiki.RequestHelper helper, Map<String, Boolean> rcoptions, boolean newpages) throws IOException
+    protected List<Revision> recentChanges(Wiki.RequestHelper helper, boolean newpages) throws IOException
     {
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -6279,23 +6227,11 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addDateRangeParameters());
             getparams.putAll(helper.addTagParameter());
             getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addShowParameter());
             limit = helper.limit();
         }
         if (newpages)
             getparams.put("rctype", "new");
-        // rc options
-        if (rcoptions != null && !rcoptions.isEmpty())
-        {
-            StringBuilder temp = new StringBuilder();
-            rcoptions.forEach((key, value) ->
-            {
-                if (Boolean.FALSE.equals(value))
-                    temp.append('!');
-                temp.append(key);
-                temp.append("|");
-            });
-            getparams.put("rcshow", temp.substring(0, temp.length() - 1));
-        }
 
         List<Revision> revisions = makeListQuery("rc", getparams, null, newpages ? "newPages" : "recentChanges", limit,
             (line, results) ->
@@ -6576,7 +6512,7 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Determines whether this user is blocked at the time of construction.
          *  If you want a live check, look  up the user on the {@linkplain
-         *  #getBlockList(String) list of blocks}.
+         *  #getBlockList(String, RequestHelper) list of blocks}.
          *  @return whether this user is blocked
          *  @since 0.12
          */
@@ -6738,7 +6674,7 @@ public class Wiki implements Comparable<Wiki>
          *  confused with "rcid" (which is the ID in the recentchanges table).
          *  For a {@link Wiki.LogEntry}, this value only makes sense if the
          *  record was obtained through {@link Wiki#getLogEntries(String, String,
-         *  int)} and overloads (other methods return pseudo-LogEntries).
+         *  RequestHelper)} and overloads (other methods return pseudo-LogEntries).
          *  @return the ID of this revision
          */
         public long getID()
@@ -6825,7 +6761,7 @@ public class Wiki implements Comparable<Wiki>
          *
          *  <p><b>Warnings:</b>
          *  <ul>
-         *  <li>Not available through {@link #getBlockList(String, OffsetDateTime, OffsetDateTime)}.
+         *  <li>Not available through {@link #getBlockList(String, RequestHelper)}.
          *  </ul>
          *
          *  @return the comment associated with the event, parsed into HTML
@@ -7276,8 +7212,8 @@ public class Wiki implements Comparable<Wiki>
          *
          *  <p><b>Warnings:</b>
          *  <ul>
-         *  <li>Not available through {@link #watchlist(Map, int...)} or {@link
-         *      #contribs(String[], String, OffsetDateTime, OffsetDateTime, Map, int...)}.
+         *  <li>Not available through {@link #watchlist(RequestHelper)} or {@link
+         *      #contribs(List, String, RequestHelper)}.
          *  </ul>
          *
          *  @return (see above)
@@ -7417,7 +7353,7 @@ public class Wiki implements Comparable<Wiki>
          *  <ul>
          *  <li>Returning {@code true} does not imply this is the bottommost
          *  revision on the page due to histmerges.
-         *  <li>Not available through {@link #getPageHistory(String, OffsetDateTime, OffsetDateTime, boolean)}
+         *  <li>Not available through {@link #getPageHistory(String, Wiki.RequestHelper)}
          *  </ul>
          *
          *  @return (see above)
@@ -7634,12 +7570,12 @@ public class Wiki implements Comparable<Wiki>
      *  fetches articles from the back of the new pages queue on the
      *  English Wikipedia.
      *
-     *  <pre>
+     *  {@code <pre>
      *  Wiki.RequestHelper rh = enWiki.new RequestHelper()
      *      .inNamespaces(Wiki.MAIN_NAMESPACE)
      *      .reverse();
      *  List<Wiki.Revision> newpages = enWiki.newPages(rh);
-     *  </pre>
+     *  </pre>}
      *
      *  @since 0.36
      */
@@ -7652,6 +7588,7 @@ public class Wiki implements Comparable<Wiki>
         private boolean reverse = false;
         private String notbyuser;
         private String tag;
+        private Map<String, Boolean> rcoptions;
         private String requestType;
         private int limit = -1;
 
@@ -7678,7 +7615,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Limits query results to Events triggered by the given user. If a query
-         *  mandates a user parameter (e.g. {@link #contribs(List, RequestHelper)},
+         *  mandates a user parameter (e.g. {@link #contribs(List, String, RequestHelper)},
          *  don't use this. Use the parameter in the query method instead.
          *  @param byuser some username or IP address
          *  @return this RequestHelper
@@ -7762,6 +7699,30 @@ public class Wiki implements Comparable<Wiki>
         public RequestHelper limitedTo(int limit)
         {
             this.limit = limit;
+            return this;
+        }
+        
+        /**
+         *  Filters a set of returned revisions using the given options. 
+         *  Available keys may include "minor", "top", "new", "bot", "anon",
+         *  "redirect", "patrolled" and "unread" for vanilla MediaWiki. Extensions 
+         *  may define their own. For instance, {@code rcoptions = { minor = true, 
+         *  anon = false,  patrolled = false}} returns all minor edits from 
+         *  logged in users that aren't patrolled. 
+         * 
+         *  <p>
+         *  Please check calling method documentation for supported options. 
+         *  Setting "patrolled" limits results to no older than <a
+         *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in
+         *  the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
+         *  table</a>.
+         * 
+         *  @param rcoptions the options to filter by
+         *  @return this RequestHelper
+         */
+        public RequestHelper filterRevisions(Map<String, Boolean> rcoptions)
+        {
+            this.rcoptions = rcoptions;
             return this;
         }
 
@@ -7868,6 +7829,41 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "excludeuser", notbyuser);
             return temp;
         }
+        
+        /**
+         *  Returns HTTP request parameter(s) containing flags to filter returned
+         *  revisions by, or an empty map if not wanted.
+         *  @return (see above)
+         */
+        protected Map<String, String> addShowParameter()
+        {
+            Map<String, String> temp = new HashMap<>();
+            if (rcoptions != null && !rcoptions.isEmpty())
+            {
+                // deal with MW API annoyance for action=query&list=watchlist - see watchlist(rh)
+                Boolean top = null;
+                if (requestType.equals("wl"))
+                {
+                    top = rcoptions.remove("top");
+                    if (Boolean.TRUE.equals(top))
+                        temp.put("wlallrev", "1");
+                }
+                
+                StringBuilder sb = new StringBuilder();
+                rcoptions.forEach((key, value) ->
+                {
+                    if (Boolean.FALSE.equals(value))
+                        sb.append('!');
+                    sb.append(key);
+                    sb.append("|");
+                });
+                temp.put(requestType + "show", sb.substring(0, sb.length() - 1));
+                
+                if (top != null) // put it back
+                    rcoptions.put("top", top);
+            }
+            return temp;
+        }
 
         /**
          *  Returns the number of results the query should be limited to. If not
@@ -7890,11 +7886,12 @@ public class Wiki implements Comparable<Wiki>
      *  @param queryPrefix the request type prefix (e.g. "pl" for prop=links)
      *  @param getparams a bunch of parameters to send via HTTP GET
      *  @param postparams if not null, send these parameters via POST (see
-     *  {@link #makeHTTPRequest(String, Map, Map, String) }).
+     *  {@link #makeApiCall(Map, Map, String) }).
      *  @param caller the name of the calling method
      *  @param limit fetch no more than this many results
      *  @param parser a BiConsumer that parses the XML returned by the MediaWiki
      *  API into things we want, dumping them into the given List
+     *  @return the query results
      *  @throws IOException if a network error occurs
      *  @throws SecurityException if we don't have the credentials to perform a
      *  privileged action (mostly avoidable)
