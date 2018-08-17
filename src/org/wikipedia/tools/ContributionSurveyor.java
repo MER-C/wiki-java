@@ -343,6 +343,8 @@ public class ContributionSurveyor
 //            if (noreverts)
 //                useredits = Revisions.removeReverts(useredits);
             Map<String, List<Wiki.Revision>> results = useredits.stream()
+            // RevisionDelete... should check for content AND no access, but with no SHA-1 that is impossible
+                .filter(rev -> !rev.isContentDeleted()) 
                 .filter(rev -> rev.getSizeDiff() >= minsizediff)
                 .sorted(Comparator.comparingInt(Wiki.Revision::getSizeDiff).reversed())
                 .collect(Collectors.groupingBy(Wiki.Revision::getTitle, LinkedHashMap::new, Collectors.toList()));

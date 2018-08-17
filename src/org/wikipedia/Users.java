@@ -118,6 +118,8 @@ public class Users
     {
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
+        if (rh == null)
+            rh = wiki.new RequestHelper();
         rh = rh.filterRevisions(options);
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         List<Wiki.Revision> ret = new ArrayList<>();
@@ -141,6 +143,8 @@ public class Users
     {
         Map<String, Boolean> options = new HashMap<>();
         options.put("new", Boolean.TRUE);
+        if (rh == null)
+            rh = wiki.new RequestHelper();
         rh = rh.filterRevisions(options);
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         
