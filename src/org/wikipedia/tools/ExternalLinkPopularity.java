@@ -76,13 +76,7 @@ public class ExternalLinkPopularity
             System.exit(1);
         }
         Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(pages);
-        Set<String> domains = new HashSet<>();
-        results.forEach((page, pagedomaintourls) ->
-        {
-            // full URL and page information is not necessary, discard them
-            domains.addAll(pagedomaintourls.keySet());
-        });
-        Map<String, Integer> popresults = elp.determineLinkPopularity(domains);
+        Map<String, Integer> popresults = elp.determineLinkPopularity(flatten(results));
         System.out.println(elp.exportResultsAsWikitext(results, popresults));
         
         // String[] spampages = enWiki.getCategoryMembers("Category:Wikipedia articles with undisclosed paid content from March 2018", Wiki.MAIN_NAMESPACE);
@@ -189,6 +183,20 @@ public class ExternalLinkPopularity
             domaintourls.put(articles.get(i), pagedomaintourls);
         }
         return domaintourls;
+    }
+
+    /**
+     *  Flattens the output of {@link #fetchExternalLinks(List)} to a 
+     *  single-level List.
+     *  @param data the output to flatten
+     *  @return the set of domains added
+     */
+    public static List<String> flatten(Map<String, Map<String, List<String>>> data)
+    {
+        List<String> domains = new ArrayList<>();
+        for (Map.Entry<String, Map<String, List<String>>> pagedomaintourls : data.entrySet())
+            domains.addAll(pagedomaintourls.getValue().keySet());
+        return domains;
     }
     
     /**

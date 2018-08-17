@@ -49,18 +49,17 @@ long-standing reference spam.
 <%
     if (!title.isEmpty())
     {
-        out.println("<hr>");
-
         Wiki enWiki = Wiki.createInstance(wiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(enWiki);
         elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
         Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(Arrays.asList(title));
         
         if (results.get(title).isEmpty())
-            out.println("<span class=\"error\">No results found!</span>");
+            request.setAttribute("error", "No results found!");
         else
         {
-            Map<String, Map<String, Integer>> popresults = elp.determineLinkPopularity(results);
+            Map<String, Integer> popresults = elp.determineLinkPopularity(ExternalLinkPopularity.flatten(results));
+            out.println("<hr>");
             out.println(elp.exportResultsAsHTML(results, popresults));
         }
     }

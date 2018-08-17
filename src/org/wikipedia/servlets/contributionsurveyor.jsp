@@ -24,6 +24,7 @@
     request.setAttribute("toolname", "Contribution surveyor");
 
     String user = request.getParameter("user");
+    String category = request.getParameter("category");
     boolean nominor = (request.getParameter("nominor") != null);
 
     String homewiki = request.getParameter("wiki");
@@ -46,13 +47,24 @@
 
     // error conditions
     boolean noresults = false;
-    boolean baddate = (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate));
+    if (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate))
+        request.setAttribute("error", "Earliest date is after latest date!");
     
-    if (user != null && !baddate)
+    Wiki wiki = Wiki.createInstance(homewiki);
+    wiki.setQueryLimit(35000); // 70 network requests
+
+    List<String> users = new ArrayList<>();
+    if (user != null)
+        users.add(user);
+    else if (category != null)
     {
-        // get results
-        Wiki wiki = Wiki.createInstance(homewiki);
-        wiki.setQueryLimit(35000); // 70 network requests
+        for (String tempstring : wiki.getCategoryMembers(category, Wiki.USER_NAMESPACE))
+            users.add(wiki.removeNamespace(tempstring));
+    }
+
+    // get results
+    if (request.getAttribute("error") == null && !users.isEmpty())
+    {
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setIgnoringMinorEdits(nominor);
         if (!earliest.isEmpty())
@@ -60,18 +72,20 @@
         if (!latest.isEmpty())
             surveyor.setLatestDateTime(latestdate);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
-        Map<String, Map<String, List<Wiki.Revision>>> survey = surveyor.contributionSurvey(new String[] { user }, Wiki.MAIN_NAMESPACE);
+        
+        Map<String, Map<String, List<Wiki.Revision>>> survey = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         Map<String, List<Wiki.Revision>> usersurvey = survey.entrySet().iterator().next().getValue();
-        noresults = usersurvey.isEmpty();
-
-        if (!noresults)
+        
+        if (usersurvey.isEmpty())
+            request.setAttribute("error", "No edits found!");
+        else
         {
             // create download prompt
             response.setContentType("text/plain;charset=UTF-8");
             response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
 
             // write results
-            out.print(ParserUtils.generateUserLinksAsWikitext(user));
+            out.print(Users.generateWikitextSummaryLinks(user));
             out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
             out.println();
             out.print(surveyor.formatTextSurveyAsWikitext(null, usersurvey));
@@ -119,21 +133,4 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 </table>
 <input type=submit value="Survey user">
 </form>
-
-<%
-    if (user != null && noresults)
-    {
-%>
-<hr>
-<span class="error">No edits found!</span>
-<%
-    }
-    else if (baddate)
-    {
-%>
-<hr>
-<span class="error">Earliest date is after latest date!</span>
-<%
-    }
-%>
 <%@ include file="footer.jsp" %>

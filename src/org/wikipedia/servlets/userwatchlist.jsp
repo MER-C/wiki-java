@@ -28,6 +28,8 @@
 
     Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
     enWiki.setMaxLag(-1);
+    Users userUtils = Users.of(enWiki);
+    Revisions revisionUtils = Revisions.of(enWiki);
 %>
 
 <!doctype html>
@@ -61,8 +63,8 @@ Someone # Spam
         if (inputpage != null)
         {
         %>
-        <a href="<%= enWiki.getPageURL(inputpage) %>">visit</a> |
-        <a href="<%= enWiki.getIndexPHPURL() + "?action=edit&title=" + inputpage_url %>">edit</a>
+        <a href="<%= enWiki.getPageUrl(inputpage) %>">visit</a> |
+        <a href="<%= enWiki.getIndexPhpUrl() + "?action=edit&title=" + inputpage_url %>">edit</a>
         <%
         }
         %>
@@ -79,29 +81,23 @@ Someone # Spam
         %>
 <%@ include file="footer.jsp" %>
         <%
-        return;
     }
-%>
-<hr>
-<p>
-<%
+
     if (!inputpage.matches("^User:.+/.+\\.(cs|j)s$"))
     {
-        %>
-<span class="error">TESTING WOOP WOOP WOOP!</span>
+        request.setAttribute("error", "TESTING WOOP WOOP WOOP!");
+%>
 <%@ include file="footer.jsp" %>
-        <%
-        return;
+<%
     }
     String us = inputpage.substring(5, inputpage.indexOf('/'));
     Wiki.User us2 = enWiki.getUser(us);
     if (us2 == null || !us2.isA("sysop"))
     {
-        %>
-<span class="error">TESTING TESTING WOOP WOOP WOOP!</span>
+        request.setAttribute("error", "TESTING WOOP WOOP WOOP!");
+%>
 <%@ include file="footer.jsp" %>
-        <%
-        return;
+<%
     }
     String text;
     try
@@ -110,11 +106,10 @@ Someone # Spam
     }
     catch (FileNotFoundException ex) 
     {
-        %>
-<span class="error">ERROR: page &quot;<%= ServletUtils.sanitizeForHTML(inputpage) %>&quot; does not exist!</span>
+        request.setAttribute("error", "ERROR: page &quot;" + ServletUtils.sanitizeForHTML(inputpage) + "&quot; does not exist!");
+%>
 <%@ include file="footer.jsp" %>
-        <%
-        return;
+<%
     }
 
     // parse input
@@ -168,18 +163,19 @@ Someone # Spam
 <ul>
     <li>
         <%
-        out.println(ParserUtils.generateUserLinks(enWiki, user));
+        out.println(userUtils.generateHTMLSummaryLinks(user));
         if (!reason.isEmpty())
             out.println("<li><i>" + reason + "</i>");
         out.println("</ul>");
 
         // fetch and output contribs
-        OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(5);
-        Wiki.Revision[] contribs = enWiki.contribs(user, cutoff, null);
-        if (contribs.length == 0)
+        Wiki.RequestHelper rh = enWiki.new RequestHelper()
+            .withinDateRange(OffsetDateTime.now(ZoneOffset.UTC).minusDays(5), null);
+        List<Wiki.Revision> contribs = enWiki.contribs(user, rh);
+        if (contribs.isEmpty())
             out.println("<p>No recent contributions or user does not exist.");
         else
-            out.println(ParserUtils.revisionsToHTML(enWiki, contribs));
+            out.println(revisionUtils.toHTML(contribs));
     }
 
     // end pagination

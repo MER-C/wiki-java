@@ -51,24 +51,25 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
 <%
     if (!prefix.isEmpty())
     {
-        out.println("<hr>");
         if (prefix.length() < 4)
-            out.println("<span class=\"error\">ERROR: search key of insufficient length.</span>");
+            request.setAttribute("error", "ERROR: search key of insufficient length.");
         else
         {
             Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
             enWiki.setMaxLag(-1);
             enWiki.setQueryLimit(1000);
-            OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusDays(time);
-            Wiki.Revision[] revisions = enWiki.prefixContribs(prefix, cutoff, null);
-            if (revisions.length == 0)
+            Wiki.RequestHelper rh = enWiki.new RequestHelper()
+                .withinDateRange(OffsetDateTime.now(ZoneOffset.UTC).minusDays(time), null);
+            List<Wiki.Revision> revisions = enWiki.prefixContribs(prefix, rh);
+            out.println("<hr>");
+            if (revisions.isEmpty())
                 out.println("<p>\nNo contributions found.");
             else
-                out.println(ParserUtils.revisionsToHTML(enWiki, revisions));
-            if (revisions.length == 1000)
+                out.println(Revisions.of(enWiki).toHTML(revisions));
+            if (revisions.size() == 1000)
                 out.println("<p>\nAt least 1000 contributions found.");
             else
-                out.println("<p>\n" + revisions.length + " contributions found.");
+                out.println("<p>\n" + revisions.size() + " contributions found.");
         }
     }
 %>

@@ -59,7 +59,7 @@
             String[][] survey = surveyor.imageContributionSurvey(wpuser);
 
             // write results
-            out.print(ParserUtils.generateUserLinksAsWikitext(user));
+            out.print(Users.generateWikitextSummaryLinks(user));
             out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
             out.print(surveyor.formatImageSurveyAsWikitext(null, survey));
             out.println(surveyor.generateWikitextFooter());
@@ -101,11 +101,6 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 
 <%
     if (user != null && wpuser == null)
-    {
-%>
-<hr>
-<span class="error">ERROR: User "<%= ServletUtils.sanitizeForHTML(user) %>" does not exist!</span>
-<%
-    }
+        request.setAttribute("error", "ERROR: User " + ServletUtils.sanitizeForHTML(user) + " does not exist!");
 %>
 <%@ include file="footer.jsp" %>

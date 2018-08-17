@@ -104,12 +104,10 @@ first in the GUI) apply.
 <%
     if (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate))
     {
+        request.setAttribute("error", "Earliest date is after latest date!");
 %>
-    <hr>
-    <span class="error">Earliest date is after latest date!</span>
 <%@ include file="footer.jsp" %>
 <%
-        return;
     }
 
     Wiki wiki = Wiki.createInstance(wikiparam);
@@ -120,11 +118,7 @@ first in the GUI) apply.
     if (mode.equals("category"))
         pagestream = Arrays.stream(wiki.getCategoryMembers(category));
     else if (mode.equals("contribs"))
-    {
-        out.println("<hr>");
-        pagestream = Arrays.stream(wiki.contribs(user))
-            .map(Wiki.Revision::getPage);
-    }
+        pagestream = wiki.contribs(user, null).stream().map(Wiki.Revision::getTitle);
     else if (mode.equals("pages"))
     {
         // state with no input parameters
@@ -133,23 +127,19 @@ first in the GUI) apply.
 %>
 <%@ include file="footer.jsp" %>
 <%
-            return;
         }
         pagestream = Arrays.stream(pages.split("\r\n")).map(String::trim);
     }
-    out.println("<hr>");
-    String[] pagesarray = pagestream
-        .distinct()
+    Set<String> pagesarray = pagestream
         .filter(title -> wiki.namespace(title) >= 0)
         .limit(25)
-        .toArray(String[]::new);
-    if (pagesarray.length < 2)
+        .collect(Collectors.toSet());
+    if (pagesarray.size() < 2)
     {
+        request.setAttribute("error", "Need at least two distinct pages to perform an intersection!");
 %>
-    <span class="error">Need at least two distinct pages to perform an intersection!</span>
 <%@ include file="footer.jsp" %>
 <%
-        return;
     }
     ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
     aei.setIgnoringMinorEdits(nominor);
@@ -161,11 +151,10 @@ first in the GUI) apply.
     Map<String, List<Wiki.Revision>> results = aei.intersectArticles(pagesarray, noadmin, nobot, noanon);
     if (results.isEmpty())
     {
+        request.setAttribute("error", "No intersection after applying exclusions and removing non-existing pages!");
 %>
-    <span class="error">No intersection after applying exclusions and removing non-existing pages!</span>
 <%@ include file="footer.jsp" %>
 <%
-        return;
     }
     Map<String, Map<String, List<Wiki.Revision>>> bypage = new HashMap<>();
     results.forEach((key, value) ->
@@ -176,6 +165,9 @@ first in the GUI) apply.
         bypage.put(key, grouppage);
     });
     Pages pageUtils = Pages.of(wiki);
+    Revisions revisionUtils = Revisions.of(wiki);
+    Users userUtils = Users.of(wiki);
+
     String blah = bypage.entrySet().stream()
         .sorted((entry1, entry2) -> 
         {
@@ -188,7 +180,7 @@ first in the GUI) apply.
             sb.append("<h2>");
             sb.append(entry.getKey());
             sb.append("</h2>\n");
-            sb.append(ParserUtils.generateUserLinks(wiki, entry.getKey()));
+            sb.append(userUtils.generateHTMLSummaryLinks(entry.getKey()));
 
             for (Map.Entry<String, List<Wiki.Revision>> entry2 : entry.getValue().entrySet())
             {
@@ -202,11 +194,12 @@ first in the GUI) apply.
                     title.append("s");
                 sb.append("<p>\n");
                 sb.append(ServletUtils.beginCollapsibleSection(title.toString(), true));
-                sb.append(ParserUtils.revisionsToHTML(wiki, revs.toArray(new Wiki.Revision[revs.size()])));
+                sb.append(revisionUtils.toHTML(revs));
                 sb.append(ServletUtils.endCollapsibleSection());
             }
             return sb;
         }).collect(Collectors.joining());
+    out.println("<hr>");
     out.println(blah);
 %>
 <%@ include file="footer.jsp" %>

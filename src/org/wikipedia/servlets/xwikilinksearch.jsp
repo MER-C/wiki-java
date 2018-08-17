@@ -96,9 +96,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
 %>
 <%@ include file="footer.jsp" %>
 <%
-        return;
     }
-    out.println("<hr>");
     Map<Wiki, List<String[]>> results = null;
     if (mode.equals("multi"))
     {
@@ -117,17 +115,17 @@ reasons, results are limited to between 500 and 1000 links per wiki.
                     domain, AllWikiLinksearch.MAJOR_WIKIS, https, mailto, ns);
                 break;
             default:
-    %>
-    <span class="error">Invalid wiki set selected!</span>
-    <%@ include file="footer.jsp" %>
-    <%
-                return;
+                request.setAttribute("error", "Invalid wiki set selected!");
+%>
+<%@ include file="footer.jsp" %>
+<%
         }
     }
     else if (mode.equals("single"))
         results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 
             Arrays.asList(Wiki.createInstance(wikiinput)), https, mailto, ns);
 
+    out.println("<hr>");
     for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
     {
         Wiki wiki = entry.getKey();
@@ -139,9 +137,9 @@ reasons, results are limited to between 500 and 1000 links per wiki.
             out.print("At least ");
         out.print(value.size());
         out.print(" links found ");
-        out.print("(<a href=\"" + wiki.getPageURL("Special:Linksearch/*." + domain)
+        out.print("(<a href=\"" + wiki.getPageUrl("Special:Linksearch/*." + domain)
             + "\">HTTP linksearch</a> | ");
-        out.println("<a href=\"" + wiki.getPageURL("Special:Linksearch/https://*." + domain)
+        out.println("<a href=\"" + wiki.getPageUrl("Special:Linksearch/https://*." + domain)
             + "\">HTTPS linksearch</a>).");
     }
 %>

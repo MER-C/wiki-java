@@ -17,6 +17,16 @@
  --%>
  
 <%@ page import="java.time.*" %>
+<%@ page import="javax.servlet.jsp.*" %>
+
+<%
+    Object error = request.getAttribute("error"); // always a string
+    if (error != null)
+    {
+        out.println("<hr>");
+        out.println("<span class=\"error\">" + error.toString() + "</span>");
+    }
+%>
 
 <br>
 <br>
@@ -44,3 +54,7 @@ the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
     <a href="./prefixcontribs.jsp">Prefix contributions</a>
 </body>
 </html>
+
+<%
+    throw new SkipPageException(); // Exit
+%>
