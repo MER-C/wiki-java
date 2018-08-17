@@ -7,9 +7,6 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
-
 <%
     request.setAttribute("toolname", "External link checker (beta)");
 
@@ -19,15 +16,8 @@
     String title = request.getParameter("title");
     title = (title == null) ? "" : ServletUtils.sanitizeForAttribute(title);
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<title><%= request.getAttribute("toolname") %></title>
-</head>
-
-<body>
 <p>
 This tool performs linksearches to count how many live links exist to each 
 unique domain used in external links by a given article. Useful for finding

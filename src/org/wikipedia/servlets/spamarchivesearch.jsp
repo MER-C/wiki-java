@@ -7,22 +7,12 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
-
 <%
     request.setAttribute("toolname", "Spam archive search");
     String query = request.getParameter("query");
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<title><%= request.getAttribute("toolname") %></title>
-</head>
-
-<body>
 <p>
 This tool searches various spam related noticeboards for a given query string. 
 If you want to search a domain name, please enclose it in quotation marks.

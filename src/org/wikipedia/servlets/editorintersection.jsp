@@ -7,11 +7,9 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
-
 <%
     request.setAttribute("toolname", "Article/editor intersection");
+    request.setAttribute("scripts", new String[] { "collapsible.js", "EditorIntersection.js" });
 
     String wikiparam = request.getParameter("wiki");
     wikiparam = (wikiparam == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wikiparam);
@@ -49,17 +47,8 @@
     boolean nominor = (request.getParameter("nominor") != null);
     boolean noreverts = (request.getParameter("noreverts") != null);
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<script src="collapsible.js"></script>
-<script src="EditorIntersection.js"></script>
-<title><%= request.getAttribute("toolname") %></title>
-</head>
-
-<body>
 <p>
 This tool retrieves the common editors of a given set of pages. Query limits of
 1500 edits/revisions and 25 articles (contributions: most recent, category members: 

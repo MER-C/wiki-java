@@ -7,9 +7,6 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true"%>
-
 <%
     request.setAttribute("toolname", "User watchlist");
 
@@ -31,15 +28,8 @@
     Users userUtils = Users.of(enWiki);
     Revisions revisionUtils = Revisions.of(enWiki);
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<title><%= request.getAttribute("toolname") %></title>
-</head>
-
-<body>
 <p>
 This tool retrieves recent (<5 days) contributions of a list of users. There is 
 a limit of 30 users per request, though the list may be of indefinite length.

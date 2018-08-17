@@ -7,9 +7,6 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
-
 <%
     request.setAttribute("toolname", "Prefix contributions");
 
@@ -20,15 +17,8 @@
     int time = (temp == null) ? 7 : Integer.parseInt(temp);
     time = Math.max(time, 0);
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<title><%= request.getAttribute("toolname") %></title>
-</head>
-
-<body>
 <p>
 This tool retrieves contributions of an IP range or username prefix. To search 
 for an IPv4 range, use a search key of (say) 111.222. for 111.222.0.0/16. /24s 

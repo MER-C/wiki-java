@@ -7,9 +7,6 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true"%>
-
 <%
     request.setAttribute("toolname", "Mass linksearch");
 
@@ -32,15 +29,8 @@
     else
         inputdomains = "";
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<title><%= request.getAttribute("toolname") %></title>
-</head>
-
-<body>
 <p>
 This tool searches a single project for a large collection of links. Enter 
 domain names (example.com, *{{LinkSummary|example.com}} and \\bexample\\.com\\b

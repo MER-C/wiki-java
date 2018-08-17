@@ -7,11 +7,9 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
-<%@ include file="header.jsp" %>
-<%@ page contentType="text/html" pageEncoding="UTF-8" trimDirectiveWhitespaces="true"%>
-
 <%
     request.setAttribute("toolname", "Cross-wiki linksearch");
+    request.setAttribute("scripts", new String[] { "XWikiLinksearch.js" });
 
     String mode = request.getParameter("mode");
     if (mode == null)
@@ -35,16 +33,8 @@
     boolean mainns = temp != null && temp.equals("0");
     int[] ns = mainns ? new int[] { Wiki.MAIN_NAMESPACE } : new int[0];
 %>
+<%@ include file="header.jsp" %>
 
-<!doctype html>
-<html>
-<head>
-<link rel=stylesheet href="styles.css">
-<title><%= request.getAttribute("toolname") %></title>
-<script type="text/javascript" src="XWikiLinksearch.js"></script>
-</head>
-
-<body>
 <p>
 This tool searches various Wikimedia projects for a specific link. Enter a 
 domain name (example.com, not *.example.com or http://example.com) below. A 

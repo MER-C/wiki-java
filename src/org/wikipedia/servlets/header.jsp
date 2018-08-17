@@ -17,6 +17,7 @@
  --%>
 
 <%@ page import="java.io.*" %>
+<%@ page import="java.net.*" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.util.stream.*" %>
 <%@ page import="java.time.*" %>
@@ -25,7 +26,11 @@
 <%@ page import="org.wikipedia.servlets.*" %>
 <%@ page import="org.wikipedia.tools.*" %>
 
+<%@ page trimDirectiveWhitespaces="true"%>
+
 <%
+    response.setCharacterEncoding("UTF-8");
+
 // Set security headers
 
     // Enable HSTS (force HTTPS)
@@ -45,5 +50,32 @@
     {
         response.sendError(403, "robots.txt exists for a reason. Follow it!");
         return;
+    }
+
+// Content type-specific header material
+
+    String contenttype = (String)request.getAttribute("contenttype");
+    if (contenttype == "text")
+        // create download prompt
+        response.setContentType("text/plain;charset=UTF-8");
+    else
+    {
+        response.setContentType("text/html");
+%>
+<!doctype html>
+<html>
+<head>
+<link rel=stylesheet href="styles.css">
+<title><%= request.getAttribute("toolname") %></title>
+<%
+    String[] scripts = (String[])request.getAttribute("scripts");
+    if (scripts != null)
+        for (String script : scripts)
+            out.println("<script src=\"" + script + "\"></script>");
+%>
+</head>
+
+<body>
+<%
     }
 %>
