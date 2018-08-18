@@ -9,7 +9,7 @@
 
 <%
     request.setAttribute("toolname", "Cross-wiki linksearch");
-    request.setAttribute("scripts", new String[] { "XWikiLinksearch.js" });
+    request.setAttribute("scripts", new String[] { "common.js", "XWikiLinksearch.js" });
 
     String mode = request.getParameter("mode");
     if (mode == null)

@@ -18,6 +18,7 @@
 
 <%
     request.setAttribute("toolname", "Contribution surveyor");
+    request.setAttribute("scripts", new String[] { "common.js", "ContributionSurveyor.js" });
 
     String user = request.getParameter("user");
     String category = request.getParameter("category");
@@ -56,15 +57,14 @@
     {
         String[] catmembers = wiki.getCategoryMembers(category, Wiki.USER_NAMESPACE);
         if (catmembers.length == 0)
-            request.setAttribute("error", "Category \"" + ServletUtils.sanitizeForHTML(category) + "\" is empty!");
+            request.setAttribute("error", "Category \"" + ServletUtils.sanitizeForHTML(category) + "\" contains no users!");
         else
             for (String tempstring : catmembers)
                 users.add(wiki.removeNamespace(tempstring));
     }
 
     ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-    Map<String, Map<String, List<Wiki.Revision>>> survey = null;
-    Map<String, List<Wiki.Revision>> usersurvey = null;
+    String survey = null;
 
     // get results
     if (request.getAttribute("error") == null && !users.isEmpty())
@@ -77,28 +77,62 @@
             surveyor.setLatestDateTime(latestdate);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
         
-        survey = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
-        usersurvey = survey.entrySet().iterator().next().getValue();
-
-        if (usersurvey.isEmpty())
+        Map<String, Map<String, List<Wiki.Revision>>> surveydata = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        boolean noresults = true;
+        for (Map.Entry<String, Map<String, List<Wiki.Revision>>> entry : surveydata.entrySet())
+        {
+            if (!entry.getValue().isEmpty())
+            {
+                noresults = false;
+                break;
+            }
+        }
+        if (noresults)
         {
             request.setAttribute("error", "No edits found!");
             survey = null;
-            usersurvey = null;
         }
         else
+        {
             request.setAttribute("contenttype", "text");
+            StringBuilder sb = new StringBuilder();
+            if (category != null)
+            {
+                surveydata.forEach((username, usersurvey) ->
+                {
+                    // skip no results users
+                    if (usersurvey.isEmpty())
+                        return;
+                    
+                    sb.append("== ");
+                    sb.append(username);
+                    sb.append(" ==\n");
+                    sb.append(Users.generateWikitextSummaryLinks(username));
+                    sb.append("\n");
+                    sb.append(surveyor.formatTextSurveyAsWikitext(username, usersurvey));
+                    sb.append("\n");
+                });
+                survey = sb.toString();
+            }
+            else // user != null
+                survey = surveyor.formatTextSurveyAsWikitext(null, surveydata.entrySet().iterator().next().getValue());
+        }
     }
 %>
 <%@ include file="header.jsp" %>
-<%        
-    if (usersurvey != null)
+<%  
+    if (survey != null)
     {
-        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
-        out.print(Users.generateWikitextSummaryLinks(user));
+        if (user != null)
+        {
+            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
+            out.print(Users.generateWikitextSummaryLinks(user));            
+        }
+        else // category != null
+            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(category, "UTF-8") + ".txt");
         out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         out.println();
-        out.print(surveyor.formatTextSurveyAsWikitext(null, usersurvey));
+        out.print(survey);
         out.println(surveyor.generateWikitextFooter());
         return;
     }
@@ -114,20 +148,20 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <form action="./contributionsurveyor.jsp" method=GET>
 <table>
 <tr>
-    <td colspan=2>User to survey:
-    <td><input type=text name=user value="<%= user == null ? "" : ServletUtils.sanitizeForAttribute(user) %>" required>
-<!--
+    <td><input type=radio name=mode id="radio_user" checked>
+    <td>User to survey:
+    <td><input type=text name=user id=user value="<%= user == null ? "" : ServletUtils.sanitizeForAttribute(user) %>" required>
 <tr>
-    <td colspan=2>Fetch users from category:
-    <td><input type=text name=category value="<%= category == null ? "" : ServletUtils.sanitizeForAttribute(category) %>" required>
--->
+    <td><input type=radio name=mode id="radio_category">
+    <td>Fetch users from category:
+    <td><input type=text name=category id=category value="<%= category == null ? "" : ServletUtils.sanitizeForAttribute(category) %>" disabled>
 <tr>
     <td colspan=2>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>
 <tr>
     <td colspan=2>Exclude:
-    <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits</input>
-<!--        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts (partial)</input> -->
+    <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits
+<!--        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts (partial) -->
 <tr>
     <td colspan=2>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"></input> to 

@@ -15,17 +15,13 @@ document.addEventListener('DOMContentLoaded', function()
 {
     document.getElementById('radio_multi').addEventListener('click', function()
     {
-        var el = document.getElementById('wiki');
-        el.disabled = true;
-        el.required = false;
-        document.getElementById('set').disabled = false;
+        disableElement(document.getElementById('wiki'));
+        enableRequiredElement(document.getElementById('set'));
     });
     
     document.getElementById('radio_single').addEventListener('click', function()
     {
-        var el = document.getElementById('wiki');
-        el.disabled = false;
-        el.required = true;
-        el = document.getElementById('set').disabled = true;
+        enableRequiredElement(document.getElementById('wiki'));
+        disableElement(document.getElementById('set'));
     });
 });

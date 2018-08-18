@@ -7,47 +7,27 @@
  *  for details. There is NO WARRANTY, to the extent permitted by law.
  */
 
-/**
- *  Toggles between the different modes of the article-editor intersection tool.
- */
+// Toggles between the different modes of the article-editor intersection tool.
 document.addEventListener('DOMContentLoaded', function() 
 {
     document.getElementById('radio_cat').addEventListener('click', function()
     {
-        var el = document.getElementById('pages');
-        el.disabled = true;
-        el.required = false;
-        el = document.getElementById('user');
-        el.disabled = true;
-        el.required = false;
-        el = document.getElementById('category');
-        el.disabled = false;
-        el.required = true;
+        disableElement(document.getElementById('pages'));
+        disableElement(document.getElementById('user'));
+        enableRequiredElement(document.getElementById('category'));
     });
     
     document.getElementById('radio_user').addEventListener('click', function()
     {
-        var el = document.getElementById('pages');
-        el.disabled = true;
-        el.required = false;
-        el = document.getElementById('user');
-        el.disabled = false;
-        el.required = true;
-        el = document.getElementById('category');
-        el.disabled = true;
-        el.required = false;
+        disableElement(document.getElementById('pages'));
+        enableRequiredElement(document.getElementById('user'));
+        disableElement(document.getElementById('category'));
     });
     
     document.getElementById('radio_pages').addEventListener('click', function()
     {
-        var el = document.getElementById('pages');
-        el.disabled = false;
-        el.required = true;
-        el = document.getElementById('user');
-        el.disabled = true;
-        el.required = false;
-        el = document.getElementById('category');
-        el.disabled = true;
-        el.required = false;
+        enableRequiredElement(document.getElementById('pages'));
+        disableElement(document.getElementById('user'));
+        disableElement(document.getElementById('category'));
     });
 });

@@ -9,7 +9,7 @@
 
 <%
     request.setAttribute("toolname", "Article/editor intersection");
-    request.setAttribute("scripts", new String[] { "collapsible.js", "EditorIntersection.js" });
+    request.setAttribute("scripts", new String[] { "common.js", "collapsible.js", "EditorIntersection.js" });
 
     String wikiparam = request.getParameter("wiki");
     wikiparam = (wikiparam == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wikiparam);
