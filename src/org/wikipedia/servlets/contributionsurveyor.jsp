@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --%>
 
+<%@ include file="datevalidate.jspf" %>
 <%
     request.setAttribute("toolname", "Contribution surveyor");
     request.setAttribute("scripts", new String[] { "common.js", "ContributionSurveyor.js" });
@@ -25,27 +26,8 @@
     boolean nominor = (request.getParameter("nominor") != null);
     boolean noreverts = (request.getParameter("noreverts") != null);
 
-    String homewiki = request.getParameter("wiki");
-    homewiki = (homewiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(homewiki);
-
-    String earliest = request.getParameter("earliest");
-    OffsetDateTime earliestdate = null;
-    earliest = (earliest == null) ? "" : ServletUtils.sanitizeForAttribute(earliest);
-    if (!earliest.isEmpty())
-        earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
-
-    String latest = request.getParameter("latest");
-    OffsetDateTime latestdate = null;
-    latest = (latest == null) ? "" : ServletUtils.sanitizeForAttribute(latest);
-    if (!latest.isEmpty())
-        latestdate = OffsetDateTime.parse(latest + "T23:59:59Z");
-
-    String bytefloor = request.getParameter("bytefloor");
-    bytefloor = (bytefloor == null) ? "150" : ServletUtils.sanitizeForAttribute(bytefloor);
-
-    // error conditions
-    if (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate))
-        request.setAttribute("error", "Earliest date is after latest date!");
+    String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
+    String bytefloor = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("bytefloor"), "150");
     
     Wiki wiki = Wiki.createInstance(homewiki);
     wiki.setQueryLimit(35000); // 70 network requests
@@ -164,11 +146,11 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <!--        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts (partial) -->
 <tr>
     <td colspan=2>Show changes from:
-    <td><input type=date name=earliest value="<%= earliest %>"></input> to 
-        <input type=date name=latest value="<%= latest %>"></input> (inclusive)
+    <td><input type=date name=earliest value="<%= earliest %>"> to 
+        <input type=date name=latest value="<%= latest %>"> (inclusive)
 <tr>
     <td colspan=2>Show changes that added at least:
-    <td><input type=number name=bytefloor value="<%= bytefloor %>"></input> bytes
+    <td><input type=number name=bytefloor value="<%= bytefloor %>"> bytes
 </table>
 <input type=submit value="Survey user">
 </form>

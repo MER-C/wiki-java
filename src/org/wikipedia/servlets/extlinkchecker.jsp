@@ -8,13 +8,10 @@
 -->
 
 <%
-    request.setAttribute("toolname", "External link checker (beta)");
+    request.setAttribute("toolname", "External link checker");
 
-    String wiki = request.getParameter("wiki");
-    wiki = (wiki == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wiki);
-
-    String title = request.getParameter("title");
-    title = (title == null) ? "" : ServletUtils.sanitizeForAttribute(title);
+    String wiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
+    String title = ServletUtils.sanitizeForAttribute(request.getParameter("title"));
 %>
 <%@ include file="header.jsp" %>
 

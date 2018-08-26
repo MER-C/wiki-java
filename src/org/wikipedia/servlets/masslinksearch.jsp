@@ -11,10 +11,8 @@
     request.setAttribute("toolname", "Mass linksearch");
 
     boolean https = (request.getParameter("https") != null);
-
-    String wiki = request.getParameter("wiki");
-    wiki = (wiki == null) ? "" : ServletUtils.sanitizeForAttribute(wiki);
-
+    String wiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
+    
     // parse inputdomains to pure list of domains
     String inputdomains = request.getParameter("domains");
     if (inputdomains != null)

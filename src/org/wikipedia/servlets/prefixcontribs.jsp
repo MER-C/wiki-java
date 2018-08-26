@@ -9,14 +9,11 @@
 
 <%
     request.setAttribute("toolname", "Prefix contributions");
+    request.setAttribute("earliest_default", OffsetDateTime.now().minusDays(7));
 
-    String prefix = request.getParameter("prefix");
-    prefix = (prefix == null) ? "" : ServletUtils.sanitizeForAttribute(prefix);
-
-    String temp = request.getParameter("time");
-    int time = (temp == null) ? 7 : Integer.parseInt(temp);
-    time = Math.max(time, 0);
+    String prefix = ServletUtils.sanitizeForAttribute(request.getParameter("prefix"));    
 %>
+<%@ include file="datevalidate.jspf" %>
 <%@ include file="header.jsp" %>
 
 <p>
@@ -32,8 +29,9 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
     <td>Search string:
     <td><input type=text name=prefix required value="<%= prefix %>">
 <tr>
-    <td>For last:
-    <td><input type=number name=time required value="<%= time %>"> days
+    <td>Show changes from:
+    <td><input type=date name=earliest value="<%= earliest %>"> to 
+        <input type=date name=latest value="<%= latest %>"> (inclusive)
 </table>
 <input type=submit value="Search">
 </form>
@@ -49,7 +47,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
             enWiki.setMaxLag(-1);
             enWiki.setQueryLimit(1000);
             Wiki.RequestHelper rh = enWiki.new RequestHelper()
-                .withinDateRange(OffsetDateTime.now(ZoneOffset.UTC).minusDays(time), null);
+                .withinDateRange(earliestdate, latestdate);
             List<Wiki.Revision> revisions = enWiki.prefixContribs(prefix, rh);
             out.println("<hr>");
             if (revisions.isEmpty())

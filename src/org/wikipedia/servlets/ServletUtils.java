@@ -20,6 +20,7 @@ package org.wikipedia.servlets;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Objects;
 
 /**
  *  Common servlet code so that I can maintain it easier.
@@ -33,10 +34,12 @@ public class ServletUtils
      *  @param input an input string
      *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention">OWASP XSS 
      *  Prevention Cheat Sheet Rule 1</a>
-     *  @return <tt>input</tt>, sanitized
+     *  @return the sanitized input or the empty string if input is null
      */
     public static String sanitizeForHTML(String input)
     {
+        if (input == null)
+            return "";
         return input.replaceAll("&", "&amp;")
             .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
             .replaceAll("'", "&#x27;").replaceAll("\"", "&quot;")
@@ -49,10 +52,26 @@ public class ServletUtils
      *  @param input the input to be sanitized
      *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention"> OWASP XSS
      *  Prevention Cheat Sheet Rule 2</a>
-     *  @return the sanitized input
+     *  @return the sanitized input or the empty string if input is null
      */
     public static String sanitizeForAttribute(String input)
+    {        
+        return sanitizeForAttributeOrDefault(input, "");
+    }
+    
+    /**
+     *  Sanitizes untrusted input for XSS destined for inclusion in boring
+     *  HTML attributes.
+     *  @param input the input to be sanitized
+     *  @param def a default value for the input
+     *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention"> OWASP XSS
+     *  Prevention Cheat Sheet Rule 2</a>
+     *  @return the sanitized input or the the default string if input is null
+     */
+    public static String sanitizeForAttributeOrDefault(String input, String def)
     {
+        if (input == null)
+            return Objects.requireNonNull(def);
         return input.replaceAll("\"", "&quot;");
     }
     

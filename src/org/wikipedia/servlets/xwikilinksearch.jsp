@@ -15,8 +15,7 @@
     if (mode == null)
         mode = "multi";
 
-    String domain = request.getParameter("link");
-    domain = (domain == null) ? "" : ServletUtils.sanitizeForAttribute(domain);
+    String domain = ServletUtils.sanitizeForAttribute(request.getParameter("link"));
     
     String set = request.getParameter("set");
     if (set == null)

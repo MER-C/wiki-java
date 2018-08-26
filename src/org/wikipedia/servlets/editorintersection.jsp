@@ -7,40 +7,21 @@
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
 
+<%@ include file="datevalidate.jspf" %>
 <%
     request.setAttribute("toolname", "Article/editor intersection");
     request.setAttribute("scripts", new String[] { "common.js", "collapsible.js", "EditorIntersection.js" });
 
-    String wikiparam = request.getParameter("wiki");
-    wikiparam = (wikiparam == null) ? "en.wikipedia.org" : ServletUtils.sanitizeForAttribute(wikiparam);
+    String wikiparam = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
 
     String mode = request.getParameter("mode");
     if (mode == null)
-        mode = "pages";
+        mode = "none";
 
-    String pages = request.getParameter("pages");
-    pages = (pages == null) ? "" : ServletUtils.sanitizeForHTML(pages);
-
-    String category = request.getParameter("category");
-    if (category != null)
-        category = ServletUtils.sanitizeForAttribute(category);
-
-    String user = request.getParameter("user");
-    if (user != null)
-        user = ServletUtils.sanitizeForAttribute(user);
-
-    String earliest = request.getParameter("earliest");
-    OffsetDateTime earliestdate = null;
-    earliest = (earliest == null) ? "" : ServletUtils.sanitizeForAttribute(earliest);
-    if (!earliest.isEmpty())
-        earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
-    
-    String latest = request.getParameter("latest");
-    OffsetDateTime latestdate = null;
-    latest = (latest == null) ? "" : ServletUtils.sanitizeForAttribute(latest);
-    if (!latest.isEmpty())
-        latestdate = OffsetDateTime.parse(latest + "T23:59:59Z");
-    
+    String pages = ServletUtils.sanitizeForHTML(request.getParameter("pages"));    
+    String category = ServletUtils.sanitizeForAttribute(request.getParameter("category"));
+    String user = ServletUtils.sanitizeForAttribute(request.getParameter("user"));
+        
     boolean noadmin = (request.getParameter("noadmin") != null);
     boolean nobot = (request.getParameter("nobot") != null);
     boolean noanon = (request.getParameter("noanon") != null);
@@ -76,24 +57,23 @@ first in the GUI) apply.
         </textarea>
 <tr>
     <td colspan=2>Exclude: 
-    <td><input type=checkbox name=noadmin value=1<%= (pages.isEmpty() || noadmin) ? " checked" : "" %>>admins</input>
-        <input type=checkbox name=nobot value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>bots</input>
-        <input type=checkbox name=noanon value=1<%= noanon ? " checked" : "" %>>IPs</input>
-        <input type=checkbox name=nominor value=1<%= nominor ? " checked" : "" %>>minor edits</input>
-        <input type=checkbox name=noreverts value=1<%= noreverts ? " checked" : "" %>>reverts</input>
+    <td><input type=checkbox name=noadmin value=1<%= (pages.isEmpty() || noadmin) ? " checked" : "" %>>admins
+        <input type=checkbox name=nobot value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>bots
+        <input type=checkbox name=noanon value=1<%= noanon ? " checked" : "" %>>IPs
+        <input type=checkbox name=nominor value=1<%= nominor ? " checked" : "" %>>minor edits
+        <input type=checkbox name=noreverts value=1<%= noreverts ? " checked" : "" %>>reverts
 <tr>
     <td colspan=2>Show changes from:
-    <td><input type=date name=earliest value="<%= earliest %>"></input> to 
-        <input type=date name=latest value="<%= latest %>"></input> (inclusive)
+    <td><input type=date name=earliest value="<%= earliest %>"> to 
+        <input type=date name=latest value="<%= latest %>"> (inclusive)
 </table>
 <br>
 <input type=submit value=Search>
 </form>
 
 <%
-    if (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate))
+    if (request.getAttribute("error") != null)
     {
-        request.setAttribute("error", "Earliest date is after latest date!");
 %>
 <%@ include file="footer.jsp" %>
 <%
@@ -104,21 +84,24 @@ first in the GUI) apply.
     wiki.setQueryLimit(1500);
 
     Stream<String> pagestream = null;
-    if (mode.equals("category"))
-        pagestream = Arrays.stream(wiki.getCategoryMembers(category));
-    else if (mode.equals("contribs"))
-        pagestream = wiki.contribs(user, null).stream().map(Wiki.Revision::getTitle);
-    else if (mode.equals("pages"))
+    switch (mode)
     {
-        // state with no input parameters
-        if (pages.isEmpty())
-        {
+        case "category":
+            pagestream = Arrays.stream(wiki.getCategoryMembers(category));
+            break;
+        case "contribs":
+            pagestream = wiki.contribs(user, null).stream().map(Wiki.Revision::getTitle);
+            break;
+        case "pages":
+            pagestream = Arrays.stream(pages.split("\r\n")).map(String::trim);
+            break;
+        default:
+            // state with no input parameters       
 %>
 <%@ include file="footer.jsp" %>
 <%
-        }
-        pagestream = Arrays.stream(pages.split("\r\n")).map(String::trim);
     }
+        
     Set<String> pagesarray = pagestream
         .filter(title -> wiki.namespace(title) >= 0)
         .limit(25)

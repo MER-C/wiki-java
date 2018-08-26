@@ -49,7 +49,7 @@ the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
     <a href="./contributionsurveyor.jsp">Contribution surveyor</a> |
     <a href="./imagecci.jsp">Image contribution surveyor</a> |
     <a href="./editorintersection.jsp">Article-editor intersection</a> |
-    <a href="./extlinkchecker.jsp">External link checker (beta)</a> |
+    <a href="./extlinkchecker.jsp">External link checker</a> |
     <a href="./spamarchivesearch.jsp">Spam blacklist archive search</a> |
     <a href="./prefixcontribs.jsp">Prefix contributions</a>
 </body>
