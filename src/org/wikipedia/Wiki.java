@@ -5477,6 +5477,75 @@ public class Wiki implements Comparable<Wiki>
         log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
     }
+    
+    /**
+     *  Gets the number of pages in the list of given catgories without 
+     *  {@linkplain #getCategoryMembers(String, int...) performing a full lookup
+     *  of category members}. This is equivalent to the <kbd>{{PAGESINCATEGORY}}</kbd>
+     *  parser function. The input order is the same as the return order.
+     * 
+     *  @param categories a list of categories (with or without Category: prefix)
+     *  @return an array for each category, where the first entry = total number
+     *  of pages, second = number of normal pages, third = number of files and 
+     *  fourth = number of subcategories
+     *  @throws IOException if a network error occurs
+     *  @since 0.36
+     *  @see <a href="https://mediawiki.org/wiki/API:Categoryinfo">MediaWiki
+     *  documentation</a>
+     */
+    public List<int[]> getCategoryMemberCounts(List<String> categories) throws IOException
+    {
+        // force all titles to have namespace(title) == CATEGORY_NAMESPACE because
+        // the API requires it
+        List<String> norm_cats = new ArrayList<>();
+        String catns = namespaceIdentifier(CATEGORY_NAMESPACE);
+        for (String category : categories)
+        {
+            if (namespace(category) != CATEGORY_NAMESPACE)
+                norm_cats.add(catns + ":" + category);
+            else
+                norm_cats.add(category);
+        }
+        
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
+        getparams.put("prop", "categoryinfo");
+        Map<String, Object> postparams = new HashMap<>();
+        Map<String, int[]> metamap = new HashMap<>();
+        for (String titlestring : constructTitleString(norm_cats.toArray(new String[0])))
+        {
+            postparams.put("titles", titlestring);
+            String result = makeApiCall(getparams, postparams, "getCategoryMemberCount");
+            // no redirect resolution, because category members don't follow redirects
+            
+            // form: <page _idx="2504643" pageid="2504643" ns="14" title="Category:Albert Einstein">
+            // <categoryinfo size="95" pages="87" files="0" subcats="8" />
+            // </page>
+            for (int j = result.indexOf("<page "); j > 0; j = result.indexOf("<page ", ++j))
+            {
+                int x = result.indexOf("</page>", j);
+                String item = result.substring(j, x);
+                boolean exists = !item.contains("missing=\"\"");
+                int[] values = new int[4];
+                if (exists)
+                {
+                    values[0] = Integer.parseInt(parseAttribute(item, "size", 0));
+                    values[1] = Integer.parseInt(parseAttribute(item, "pages", 0));
+                    values[2] = Integer.parseInt(parseAttribute(item, "files", 0));
+                    values[3] = Integer.parseInt(parseAttribute(item, "subcats", 0));
+                }
+                String parsedtitle = parseAttribute(item, "title", 0);
+                metamap.put(parsedtitle, values);
+            }
+        }
+        
+        // reorder
+        List<int[]> ret = new ArrayList<>();
+        for (String category : norm_cats)
+            ret.add(metamap.get(normalize(category)));
+        log(Level.INFO, "getCategoryMemberCounts", "Successfully retrieved category member counts for " + categories.size() + " categories.");
+        return ret;
+    }
 
     /**
      *  Gets the members of a category, sorted as in the UI.
@@ -5484,7 +5553,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param name the name of the category (with or without namespace attached)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @return a String[] containing page titles of members of the category
-     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IOException if a network error occurs
      *  @since 0.03
      */
     public String[] getCategoryMembers(String name, int... ns) throws IOException

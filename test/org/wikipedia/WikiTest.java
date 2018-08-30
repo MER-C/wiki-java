@@ -524,7 +524,7 @@ public class WikiTest
             }
         }
     }
-
+    
     @Test
     public void getDeletedHistory() throws Exception
     {
@@ -816,6 +816,17 @@ public class WikiTest
 
         // Special page = return null
         assertNull("getPageInfo: special page", pageinfo[3]);
+    }
+    
+    @Test
+    public void getCategoryMemberCounts() throws Exception
+    {
+        // highly volatile content, so not amenable to unit testing 
+        // but can check clear zero categories and title rewrites
+        List<int[]> results = testWiki.getCategoryMemberCounts(Arrays.asList("Category:Testssss", 
+            "Wikipedia noticeboards", "Category:Wikipedia noticeboards"));
+        assertArrayEquals("categoryMemberCounts: non-existent category", new int[] {0, 0, 0, 0}, results.get(0));
+        assertArrayEquals("categoryMemberCounts: title rewrite", results.get(2), results.get(1));
     }
 
     @Test
