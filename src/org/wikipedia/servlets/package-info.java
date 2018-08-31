@@ -30,6 +30,29 @@
  *  the <a href="https://jcp.org/en/jsr/detail?id=369">Java servlet API.</a>
  *  There are no other dependencies other than the core JDK.
  * 
+ *  <h3>Deploying these servlets on your own infrastructure</h3>
+ * 
+ *  <p>
+ *  Assuming that:
+ * 
+ *  <ul>
+ *  <li>classes are compiled to <code>wiki-java/build/classes</code>
+ *  <li>generated JavaDoc is in <code>wiki-java/dist/javadoc</code>
+ *  </ul>
+ * 
+ *  <p>
+ *  then the following shell script enough to produce a WAR that can be deployed 
+ *  to any Jakarta EE compatible server. No further intervention is needed.
+ *
+ *  <pre>
+ *  rm -rf staging/*
+ *  cp -r wiki-java/web/* staging
+ *  cp -r wiki-java/src/org/wikipedia/servlets/*.jsp wiki-java/build/classes/org/wikipedia/servlets
+ *  cp -r wiki-java/build/classes staging/WEB-INF
+ *  cp -r wiki-java/dist/javadoc staging/doc
+ *  jar cvf wikitools.war -C staging .
+ *  </pre>
+ * 
  *  @see <a href="https://wikipediatools.appspot.com">wikipediatools.appspot.com</a>
  *  @see org.wikipedia.tools
  */
