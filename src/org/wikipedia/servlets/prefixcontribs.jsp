@@ -9,7 +9,7 @@
 
 <%
     request.setAttribute("toolname", "Prefix contributions");
-    request.setAttribute("earliest_default", OffsetDateTime.now().minusDays(7));
+    request.setAttribute("earliest_default", LocalDate.now(ZoneId.of("UTC")).minusDays(7));
 
     String prefix = ServletUtils.sanitizeForAttribute(request.getParameter("prefix"));    
 %>
@@ -47,7 +47,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
             enWiki.setMaxLag(-1);
             enWiki.setQueryLimit(1000);
             Wiki.RequestHelper rh = enWiki.new RequestHelper()
-                .withinDateRange(earliestdate, latestdate);
+                .withinDateRange(earliest_odt, latest_odt);
             List<Wiki.Revision> revisions = enWiki.prefixContribs(prefix, rh);
             out.println("<hr>");
             if (revisions.isEmpty())

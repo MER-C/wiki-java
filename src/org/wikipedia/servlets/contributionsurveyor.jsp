@@ -54,9 +54,9 @@
         surveyor.setIgnoringMinorEdits(nominor);
 //        surveyor.setIgnoringReverts(noreverts);
         if (!earliest.isEmpty())
-            surveyor.setEarliestDateTime(earliestdate);
+            surveyor.setEarliestDateTime(earliest_odt);
         if (!latest.isEmpty())
-            surveyor.setLatestDateTime(latestdate);
+            surveyor.setLatestDateTime(latest_odt);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
         
         Map<String, Map<String, List<Wiki.Revision>>> surveydata = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);

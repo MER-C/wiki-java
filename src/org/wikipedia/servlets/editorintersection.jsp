@@ -117,9 +117,9 @@ first in the GUI) apply.
     aei.setIgnoringMinorEdits(nominor);
     aei.setIgnoringReverts(noreverts);
     if (!earliest.isEmpty())
-        aei.setEarliestDateTime(earliestdate);
+        aei.setEarliestDateTime(earliest_odt);
     if (!latest.isEmpty())
-        aei.setLatestDateTime(latestdate);
+        aei.setLatestDateTime(latest_odt);
     Map<String, List<Wiki.Revision>> results = aei.intersectArticles(pagesarray, noadmin, nobot, noanon);
     if (results.isEmpty())
     {

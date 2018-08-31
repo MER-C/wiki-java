@@ -1,7 +1,7 @@
 <%--
     @(#)datevalidate.jspf 0.01 26/08/2018
     Copyright (C) 2018 - 20xx MER-C
-  
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
     published by the Free Software Foundation, either version 3 of the
@@ -20,10 +20,12 @@
     Fetches and validates date ranges. Defaults may be supplied as the earliest_default
     and latest_default request attributes. Adds the following local variables:
 
-        * earliest: the earliest date as a String, or the appropriate default value
-        * latest: the latest date as a String, or the appropriate default value
-        * earliestdate: the earliest date as an OffsetDateTime, or the default value
-        * latestdate: the latest date as an OffsetDateTime, or the default value
+        * earliest: the earliest date as a String, or the appropriate default value (pass to HTML)
+        * latest: the latest date as a String, or the appropriate default value (pass to HTML)
+        * earliest_ldate: the earliest date as a LocalDate, or the default value
+        * latest_ldate: the latest date as a LocalDate, or the default value
+        * earliest_odt: the earliest date as a OffsetDateTime, or the default value (pass to Wiki.RequestHelper)
+        * latest_odt: the latest date as an OffsetDateTime, or the default value (pass to Wiki.RequestHelper)
 
     If the date range is invalid, an "error" attribute is added to the request.
 --%>
@@ -32,20 +34,27 @@
     String earliest = ServletUtils.sanitizeForAttribute(request.getParameter("earliest"));
     String latest = ServletUtils.sanitizeForAttribute(request.getParameter("latest"));
 
-    OffsetDateTime earliestdate = (OffsetDateTime)request.getAttribute("earliest_default");
-    OffsetDateTime latestdate = (OffsetDateTime)request.getAttribute("latest_default");
+    LocalDate earliest_ldate = (LocalDate)request.getAttribute("earliest_default");
+    LocalDate latest_ldate = (LocalDate)request.getAttribute("latest_default");
 
-    if (!earliest.equals(""))        
-        earliestdate = OffsetDateTime.parse(earliest + "T00:00:00Z");
-    else if (earliestdate != null)
-        earliest = earliestdate.format(DateTimeFormatter.ISO_LOCAL_DATE);
-    
-    if (!latest.equals(""))    
-        latestdate = OffsetDateTime.parse(earliest + "T23:59:59Z");
-    else if (latestdate != null)
-        latest = latestdate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+    if (!earliest.equals(""))
+        earliest_ldate = LocalDate.parse(earliest);
+    else if (earliest_ldate != null)
+        earliest = earliest_ldate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+    if (!latest.equals(""))
+        latest_ldate = LocalDate.parse(earliest);
+    else if (latest_ldate != null)
+        latest = latest_ldate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
     // validate dates
-    if (earliestdate != null && latestdate != null && earliestdate.isAfter(latestdate))
+    if (earliest_ldate != null && latest_ldate != null && earliest_ldate.isAfter(latest_ldate))
         request.setAttribute("error", "Earliest date is after latest date!");
+
+    // cleanup
+    OffsetDateTime earliest_odt = null, latest_odt = null;
+    if (earliest_ldate != null)
+        earliest_odt = earliest_ldate.atTime(OffsetTime.of(0, 0, 0, 0, ZoneOffset.UTC));
+    if (latest_ldate != null)
+        latest_odt = latest_ldate.atTime(OffsetTime.of(23, 59, 59, 0, ZoneOffset.UTC));
 %>
