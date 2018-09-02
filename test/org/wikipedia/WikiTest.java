@@ -56,7 +56,7 @@ public class WikiTest
         enWikt = Wiki.createInstance("en.wiktionary.org");
         enWikt.setMaxLag(-1);
         enWikt.getSiteInfo();
-        
+
         sha256 = MessageDigest.getInstance("SHA-256");
     }
 
@@ -67,11 +67,11 @@ public class WikiTest
         assertEquals("protocol", "http://", dummy.getProtocol());
         assertEquals("domain", "example.com", dummy.getDomain());
         assertEquals("scriptPath", "/scriptpath", dummy.getScriptPath());
-        
+
         // index.php URL
         assertEquals("getIndexPhpUrl", "https://en.wikipedia.org/w/index.php", enWiki.getIndexPhpUrl());
         assertEquals("getIndexPhpUrl", "http://example.com/scriptpath/index.php", dummy.getIndexPhpUrl());
-        
+
         // API URL
         assertEquals("getApiUrl", "https://en.wikipedia.org/w/api.php", enWiki.getApiUrl());
         assertEquals("getApiUrl", "http://example.com/scriptpath/api.php", dummy.getApiUrl());
@@ -497,13 +497,13 @@ public class WikiTest
         }
 
         assertTrue("getPageHistory: non-existent page", enWiki.getPageHistory("EOTkd&ssdf", null).isEmpty());
-        
+
         // test by user
         Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser("RetiredUser2");
         List<Wiki.Revision> history = enWiki.getPageHistory("Main Page", rh);
         assertEquals("getPageHistory: by user", 4, history.size());
         assertEquals("getPageHistory: by user", 118014299L, history.get(0).getID());
-        assertEquals("getPageHistory: by user", 118014140L, history.get(1).getID());        
+        assertEquals("getPageHistory: by user", 118014140L, history.get(1).getID());
         // test reverse
         rh = rh.reverse(true);
         List<Wiki.Revision> history2 = enWiki.getPageHistory("Main Page", rh);
@@ -524,7 +524,7 @@ public class WikiTest
             }
         }
     }
-    
+
     @Test
     public void getDeletedHistory() throws Exception
     {
@@ -817,13 +817,13 @@ public class WikiTest
         // Special page = return null
         assertNull("getPageInfo: special page", pageinfo[3]);
     }
-    
+
     @Test
     public void getCategoryMemberCounts() throws Exception
     {
-        // highly volatile content, so not amenable to unit testing 
+        // highly volatile content, so not amenable to unit testing
         // but can check clear zero categories and title rewrites
-        List<int[]> results = testWiki.getCategoryMemberCounts(Arrays.asList("Category:Testssss", 
+        List<int[]> results = testWiki.getCategoryMemberCounts(Arrays.asList("Category:Testssss",
             "Wikipedia noticeboards", "Category:Wikipedia noticeboards"));
         assertArrayEquals("categoryMemberCounts: non-existent category", new int[] {0, 0, 0, 0}, results.get(0));
         assertArrayEquals("categoryMemberCounts: title rewrite", results.get(2), results.get(1));
@@ -905,21 +905,21 @@ public class WikiTest
     {
         assertEquals(ZoneId.of("UTC"), enWiki.timezone());
     }
-    
+
     @Test
     public void usesCapitalLinks()
     {
         assertTrue("capital links: en.wp", enWiki.usesCapitalLinks());
         assertFalse("capital links: en.wikt", enWikt.usesCapitalLinks());
     }
-    
+
     @Test
     public void getLocale()
     {
         assertEquals("locale: en.wp", Locale.ENGLISH, enWiki.locale());
         assertEquals("locale: de.wp", Locale.GERMAN, deWiki.locale());
     }
-    
+
     @Test
     public void getInstalledExtensions()
     {
@@ -960,7 +960,7 @@ public class WikiTest
         assertFalse("pageHasTemplate: false", b[1]);
         assertFalse("pageHasTemplate: non-existent", b[2]);
     }
-    
+
     @Test
     public void whatTranscludesHere() throws Exception
     {
@@ -969,7 +969,7 @@ public class WikiTest
         assertArrayEquals("transclusions", new String[] { "Wikipedia:Articles for deletion/Log/2018 April 23" }, results);
         assertEquals("transclusions: namespace filter", 0, enWiki.whatTranscludesHere(title, Wiki.MAIN_NAMESPACE).length);
     }
-    
+
     @Test
     public void getUploads() throws Exception
     {
@@ -977,15 +977,15 @@ public class WikiTest
         {
             "LakeishaDurham0", // blocked spambot
             "Mifter" // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
-        }); 
+        });
         assertTrue("getUploads: no uploads", enWiki.getUploads(users[0], null).isEmpty());
         OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().withinDateRange(odt, odt.plusMinutes(20));
         List<Wiki.LogEntry> results = enWiki.getUploads(users[1], rh);
         assertEquals("getUploads: functionality check (0)", 3, results.size());
         assertEquals("getUploads: functionality check (1)", "File:Padlock-pink.svg", results.get(0).getTitle());
-        assertEquals("getUploads: functionality check (2)", "File:Padlock-silver-light.svg", results.get(1).getTitle());        
-        assertEquals("getUploads: functionality check (3)", "File:Padlock-blue.svg", results.get(2).getTitle());        
+        assertEquals("getUploads: functionality check (2)", "File:Padlock-silver-light.svg", results.get(1).getTitle());
+        assertEquals("getUploads: functionality check (3)", "File:Padlock-blue.svg", results.get(2).getTitle());
     }
 
     @Test
@@ -1042,7 +1042,7 @@ public class WikiTest
         {
             from.put("xxx", "yyy");
             to.put("revid", 738178354L);
-            enWiki.diff(from, -1, to, -1);
+            enWiki.diff(from, to);
             fail("Failed to specify from content.");
         }
         catch (IllegalArgumentException | NoSuchElementException expected)
@@ -1054,7 +1054,7 @@ public class WikiTest
         {
             from.put("revid", 738178354L);
             to.put("xxx", "yyy");
-            enWiki.diff(from, -1, to, -1);
+            enWiki.diff(from, to);
             fail("Failed to specify to content.");
         }
         catch (IllegalArgumentException | NoSuchElementException expected)
@@ -1065,35 +1065,31 @@ public class WikiTest
         // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
         from.put("revid", 738178354L);
         to.put("revid", Wiki.PREVIOUS_REVISION);
-        assertEquals("diff: dummy edit", "", enWiki.diff(from, -1, to, -1));
+        assertEquals("diff: dummy edit", "", enWiki.diff(from, to));
         // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343
         // The MediaWiki API does not distinguish between a dummy edit and no
         // difference. Both are now set to the empty string.
         from.put("revid", 803731343L);
         to.put("revid", 804972897L);
-        assertEquals("diff: no difference", "", enWiki.diff(from, -1, to, -1));
+        assertEquals("diff: no difference", "", enWiki.diff(from, to));
         // no deleted pages allowed
         // FIXME: broken because makeHTTPRequest() swallows the API error
-        // actual = enWiki.diff("Create a page", 0L, null, -1, null, 804972897L, null, -1);
+        // actual = enWiki.diff("Create a page", 0L, null, null, 804972897L, null);
         // assertNull("diff: to deleted", actual);
-        // actual = enWiki.diff(null, 804972897L, null, -1, "Create a page", 0L, null, -1);
+        // actual = enWiki.diff(null, 804972897L, null, "Create a page", 0L, null);
         // no RevisionDeleted revisions allowed (also broken)
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
-        // actual = enWiki.diff(null, 596714684L, null, -1, null, Wiki.NEXT_REVISION, null, -1);
-        // assertNull("diff: from deleted revision", actual);
+        // from.put("revid", 596714684L);
+        // to.put("revid", Wiki.NEXT_REVISION);
+        // assertNull("diff: from deleted revision", enWiki.diff(from, to));
 
-        // check for sections that don't exist
-        from.put("revid", 803731343L);
-        to.put("revid", 804972897L);
-        assertNull("diff: no such from section", enWiki.diff(from, 4920, to, -1));
-        assertNull("diff: no such to section", enWiki.diff(from, -1, to, 4920));
         // bad revids
         from.put("revid", 1L << 62);
         to.put("revid", 803731343L);
-        assertNull("diff: bad from revid", enWiki.diff(from, -1, to, -1));
+        assertNull("diff: bad from revid", enWiki.diff(from, to));
         from.put("revid", 803731343L);
         to.put("revid", 1L << 62);
-        assertNull("diff: bad to revid", enWiki.diff(from, -1, to, -1));
+        assertNull("diff: bad to revid", enWiki.diff(from, to));
     }
 
     @Test
@@ -1211,7 +1207,7 @@ public class WikiTest
     {
         assertEquals(0, testWiki.getText(new String[0], null, -1).length);
         assertEquals(0, testWiki.getText(null, new long[0], -1).length);
-        
+
         long[] ids =
         {
             230472L, // https://test.wikipedia.org/w/index.php?oldid=230472 (decoding test)
@@ -1404,7 +1400,7 @@ public class WikiTest
         assertFalse("User.isA: false", me.isA("templateeditor"));
         assertFalse("User.isA: nonsense input", me.isA("sdlkghsdlkgsd"));
     }
-    
+
     @Test
     public void requestHelperDates()
     {

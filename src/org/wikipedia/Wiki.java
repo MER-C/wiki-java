@@ -3703,13 +3703,10 @@ public class Wiki implements Comparable<Wiki>
      *
      *  <p>
      *  <b>WARNING</b>: the parameters to this method will be changed when the
-     *  time comes for JDK11 refactoring to {@code diff(Map.Entry<String, Object>
-     *  from, int fromsection, Map.Entry<String, Object> to, int tosection)}.
+     *  time comes for Multi-Content revisions and JDK11 refactoring.
      *
      *  @param from the content on the left hand side of the diff
-     *  @param fromsection diff from only this section (optional, use -1 to skip)
      *  @param to the content on the right hand side of the diff
-     *  @param tosection diff from only this section (optional, use -1 to skip)
      *  @return a HTML difference table between the two texts, "" for dummy
      *  edits or null as described above
      *  @throws NoSuchElementException or IllegalArgumentException if no from or
@@ -3720,7 +3717,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
      *  @since 0.35
      */
-    public String diff(Map<String, Object> from, int fromsection, Map<String, Object> to, int tosection) throws IOException
+    public String diff(Map<String, Object> from, Map<String, Object> to) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "compare");
@@ -3740,13 +3737,12 @@ public class Wiki implements Comparable<Wiki>
                 getparams.put("fromrev", String.valueOf(((Revision)value).getID()));
                 break;
             case "text":
-                postparams.put("fromtext", value);
-                break;
+                getparams.put("fromslots", "main");
+                getparams.put("fromcontentmodel-main", "wikitext");
+                postparams.put("fromtext-main", value);
             default:
                 throw new IllegalArgumentException("From content not specified!");
-        }
-        if (fromsection >= 0)
-            getparams.put("fromsection", String.valueOf(fromsection));
+        }        
 
         entry = to.entrySet().iterator().next();
         value = entry.getValue();
@@ -3769,13 +3765,13 @@ public class Wiki implements Comparable<Wiki>
                 getparams.put("torev", String.valueOf(((Revision)value).getID()));
                 break;
             case "text":
-                postparams.put("totext", value);
+                getparams.put("toslots", "main");
+                getparams.put("tocontentmodel-main", "wikitext");
+                postparams.put("totext-main", value);                
                 break;
             default:
                 throw new IllegalArgumentException("To content not specified!");
         }
-        if (tosection >= 0)
-            postparams.put("tosection", tosection);
 
         String line = makeApiCall(getparams, postparams, "diff");
 
@@ -4136,7 +4132,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Gets the (non-deleted) uploads of a user between the specified times.
      *  Results are sorted in chronological order.
-     * 
+     *
      *  <p>
      *  Accepted parameters from <var>helper</var> are:
      *  <ul>
@@ -4145,7 +4141,7 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
-     * 
+     *
      *  @param user the user to get uploads for
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters noted above)
@@ -4803,11 +4799,11 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
-     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor", 
+     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor",
      *  "top", "new", "patrolled"
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
-     * 
+     *
      *  @param users a list of users, IP addresses or IP ranges to get
      *  contributions for
      *  @param prefix a prefix of usernames. Overrides <var>users</var>. Use null
@@ -5477,16 +5473,16 @@ public class Wiki implements Comparable<Wiki>
         log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
         return pages.toArray(new String[size]);
     }
-    
+
     /**
-     *  Gets the number of pages in the list of given catgories without 
+     *  Gets the number of pages in the list of given catgories without
      *  {@linkplain #getCategoryMembers(String, int...) performing a full lookup
      *  of category members}. This is equivalent to the <kbd>{{PAGESINCATEGORY}}</kbd>
      *  parser function. The input order is the same as the return order.
-     * 
+     *
      *  @param categories a list of categories (with or without Category: prefix)
      *  @return an array for each category, where the first entry = total number
-     *  of pages, second = number of normal pages, third = number of files and 
+     *  of pages, second = number of normal pages, third = number of files and
      *  fourth = number of subcategories
      *  @throws IOException if a network error occurs
      *  @since 0.36
@@ -5506,7 +5502,7 @@ public class Wiki implements Comparable<Wiki>
             else
                 norm_cats.add(category);
         }
-        
+
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
         getparams.put("prop", "categoryinfo");
@@ -5517,7 +5513,7 @@ public class Wiki implements Comparable<Wiki>
             postparams.put("titles", titlestring);
             String result = makeApiCall(getparams, postparams, "getCategoryMemberCount");
             // no redirect resolution, because category members don't follow redirects
-            
+
             // form: <page _idx="2504643" pageid="2504643" ns="14" title="Category:Albert Einstein">
             // <categoryinfo size="95" pages="87" files="0" subcats="8" />
             // </page>
@@ -5538,7 +5534,7 @@ public class Wiki implements Comparable<Wiki>
                 metamap.put(parsedtitle, values);
             }
         }
-        
+
         // reorder
         List<int[]> ret = new ArrayList<>();
         for (String category : norm_cats)
@@ -7310,7 +7306,7 @@ public class Wiki implements Comparable<Wiki>
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("revision", other);
-            return Wiki.this.diff(from, -1, to, -1);
+            return Wiki.this.diff(from, to);
         }
 
         /**
@@ -7332,7 +7328,7 @@ public class Wiki implements Comparable<Wiki>
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("text", text);
-            return Wiki.this.diff(from, -1, to, -1);
+            return Wiki.this.diff(from, to);
         }
 
         /**
@@ -7355,7 +7351,7 @@ public class Wiki implements Comparable<Wiki>
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("revid", oldid);
-            return Wiki.this.diff(from, -1, to, -1);
+            return Wiki.this.diff(from, to);
         }
 
         /**
@@ -7770,22 +7766,22 @@ public class Wiki implements Comparable<Wiki>
             this.limit = limit;
             return this;
         }
-        
+
         /**
-         *  Filters a set of returned revisions using the given options. 
+         *  Filters a set of returned revisions using the given options.
          *  Available keys may include "minor", "top", "new", "bot", "anon",
-         *  "redirect", "patrolled" and "unread" for vanilla MediaWiki. Extensions 
-         *  may define their own. For instance, {@code rcoptions = { minor = true, 
-         *  anon = false,  patrolled = false}} returns all minor edits from 
-         *  logged in users that aren't patrolled. 
-         * 
+         *  "redirect", "patrolled" and "unread" for vanilla MediaWiki. Extensions
+         *  may define their own. For instance, {@code rcoptions = { minor = true,
+         *  anon = false,  patrolled = false}} returns all minor edits from
+         *  logged in users that aren't patrolled.
+         *
          *  <p>
-         *  Please check calling method documentation for supported options. 
+         *  Please check calling method documentation for supported options.
          *  Setting "patrolled" limits results to no older than <a
          *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in
          *  the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
          *  table</a>.
-         * 
+         *
          *  @param rcoptions the options to filter by
          *  @return this RequestHelper
          */
@@ -7898,7 +7894,7 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "excludeuser", notbyuser);
             return temp;
         }
-        
+
         /**
          *  Returns HTTP request parameter(s) containing flags to filter returned
          *  revisions by, or an empty map if not wanted.
@@ -7917,7 +7913,7 @@ public class Wiki implements Comparable<Wiki>
                     if (Boolean.TRUE.equals(top))
                         temp.put("wlallrev", "1");
                 }
-                
+
                 StringBuilder sb = new StringBuilder();
                 rcoptions.forEach((key, value) ->
                 {
@@ -7927,7 +7923,7 @@ public class Wiki implements Comparable<Wiki>
                     sb.append("|");
                 });
                 temp.put(requestType + "show", sb.substring(0, sb.length() - 1));
-                
+
                 if (top != null) // put it back
                     rcoptions.put("top", top);
             }
