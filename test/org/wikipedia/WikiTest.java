@@ -454,7 +454,10 @@ public class WikiTest
         assertTrue("getCategories: page with no categories", actual.get(1).isEmpty());
         assertEquals("getCategories: page with one category", actual.get(2), Arrays.asList("Category:Hidden categories"));
         
-        actual = enWiki.getCategories(Arrays.asList("Category:~genre~ novels"), Boolean.FALSE, false);
+        Map<String, Boolean> options = new HashMap<>();
+        options.put("hidden", Boolean.FALSE);
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().filterBy(options);
+        actual = enWiki.getCategories(Arrays.asList("Category:~genre~ novels"), rh, false);
         assertTrue("getCategories: filter hidden", actual.get(0).isEmpty());
     }
 
@@ -1125,7 +1128,7 @@ public class WikiTest
         options.put("top", Boolean.TRUE);
         Wiki.RequestHelper rh = testWiki.new RequestHelper()
             .inNamespaces(Wiki.MAIN_NAMESPACE)
-            .filterRevisions(options);
+            .filterBy(options);
         edits = testWiki.contribs(Arrays.asList("MER-C"), null, rh);
         assertEquals("contribs: filtered", 120919L, edits.get(0).get(0).getID());
         // not implemented in MediaWiki API
@@ -1299,7 +1302,7 @@ public class WikiTest
         Map<String, Boolean> options = new HashMap<>();
         options.put("minor", Boolean.FALSE);
         options.put("bot", Boolean.TRUE);
-        rh = rh.filterRevisions(options);
+        rh = rh.filterBy(options);
         rc = enWiki.recentChanges(rh);
         for (Wiki.Revision rev : rc)
         {

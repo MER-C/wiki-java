@@ -334,7 +334,7 @@ public class ContributionSurveyor
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .inNamespaces(ns)
             .withinDateRange(earliestdate, latestdate)
-            .filterRevisions(options);
+            .filterBy(options);
         List<List<Wiki.Revision>> edits = wiki.contribs(users, null, rh);
         Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
         for (int i = 0; i < users.size(); i++)

@@ -2402,24 +2402,34 @@ public class Wiki implements Comparable<Wiki>
      *  Gets the list of categories that the given list of pages belongs to. 
      *  Includes the sortkey of a category if <var>sortkey</var> is true. The 
      *  sortkey would then be appended to the element of the returned strings
-     *  (separated by "|").
+     *  (separated by "|"). Accepted parameters from <var>helper</var> are:
+     *  are:
      *
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#filterBy(Map) filter by}: "hidden"
+     *  (hidden categories)
+     *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
+     *  </ul>
+     * 
      *  @param titles a list of pages
-     *  @param hidden return hidden categories only? (true = yes, false = no, 
-     *  null = return both)
+     *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
+     *  provide any of the optional parameters noted above)
      *  @param sortkey return a sortkey as well (default = false)
      *  @return the list of categories that the page is in
      *  @throws IOException if a network error occurs
      *  @since 0.30
      */
-    public List<List<String>> getCategories(List<String> titles, Boolean hidden, boolean sortkey) throws IOException
+    public List<List<String>> getCategories(List<String> titles, Wiki.RequestHelper helper, boolean sortkey) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "categories");
-        if (Boolean.TRUE.equals(hidden))
-            getparams.put("clshow", "hidden");
-        else if (Boolean.FALSE.equals(hidden))
-            getparams.put("clshow", "!hidden");        
+        int limit = -1;
+        if (helper != null)
+        {
+            helper.setRequestType("cl");
+            getparams.putAll(helper.addShowParameter());
+            limit = helper.limit();
+        }
         
         // copy array so redirect resolver doesn't overwrite
         String[] titles2 = new String[titles.size()];
@@ -2429,7 +2439,7 @@ public class Wiki implements Comparable<Wiki>
         for (String temp : constructTitleString(titles2))
         {
             postparams.put("titles", temp);
-            stuff.addAll(makeListQuery("cl", getparams, postparams, "getCategories", -1, (line, results) ->
+            stuff.addAll(makeListQuery("cl", getparams, postparams, "getCategories", limit, (line, results) ->
             {
                 // Split the result into individual listings for each article.
                 String[] x = line.split("<page ");
@@ -4837,8 +4847,8 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
-     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor",
-     *  "top", "new", "patrolled"
+     *  <li>{@link Wiki.RequestHelper#filterBy(Map) filter by}: "minor", "top", 
+     *  "new", "patrolled"
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
      *
@@ -5291,8 +5301,8 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#byUser(String) user}
      *  <li>{@link Wiki.RequestHelper#notByUser(String) not by user}
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
-     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor",
-     *  "bot", "anon", "patrolled", "top", "unread"
+     *  <li>{@link Wiki.RequestHelper#filterBy(Map) filter by}: "minor", "bot", 
+     *  "anon", "patrolled", "top", "unread"
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
      *
@@ -6300,8 +6310,8 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#inNamespaces(int...) namespaces}
      *  <li>{@link Wiki.RequestHelper#taggedWith(String) tag}
-     *  <li>{@link Wiki.RequestHelper#filterRevisions(Map) rcoptions}: "minor",
-     *  "bot", "anon", "redirect", "patrolled"
+     *  <li>{@link Wiki.RequestHelper#filterBy(Map) filter by}: "minor", "bot", 
+     *  "anon", "redirect", "patrolled"
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
      *
@@ -7691,7 +7701,7 @@ public class Wiki implements Comparable<Wiki>
         private boolean reverse = false;
         private String notbyuser;
         private String tag;
-        private Map<String, Boolean> rcoptions;
+        private Map<String, Boolean> options;
         private String requestType;
         private int limit = -1;
 
@@ -7806,26 +7816,26 @@ public class Wiki implements Comparable<Wiki>
         }
 
         /**
-         *  Filters a set of returned revisions using the given options.
-         *  Available keys may include "minor", "top", "new", "bot", "anon",
-         *  "redirect", "patrolled" and "unread" for vanilla MediaWiki. Extensions
-         *  may define their own. For instance, {@code rcoptions = { minor = true,
-         *  anon = false,  patrolled = false}} returns all minor edits from
-         *  logged in users that aren't patrolled.
-         *
+         *  Filters a set of returned results using the given options. Please 
+         *  check calling method documentation for supported options.
+         * 
          *  <p>
-         *  Please check calling method documentation for supported options.
+         *  When filtering revisions, available keys may include "minor", "top", 
+         *  "new", "bot", "anon", "redirect", "patrolled" and "unread" for 
+         *  vanilla MediaWiki. Extensions may define their own. For instance, 
+         *  {@code rcoptions = { minor = true, anon = false,  patrolled = false}}
+         *  returns all minor edits from logged in users that aren't patrolled. 
          *  Setting "patrolled" limits results to no older than <a
          *  href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">retention</a> in
          *  the <a href="https://mediawiki.org/wiki/Manual:Recentchanges_table">recentchanges
          *  table</a>.
          *
-         *  @param rcoptions the options to filter by
+         *  @param options the options to filter by
          *  @return this RequestHelper
          */
-        public RequestHelper filterRevisions(Map<String, Boolean> rcoptions)
+        public RequestHelper filterBy(Map<String, Boolean> options)
         {
-            this.rcoptions = rcoptions;
+            this.options = options;
             return this;
         }
 
@@ -7941,19 +7951,19 @@ public class Wiki implements Comparable<Wiki>
         protected Map<String, String> addShowParameter()
         {
             Map<String, String> temp = new HashMap<>();
-            if (rcoptions != null && !rcoptions.isEmpty())
+            if (options != null && !options.isEmpty())
             {
                 // deal with MW API annoyance for action=query&list=watchlist - see watchlist(rh)
                 Boolean top = null;
                 if (requestType.equals("wl"))
                 {
-                    top = rcoptions.remove("top");
+                    top = options.remove("top");
                     if (Boolean.TRUE.equals(top))
                         temp.put("wlallrev", "1");
                 }
 
                 StringBuilder sb = new StringBuilder();
-                rcoptions.forEach((key, value) ->
+                options.forEach((key, value) ->
                 {
                     if (Boolean.FALSE.equals(value))
                         sb.append('!');
@@ -7963,7 +7973,7 @@ public class Wiki implements Comparable<Wiki>
                 temp.put(requestType + "show", sb.substring(0, sb.length() - 1));
 
                 if (top != null) // put it back
-                    rcoptions.put("top", top);
+                    options.put("top", top);
             }
             return temp;
         }

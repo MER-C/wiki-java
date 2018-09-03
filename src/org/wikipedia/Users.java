@@ -120,7 +120,7 @@ public class Users
         options.put("new", Boolean.TRUE);
         if (rh == null)
             rh = wiki.new RequestHelper();
-        rh = rh.filterRevisions(options);
+        rh = rh.filterBy(options);
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         List<Wiki.Revision> ret = new ArrayList<>();
         for (List<Wiki.Revision> rev : contribs)
@@ -145,7 +145,7 @@ public class Users
         options.put("new", Boolean.TRUE);
         if (rh == null)
             rh = wiki.new RequestHelper();
-        rh = rh.filterRevisions(options);
+        rh = rh.filterBy(options);
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         
         // get text of all pages

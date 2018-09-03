@@ -449,7 +449,7 @@ public class ArticleEditorIntersector
             options.put("minor", Boolean.FALSE);
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .withinDateRange(earliestdate, latestdate)
-            .filterRevisions(options);
+            .filterBy(options);
                 
         // fetch the list of (deleted) edits
         List<List<Wiki.Revision>> revisions = wiki.contribs(users, null, rh);
