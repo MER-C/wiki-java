@@ -448,9 +448,14 @@ public class WikiTest
     @Test
     public void getCategories() throws Exception
     {
-        assertArrayEquals("getCategories: non-existent page", new String[0], enWiki.getCategories("sdkf&hsdklj"));
-        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-        assertArrayEquals("getCategories: page with no categories", new String[0], testWiki.getCategories("User:MER-C/UnitTests/Delete"));
+        List<String> pages = Arrays.asList("sdkf&hsdklj", "User:MER-C/monobook.js", "Category:~genre~ novels");
+        List<List<String>> actual = enWiki.getCategories(pages, null, false);
+        assertTrue("getCategories: non-existent page", actual.get(0).isEmpty());
+        assertTrue("getCategories: page with no categories", actual.get(1).isEmpty());
+        assertEquals("getCategories: page with one category", actual.get(2), Arrays.asList("Category:Hidden categories"));
+        
+        actual = enWiki.getCategories(Arrays.asList("Category:~genre~ novels"), Boolean.FALSE, false);
+        assertTrue("getCategories: filter hidden", actual.get(0).isEmpty());
     }
 
     @Test

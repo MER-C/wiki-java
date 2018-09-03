@@ -2395,50 +2395,88 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getCategories(String title) throws IOException
     {
-        return getCategories(title, false, false);
+        return getCategories(Arrays.asList(title), null, false).get(0).toArray(new String[0]);
     }
 
     /**
-     *  Gets the list of categories a particular page is in. Ignores hidden
-     *  categories if <var>ignoreHidden</var> is true. Also includes the sortkey
-     *  of a category if <var>sortkey</var> is true. The sortkey would then be
-     *  appended to the element of the returned string array (separated by "|").
+     *  Gets the list of categories that the given list of pages belongs to. 
+     *  Includes the sortkey of a category if <var>sortkey</var> is true. The 
+     *  sortkey would then be appended to the element of the returned strings
+     *  (separated by "|").
      *
-     *  @param title a page
+     *  @param titles a list of pages
+     *  @param hidden return hidden categories only? (true = yes, false = no, 
+     *  null = return both)
      *  @param sortkey return a sortkey as well (default = false)
-     *  @param ignoreHidden skip hidden categories (default = false)
      *  @return the list of categories that the page is in
      *  @throws IOException if a network error occurs
      *  @since 0.30
      */
-    public String[] getCategories(String title, boolean sortkey, boolean ignoreHidden) throws IOException
+    public List<List<String>> getCategories(List<String> titles, Boolean hidden, boolean sortkey) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "categories");
-        if (sortkey || ignoreHidden)
-            getparams.put("clprop", "sortkey|hidden");
-        getparams.put("titles", normalize(title));
-
-        List<String> categories = makeListQuery("cl", getparams, null, "getCategories", -1, (line, results) ->
+        if (Boolean.TRUE.equals(hidden))
+            getparams.put("clshow", "hidden");
+        else if (Boolean.FALSE.equals(hidden))
+            getparams.put("clshow", "!hidden");        
+        
+        // copy array so redirect resolver doesn't overwrite
+        String[] titles2 = new String[titles.size()];
+        titles.toArray(titles2);
+        List<Map<String, List<String>>> stuff = new ArrayList<>();
+        Map<String, Object> postparams = new HashMap<>();
+        for (String temp : constructTitleString(titles2))
         {
-            // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
-            // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
-            int a, b; // beginIndex and endIndex
-            for (a = line.indexOf("<cl "); a > 0; a = b)
+            postparams.put("titles", temp);
+            stuff.addAll(makeListQuery("cl", getparams, postparams, "getCategories", -1, (line, results) ->
             {
-                b = line.indexOf("<cl ", a + 1);
-                if (ignoreHidden && line.substring(a, (b > 0 ? b : line.length())).contains("hidden"))
-                    continue;
-                String category = parseAttribute(line, "title", a);
-                if (sortkey)
-                    category += ("|" + parseAttribute(line, "sortkeyprefix", a));
-                results.add(category);
-            }
-        });
+                // Split the result into individual listings for each article.
+                String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
 
-        int temp = categories.size();
-        log(Level.INFO, "getCategories", "Successfully retrieved categories of " + title + " (" + temp + " categories)");
-        return categories.toArray(new String[temp]);
+                // Skip first element to remove front crud.
+                for (int i = 1; i < x.length; i++)
+                {
+                    // xml form: <cl ns="14" title="Category:1879 births" sortkey=(long string) sortkeyprefix="" />
+                    // or      : <cl ns="14" title="Category:Images for cleanup" sortkey=(long string) sortkeyprefix="Borders" hidden="" />
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String> list = new ArrayList<>();
+                    for (int a = x[i].indexOf("<cl "); a > 0; a = x[i].indexOf("<cl ", ++a))
+                    {
+                        String category = parseAttribute(x[i], "title", a);
+                        if (sortkey)
+                            category += ("|" + parseAttribute(x[i], "sortkeyprefix", a));
+                        list.add(category);
+                    }
+                    Map<String, List<String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, list);
+                    results.add(intermediate);
+                }
+            }));
+        }
+
+        // fill the return list
+        List<List<String>> ret = new ArrayList<>();
+        List<String> normtitles = new ArrayList<>();
+        for (String localtitle : titles2)
+        {
+            normtitles.add(normalize(localtitle));
+            ret.add(new ArrayList<>());
+        }
+        // then retrieve the results from the intermediate list of maps,
+        // ensuring results correspond to inputs
+        stuff.forEach(map ->
+        {
+            String parsedtitle = map.keySet().iterator().next();
+            List<String> templates = map.get(parsedtitle);
+            for (int i = 0; i < titles2.length; i++)
+                if (normtitles.get(i).equals(parsedtitle))
+                    ret.get(i).addAll(templates);
+        });
+        log(Level.INFO, "getCategories", "Successfully retrieved categories used on " + titles2.length + " pages.");
+        return ret;
     }
 
     /**
@@ -2519,7 +2557,7 @@ public class Wiki implements Comparable<Wiki>
         String[] titles2 = Arrays.copyOf(titles, titles.length);
         List<Map<String, List<String>>> stuff = new ArrayList<>();
         Map<String, Object> postparams = new HashMap<>();
-        for (String temp : constructTitleString(titles))
+            for (String temp : constructTitleString(titles))
         {
             postparams.put("titles", temp);
             stuff.addAll(makeListQuery("tl", getparams, postparams, "getTemplates", -1, (line, results) ->
