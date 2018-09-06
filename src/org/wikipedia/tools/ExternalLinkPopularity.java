@@ -284,9 +284,9 @@ public class ExternalLinkPopularity
                 sb.append(temp.length);
                 sb.append(String.format("\n*MEAN: %.1f\n", dss.getAverage()));
                 Arrays.sort(temp);
-                double[] quartiles = quartiles(temp);
+                double[] quartiles = MathsAndStats.quartiles(temp);
                 sb.append(String.format("*Q1: %.1f\n", quartiles[0]));
-                sb.append(String.format("*MEDIAN: %.1f\n", median(temp)));
+                sb.append(String.format("*MEDIAN: %.1f\n", MathsAndStats.median(temp)));
                 sb.append(String.format("*Q3: %.1f\n\n", quartiles[1]));
             }
         });
@@ -352,57 +352,12 @@ public class ExternalLinkPopularity
                 sb.append(temp.length);
                 sb.append(String.format("\n<li>MEAN: %.1f\n", dss.getAverage()));
                 Arrays.sort(temp);
-                double[] quartiles = quartiles(temp);
+                double[] quartiles = MathsAndStats.quartiles(temp);
                 sb.append(String.format("<li>Q1: %.1f\n", quartiles[0]));
-                sb.append(String.format("<li>MEDIAN: %.1f\n", median(temp)));
+                sb.append(String.format("<li>MEDIAN: %.1f\n", MathsAndStats.median(temp)));
                 sb.append(String.format("<li>Q3: %.1f\n</ul>\n", quartiles[1]));
             }
         });
         return sb.toString();
-    }
-        
-    // see https://en.wikipedia.org/wiki/Quartile (method 3)
-    public static double[] quartiles(double[] values)
-    {
-        // Shit that should be in the JDK, part 2.
-        if (values.length < 4)
-            return new double[] { Double.NaN, Double.NaN };
-        
-        int middle = values.length / 2;
-        int n = values.length / 4;
-        double[] ret = new double[2];
-        
-        switch (values.length % 4)
-        {
-            case 0:
-            case 2:
-                double[] temp = Arrays.copyOfRange(values, 0, middle - 1);
-                ret[0] = median(temp);
-                temp = Arrays.copyOfRange(values, middle, values.length - 1);
-                ret[1] = median(temp);
-                return ret;
-            case 1:
-                ret[0] = values[n - 1]/4 + values[n] * 3/4;
-                ret[1] = values[3*n] * 3/4 + values[3*n + 1]/4;
-                return ret;
-            case 3:
-                ret[0] = values[n] * 3/4 + values[n+1]/4;
-                ret[1] = values[3*n + 1]/4 + values[3*n+2] * 3/4;
-                return ret;
-        }
-        throw new AssertionError("Unreachable.");
-    }
-    
-    public static double median(double[] values)
-    {
-        // Shit that should be in the JDK, part 1.
-        if (values.length < 1)
-            return Double.NaN;
-        
-        int middle = values.length / 2;
-        if (values.length % 2 == 1)
-            return values[middle];
-        else
-            return (values[middle - 1] + values[middle])/2;
     }
 }

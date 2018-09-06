@@ -112,6 +112,7 @@
                             <include>**/UsersTest.java</include>
                             <include>**/WikitextUtilsTest.java</include>
                             <include>**/ArrayUtilsTest.java</include>
+                            <include>**/MathsAndStatsTest.java</include>
                             <include>**/ArticleEditorIntersectorTest.java</include>
                             <include>**/CommandLineParserTest.java</include>
                             <include>**/ContributionSurveyorTest.java</include>
