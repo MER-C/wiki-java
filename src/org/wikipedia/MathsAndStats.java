@@ -21,6 +21,7 @@
 package org.wikipedia;
 
 import java.util.*;
+import java.util.function.*;
 
 /**
  *  Maths and stats stuff.
@@ -123,5 +124,43 @@ public class MathsAndStats
         if (last == Double.POSITIVE_INFINITY)
             return Double.POSITIVE_INFINITY;
         return 0;
+    }
+    
+    /**
+     *  Computes the maximum of a bunch of {@code Comparable} objects. 
+     *  @param <T> an Object implementing {@code Comparable}
+     *  @param values a list of comparable objects
+     *  @return the maximum of the bunch, or null if the bunch is empty
+     */
+    public static <T extends Comparable> T max(Iterable<T> values)
+    {
+        T max = null;
+        for (T value : values)
+            if (max == null || value.compareTo(max) > 0)
+                max = value;
+        return max;
+    }
+    
+    /**
+     *  Computes the median of a list of {@code Comparable} objects. Assumes 
+     *  that the input list is sorted in ascending order.
+     *  @param <T> an Object implementing {@code Comparable}
+     *  @param values a list of comparable objects
+     *  @param interpolator a binary operator that performs a linear interpolation 
+     *  between two objects (must not be null)
+     *  @return the median of the list, or null if the list is empty
+     */
+    public static <T extends Comparable> T median(List<T> values, BinaryOperator<T> interpolator)
+    {
+        Objects.requireNonNull(interpolator);
+        int size = values.size();
+        if (size == 0)
+            return null;
+        
+        int desired = size / 2;
+        if ((size % 2) == 0)
+            return interpolator.apply(values.get(desired - 1), values.get(desired));
+        else
+            return values.get(desired);
     }
 }

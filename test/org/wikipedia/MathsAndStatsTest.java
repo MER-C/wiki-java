@@ -19,6 +19,8 @@
  */
 package org.wikipedia;
 
+import java.time.*;
+import java.util.*;
 import java.util.function.*;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -74,7 +76,7 @@ public class MathsAndStatsTest
         values = new double[] { 1.0, 2.0, 3.0, 4.0 };
         assertEquals("median, even number of inputs", 2.5, MathsAndStats.median(values), 1e-6);
     }
-
+    
     @Test
     public void testValidate()
     {
@@ -99,4 +101,23 @@ public class MathsAndStatsTest
         values = new double[] { 1.0, 2.0, Double.POSITIVE_INFINITY };
         assertEquals("Plus infinity input", Double.POSITIVE_INFINITY, func.applyAsDouble(values), 1e-8);
     }   
+    
+    @Test
+    public void max()
+    {
+        assertNull("max: empty input", MathsAndStats.max(Collections.emptyList()));
+        List<Duration> durations = Arrays.asList(Duration.ofDays(1), Duration.ofDays(5), Duration.ofSeconds(30));
+        assertEquals("max", durations.get(1), MathsAndStats.max(durations));
+    }
+    
+    @Test
+    public void testGenericMedian()
+    {
+        BinaryOperator<Integer> interpolator = (n1, n2) -> ((n1 + n2)/ 2);
+        assertNull("generic median: zero length = null", MathsAndStats.median(Collections.emptyList(), interpolator));
+        assertEquals("generic median: 1 item", Integer.valueOf(1), MathsAndStats.median(Arrays.asList(1), interpolator));
+        assertEquals("generic median: 2 item", Integer.valueOf(2), MathsAndStats.median(Arrays.asList(1, 3), interpolator));
+        assertEquals("generic median: 3 item", Integer.valueOf(3), MathsAndStats.median(Arrays.asList(1, 3, 5), interpolator));
+        assertEquals("generic median: 3 item", Integer.valueOf(4), MathsAndStats.median(Arrays.asList(1, 3, 5, 7), interpolator));
+    }
 }
