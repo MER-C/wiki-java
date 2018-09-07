@@ -133,6 +133,8 @@ public class WikiTest
         catch (AssertionError expected)
         {
         }
+        enWiki.setAssertionMode(Wiki.ASSERT_NONE);
+        enWiki.getPageText("Main Page"); // no exception        
     }
 
     @Test
@@ -1375,6 +1377,10 @@ public class WikiTest
         Wiki.Revision rev2 = testWiki.getRevision(217080L);
         assertEquals("Revision.equals", rev1, rev2);
         assertEquals("Revision.hashCode", rev1.hashCode(), rev2.hashCode());
+        // exported revisions
+        // https://de.wikipedia.org/w/index.php?title=University_of_Kashmir&diff=prev&oldid=159785234
+        // https://en.wikipedia.org/w/index.php?title=University_of_Kashmir&diff=prev&oldid=558893308
+        assertFalse("Revision.equals: exported revisions", deWiki.getRevision(159785234L).equals(enWiki.getRevision(558893308L)));
         // https://test.wikipedia.org/wiki/Special:Permanentlink/275553
         // RevisionDeleted, therefore need to test for NPEs
         rev1 = testWiki.getRevision(275553L);
