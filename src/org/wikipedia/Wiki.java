@@ -1601,6 +1601,8 @@ public class Wiki implements Comparable<Wiki>
      *    exist
      *  <li><b>timestamp</b>: (OffsetDateTime) when this method was called
      *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
+     *  <li><b>allowedactions</b>: (List&lt;String&gt;) the actions that the 
+     *    user can perform on this page
      *  </ul>
      *
      *  @param pages the pages to get info for.
@@ -1615,6 +1617,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("action", "query");
         getparams.put("prop", "info");
         getparams.put("inprop", "protection|displaytitle|watchers");
+        getparams.put("intestactions", "create|delete|edit|move|protect|rollback|undelete|upload");
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, Object>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
@@ -1691,6 +1694,14 @@ public class Wiki implements Comparable<Wiki>
                 // number of watchers
                 if (item.contains("watchers=\""))
                     tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
+                
+                // Add allowed actions. Allows to check whether an action is
+                // permissible, but doesn't give the reason why if it is disallowed.
+                int start = item.indexOf("<actions") + 9;
+                String actions = item.substring(start, item.indexOf("/>", start));
+                actions = actions.replace("=\"\"", "");
+                List<String> allowed = Arrays.asList(actions.split("\\s"));
+                tempmap.put("allowedactions", allowed);
 
                 metamap.put(parsedtitle, tempmap);
             }
@@ -2567,7 +2578,7 @@ public class Wiki implements Comparable<Wiki>
         String[] titles2 = Arrays.copyOf(titles, titles.length);
         List<Map<String, List<String>>> stuff = new ArrayList<>();
         Map<String, Object> postparams = new HashMap<>();
-            for (String temp : constructTitleString(titles))
+        for (String temp : constructTitleString(titles))
         {
             postparams.put("titles", temp);
             stuff.addAll(makeListQuery("tl", getparams, postparams, "getTemplates", -1, (line, results) ->
