@@ -8031,29 +8031,30 @@ public class Wiki implements Comparable<Wiki>
             limit = querylimit;
         getparams.put("action", "query");
         List<T> results = new ArrayList<>(1333);
-        String xxcontinue = queryPrefix + "continue";
         String limitstring = queryPrefix + "limit";
         do
         {
             getparams.put(limitstring, String.valueOf(Math.min(limit - results.size(), max)));
             String line = makeApiCall(getparams, postparams, caller);
-            getparams.remove(xxcontinue);
-            getparams.remove("continue");
+            getparams.keySet().removeIf(param -> param.endsWith("continue"));
 
             // Continuation parameter has form:
             // <continue rccontinue="20170924064528|986351741" continue="-||" />
             if (line.contains("<continue "))
             {
                 int a = line.indexOf("<continue ") + 10;
-                int b = line.indexOf("/>", a);
-                String cont = line.substring(a, b);
-                getparams.put(xxcontinue, parseAttribute(cont, xxcontinue, 0));
-                getparams.put("continue", parseAttribute(cont, " continue", 0));
+                int b = line.indexOf(" />", a);
+                String cont = line.substring(a, b).trim();
+                for (String contAttr : cont.split("=\\S+"))
+                    // The above regex will leave a leading space in some attribute names,
+                    // which need to be trimmed before storing them in the parameter map.
+                    // This allows to detect the "continue" attribute (without prefix).
+                    getparams.put(contAttr.trim(), parseAttribute(cont, contAttr, 0));
             }
 
             parser.accept(line, results);
         }
-        while (getparams.containsKey(xxcontinue) && results.size() < limit);
+        while (getparams.containsKey("continue") && results.size() < limit);
         return results;
     }
 
