@@ -1697,10 +1697,13 @@ public class Wiki implements Comparable<Wiki>
                 
                 // Add allowed actions. Allows to check whether an action is
                 // permissible, but doesn't give the reason why if it is disallowed.
-                int start = item.indexOf("<actions") + 9;
+                int start = item.indexOf("<actions") + 8;
                 String actions = item.substring(start, item.indexOf("/>", start));
-                actions = actions.replace("=\"\"", "");
-                List<String> allowed = Arrays.asList(actions.split("\\s"));
+                String[] actionsarray = actions.replace("=\"\"", "").split("\\s");
+                List<String> allowed = new ArrayList<>();
+                for (String action : actionsarray)
+                    if (!action.isEmpty())
+                        allowed.add(action);
                 tempmap.put("allowedactions", allowed);
 
                 metamap.put(parsedtitle, tempmap);
