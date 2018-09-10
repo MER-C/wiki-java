@@ -8567,10 +8567,13 @@ public class Wiki implements Comparable<Wiki>
      */
     public String normalize(String s)
     {
-        s = s.replace('_', ' ').trim();
+        // remove section names
+        if (s.contains("#"))
+            s = s.substring(0, s.indexOf("#"));
         // remove leading colon
         if (s.startsWith(":"))
             s = s.substring(1);
+        s = s.replace('_', ' ').trim();        
         if (s.isEmpty())
             throw new IllegalArgumentException("Empty or whitespace only title.");
 

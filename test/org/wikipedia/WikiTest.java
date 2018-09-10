@@ -945,8 +945,11 @@ public class WikiTest
     {
         assertEquals("normalize", "Blah", enWiki.normalize("Blah"));
         assertEquals("normalize", "Blah", enWiki.normalize("blah"));
+        assertEquals("normalize: section", "Blah", enWiki.normalize("Blah#Section"));
+        assertEquals("normalize: colon", "Blah", enWiki.normalize(":Blah"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("File:Blah.jpg"));
         assertEquals("normalize", "File:Blah.jpg", enWiki.normalize("file:blah.jpg"));
+        assertEquals("normalize: complex", "File:Blah.jpg", enWiki.normalize(":file:Blah.jpg#Copyright"));
         assertEquals("normalize", "Category:Wikipedia:blah", enWiki.normalize("Category:Wikipedia:blah"));
         assertEquals("normalize: namespace i18n", "Hilfe Diskussion:Glossar", deWiki.normalize("Help talk:Glossar"));
         assertEquals("normalize: namespace alias", "Wikipedia:V", enWiki.normalize("WP:V"));
