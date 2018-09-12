@@ -8311,7 +8311,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Converts HTTP POST parameters to Strings. See {@link
-     *  #makeHTTPRequest(String, Map, String)} for the description.
+     *  #makeApiCall(Map, Map, String)} for the description.
      *  @param param the parameter to convert
      *  @return that parameter, as a String
      *  @throws UnsupportedOperationException if param is not a supported data type
@@ -8328,7 +8328,8 @@ public class Wiki implements Comparable<Wiki>
             return String.join("|", (String[])param);
         else if (param instanceof OffsetDateTime)
         {
-            OffsetDateTime date = (OffsetDateTime)param;
+            // MediaWiki API expects UTC timestamps
+            OffsetDateTime date = ((OffsetDateTime)param).withOffsetSameInstant(ZoneOffset.UTC);
             return date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         }
         else if (param instanceof Collection)
