@@ -8047,14 +8047,15 @@ public class Wiki implements Comparable<Wiki>
             // <continue rccontinue="20170924064528|986351741" continue="-||" />
             if (line.contains("<continue "))
             {
-                int a = line.indexOf("<continue ") + 10;
+                int a = line.indexOf("<continue ") + 9;
                 int b = line.indexOf(" />", a);
-                String cont = line.substring(a, b).trim();
-                for (String contAttr : cont.split("=\\S+"))
-                    // The above regex will leave a leading space in some attribute names,
-                    // which need to be trimmed before storing them in the parameter map.
-                    // This allows to detect the "continue" attribute (without prefix).
-                    getparams.put(contAttr.trim(), parseAttribute(cont, contAttr, 0));
+                String cont = line.substring(a, b);
+                for (String contpair : cont.split("\" "))
+                {
+                    contpair = " " + contpair.trim();
+                    String contattr = contpair.substring(0, contpair.indexOf("=\""));
+                    getparams.put(contattr.trim(), parseAttribute(cont, contattr, 0));
+                }                
             }
 
             parser.accept(line, results);
