@@ -9,7 +9,7 @@
 
 <%
     request.setAttribute("toolname", "Prefix contributions");
-    request.setAttribute("earliest_default", LocalDate.now(ZoneId.of("UTC")).minusDays(7));
+    request.setAttribute("earliest_default", LocalDate.now(ZoneOffset.UTC).minusDays(7));
 
     String prefix = ServletUtils.sanitizeForAttribute(request.getParameter("prefix"));    
 %>

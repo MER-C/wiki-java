@@ -914,7 +914,7 @@ public class WikiTest
     @Test
     public void timezone()
     {
-        assertEquals(ZoneId.of("UTC"), enWiki.timezone());
+        assertEquals(ZoneId.of("UTC"), enWiki.timezone()); // not the same as ZoneOffset.UTC
     }
 
     @Test
@@ -1298,7 +1298,7 @@ public class WikiTest
         assertEquals("recentchanges: length", 10, rc.size());
         // Check if the changes are actually recent (i.e. in the last 10 minutes).
         assertTrue("recentchanges: recentness",
-            rc.get(9).getTimestamp().isAfter(OffsetDateTime.now(ZoneId.of("UTC")).minusMinutes(10)));
+            rc.get(9).getTimestamp().isAfter(OffsetDateTime.now(ZoneOffset.UTC).minusMinutes(10)));
         // Check namespace filtering
         rh = rh.inNamespaces(Wiki.TALK_NAMESPACE);
         rc = enWiki.recentChanges(rh);

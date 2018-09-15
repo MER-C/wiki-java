@@ -9,7 +9,7 @@
 
 <%
     request.setAttribute("toolname", "User watchlist");
-    request.setAttribute("earliest_default", LocalDate.now(ZoneId.of("UTC")).minusDays(30));
+    request.setAttribute("earliest_default", LocalDate.now(ZoneOffset.UTC).minusDays(30));
 
     String inputpage = request.getParameter("page");
     String inputpage_url = "";
