@@ -1601,9 +1601,12 @@ public class Wiki implements Comparable<Wiki>
      *    exist
      *  <li><b>timestamp</b>: (OffsetDateTime) when this method was called
      *  <li><b>watchers</b>: (Integer) number of watchers, may be restricted
-     *  <li><b>allowedactions</b>: (List&lt;String&gt;) the actions that the 
-     *    user can perform on this page
      *  </ul>
+     * 
+     *  <p>Note: <code>intestactions=X</code> is deliberately not implemented 
+     *  because it lowers the number of pages per network request by N, where N 
+     *  is the number of actions tested. Furthermore, it doesn't give the reason 
+     *  why if any given action is disallowed.
      *
      *  @param pages the pages to get info for.
      *  @return (see above), or {@code null} for Special and Media pages.
@@ -1617,7 +1620,6 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("action", "query");
         getparams.put("prop", "info");
         getparams.put("inprop", "protection|displaytitle|watchers");
-        getparams.put("intestactions", "create|delete|edit|move|protect|rollback|undelete|upload");
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, Object>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
@@ -1694,17 +1696,6 @@ public class Wiki implements Comparable<Wiki>
                 // number of watchers
                 if (item.contains("watchers=\""))
                     tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
-                
-                // Add allowed actions. Allows to check whether an action is
-                // permissible, but doesn't give the reason why if it is disallowed.
-                int start = item.indexOf("<actions") + 8;
-                String actions = item.substring(start, item.indexOf("/>", start));
-                String[] actionsarray = actions.replace("=\"\"", "").split("\\s");
-                List<String> allowed = new ArrayList<>();
-                for (String action : actionsarray)
-                    if (!action.isEmpty())
-                        allowed.add(action);
-                tempmap.put("allowedactions", allowed);
 
                 metamap.put(parsedtitle, tempmap);
             }

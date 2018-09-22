@@ -814,7 +814,6 @@ public class WikiTest
         assertEquals("getPageInfo: Main Page display title", "Main Page", pageinfo[0].get("displaytitle"));
         assertEquals("getPageInfo: identity", pages[0], pageinfo[0].get("inputpagename"));
         assertEquals("getPageInfo: normalized identity", pages[0], pageinfo[0].get("pagename"));
-        assertTrue("getPageInfo: allowed actions", ((List)pageinfo[0].get("allowedactions")).isEmpty());
         
         // different display title
         assertEquals("getPageInfo: iPod display title", "iPod", pageinfo[1].get("displaytitle"));
