@@ -23,6 +23,7 @@
     String temp = request.getParameter("skip");
     int skip = (temp == null) ? 0 : Integer.parseInt(temp);
     skip = Math.max(skip, 0);
+    boolean newonly = (request.getParameter("newonly") != null);
 
     Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
     enWiki.setMaxLag(-1);
@@ -66,6 +67,9 @@ Someone # Spam
 <tr><td>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"> to
         <input type=date name=latest value="<%= latest %>"> (inclusive)
+<tr><td>Show:
+    <td><input type=checkbox name=newonly value=1<%= newonly ? " checked" : 
+        "" %>>New pages only
 <tr><td>Skip:
     <td><input type=number size=50 name=skip value="<%= skip %>">
 </table>
@@ -159,8 +163,14 @@ Someone # Spam
     // fetch contributions
     Wiki.RequestHelper rh = enWiki.new RequestHelper()
         .withinDateRange(earliest_odt, latest_odt);
+    if (newonly)
+    {
+        Map<String, Boolean> tempmap = new HashMap<>();
+        tempmap.put("new", Boolean.TRUE);
+        rh = rh.filterBy(tempmap);
+    }
     List<String> users = new ArrayList<>(input.keySet());
-    List<String> userstofetch = users.subList(skip, Math.min(skip + 50, users.size() - 1));
+    List<String> userstofetch = users.subList(skip, Math.min(skip + 50, users.size()));
     List<List<Wiki.Revision>> contribs = enWiki.contribs(userstofetch, null, rh);
 
     for (int i = 0; i < userstofetch.size(); i++)
