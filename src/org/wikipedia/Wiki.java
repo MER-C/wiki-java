@@ -1554,6 +1554,8 @@ public class Wiki implements Comparable<Wiki>
      *  <kbd>{{PAGENAME}}</kbd>.
      *
      *  @param page a page
+     *  @param ns limit removal to only these namespaces. If empty, remove any
+     *  namespace.
      *  @return (see above)
      *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
@@ -1561,11 +1563,17 @@ public class Wiki implements Comparable<Wiki>
      *  @see #namespaceIdentifier(int)
      *  @since 0.35
      */
-    public String removeNamespace(String page)
+    public String removeNamespace(String page, int... ns)
     {
-        if (namespace(page) == 0)
+        int namespace = namespace(page);
+        if (namespace == 0)
             return page;
-        return page.substring(page.indexOf(':') + 1);
+        if (ns.length == 0)
+            return page.substring(page.indexOf(':') + 1);
+        for (int nstest : ns)
+            if (nstest == namespace)
+                return page.substring(page.indexOf(':') + 1);
+        return page;
     }
 
     /**
@@ -3980,7 +3988,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("action", "query");
         getparams.put("prop", "imageinfo");
         getparams.put("iiprop", "url");
-        getparams.put("titles", "File:" + removeNamespace(normalize(title)));
+        getparams.put("titles", "File:" + removeNamespace(normalize(title), FILE_NAMESPACE));
         getparams.put("iiurlwidth", String.valueOf(width));
         getparams.put("iiurlheight", String.valueOf(height));
         String line = makeApiCall(getparams, null, "getImage");
@@ -4066,7 +4074,7 @@ public class Wiki implements Comparable<Wiki>
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "duplicatefiles");
-        getparams.put("titles", "File:" + removeNamespace(normalize(file)));
+        getparams.put("titles", "File:" + removeNamespace(normalize(file), FILE_NAMESPACE));
 
         List<String> duplicates = makeListQuery("df", getparams, null, "getDuplicates", -1, (line, results) ->
         {
@@ -4099,7 +4107,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "imageinfo");
         getparams.put("iiprop", "timestamp|user|comment|parsedcomment");
-        getparams.put("titles", "File:" + removeNamespace(normalize(title)));
+        getparams.put("titles", "File:" + removeNamespace(normalize(title), FILE_NAMESPACE));
 
         String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
         List<LogEntry> history = makeListQuery("ii", getparams, null, "getImageHistory", -1, (line, results) ->
@@ -4262,7 +4270,7 @@ public class Wiki implements Comparable<Wiki>
         // check for log in
         if (user == null || !user.isAllowedTo("upload"))
             throw new SecurityException("Permission denied: cannot upload files.");
-        filename = removeNamespace(filename);
+        filename = removeNamespace(filename, FILE_NAMESPACE);
         throttle();
 
         // protection
@@ -4385,7 +4393,7 @@ public class Wiki implements Comparable<Wiki>
         // check for log in
         if (user == null || !user.isAllowedTo("upload_by_url"))
             throw new SecurityException("Permission denied: cannot upload files via URL.");
-        filename = removeNamespace(filename);
+        filename = removeNamespace(filename, FILE_NAMESPACE);
         throttle();
 
         // protection
@@ -5433,7 +5441,7 @@ public class Wiki implements Comparable<Wiki>
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "imageusage");
-        getparams.put("iutitle", "File:" + removeNamespace(normalize(image)));
+        getparams.put("iutitle", "File:" + removeNamespace(normalize(image), FILE_NAMESPACE));
         if (ns.length > 0)
             getparams.put("iunamespace", constructNamespaceString(ns));
 
@@ -5661,11 +5669,11 @@ public class Wiki implements Comparable<Wiki>
     protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories,
         boolean sorttimestamp, int... ns) throws IOException
     {
-        name = removeNamespace(name);
+        name = removeNamespace(normalize(name), CATEGORY_NAMESPACE);
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "categorymembers");
         getparams.put("cmprop", "title");
-        getparams.put("cmtitle", "Category:" + removeNamespace(normalize(name)));
+        getparams.put("cmtitle", "Category:" + name);
         if (sorttimestamp)
             getparams.put("cmsort", "timestamp");
         boolean nocat = ns.length != 0;
@@ -6158,7 +6166,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param protectionstate a {@link #protect protection state}, use null
      *  to not specify one
      *  @param namespace a namespace. ALL_NAMESPACES is not suppported, an
-     *  UnsupportedOperationException will be thrown.
+     *  UnsupportedOperationException will be thrown unless a prefix is specified.
      *  @param minimum the minimum size in bytes these pages can be. Use -1 to
      *  not specify one.
      *  @param maximum the maximum size in bytes these pages can be. Use -1 to
@@ -6176,11 +6184,13 @@ public class Wiki implements Comparable<Wiki>
         // for this module.
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "allpages");
-        if (!prefix.isEmpty()) // prefix
+        if (!prefix.isEmpty())
         {
-            // cull the namespace prefix
-            namespace = namespace(prefix);
-            prefix = removeNamespace(prefix);
+            if (namespace == ALL_NAMESPACES)
+            {
+                namespace = namespace(prefix);
+                prefix = removeNamespace(prefix);
+            }
             getparams.put("apprefix", normalize(prefix));
         }
         else if (namespace == ALL_NAMESPACES) // check for namespace

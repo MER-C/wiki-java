@@ -195,6 +195,8 @@ public class WikiTest
         assertEquals("removeNamespace: main namespace", "Hello World", enWiki.removeNamespace("Hello World"));
         assertEquals("removeNamespace: pretend namespace", "Hello:World", enWiki.removeNamespace("Hello:World"));
         assertEquals("removeNamespace: custom namespace", "Hello", enWiki.removeNamespace("Portal:Hello"));
+        assertEquals("removeNamespace: partial", "Category:Blah", enWiki.removeNamespace("Category:Blah", Wiki.FILE_NAMESPACE));
+        assertEquals("removeNamespace: partial", "Blah", enWiki.removeNamespace("Blah", Wiki.CATEGORY_NAMESPACE));        
         // something funky going on with RTL, can't tell whether it's Netbeans, Firefox or me failing at copy/paste
         // assertEquals("removeNamespace: rtl fail", "صفحات للحذف السريع", arWiki.removeNamespace("تصنيف:صفحات_للحذف_السريع"));
     }
