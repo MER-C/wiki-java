@@ -24,11 +24,14 @@ import java.util.*;
 import org.wikipedia.*;
 
 /**
- *  Tools for Wikipedia's featured picture collection. TODO: check each featured
- *  picture for use in articles.
+ *  Tools for Wikipedia's featured picture collection. 
  * 
  *  @author MER-C
- *  @see <a href="https://en.wikipedia.org/wiki/Wikipedia:Featured_pictures">Featured Pictures</a>
+ *  @version 0.01
+ *  @see <a href="https://en.wikipedia.org/wiki/Wikipedia:Featured_pictures">English 
+ *  Wikipedia Featured Pictures</a>
+ *  @see <a href="https://commons.wikimedia.org/wiki/Commons:Featured_pictures">Wikimedia
+ *  Commons Featured Pictures</a>
  */
 public class FeaturedPictureCuration
 {
@@ -40,8 +43,68 @@ public class FeaturedPictureCuration
      *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
+    {        
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.FeaturedPictureCuration", "[options]")
+            .description("A tool for curating featured pictures.")
+            .addHelp()
+            .addVersion("FeaturedPictureCuration v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addBooleanFlag("--checktags", "Check whether FPs are tagged correctly (en.wp ONLY).")
+            .addBooleanFlag("--checkusage", "Checks whether FPs are used in articles (en.wp or commons ONLY).")
+            .addSingleArgumentFlag("--wiki", "example.org", "Fetch FPs from this wiki (see --checkusage).")
+            .parse(args);
+        
+        if (parsedargs.containsKey("--checktags"))
+            checkFPTags();
+        if (parsedargs.containsKey("--checkusage"))
+        {
+            Wiki wiki = Wiki.createInstance(parsedargs.get("--wiki"));
+            Set<String> fpcanonical = getFeaturedPicturesFromList(wiki);
+            
+            // There is a small amount of contamination of non-featured pictures
+            // on Commons.
+            enWiki.setQueryLimit(100);
+            for (String image : fpcanonical)
+            {
+                String[] usage = enWiki.imageUsage(image, Wiki.MAIN_NAMESPACE);
+                System.out.println("\"" + image + "\"," + usage.length + ",\"" + Arrays.toString(usage));
+            }
+        }
+    }
+    
+    /**
+     *  Fetches the canonical list of featured pictures on the supplied wiki, 
+     *  being the list of pictures used on subpages of [[Project:Featured pictures]].
+     *  
+     *  @param wiki the wiki to fetch FPs for
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     */
+    public static Set<String> getFeaturedPicturesFromList(Wiki wiki) throws IOException
     {
-        Set<String> fpcanonical = getFeaturedPicturesFromList();
+        String[] allfppages;
+        String domain = wiki.getDomain();
+        if (domain.equals("en.wikipedia.org"))
+            allfppages = wiki.getCategoryMembers("Category:Wikipedia featured pictures categories");
+        else if (domain.equals("commons.wikimedia.org"))
+            allfppages = wiki.getCategoryMembers("Category:Featured picture galleries");
+        else
+            return Collections.emptySet();
+
+        Set<String> fps = new HashSet<>();
+        for (String fppage : allfppages)
+            fps.addAll(Arrays.asList(wiki.getImagesOnPage(fppage)));
+        return fps;
+    }
+    
+    /**
+     *  Checks whether all pictures listed at [[Wikipedia:Featured pictures]]
+     *  are actually tagged, and vice versa.
+     *  @throws IOException if a network error occurs
+     */
+    public static void checkFPTags() throws IOException
+    {
+        Set<String> fpcanonical = getFeaturedPicturesFromList(enWiki);
         List<String> fpcat = Arrays.asList(enWiki.getCategoryMembers("Category:Featured pictures", Wiki.FILE_NAMESPACE));
         
         // check for FPs that are no longer tagged as such
@@ -55,23 +118,7 @@ public class FeaturedPictureCuration
         missingfps.addAll(fpcat);
         missingfps.removeAll(fpcanonical);
         System.out.println("Images that are tagged as FP, but aren't listed at [[WP:FP]]:");
-        System.out.println(Pages.toWikitextList(missingfps, Pages.LIST_OF_LINKS, false));        
-    }
-    
-    /**
-     *  Fetches the canonical list of featured pictures on the English Wikipedia,
-     *  available <a href="https://en.wikipedia.org/wiki/Wikipedia:Featured_pictures">here</a>.
-     *  
-     *  @return (see above)
-     *  @throws IOException if a network error occurs
-     */
-    public static Set<String> getFeaturedPicturesFromList() throws IOException
-    {
-        String[] allfppages = enWiki.prefixIndex("Wikipedia:Featured pictures/");
-        Set<String> fps = new HashSet<>();
-        for (String fppage : allfppages)
-            fps.addAll(Arrays.asList(enWiki.getImagesOnPage(fppage)));
-        return fps;
+        System.out.println(Pages.toWikitextList(missingfps, Pages.LIST_OF_LINKS, false));   
     }
     
 }
