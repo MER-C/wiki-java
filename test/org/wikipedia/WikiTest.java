@@ -422,8 +422,12 @@ public class WikiTest
     @Test
     public void getImagesOnPage() throws Exception
     {
-        assertArrayEquals("getImagesOnPage: non-existent page", new String[0], enWiki.getImagesOnPage("Skflsj&dkfs"));
-        assertArrayEquals("getImagesOnPage: page with no images", new String[0], enWiki.getImagesOnPage("User:MER-C/monobook.js"));
+        // https://en.wikipedia.org/wiki/Template:POTD/2018-11-01
+        List<String> pages = Arrays.asList("Skflsj&dkfs", "Template:POTD/2018-11-01", "User:MER-C/monobook.js");
+        List<List<String>> images = enWiki.getImagesOnPage(pages);
+        assertEquals("getImagesOnPage: non-existent page", Collections.emptyList(), images.get(0));
+        assertEquals("getImagesOnPage", Arrays.asList("File:Adelie Penguins on iceberg.jpg"), images.get(1));
+        assertEquals("getImagesOnPage: page with no images", Collections.emptyList(), images.get(2));
     }
 
     @Test

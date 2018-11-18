@@ -2375,29 +2375,83 @@ public class Wiki implements Comparable<Wiki>
      *  redirected images, both the source and target page are included.
      *
      *  @param title a page
-     *  @return the list of images used in the page.  Note that each String in
-     *  the array will begin with the prefix "File:"
+     *  @return the list of images used in the page.
      *  @throws IOException if a network error occurs
      *  @since 0.16
      */
     public String[] getImagesOnPage(String title) throws IOException
     {
+        return getCategories(Arrays.asList(title), null, false).get(0).toArray(new String[0]);
+    }
+    
+    /**
+     *  Gets the list of images used on the given pages. If there are redirected
+     *  images, both the source and target page are included. Return order is 
+     *  the same as the input order.
+     *
+     *  @param titles a list of pages
+     *  @return the list of images used in those pages.
+     *  @throws IOException if a network error occurs
+     *  @since 0.36
+     */
+    public List<List<String>> getImagesOnPage(List<String> titles) throws IOException
+    {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "images");
-        getparams.put("titles", normalize(title));
-
-        List<String> images = makeListQuery("im", getparams, null, "getImagesOnPage", -1, (line, results) ->
+        
+        // copy array so redirect resolver doesn't overwrite
+        String[] titles2 = new String[titles.size()];
+        titles.toArray(titles2);
+        List<Map<String, List<String>>> stuff = new ArrayList<>();
+        Map<String, Object> postparams = new HashMap<>();
+        for (String temp : constructTitleString(titles2))
         {
-            // xml form: <im ns="6" title="File:Example.jpg" />
-            for (int a = line.indexOf("<im "); a > 0; a = line.indexOf("<im ", ++a))
-                results.add(parseAttribute(line, "title", a));
+            postparams.put("titles", temp);
+            stuff.addAll(makeListQuery("im", getparams, postparams, "getImagesOnPage", -1, (line, results) ->
+            {
+                // Split the result into individual listings for each article.
+                String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
+
+                // Skip first element to remove front crud.
+                for (int i = 1; i < x.length; i++)
+                {
+                    // xml form: <im ns="6" title="File:Example.jpg" />
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String> list = new ArrayList<>();
+                    for (int a = x[i].indexOf("<im "); a > 0; a = x[i].indexOf("<im ", ++a))
+                        list.add(parseAttribute(x[i], "title", a));
+                    
+                    Map<String, List<String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, list);
+                    results.add(intermediate);
+                }
+            }));
+        }
+
+        // fill the return list
+        List<List<String>> ret = new ArrayList<>();
+        List<String> normtitles = new ArrayList<>();
+        for (String localtitle : titles2)
+        {
+            normtitles.add(normalize(localtitle));
+            ret.add(new ArrayList<>());
+        }
+        // then retrieve the results from the intermediate list of maps,
+        // ensuring results correspond to inputs
+        stuff.forEach(map ->
+        {
+            String parsedtitle = map.keySet().iterator().next();
+            List<String> templates = map.get(parsedtitle);
+            for (int i = 0; i < titles2.length; i++)
+                if (normtitles.get(i).equals(parsedtitle))
+                    ret.get(i).addAll(templates);
         });
-
-        int temp = images.size();
-        log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + title + " (" + temp + " images)");
-        return images.toArray(new String[temp]);
+        log(Level.INFO, "getCategories", "Successfully retrieved images used on " + titles2.length + " pages.");
+        return ret;
     }
-
+ 
     /**
      *  Gets the list of categories a particular page is in. Includes hidden
      *  categories.

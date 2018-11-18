@@ -54,7 +54,7 @@ public class FeaturedPictureCuration
             .addSingleArgumentFlag("--wiki", "example.org", "Fetch FPs from this wiki (see --checkusage).")
             .parse(args);
         
-        if (parsedargs.containsKey("--checktags"))
+        if (true || parsedargs.containsKey("--checktags"))
             checkFPTags();
         if (parsedargs.containsKey("--checkusage"))
         {
@@ -82,18 +82,18 @@ public class FeaturedPictureCuration
      */
     public static Set<String> getFeaturedPicturesFromList(Wiki wiki) throws IOException
     {
-        String[] allfppages;
+        List<String> allfppages = new ArrayList<>();
         String domain = wiki.getDomain();
         if (domain.equals("en.wikipedia.org"))
-            allfppages = wiki.getCategoryMembers("Category:Wikipedia featured pictures categories");
+            allfppages.addAll(Arrays.asList(wiki.getCategoryMembers("Category:Wikipedia featured pictures categories")));
         else if (domain.equals("commons.wikimedia.org"))
-            allfppages = wiki.getCategoryMembers("Category:Featured picture galleries");
+            allfppages.addAll(Arrays.asList(wiki.getCategoryMembers("Category:Featured picture galleries")));
         else
             return Collections.emptySet();
 
         Set<String> fps = new HashSet<>();
-        for (String fppage : allfppages)
-            fps.addAll(Arrays.asList(wiki.getImagesOnPage(fppage)));
+        for (List<String> fpimages : wiki.getImagesOnPage(allfppages))
+            fps.addAll(fpimages);
         return fps;
     }
     
