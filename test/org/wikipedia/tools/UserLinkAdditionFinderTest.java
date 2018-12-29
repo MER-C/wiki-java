@@ -25,9 +25,9 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 import java.util.stream.*;
-import org.junit.*;
+import org.junit.jupiter.api.*;
 import org.wikipedia.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Diff parsing unit tests for the UserLinkAdditionFinder.

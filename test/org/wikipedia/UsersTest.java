@@ -20,8 +20,8 @@
 package org.wikipedia;
 
 import java.util.*;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Tests for {@link org.wikipedia.Users}.
@@ -46,35 +46,33 @@ public class UsersTest
     public void createdPages() throws Exception
     {
         // no pages created
-        assertTrue("createdPages: no pages", 
-            enWikiUsers.createdPages(Arrays.asList("Constance94S"), null).isEmpty());
+        assertTrue(enWikiUsers.createdPages(Arrays.asList("Constance94S"), null).isEmpty(), "no pages created");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MEDIAWIKI_NAMESPACE);
         List<Wiki.Revision> pages = enWikiUsers.createdPages(Arrays.asList("Watsonboy12"), rh);
-        assertTrue("createdPages: no pages in namespace", pages.isEmpty());
+        assertTrue(pages.isEmpty(), "no pages created in namespace");
 
         // verify functionality
         rh = testWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
         pages = testWikiUsers.createdPages(Arrays.asList("MER-C"), rh);
         Wiki.Revision last = pages.get(pages.size() - 1);
-        assertEquals("createdPages", "Wiki.java Test Page", last.getTitle());
-        assertEquals("createdPages", 28164L, last.getID());
+        assertEquals("Wiki.java Test Page", last.getTitle());
+        assertEquals(28164L, last.getID());
     }
     
     @Test
     public void createdPagesWithText() throws Exception
     {
         // no articles created
-        assertTrue("createdPagesWithText: no pages", 
-            enWikiUsers.createdPagesWithText(Arrays.asList("Constance94S"), null).isEmpty());
+        assertTrue(enWikiUsers.createdPagesWithText(Arrays.asList("Constance94S"), null).isEmpty(), "no pages created");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MEDIAWIKI_NAMESPACE);
         Map<Wiki.Revision, String> creations = enWikiUsers.createdPagesWithText(Arrays.asList("Watsonboy12"), rh);
-        assertTrue("createdPages: no pages in namespace", creations.isEmpty());
+        assertTrue(creations.isEmpty(), "no pages created in namespace");
                 
         // verify functionality
         creations = testWikiUsers.createdPagesWithText(Arrays.asList("81.245.42.185"), null);
         Wiki.Revision revision = testWiki.getRevision(24764L);
         String text = revision.getText();
-        assertEquals("createdPagesWithText", text, creations.get(revision));
+        assertEquals(text, creations.get(revision));
     }
     
     @Test
@@ -89,7 +87,7 @@ public class UsersTest
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&user=MER-C\">logs</a> | "
             + "<a href=\"" + testWiki.getPageUrl("Special:Block/MER-C") + "\">block</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:MER-C\">block log</a>)";
-        assertEquals("generateUserLinks", expected, testWikiUsers.generateHTMLSummaryLinks("MER-C"));
+        assertEquals(expected, testWikiUsers.generateHTMLSummaryLinks("MER-C"));
         
         expected = "<a href=\"" + testWiki.getPageUrl("User:A_B_の") + "\">A B の</a> ("
             + "<a href=\"" + testWiki.getPageUrl("User_talk:A_B_の") + "\">talk</a> | "
@@ -98,7 +96,7 @@ public class UsersTest
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&user=A+B+%E3%81%AE\">logs</a> | "
             + "<a href=\"" + testWiki.getPageUrl("Special:Block/A_B_の") + "\">block</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:A+B+%E3%81%AE\">block log</a>)";
-        assertEquals("generateUserLinks: special characters", expected, testWikiUsers.generateHTMLSummaryLinks("A B の"));
+        assertEquals(expected, testWikiUsers.generateHTMLSummaryLinks("A B の"), "special characters");
     }
     
     @Test
@@ -111,7 +109,7 @@ public class UsersTest
             + "[{{fullurl:Special:Log|user=MER-C}} logs] | "
             + "[[Special:Block/MER-C|block]] | "
             + "[{{fullurl:Special:Log|type=block&page=User:MER-C}} block log])\n";
-        assertEquals("generateUserLinksAsWikitext", expected, Users.generateWikitextSummaryLinks("MER-C"));
+        assertEquals(expected, Users.generateWikitextSummaryLinks("MER-C"));
         
         expected = "* [[User:A B の|A B の]] ("
             + "[[User talk:A B の|talk]] | "
@@ -120,6 +118,6 @@ public class UsersTest
             + "[{{fullurl:Special:Log|user=A+B+%E3%81%AE}} logs] | "
             + "[[Special:Block/A B の|block]] | "
             + "[{{fullurl:Special:Log|type=block&page=User:A+B+%E3%81%AE}} block log])\n";
-        assertEquals("generateUserLinksAsWikitext: special characters", expected, Users.generateWikitextSummaryLinks("A B の"));
+        assertEquals(expected, Users.generateWikitextSummaryLinks("A B の"), "special characters");
     }
 }

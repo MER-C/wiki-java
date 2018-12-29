@@ -22,8 +22,8 @@ package org.wikipedia;
 
 import java.time.*;
 import java.util.*;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Unit tests for the {@link Events} utility class.
@@ -40,28 +40,17 @@ public class EventsTest
     @Test
     public void timeBetweenEvents() throws Exception
     {
-        try
-        {
-            Events.timeBetweenEvents(Collections.emptyList());
-            fail("Cannot compute time between a list of no events.");
-        }
-        catch (IllegalArgumentException expected)
-        {
-        }
-        
+        assertThrows(IllegalArgumentException.class, 
+            () -> Events.timeBetweenEvents(Collections.emptyList()),
+            "cannot compute time between a list of no events");        
         // https://en.wikipedia.org/wiki/Wikipedia:Articles_for_deletion/HD_Brows
         List<? extends Wiki.Event> events = enWiki.getPageHistory("Wikipedia:Articles for deletion/HD Brows", null);
-        
-        try
-        {
-            Events.timeBetweenEvents(events.subList(0, 0));
-            fail("Cannot compute time between a list of one event.");
-        }
-        catch (IllegalArgumentException expected)
-        {
-        }
+        assertThrows(IllegalArgumentException.class,
+            () -> Events.timeBetweenEvents(events.subList(0, 0)),
+            "cannot compute time between a list of one event");
+                
         List<Duration> result = Events.timeBetweenEvents(events);
-        assertEquals("check whether quantity is correct", events.size() - 1, result.size());
+        assertEquals(events.size() - 1, result.size(), "check quantity");
         // check a couple of entries
         assertEquals(Duration.ofSeconds(4880), result.get(result.size() - 2));
         assertEquals(Duration.ofSeconds(976), result.get(result.size() - 1));

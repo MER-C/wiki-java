@@ -19,8 +19,8 @@
  */
 package org.wikipedia.servlets;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Unit tests for {@link org.wikipedia.servlets.ServletUtils}.
@@ -33,13 +33,8 @@ public class ServletUtilsTest
     {
         assertEquals("", ServletUtils.sanitizeForAttribute(null));
         assertEquals("default", ServletUtils.sanitizeForAttributeOrDefault(null, "default"));
-        try
-        {
-            ServletUtils.sanitizeForAttributeOrDefault(null, null);
-        }
-        catch (NullPointerException expected)
-        {
-        }
+        assertThrows(NullPointerException.class, 
+            () -> ServletUtils.sanitizeForAttributeOrDefault(null, null));
     }
     
     @Test

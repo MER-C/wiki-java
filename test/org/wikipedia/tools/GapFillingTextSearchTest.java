@@ -21,8 +21,8 @@ package org.wikipedia.tools;
 
 import java.util.*;
 import java.util.regex.*;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 import org.wikipedia.*;
 
 /**
@@ -33,7 +33,7 @@ public class GapFillingTextSearchTest
 {
     private final Wiki enWiki;
     private final GapFillingTextSearch gfs;
-    
+
     /**
      *  Construct a tool object and wiki connection for every test so that tests
      *  are independent.
@@ -44,7 +44,7 @@ public class GapFillingTextSearchTest
         enWiki.setMaxLag(-1);
         gfs = new GapFillingTextSearch(enWiki);
     }
-    
+
     @Test
     public void getWiki() throws Exception
     {
@@ -55,20 +55,20 @@ public class GapFillingTextSearchTest
     public void searchAndExtractSnippets() throws Exception
     {
         // needs to handle no results
-        assertTrue("searchAndExtractSnippets: no inputs", gfs.searchAndExtractSnippets(Collections.emptyMap(), "Blah", false).isEmpty());
-        
+        assertTrue(gfs.searchAndExtractSnippets(Collections.emptyMap(), "Blah", false).isEmpty(), "no input");
+
         Map<String, String> inputs = new HashMap<>();
         String page = "Wikipedia:Articles for deletion/Dmarket";
         String text = enWiki.getPageText(page);
         inputs.put(page, text);
-        assertTrue("searchAndExtractSnippets: no results", gfs.searchAndExtractSnippets(inputs, "NotASearchTerm", false).isEmpty());
+        assertTrue(gfs.searchAndExtractSnippets(inputs, "NotASearchTerm", false).isEmpty(), "no results");
         Map<String, String> results = gfs.searchAndExtractSnippets(inputs, "kamikaze", false);
         assertEquals(1, results.size());
         String expected = "talk:CASSIOPEIA|<b style=\"#0000FF\">talk</b>]])</sup> 14:45, 9 June 2018 (UTC)</small> "
             + "*'''Delete''' this highly [[WP:PROMO|promotional]] text, created by a [[WP:SPA|kamikaze account]], "
             + "about a subject lacking notability aside from mentions in a few trade blogs";
-        assertEquals("searchAndExtractSnippets: one result", expected, results.get(page));
-        assertTrue("searchAndExtractSnippets: case sensitive", gfs.searchAndExtractSnippets(inputs, "Kamikaze", true).isEmpty());
+        assertEquals(expected, results.get(page), "one result");
+        assertTrue(gfs.searchAndExtractSnippets(inputs, "Kamikaze", true).isEmpty(), "check case sensitivity");
         Map<String, String> results2 = gfs.searchAndExtractSnippets(inputs, "kamikaze", true);
         assertEquals(results, results2);
     }
@@ -78,10 +78,7 @@ public class GapFillingTextSearchTest
     {
         // needs to handle no results
         Pattern pattern = Pattern.compile("blah");
-        assertTrue("regexMatchAndExtractSnippets: no inputs", 
-            gfs.regexMatchAndExtractSnippets(Collections.emptyMap(), pattern).isEmpty());
-
-        
+        assertTrue(gfs.regexMatchAndExtractSnippets(Collections.emptyMap(), pattern).isEmpty(), "no inputs");
     }
 
     @Test
@@ -92,28 +89,17 @@ public class GapFillingTextSearchTest
         for (int i = 0; i < count; i++)
             inputs.add("Test" + i);
         String text = String.join(" ", inputs);
-        try
-        {
-            gfs.extractSnippet(text, -30);
-            fail("Tried to extract a snippet at a negative index.");
-        }
-        catch (StringIndexOutOfBoundsException expected)
-        {
-        }
-        try
-        {
-            gfs.extractSnippet(text, text.length());
-            fail("Tried to extract a snippet over the end of the string.");
-        }
-        catch (StringIndexOutOfBoundsException expected)
-        {
-        }
-        
+        assertThrows(StringIndexOutOfBoundsException.class,
+            () -> gfs.extractSnippet(text, -30),
+            "tried to extract a snippet at a negative index");
+        assertThrows(StringIndexOutOfBoundsException.class,
+            () -> gfs.extractSnippet(text, text.length()),
+            "tried to extract a snippet over the end of the string");
+
         // First 10 items in text = 60 characters, each subsequent 10 = 70 characters
-        assertEquals("extractSnippet", String.join(" ", inputs.subList(10, 40)), gfs.extractSnippet(text, 60 + 70 + 38));
-        assertEquals("extractSnippet: at start", String.join(" ", inputs.subList(0, 15)), gfs.extractSnippet(text, 0));
-        assertEquals("extractSnippet: at end", String.join(" ", inputs.subList(count - 15 - 1, count - 1)), 
-            gfs.extractSnippet(text, text.length() - 1));
+        assertEquals(String.join(" ", inputs.subList(10, 40)), gfs.extractSnippet(text, 60 + 70 + 38));
+        assertEquals(String.join(" ", inputs.subList(0, 15)), gfs.extractSnippet(text, 0), "at start");
+        assertEquals(String.join(" ", inputs.subList(count - 15 - 1, count - 1)),
+            gfs.extractSnippet(text, text.length() - 1), "at end");
     }
-    
 }

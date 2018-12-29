@@ -21,8 +21,8 @@ package org.wikipedia;
 
 import java.time.*;
 import java.util.*;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Tests for {@link org.wikipedia.Revisions}.
@@ -67,7 +67,7 @@ public class RevisionsTest
             821171155L, // 14: state  2
             821170526L  // 15: state  1
         };
-        assertArrayEquals("removereverts: setup", oldids, revisions.stream().mapToLong(Wiki.Revision::getID).toArray());
+        assertArrayEquals(oldids, revisions.stream().mapToLong(Wiki.Revision::getID).toArray(), "test setup");
         long[] expected = new long[] 
         {
             821170526L, // 14: state  1
@@ -81,7 +81,7 @@ public class RevisionsTest
             822338691L  //  3: state  7
         };
         List<Wiki.Revision> revertsremoved = Revisions.removeReverts(revisions);
-        assertArrayEquals("removereverts", expected, revertsremoved.stream().mapToLong(Wiki.Revision::getID).toArray());
+        assertArrayEquals(expected, revertsremoved.stream().mapToLong(Wiki.Revision::getID).toArray());
         // two identical edits on different pages are not reverts
         oldids = new long[]
         {
@@ -89,6 +89,6 @@ public class RevisionsTest
             823352525L  // https://en.wikipedia.org/w/index.php?oldid=823352525
         };
         revisions = Arrays.asList(enWiki.getRevisions(oldids));
-        assertEquals("removereverts: different pages, same content", revisions, Revisions.removeReverts(revisions));
+        assertEquals(revisions, Revisions.removeReverts(revisions), "different pages, same content");
     }
 }
