@@ -3407,8 +3407,8 @@ public class Wiki implements Comparable<Wiki>
                 exp.append('|');
             }
         });
-        pro.delete(pro.length() - 3, pro.length());
-        exp.delete(exp.length() - 3, exp.length());
+        pro.delete(pro.length() - 1, pro.length());
+        exp.delete(exp.length() - 1, exp.length());
         postparams.put("protections", pro);
         postparams.put("expiry", exp);
         String response = makeApiCall(getparams, postparams, "protect");
