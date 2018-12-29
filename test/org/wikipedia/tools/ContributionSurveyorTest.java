@@ -68,10 +68,9 @@ public class ContributionSurveyorTest
     {
         // first, verify get/set works
         OffsetDateTime earliest = OffsetDateTime.parse("2017-12-07T00:00:00Z");
-        surveyor.setEarliestDateTime(earliest);
-        assertEquals("getEarliestDateTime", earliest, surveyor.getEarliestDateTime());
         OffsetDateTime latest = OffsetDateTime.parse("2018-01-23T00:00:00Z");
-        surveyor.setLatestDateTime(latest);
+        surveyor.setDateRange(earliest, latest);
+        assertEquals("getEarliestDateTime", earliest, surveyor.getEarliestDateTime());
         assertEquals("getLatestDateTime", latest, surveyor.getLatestDateTime());
         
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-01&end=2018-01-24

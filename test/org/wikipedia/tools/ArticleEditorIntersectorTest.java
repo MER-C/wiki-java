@@ -129,10 +129,9 @@ public class ArticleEditorIntersectorTest
     {
         // first, verify get/set works
         OffsetDateTime earliest = OffsetDateTime.parse("2010-01-01T00:00:00Z");
-        intersector_enWiki.setEarliestDateTime(earliest);
-        assertEquals("getEarliestDateTime", earliest, intersector_enWiki.getEarliestDateTime());
         OffsetDateTime latest = OffsetDateTime.parse("2013-03-01T00:00:00Z");
-        intersector_enWiki.setLatestDateTime(latest);
+        intersector_enWiki.setDateRange(earliest, latest);
+        assertEquals("getEarliestDateTime", earliest, intersector_enWiki.getEarliestDateTime());
         assertEquals("getLatestDateTime", latest, intersector_enWiki.getLatestDateTime());
         
         // These articles have an intersection, but if we restrict the date range

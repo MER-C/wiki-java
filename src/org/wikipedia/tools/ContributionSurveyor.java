@@ -162,8 +162,7 @@ public class ContributionSurveyor
 
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setMinimumSizeDiff(minsize);
-        surveyor.setEarliestDateTime(editsafter);
-        surveyor.setLatestDateTime(editsbefore);
+        surveyor.setDateRange(editsafter, editsbefore);
         surveyor.setIgnoringMinorEdits(nominor);
 //        surveyor.setIgnoringReverts(noreverts);
         try (BufferedWriter outwriter = Files.newBufferedWriter(out))
@@ -243,22 +242,30 @@ public class ContributionSurveyor
     */
 
     /**
-     *  Sets the date/time at which surveys start; no edits will be returned
-     *  before then. Defaults to {@code null}, i.e. no lower bound.
+     *  Sets the dates/times at which surveys start and finish; no edits will be 
+     *  returned outside this range. The default, {@code null}, indicates no
+     *  bound.
      *  @param earliest the desired start date/time
-     *  @see #getEarliestDateTime()
+     *  @param latest the desired end date/time
+     *  @throws IllegalArgumentException if <var>earliest</var> is after
+     *  <var>latest</var>
+     *  @see #getEarliestDateTime() 
+     *  @see #getLatestDateTime() 
      *  @since 0.04
      */
-    public void setEarliestDateTime(OffsetDateTime earliest)
+    public void setDateRange(OffsetDateTime earliest, OffsetDateTime latest)
     {
+        if (earliest != null && latest != null && earliest.isAfter(latest))
+            throw new IllegalArgumentException("Date range is reversed.");
         earliestdate = earliest;
+        latestdate = latest;
     }
 
     /**
      *  Gets the date/time at which surveys start; no edits will be returned
      *  before then.
      *  @return (see above)
-     *  @see #setEarliestDateTime(OffsetDateTime)
+     *  @see #setDateRange(OffsetDateTime, OffsetDateTime)
      *  @since 0.04
      */
     public OffsetDateTime getEarliestDateTime()
@@ -267,21 +274,9 @@ public class ContributionSurveyor
     }
 
     /**
-     *  Sets the date/time at which surveys finish; no edits will be returned
-     *  after then. Defaults to {@code null}, i.e. when the survey is performed
-     *  @param latest the desired end date/time
-     *  @see #getLatestDateTime()
-     *  @since 0.04
-     */
-    public void setLatestDateTime(OffsetDateTime latest)
-    {
-        latestdate = latest;
-    }
-
-    /**
      *  Gets the date at which surveys finish.
      *  @return (see above)
-     *  @see #setLatestDateTime(OffsetDateTime)
+     *  @see #setDateRange(OffsetDateTime, OffsetDateTime)
      *  @since 0.04
      */
     public OffsetDateTime getLatestDateTime()
