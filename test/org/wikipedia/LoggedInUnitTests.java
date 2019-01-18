@@ -21,8 +21,8 @@ package org.wikipedia;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
-import org.junit.*;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Unit tests for Wiki.java which should only be run when logged in.
@@ -51,14 +51,8 @@ public class LoggedInUnitTests
         testWiki.setAssertionMode(Wiki.ASSERT_USER);
         testWiki.getPageText("Main Page");
         enWiki.setAssertionMode(Wiki.ASSERT_USER);
-        try
-        {
-            enWiki.getPageText("Main Page");
-            fail("Cross-contamination between sections.");
-        }
-        catch (AssertionError expected)
-        {
-        }
+        assertThrows(AssertionError.class, () -> enWiki.getPageText("Main Page"),
+            "cross-contamination between sessions");        
     }       
     
     @Test
@@ -80,10 +74,10 @@ public class LoggedInUnitTests
             // verify file uploaded is identical to image
             File actual = File.createTempFile("wikijava_upload2", null);
             testWiki.getImage(uploadDest, actual);
-            assertArrayEquals("upload: image", Files.readAllBytes(expected.toPath()), 
-                Files.readAllBytes(actual.toPath()));
-            assertEquals("upload: description", description, testWiki.getPageText("File:" + uploadDest));
-            assertEquals("upload: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getComment());
+            assertArrayEquals(Files.readAllBytes(expected.toPath()), 
+                Files.readAllBytes(actual.toPath()), "upload: image");
+            assertEquals(description, testWiki.getPageText("File:" + uploadDest), "upload: description");
+            assertEquals(reason, testWiki.getTopRevision("File:" + uploadDest).getComment(), "upload: reason");
 
             // upload via URL
             // target: https://test.wikipedia.org/wiki/File:Wiki.java_test5.jpg
@@ -99,10 +93,10 @@ public class LoggedInUnitTests
             actual = File.createTempFile("wikijava_upload4", null);
             testWiki.getImage(uploadDest, actual);
             // 1.55 MB file
-            assertArrayEquals("upload via url: image", Files.readAllBytes(expected.toPath()), 
-                Files.readAllBytes(actual.toPath()));
-            assertEquals("upload via url: description", description, testWiki.getPageText("File:" + uploadDest));
-            assertEquals("upload via url: reason", reason, testWiki.getTopRevision("File:" + uploadDest).getComment());
+            assertArrayEquals(Files.readAllBytes(expected.toPath()), 
+                Files.readAllBytes(actual.toPath()), "upload via url: image");
+            assertEquals(description, testWiki.getPageText("File:" + uploadDest), "upload via url: description");
+            assertEquals(reason, testWiki.getTopRevision("File:" + uploadDest).getComment(), "upload via url: reason");
         }
         finally
         {
@@ -119,7 +113,7 @@ public class LoggedInUnitTests
         String page = "User:MER-C/BotSandbox";
         String summary = "Test edit " + Math.random();
         testWiki.edit(page, text, summary);
-        assertEquals("edit: page text", text, testWiki.getPageText(page));
-        assertEquals("edit: summary", summary, testWiki.getTopRevision(page).getComment());
+        assertEquals(text, testWiki.getPageText(page), "page text");
+        assertEquals(summary, testWiki.getTopRevision(page).getComment(), "edit summary");
     }
 }

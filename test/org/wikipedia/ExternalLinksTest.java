@@ -19,8 +19,8 @@
  */
 package org.wikipedia;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Tests for {@link org.wikipedia.ExternalLinks}.
@@ -31,23 +31,19 @@ public class ExternalLinksTest
     @Test
     public void extractDomain()
     {
-        assertEquals("extractDomain: just domain", "example.com.au", 
-            ExternalLinks.extractDomain("http://example.com.au"));
-        assertEquals("extractDomain: plain URL", "example.com", 
-            ExternalLinks.extractDomain("http://example.com/index.html"));
-        assertEquals("extractDomain: port", "example.com", 
-            ExternalLinks.extractDomain("https://www.example.com:443"));
-        assertEquals("extractDomain: www", "example.com", 
-            ExternalLinks.extractDomain("https://www.example.com"));
-        assertEquals("extractDomain: protocol relative", "example.com",
-            ExternalLinks.extractDomain("//www.example.com/test.jsp?param=yes"));
+        assertEquals("example.com.au", ExternalLinks.extractDomain("http://example.com.au"), "just domain");
+        assertEquals("example.com", ExternalLinks.extractDomain("http://example.com/index.html"), "plain URL");
+        assertEquals("example.com", ExternalLinks.extractDomain("https://www.example.com:443"), "port");
+        assertEquals("example.com", ExternalLinks.extractDomain("https://www.example.com"), "www");
+        assertEquals("example.com", ExternalLinks.extractDomain("//www.example.com/test.jsp?param=yes"),
+            "protocol relative");
         // unfortunate, but necessary
-        assertEquals("extractDomain: other subdomains not stripped", 
-            "test.example.com", ExternalLinks.extractDomain("http://test.example.com/index.html"));
+        assertEquals("test.example.com", ExternalLinks.extractDomain("http://test.example.com/index.html"), 
+            "other subdomains not stripped");
         // failures
-        assertNull("extractDomain: nonsense", ExternalLinks.extractDomain("gkskdgds"));
-        assertNull("extractDomain: not quite right", ExternalLinks.extractDomain("http://example.com,"));
+        assertNull(ExternalLinks.extractDomain("gkskdgds"), "nonsense");
+        assertNull(ExternalLinks.extractDomain("http://example.com,"), "ending comma");
         // documenting this common form of broken wikimarkup 
-        assertEquals("extractDomain: http", "http", ExternalLinks.extractDomain("http://http://example.com"));
+        assertEquals("http", ExternalLinks.extractDomain("http://http://example.com"), "duplicated http");
     }
 }

@@ -22,8 +22,8 @@ package org.wikipedia;
 import java.time.*;
 import java.util.*;
 import java.util.function.*;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Unit tests for {@link MathsAndStats}.
@@ -36,45 +36,45 @@ public class MathsAndStatsTest
     {
         double[] values = new double[] { 1.0, 2.0, 3.0 };
         double[] expected = new double[] { Double.NaN, Double.NaN };
-        assertArrayEquals("quartiles: need four numbers", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "need four inputs");
                 
         values = new double[] { 1.0, 2.0, 3.0, 4.0, Double.NaN };
-        assertArrayEquals("quartiles: NaN input", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "NaN input");
         values = new double[] { Double.NEGATIVE_INFINITY, 1.0, 2.0, 3.0, Double.POSITIVE_INFINITY };
-        assertArrayEquals("quartiles: Minus and plus infinity input", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "Minus and plus infinity input");
         values = new double[] { Double.NEGATIVE_INFINITY, 1.0, 2.0, 3.0, 4.0 };
         expected = new double[] { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY };
-        assertArrayEquals("quartiles: Minus infinity input", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "Minus infinity input");
         values = new double[] { 1.0, 2.0, 3.0, 4.0, Double.POSITIVE_INFINITY };
         expected = new double[] { Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY };
-        assertArrayEquals("quartiles: Plus infinity input", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "Plus infinity input");
         
         // finally we get to check the functionality
         values = new double[] { 1.0, 2.0, 3.0, 4.0 };
         expected = new double[] { 1.5, 3.5 };
-        assertArrayEquals("quartiles: 4n inputs", expected, MathsAndStats.quartiles(values), 1e-8);        
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "4n inputs");        
         values = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
         expected = new double[] { 1.75, 4.25 };
-        assertArrayEquals("quartiles: 4n+1 inputs", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "4n+1 inputs");
         values = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
         expected = new double[] { 2.0, 5.0 };
-        assertArrayEquals("quartiles: 4n+2 inputs", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "4n+2 inputs");
         values = new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0 };
         expected = new double[] { 2.25, 5.75 };
-        assertArrayEquals("quartiles: 4n+3 inputs", expected, MathsAndStats.quartiles(values), 1e-8);
+        assertArrayEquals(expected, MathsAndStats.quartiles(values), 1e-8, "4n+3 inputs");
     }
 
     @Test
     public void testMedian()
     {
         double[] values = new double[0];
-        assertTrue("median: zero length = NaN", Double.isNaN(MathsAndStats.median(values)));
+        assertTrue(Double.isNaN(MathsAndStats.median(values)), "zero length = NaN");
         testDoubleArrayEdgeCases(MathsAndStats::median);
         
         values = new double[] { 1.0, 2.0, 3.0 };
-        assertEquals("median, odd number of inputs", 2.0, MathsAndStats.median(values), 1e-6);
+        assertEquals(2.0, MathsAndStats.median(values), 1e-6, "odd number of inputs");
         values = new double[] { 1.0, 2.0, 3.0, 4.0 };
-        assertEquals("median, even number of inputs", 2.5, MathsAndStats.median(values), 1e-6);
+        assertEquals(2.5, MathsAndStats.median(values), 1e-6, "even number of inputs");
     }
     
     @Test
@@ -82,7 +82,7 @@ public class MathsAndStatsTest
     {
         testDoubleArrayEdgeCases(MathsAndStats::validate);
         double[] values = new double[] { 1.0, 2.0, 3.0 };
-        assertTrue("Normal input", Double.isFinite(MathsAndStats.validate(values)));
+        assertTrue(Double.isFinite(MathsAndStats.validate(values)));
     }
     
     /**
@@ -93,31 +93,31 @@ public class MathsAndStatsTest
     public void testDoubleArrayEdgeCases(ToDoubleFunction<double[]> func)
     {
         double[] values = new double[] { 1.0, 2.0, Double.NaN };
-        assertTrue("NaN input", Double.isNaN(func.applyAsDouble(values)));
+        assertTrue(Double.isNaN(func.applyAsDouble(values)), "NaN input");
         values = new double[] { Double.NEGATIVE_INFINITY, 1.0, Double.POSITIVE_INFINITY };
-        assertTrue("Minus and plus infinity input", Double.isNaN(func.applyAsDouble(values)));
+        assertTrue(Double.isNaN(func.applyAsDouble(values)), "Minus and plus infinity input");
         values = new double[] { Double.NEGATIVE_INFINITY, 1.0, 2.0 };
-        assertEquals("Minus infinity input", Double.NEGATIVE_INFINITY, func.applyAsDouble(values), 1e-8);
+        assertEquals(Double.NEGATIVE_INFINITY, func.applyAsDouble(values), 1e-8, "Minus infinity input");
         values = new double[] { 1.0, 2.0, Double.POSITIVE_INFINITY };
-        assertEquals("Plus infinity input", Double.POSITIVE_INFINITY, func.applyAsDouble(values), 1e-8);
+        assertEquals(Double.POSITIVE_INFINITY, func.applyAsDouble(values), 1e-8, "Plus infinity input");
     }   
     
     @Test
     public void max()
     {
-        assertNull("max: empty input", MathsAndStats.max(Collections.emptyList()));
+        assertNull(MathsAndStats.max(Collections.emptyList()), "empty input");
         List<Duration> durations = Arrays.asList(Duration.ofDays(1), Duration.ofDays(5), Duration.ofSeconds(30));
-        assertEquals("max", durations.get(1), MathsAndStats.max(durations));
+        assertEquals(durations.get(1), MathsAndStats.max(durations));
     }
     
     @Test
     public void testGenericMedian()
     {
         BinaryOperator<Integer> interpolator = (n1, n2) -> ((n1 + n2)/ 2);
-        assertNull("generic median: zero length = null", MathsAndStats.median(Collections.emptyList(), interpolator));
-        assertEquals("generic median: 1 item", Integer.valueOf(1), MathsAndStats.median(Arrays.asList(1), interpolator));
-        assertEquals("generic median: 2 item", Integer.valueOf(2), MathsAndStats.median(Arrays.asList(1, 3), interpolator));
-        assertEquals("generic median: 3 item", Integer.valueOf(3), MathsAndStats.median(Arrays.asList(1, 3, 5), interpolator));
-        assertEquals("generic median: 3 item", Integer.valueOf(4), MathsAndStats.median(Arrays.asList(1, 3, 5, 7), interpolator));
+        assertNull(MathsAndStats.median(Collections.emptyList(), interpolator), "zero length = null");
+        assertEquals(Integer.valueOf(1), MathsAndStats.median(Arrays.asList(1), interpolator), "1 item");
+        assertEquals(Integer.valueOf(2), MathsAndStats.median(Arrays.asList(1, 3), interpolator), "2 items");
+        assertEquals(Integer.valueOf(3), MathsAndStats.median(Arrays.asList(1, 3, 5), interpolator), "3 items");
+        assertEquals(Integer.valueOf(4), MathsAndStats.median(Arrays.asList(1, 3, 5, 7), interpolator), "4 items");
     }
 }

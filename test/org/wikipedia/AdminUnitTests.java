@@ -22,25 +22,27 @@ package org.wikipedia;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import org.junit.*;
-import static org.junit.Assert.*;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+// import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  *  Unit tests for Wiki.java requiring administrator access.
  *  @author MER-C
  */
-
 public class AdminUnitTests
 {
     private static Wiki testWiki;
     
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws Exception
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
         testWiki.setThrottle(1000);
+//        assumeTrue(testWiki.getCurrentUser().isA("sysop"));
     }
     
     @Test
@@ -51,43 +53,41 @@ public class AdminUnitTests
             .byTitle("User:MER-C/Test")
             .limitedTo(100);
         List<Wiki.LogEntry> le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
-        assertEquals("getLogEntries: RevisionDeleted reason, can access", 
-            "create a log entry for testing RevisionDelete on", le.get(0).getComment());
-        assertEquals("getLogEntries: RevisionDeleted user, can access", "MER-C", 
-            le.get(0).getUser());
+        assertEquals("create a log entry for testing RevisionDelete on", le.get(0).getComment(),
+            "RevisionDeleted reason, can access");
+        assertEquals("MER-C", le.get(0).getUser(), "RevisionDeleted user, can access");
     }
     
     @Test
     public void getDeletedText() throws Exception
     {
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/Delete
-        assertEquals("getDeletedText", "This revision is also deleted!", 
-            testWiki.getDeletedText("User:MER-C/UnitTests/Delete"));
+        assertEquals("This revision is also deleted!", testWiki.getDeletedText("User:MER-C/UnitTests/Delete"), "functionality");
         // https://test.wikipedia.org/wiki/Special:Undelete/Tfs;hojfsdhp;osjfeas;lioejg
-        assertNull("getDeletedText: page never deleted", testWiki.getDeletedText("Tfs;hojfsdhp;osjfeas;lioejg"));
+        assertNull(testWiki.getDeletedText("Tfs;hojfsdhp;osjfeas;lioejg"), "page never deleted");
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/EmptyDelete
-        assertEquals("getDeletedText: empty", "", 
-            testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete"));
+        assertEquals("", testWiki.getDeletedText("User:MER-C/UnitTests/EmptyDelete"), "deleted, empty page");
     }
     
     /**
-     *  Fetching revisions of deleted pages.
+     *  Fetches revisions of deleted pages.
      *  @throws Exception if something goes wrong
      */
     @Test
+    @Disabled("See comments")
     public void revisionGetText() throws Exception
     {
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/EmptyDelete
-        // Wiki.Revision rev = testWiki.getRevision(323866L);
-        // assertEquals("Revision.getText: empty", rev.getText(), "");
         // currently broken, needs getDeletedRevisions see 
         // https://test.wikipedia.org/w/api.php?action=query&prop=revisions&revids=323866
+        Wiki.Revision rev = testWiki.getRevision(323866L);
+        assertEquals("", rev.getText(), "deleted, empty revision");
         
         // https://test.wikipedia.org/wiki/Special:Undelete/User:MER-C/UnitTests/Delete
         // most recent deleted revision
         // page exists, but has deleted revisions (currently broken)
-        // rev = testWiki.getRevision(217079L);
-        // assertEquals("Revision.getText", rev.getText(), "This revision is also deleted!");
+        rev = testWiki.getRevision(217079L);
+        assertEquals("This revision is also deleted!", rev.getText(), "page exists, but has deleted revisions");
     }
     
     @Test
@@ -97,14 +97,14 @@ public class AdminUnitTests
         Wiki.Revision revision = testWiki.getRevision(349877L);
         testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Unit testing", 
             Boolean.FALSE, Arrays.asList(revision));
-        assertTrue("RevisionDelete: set commentDeleted flag", revision.isCommentDeleted());
-        assertTrue("RevisionDelete: set contentDeleted flag", revision.isContentDeleted());
-        assertTrue("RevisionDelete: set userDeleted flag", revision.isUserDeleted());
+        assertTrue(revision.isCommentDeleted());
+        assertTrue(revision.isContentDeleted());
+        assertTrue(revision.isUserDeleted());
         // check whether ths state was actually changed on-wiki
         revision = testWiki.getRevision(349877L);
-        assertTrue("RevisionDelete: check commentDeleted on-wiki", revision.isCommentDeleted());
-        assertTrue("RevisionDelete: check contentDeleted on-wiki", revision.isContentDeleted());
-        assertTrue("RevisionDelete: check userDeleted on-wiki", revision.isUserDeleted());
+        assertTrue(revision.isCommentDeleted(), "check commentDeleted on-wiki");
+        assertTrue(revision.isContentDeleted(), "check contentDeleted on-wiki");
+        assertTrue(revision.isUserDeleted(), "check userDeleted on-wiki");
         
         // https://test.wikipedia.org/w/index.php?title=Special%3ALog&type=delete&user=&page=File%3AWiki.java+test5.jpg&year=2018&month=3
         Wiki.RequestHelper rh = testWiki.new RequestHelper()
@@ -117,12 +117,12 @@ public class AdminUnitTests
         // local state is controlled by a superclass, no need to test again
         // still need to check whether ths state was actually changed on-wiki
         le = testWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh);
-        assertTrue("RevisionDelete: check commentDeleted on-wiki", le.get(0).isCommentDeleted());
-        assertTrue("RevisionDelete: check contentDeleted on-wiki", le.get(0).isContentDeleted());
-        assertTrue("RevisionDelete: check userDeleted on-wiki", le.get(0).isUserDeleted());
+        assertTrue(le.get(0).isCommentDeleted(), "check commentDeleted on-wiki");
+        assertTrue(le.get(0).isContentDeleted(), "check contentDeleted on-wiki");
+        assertTrue(le.get(0).isUserDeleted(), "check userDeleted on-wiki");
     }
     
-    @AfterClass
+    @AfterAll
     public static void cleanup() throws Exception
     {
         // undo RevisionDelete test on Revision

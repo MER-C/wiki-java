@@ -20,8 +20,8 @@
 package org.wikipedia;
 
 import java.util.*;
-import org.junit.*;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Tests for {@link org.wikipedia.Pages}.
@@ -51,17 +51,17 @@ public class PagesTest
 
         String expected = "*[[:File:Example.png]]\n*[[:Main Page]]\n"
             + "*[[:Category:Example]]\n*[[:*-algebra]]\n";
-        assertEquals("toWikitextList, unnumbered", expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, false));
+        assertEquals(expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, false), "unnumbered list");
         expected = "#[[:File:Example.png]]\n#[[:Main Page]]\n#[[:Category:Example]]\n"
             + "#[[:*-algebra]]\n";
-        assertEquals("toWikitextList, numbered", expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, true));
+        assertEquals(expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, true), "numbered list");
 
         articles = Arrays.asList("example.com", "example.net");
         expected = "*{{spamlink|1=example.com}}\n*{{spamlink|1=example.net}}\n";
-        assertEquals("toWikitextTemplateList, unnumbered", expected, Pages.toWikitextTemplateList(articles, "spamlink", false));
+        assertEquals(expected, Pages.toWikitextTemplateList(articles, "spamlink", false), "unnumbered list of templates");
         expected = "#{{TEST|1=Hello world}}\n#{{TEST|1=Just testing}}\n";
         articles = Arrays.asList("Hello world", "Just testing");
-        assertEquals("toWikitextTemplateList, numbered", expected, Pages.toWikitextTemplateList(articles, "TEST", true));
+        assertEquals(expected, Pages.toWikitextTemplateList(articles, "TEST", true), "numbered list of templates");
     }
 
     @Test
@@ -81,11 +81,11 @@ public class PagesTest
             "*Not a link]]";
         List<String> expected = Arrays.asList("File:Example.png", "Main Page",
             "*-algebra", "Cape Town#Economy", "Nested list", "Link");
-        assertEquals("parseList, unnumbered", expected, Pages.parseWikitextList(list));
+        assertEquals(expected, Pages.parseWikitextList(list), "unnumbered list");
 
         list = "#[[:File:Example.png]]\n#[[*-algebra]]\n#[[Cape Town#Economy]]";
         expected = Arrays.asList("File:Example.png", "*-algebra", "Cape Town#Economy");
-        assertEquals("parseList, numbered", expected, Pages.parseWikitextList(list));
+        assertEquals(expected, Pages.parseWikitextList(list), "numbered list");
     }
 
     @Test
@@ -103,7 +103,7 @@ public class PagesTest
             "{{la}}";
         List<String> expected = Arrays.asList("Test", "Test2", "Test3", "Test5", 
             "Test6", "");
-        assertEquals("parseWikitextTemplateList", expected, Pages.parseWikitextTemplateList(list, "la"));
+        assertEquals(expected, Pages.parseWikitextTemplateList(list, "la"));
     }
 
     @Test
@@ -116,14 +116,14 @@ public class PagesTest
             + "<a href=\"" + testWiki.getPageUrl("Talk:Test") + "\">talk</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Test&action=history\">history</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=Test\">logs</a>)";
-        assertEquals("generateLinks", expected, testWikiPages.generateSummaryLinks("Test"));
+        assertEquals(expected, testWikiPages.generateSummaryLinks("Test"));
 
         expected = "<a href=\"" + testWiki.getPageUrl("A B の") + "\">A B の</a> ("
             + "<a href=\"" + indexPHPURL + "?title=A+B+%E3%81%AE&action=edit\">edit</a> | "
             + "<a href=\"" + testWiki.getPageUrl("Talk:A B の") + "\">talk</a> | "
             + "<a href=\"" + indexPHPURL + "?title=A+B+%E3%81%AE&action=history\">history</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=A+B+%E3%81%AE\">logs</a>)";
-        assertEquals("generateLinks: special characters", expected, testWikiPages.generateSummaryLinks("A B の"));
+        assertEquals(expected, testWikiPages.generateSummaryLinks("A B の"), "special characters");
     }
 
     @Test

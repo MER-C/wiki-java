@@ -20,9 +20,8 @@
 
 package org.wikipedia;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
 
@@ -38,7 +37,7 @@ public class WikitextUtilsTest
      *  Initialize wiki objects.
      *  @throws Exception if a network error occurs
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws Exception
     {
         testWiki = Wiki.createInstance("test.wikipedia.org");
@@ -48,9 +47,9 @@ public class WikitextUtilsTest
     @Test
     public void parseWikilink()
     {
-        assertEquals("link", Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[ Link ]]"));
-        assertEquals("link with colon", Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[:Link]]"));
-        assertEquals("link with description", Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[ Link | Description ]]"));
-        assertEquals("link with description and colon", Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[:Link|Description]]"));
+        assertEquals(Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[ Link ]]"));
+        assertEquals(Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[:Link]]"));
+        assertEquals(Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[ Link | Description ]]"));
+        assertEquals(Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[:Link|Description]]"));
     }
 }

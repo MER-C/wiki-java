@@ -20,8 +20,8 @@
 
 package org.wikipedia;
 
-import org.junit.*;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *  Unit tests for {@link ArrayUtils}.
@@ -35,7 +35,7 @@ public class ArrayUtilsTest
         String[] a = { "1", "2", "3", "4", "5" };
         String[] b1 = { "1", "2", "3" };
         String[] b2 = { "3", "4", "5", "x" };
-        assertArrayEquals("intersection", new String[] { "3" }, ArrayUtils.intersection(a, b1, b2));
+        assertArrayEquals(new String[] { "3" }, ArrayUtils.intersection(a, b1, b2));
     }
     
     @Test
@@ -44,6 +44,6 @@ public class ArrayUtilsTest
         String[] a = { "1", "2", "3", "4", "5" };
         String[] b1 = { "1", "2" };
         String[] b2 = { "3", "4", "x" };
-        assertArrayEquals("intersection", new String[] { "5" }, ArrayUtils.relativeComplement(a, b1, b2));
+        assertArrayEquals(new String[] { "5" }, ArrayUtils.relativeComplement(a, b1, b2));
     }   
 }
