@@ -2381,7 +2381,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getImagesOnPage(String title) throws IOException
     {
-        return getCategories(Arrays.asList(title), null, false).get(0).toArray(new String[0]);
+        return getImagesOnPage(Arrays.asList(title)).get(0).toArray(new String[0]);
     }
     
     /**
