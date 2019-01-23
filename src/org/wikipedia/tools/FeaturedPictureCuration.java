@@ -36,6 +36,7 @@ import org.wikipedia.*;
 public class FeaturedPictureCuration
 {
     private static final Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+    private static final Wiki commons = Wiki.createInstance("commons.wikimedia.org");
     
     /**
      *  Runs this program.
@@ -43,7 +44,7 @@ public class FeaturedPictureCuration
      *  @throws IOException if a network error occurs
      */
     public static void main(String[] args) throws IOException
-    {        
+    {   
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.FeaturedPictureCuration", "[options]")
             .description("A tool for curating featured pictures.")
@@ -70,6 +71,39 @@ public class FeaturedPictureCuration
                 System.out.println("\"" + image + "\"," + usage.length + ",\"" + Arrays.toString(usage));
             }
         }
+        
+        /*
+         * Gets FPs with descriptions from the FP galleries to look for duplicates. 
+         * Needs some normalisation to remove wikilinks and some better string parsing.
+         *
+         
+        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        String[] fppages = enWiki.getCategoryMembers("Category:Wikipedia featured pictures categories");
+        String[] texts = enWiki.getPageText(fppages);
+        List<String> csv = new ArrayList<>();
+        for (String text : texts)
+        {
+            if (text.contains("<gallery"))
+            {
+                int a = text.indexOf("<gallery");
+                int b = text.indexOf("</gallery>");
+                String[] lines = text.substring(a, b).split("\\n");
+                for (String line : lines)
+                {
+                    if (line.contains("File:") || line.contains("Image:"))
+                    {
+                        String temp = "\"" + line.replaceFirst("\\|", "\",\""); // escape file name and caption
+                        temp = temp.replaceAll("'''", "");
+                        temp = temp.replaceFirst(", by", "\",");
+                        csv.add(temp);
+                    }
+                        
+                }
+            }
+        }
+        for (String line : csv)
+            System.out.println(line);
+        */
     }
     
     /**
@@ -121,4 +155,15 @@ public class FeaturedPictureCuration
         System.out.println(Pages.toWikitextList(missingfps, Pages.LIST_OF_LINKS, false));   
     }
     
+    public static List<Map<String, Object>> fpSearch(String query) throws IOException
+    {
+        // maybe useful for helping people search for existing FPs before nominating...?
+        List<Map<String, Object>> results = new ArrayList<>();
+        results.addAll(Arrays.asList(enWiki.search(query + " prefix:Wikipedia:Featured_pictures/")));
+        results.addAll(Arrays.asList(enWiki.search(query + " prefix:Wikipedia:Featured_picture_candidates/")));
+        results.addAll(Arrays.asList(commons.search(query + " prefix:Commons:Featured_pictures/")));
+        results.addAll(Arrays.asList(commons.search(query + " prefix:Commons:Featured_picture_candidates")));
+        return results;
+    }
+            
 }
