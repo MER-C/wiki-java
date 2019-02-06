@@ -2486,7 +2486,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getTemplates(String title, int... ns) throws IOException
     {
-        List<String> temp = getTemplates(new String[] { title }, ns)[0];
+        List<String> temp = getTemplates(Arrays.asList(title), ns).get(0);
         return temp.toArray(new String[temp.size()]);
     }
 
@@ -2501,7 +2501,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    public List<String>[] getTemplates(String[] titles, int... ns) throws IOException
+    public List<List<String>> getTemplates(List<String> titles, int... ns) throws IOException
     {
         return getTemplates(titles, null, ns);
     }
@@ -2520,9 +2520,9 @@ public class Wiki implements Comparable<Wiki>
     public boolean[] pageHasTemplate(String[] pages, String template) throws IOException
     {
         boolean[] ret = new boolean[pages.length];
-        List<String>[] result = getTemplates(pages, template);
-        for (int i = 0; i < result.length; i++)
-            ret[i] = !(result[i].isEmpty());
+        List<List<String>> result = getTemplates(Arrays.asList(pages), template);
+        for (int i = 0; i < result.size(); i++)
+            ret[i] = !(result.get(i).isEmpty());
         return ret;
     }
 
@@ -2539,7 +2539,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    protected List<String>[] getTemplates(String[] titles, String template, int... ns) throws IOException
+    protected List<List<String>> getTemplates(List<String> titles, String template, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "templates");
@@ -2548,48 +2548,15 @@ public class Wiki implements Comparable<Wiki>
         if (template != null)
             getparams.put("tltemplates", normalize(template));
 
-        // copy array so redirect resolver doesn't overwrite
-        String[] titles2 = Arrays.copyOf(titles, titles.length);
-        List<Map<String, List<String>>> stuff = new ArrayList<>();
-        Map<String, Object> postparams = new HashMap<>();
-        for (String temp : constructTitleString(titles))
+        List<List<String>> ret = makeVectorizedQuery("tl", getparams, titles, 
+            "getTemplates", -1, (data, result) ->
         {
-            postparams.put("titles", temp);
-            stuff.addAll(makeListQuery("tl", getparams, postparams, "getTemplates", -1, (line, results) ->
-            {
-                // Split the result into individual listings for each article.
-                String[] x = line.split("<page ");
-                if (resolveredirect)
-                    resolveRedirectParser(titles2, x[0]);
-                // Skip first element to remove front crud.
-                for (int i = 1; i < x.length; i++)
-                {
-                    // xml form: <tl ns="10" title="Template:POTD" />
-                    String parsedtitle = parseAttribute(x[i], "title", 0);
-                    List<String> list = new ArrayList<>();
-                    for (int a = x[i].indexOf("<tl "); a > 0; a = x[i].indexOf("<tl ", ++a))
-                        list.add(parseAttribute(x[i], "title", a));
-                    Map<String, List<String>> intermediate = new HashMap<>();
-                    intermediate.put(parsedtitle, list);
-                    results.add(intermediate);
-                }
-            }));
-        }
-
-        // merge and reorder
-        List<String>[] out = new ArrayList[titles.length];
-        Arrays.setAll(out, ArrayList::new);
-        stuff.forEach(entry ->
-        {
-            String parsedtitle = entry.keySet().iterator().next();
-            List<String> templates = entry.get(parsedtitle);
-            for (int i = 0; i < titles2.length; i++)
-                if (normalize(titles2[i]).equals(parsedtitle))
-                    out[i].addAll(templates);
+            // xml form: <tl ns="10" title="Template:POTD" />
+            for (int a = data.indexOf("<tl "); a > 0; a = data.indexOf("<tl ", ++a))
+                result.add(parseAttribute(data, "title", a));                
         });
-
-        log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + titles.length + " pages.");
-        return out;
+        log(Level.INFO, "getTemplates", "Successfully retrieved templates used on " + titles.size() + " pages.");
+        return ret;
     }
 
     /**
