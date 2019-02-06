@@ -793,14 +793,41 @@ public class WikiTest
         assertFalse(b[1]);
         assertFalse(b[2], "non-existent page");
     }
+    
+    @Test
+    public void whatLinksHere() throws Exception
+    {
+        // general test (generally too non-deterministic for functionality testing)
+        List<String> titles = Arrays.asList("Empty page title 1234");
+        List<List<String>> results = enWiki.whatLinksHere(titles, false);
+        assertEquals(1, results.size());
+        assertEquals(Collections.emptyList(), results.get(0));
+        
+        // check namespace filtering (can test functionality here)
+        titles = Arrays.asList("Wikipedia:Featured picture candidates");
+        results = enWiki.whatLinksHere(titles, false, Wiki.MAIN_NAMESPACE);
+        assertEquals(Arrays.asList("Wikipedia community", "Featured picture candidates", 
+            "Featured picture candidate"), results.get(0), "namespace filter");
+        
+        // check redirect filtering
+        results = enWiki.whatLinksHere(titles, true, Wiki.MAIN_NAMESPACE);
+        assertEquals(Arrays.asList("Featured picture candidates", "Featured picture candidate"),
+            results.get(0), "namespace filter");        
+    }
 
     @Test
     public void whatTranscludesHere() throws Exception
     {
-        String title = "Wikipedia:Articles for deletion/MegaMeeting.com";
-        String[] results = enWiki.whatTranscludesHere(title);
-        assertArrayEquals(new String[] { "Wikipedia:Articles for deletion/Log/2018 April 23" }, results);
-        assertEquals(0, enWiki.whatTranscludesHere(title, Wiki.MAIN_NAMESPACE).length, "namespace filter");
+        List<String> titles = Arrays.asList("Wikipedia:Articles for deletion/MegaMeeting.com", "Empty page title 1234",
+            "Wikipedia:Articles for deletion/PolymerUpdate", "Wikipedia:Articles for deletion/Mobtown Studios");
+        List<List<String>> results = enWiki.whatTranscludesHere(titles);
+        assertEquals(4, results.size());
+        assertEquals(Arrays.asList("Wikipedia:Articles for deletion/Log/2018 April 23"), results.get(0));
+        assertEquals(Collections.emptyList(), results.get(1));
+        assertEquals(Arrays.asList("Wikipedia:Articles for deletion/Log/2018 April 22"), results.get(2));
+        assertEquals(Arrays.asList("Wikipedia:Articles for deletion/Log/2018 April 24"), results.get(3));
+        titles = Arrays.asList("Wikipedia:Articles for deletion/MegaMeeting.com");
+        assertEquals(Collections.emptyList(), enWiki.whatTranscludesHere(titles, Wiki.MAIN_NAMESPACE).get(0), "namespace filter");
     }
 
     @Test

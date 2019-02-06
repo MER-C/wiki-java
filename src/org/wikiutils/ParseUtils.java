@@ -63,7 +63,7 @@ public class ParseUtils
 	public static String getRedirectsAsRegex(String template, Wiki wiki) throws IOException
 	{
 		String r = "(?si)\\{{2}?\\s*?(Template:)??\\s*?(" + namespaceStrip(template, wiki);
-		for (String str : wiki.whatLinksHere(template, true, Wiki.TEMPLATE_NAMESPACE))
+		for (String str : wiki.whatLinksHere(Arrays.asList(template), true, Wiki.TEMPLATE_NAMESPACE).get(0))
 			r += "|" + namespaceStrip(str, wiki);
 		r += ").*?\\}{2}?";
 
