@@ -139,8 +139,8 @@ public class WikiTest
         x[1].remove("inputpagename");
         assertEquals(x[1], x[0], "resolveredirects/getPageInfo");
         pages = new String[] { "Main page", "Main Page" };
-        List<String>[] y = enWiki.getTemplates(pages);
-        assertEquals(y[1], y[0], "resolveredirects/getTemplates");
+        List<List<String>> y = enWiki.getTemplates(Arrays.asList(pages));
+        assertEquals(y.get(1), y.get(0), "resolveredirects/getTemplates");
     }
 
     @Test
@@ -349,24 +349,23 @@ public class WikiTest
     @Test
     public void getTemplates() throws Exception
     {
-        String[] pages =
-        {
+        List<String> pages = Arrays.asList(
             "sdkf&hsdklj", // non-existent
             // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/templates_test
             "User:MER-C/UnitTests/templates_test",
             // https://test.wikipedia.org/wiki/User:MER-C/monobook.js (no templates)
             "User:MER-C/monobook.js",
-            "user:MER-C/UnitTests/templates test", // same as [1]
-        };
-        List<String>[] results = testWiki.getTemplates(pages);
-        assertTrue(results[0].isEmpty(), "non-existent page");
-        assertEquals(1, results[1].size());
-        assertEquals("Template:La", results[1].get(0));
-        assertTrue(results[2].isEmpty(), "page with no templates");
-        assertEquals(results[1], results[3], "duplicate");
+            "user:MER-C/UnitTests/templates test"); // same as [1]
+        List<List<String>> results = testWiki.getTemplates(pages);
+        assertEquals(Collections.emptyList(), results.get(0), "non-existent page");
+        assertEquals(1, results.get(1).size());
+        assertEquals("Template:La", results.get(1).get(0));
+        assertEquals(Collections.emptyList(), results.get(2), "page with no templates");
+        assertEquals(results.get(1), results.get(3), "duplicate");
 
-        assertEquals(0, testWiki.getTemplates(pages[1], Wiki.MAIN_NAMESPACE).length, "namespace filter");
-        assertEquals("Template:La", testWiki.getTemplates(pages[1], Wiki.TEMPLATE_NAMESPACE)[0], "namespace filter");
+        pages = Arrays.asList(pages.get(1));
+        assertEquals(Collections.emptyList(), testWiki.getTemplates(pages, Wiki.MAIN_NAMESPACE).get(0), "namespace filter");
+        assertEquals(Arrays.asList("Template:La"), testWiki.getTemplates(pages, Wiki.TEMPLATE_NAMESPACE).get(0), "namespace filter");
     }
 
     @Test
