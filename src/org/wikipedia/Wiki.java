@@ -2448,7 +2448,7 @@ public class Wiki implements Comparable<Wiki>
                 if (normtitles.get(i).equals(parsedtitle))
                     ret.get(i).addAll(templates);
         });
-        log(Level.INFO, "getCategories", "Successfully retrieved images used on " + titles2.length + " pages.");
+        log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + titles2.length + " pages.");
         return ret;
     }
  
@@ -5523,42 +5523,83 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatLinksHere(String title, int... ns) throws IOException
     {
-        return whatLinksHere(title, false, ns);
+        return whatLinksHere(Arrays.asList(title), false, ns).toArray(new String[0]);
     }
 
     /**
-     *  Returns a list of all pages linking to this page within the specified
-     *  namespaces. Alternatively, we can retrieve a list of what redirects to a
-     *  page by setting <var>redirects</var> to true. Equivalent to
-     *  [[Special:Whatlinkshere]].
+     *  Returns lists of all pages linking to the given pages within the specified
+     *  namespaces. Output order is the same as input order. Alternatively, we 
+     *  can retrieve a list of what redirects to a page by setting 
+     *  <var>redirects</var> to true. Equivalent to [[Special:Whatlinkshere]].
      *
-     *  @param title the title of the page
+     *  @param titles a list of titles
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param redirects whether we should limit to redirects only
      *  @return the list of pages linking to the specified page
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.10
      */
-    public String[] whatLinksHere(String title, boolean redirects, int... ns) throws IOException
+    public List<List<String>> whatLinksHere(List<String> titles, boolean redirects, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
-        getparams.put("list", "backlinks");
-        getparams.put("bltitle", normalize(title));
+        getparams.put("prop", "linkshere");
         if (ns.length > 0)
-            getparams.put("blnamespace", constructNamespaceString(ns));
+            getparams.put("lhnamespace", constructNamespaceString(ns));
         if (redirects)
-            getparams.put("blfilterredir", "redirects");
+            getparams.put("lhshow", "redirect");
 
-        List<String> pages = makeListQuery("bl", getparams, null, "whatLinksHere", -1, (line, results) ->
+        // copy array so redirect resolver doesn't overwrite
+        String[] titles2 = new String[titles.size()];
+        titles.toArray(titles2);
+        List<Map<String, List<String>>> stuff = new ArrayList<>();
+        Map<String, Object> postparams = new HashMap<>();
+        for (String temp : constructTitleString(titles2))
         {
-            // xml form: <bl pageid="217224" ns="0" title="Mainpage" redirect="" />
-            for (int x = line.indexOf("<bl "); x > 0; x = line.indexOf("<bl ", ++x))
-                results.add(parseAttribute(line, "title", x));
+            postparams.put("titles", temp);
+            stuff.addAll(makeListQuery("lh", getparams, postparams, "whatLinksHere", -1, (line, results) ->
+            {
+                // Split the result into individual listings for each article.
+                String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
+
+                // Skip first element to remove front crud.
+                for (int i = 1; i < x.length; i++)
+                {
+                    // xml form: <lh pageid="1463" ns="1" title="Talk:Apollo program" />
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String> list = new ArrayList<>();
+                    for (int a = x[i].indexOf("<lh "); a > 0; a = x[i].indexOf("<lh ", ++a))
+                        list.add(parseAttribute(x[i], "title", a));
+                    
+                    Map<String, List<String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, list);
+                    results.add(intermediate);
+                }
+            }));
+        }
+
+        // fill the return list
+        List<List<String>> ret = new ArrayList<>();
+        List<String> normtitles = new ArrayList<>();
+        for (String localtitle : titles2)
+        {
+            normtitles.add(normalize(localtitle));
+            ret.add(new ArrayList<>());
+        }
+        // then retrieve the results from the intermediate list of maps,
+        // ensuring results correspond to inputs
+        stuff.forEach(map ->
+        {
+            String parsedtitle = map.keySet().iterator().next();
+            List<String> templates = map.get(parsedtitle);
+            for (int i = 0; i < titles2.length; i++)
+                if (normtitles.get(i).equals(parsedtitle))
+                    ret.get(i).addAll(templates);
         });
 
-        int size = pages.size();
-        log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + title + " (" + size + " items)");
-        return pages.toArray(new String[size]);
+        log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + ret.size() + " pages.");
+        return ret;
     }
 
     /**
@@ -5573,22 +5614,78 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatTranscludesHere(String title, int... ns) throws IOException
     {
+        return whatTranscludesHere(Arrays.asList(title), ns).toArray(new String[0]);
+    }
+    
+    /**
+     *  Returns lists of all pages transcluding to a page within the specified
+     *  namespaces. Output order is the same as the input order.
+     *
+     *  @param titles a list of titles
+     *  @param ns a list of namespaces to filter by, empty = all namespaces.
+     *  @return the lists of pages transcluding the specified pages
+     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @since 0.36
+     */
+    public List<List<String>> whatTranscludesHere(List<String> titles, int... ns) throws IOException
+    {
         Map<String, String> getparams = new HashMap<>();
-        getparams.put("list", "embeddedin");
-        getparams.put("eititle", normalize(title));
+        getparams.put("prop", "transcludedin");
         if (ns.length > 0)
-            getparams.put("einamespace", constructNamespaceString(ns));
-
-        List<String> pages = makeListQuery("ei", getparams, null, "whatTranscludesHere", -1, (line, results) ->
+            getparams.put("tinamespace", constructNamespaceString(ns));
+        
+        // copy array so redirect resolver doesn't overwrite
+        String[] titles2 = new String[titles.size()];
+        titles.toArray(titles2);
+        List<Map<String, List<String>>> stuff = new ArrayList<>();
+        Map<String, Object> postparams = new HashMap<>();
+        for (String temp : constructTitleString(titles2))
         {
-            // xml form: <ei pageid="7997510" ns="0" title="Maike Evers" />
-            for (int x = line.indexOf("<ei "); x > 0; x = line.indexOf("<ei ", ++x))
-                results.add(parseAttribute(line, "title", x));
+            postparams.put("titles", temp);
+            stuff.addAll(makeListQuery("ti", getparams, postparams, "whatTranscludesHere", -1, (line, results) ->
+            {
+                // Split the result into individual listings for each article.
+                String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
+
+                // Skip first element to remove front crud.
+                for (int i = 1; i < x.length; i++)
+                {
+                    // xml form: <ti pageid="15199344" ns="2" title="User:Example" />
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String> list = new ArrayList<>();
+                    for (int a = x[i].indexOf("<ti "); a > 0; a = x[i].indexOf("<ti ", ++a))
+                        list.add(parseAttribute(x[i], "title", a));
+                    
+                    Map<String, List<String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, list);
+                    results.add(intermediate);
+                }
+            }));
+        }
+
+        // fill the return list
+        List<List<String>> ret = new ArrayList<>();
+        List<String> normtitles = new ArrayList<>();
+        for (String localtitle : titles2)
+        {
+            normtitles.add(normalize(localtitle));
+            ret.add(new ArrayList<>());
+        }
+        // then retrieve the results from the intermediate list of maps,
+        // ensuring results correspond to inputs
+        stuff.forEach(map ->
+        {
+            String parsedtitle = map.keySet().iterator().next();
+            List<String> templates = map.get(parsedtitle);
+            for (int i = 0; i < titles2.length; i++)
+                if (normtitles.get(i).equals(parsedtitle))
+                    ret.get(i).addAll(templates);
         });
 
-        int size = pages.size();
-        log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions of " + title + " (" + size + " items)");
-        return pages.toArray(new String[size]);
+        log(Level.INFO, "whatTranscludesHere", "Successfully retrieved transclusions for " + ret.size() + " pages.");
+        return ret;
     }
 
     /**
