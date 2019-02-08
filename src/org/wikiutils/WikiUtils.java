@@ -51,50 +51,6 @@ public class WikiUtils
 	}
 
 	/**
-	 * Deletes all the elements in an array and their associated talk pages
-	 * 
-	 * @param list The array to use
-	 * @param reason The reason to use while deleting
-	 * @param talkReason The reason to use when deleting talk pages of the pages we're deleting.
-	 *           Specify "null" if talk pages are not to be deleted
-	 * @param wiki The wiki object to use.
-	 * 
-	 * @return An array containing the elements we were unable to delete.
-         * @deprecated use {@link org.wikipedia.Pages#massDelete(List, String, String)}
-	 */
-        @Deprecated
-	public static String[] arrayNuke(String[] list, String reason, String talkReason, Wiki wiki)
-	{
-		ArrayList<String> f = new ArrayList<String>();
-		for (String s : list)
-		{
-			try
-			{
-				wiki.delete(s, reason);
-			}
-			catch (Throwable e)
-			{
-				f.add(s);
-				continue;
-			}
-
-			if (talkReason != null)
-			{
-				try
-				{
-					wiki.delete(wiki.getTalkPage(s), talkReason);
-				}
-				catch (Throwable e)
-				{
-					// We'll probably only be here if we tried to delete a talk page of a talk page :P
-				}
-			}
-
-		}
-		return f.toArray(new String[0]);
-	}
-
-	/**
 	 * Generic find and replace method.
 	 * 
 	 * @param find The text to be found. You can use a regex for this
