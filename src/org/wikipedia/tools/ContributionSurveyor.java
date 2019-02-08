@@ -597,7 +597,7 @@ public class ContributionSurveyor
     {
         StringBuilder out = new StringBuilder();
         Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(usernames, ns);
-        Wiki.User[] userinfo = wiki.getUsers(usernames.toArray(new String[0]));
+        List<Wiki.User> userinfo = wiki.getUsers(usernames);
 
         Iterator<Map.Entry<String, Map<String, List<Wiki.Revision>>>> iter = results.entrySet().iterator();
         int userindex = 0;
@@ -622,9 +622,9 @@ public class ContributionSurveyor
             out.append(formatTextSurveyAsWikitext(username, survey));
 
             // survey images
-            if (images && userinfo[userindex] != null)
+            if (images && userinfo.get(userindex) != null)
             {
-                String[][] imagesurvey = imageContributionSurvey(userinfo[userindex]);
+                String[][] imagesurvey = imageContributionSurvey(userinfo.get(userindex));
                 out.append(formatImageSurveyAsWikitext(username, imagesurvey));
             }
             out.append("\n");

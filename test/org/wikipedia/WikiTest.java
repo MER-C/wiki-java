@@ -832,15 +832,13 @@ public class WikiTest
     @Test
     public void getUploads() throws Exception
     {
-        Wiki.User[] users = enWiki.getUsers(new String[]
-        {
+        List<Wiki.User> users = enWiki.getUsers(Arrays.asList(
             "LakeishaDurham0", // blocked spambot
-            "Mifter" // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
-        });
-        assertTrue(enWiki.getUploads(users[0], null).isEmpty(), "no uploads");
+            "Mifter")); // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
+        assertEquals(Collections.emptyList(), enWiki.getUploads(users.get(0), null), "no uploads");
         OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().withinDateRange(odt, odt.plusMinutes(20));
-        List<Wiki.LogEntry> results = enWiki.getUploads(users[1], rh);
+        List<Wiki.LogEntry> results = enWiki.getUploads(users.get(1), rh);
         assertEquals(3, results.size());
         assertEquals("File:Padlock-pink.svg", results.get(0).getTitle());
         assertEquals("File:Padlock-silver-light.svg", results.get(1).getTitle());
@@ -991,39 +989,37 @@ public class WikiTest
     @Test
     public void getUsers() throws Exception
     {
-        String[] usernames = new String[]
-        {
+        List<String> usernames = Arrays.asList(
             "127.0.0.1", // IP address
             "MER-C",
             "DKdsf;lksd", // should be non-existent...
             "ZZRBrenda08", // blocked spambot with 2 edits
-            "127.0.0.0/24" // IP range
-        };
-        Wiki.User[] users = enWiki.getUsers(usernames);
-        assertNull(users[0], "IP address");
-        assertNull(users[2], "non-existent user");
-        assertNull(users[4], "IP address range");
+            "127.0.0.0/24"); // IP range
+        List<Wiki.User> users = enWiki.getUsers(usernames);
+        assertNull(users.get(0), "IP address");
+        assertNull(users.get(2), "non-existent user");
+        assertNull(users.get(4), "IP address range");
 
-        assertEquals(usernames[1], users[1].getUsername(), "normalized username");
-        assertFalse(users[1].isBlocked());
-        assertEquals(Wiki.Gender.unknown, users[1].getGender());
+        assertEquals(usernames.get(1), users.get(1).getUsername(), "normalized username");
+        assertFalse(users.get(1).isBlocked());
+        assertEquals(Wiki.Gender.unknown, users.get(1).getGender());
         assertEquals("2006-07-07T10:52:41Z",
-            users[1].getRegistrationDate().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            users.get(1).getRegistrationDate().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         // should be privileged information, but isn't?
         // assertFalse(users[1].canBeEmailed());
 
-        List<String> groups = users[1].getGroups();
+        List<String> groups = users.get(1).getGroups();
         List<String> temp = Arrays.asList("*", "autoconfirmed", "user", "sysop");
         assertTrue(groups.containsAll(temp));
 
         // check (subset of) rights
-        List<String> rights = users[1].getRights();
+        List<String> rights = users.get(1).getRights();
         temp = Arrays.asList("apihighlimits", "delete", "block", "editinterface");
         assertTrue(rights.containsAll(temp));
 
-        assertEquals(usernames[3], users[3].getUsername());
-        assertEquals(2, users[3].countEdits());
-        assertTrue(users[3].isBlocked());
+        assertEquals(usernames.get(3), users.get(3).getUsername());
+        assertEquals(2, users.get(3).countEdits());
+        assertTrue(users.get(3).isBlocked());
     }
 
     @Test

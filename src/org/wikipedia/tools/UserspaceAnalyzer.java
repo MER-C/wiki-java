@@ -61,26 +61,28 @@ public class UserspaceAnalyzer
             users.add(username.substring(5)); // remove User: prefix
         }
 
-        String[] usernames = users.toArray(new String[0]);
-        Wiki.User[] userinfo = wiki.getUsers(usernames);
+        List<String> usernames = new ArrayList<>(users);
+        List<Wiki.User> userinfo = wiki.getUsers(usernames);
         
         System.out.println("==Results for " + args[0] + "==");
         System.out.println("{| class=\"wikitable sortable\"");
         System.out.println("|-");
         System.out.println("! Username !! Last edit !! Editcount !! Mainspace edits");
         
-        for (int i = 0; i < usernames.length; i++)
+        for (Wiki.User user : userinfo)
         {
-            if (userinfo[i] == null)
+            if (user == null)
             {
                 System.out.println("|-");
                 System.out.printf("| [[User:%s]] ([[Special:Contributions/%s|contribs]]) || NA || NA || NA \n",
-                    usernames[i], usernames[i]);
+                    user, user);
                 continue;
             }
-            if (userinfo[i].countEdits() > 50)
+            if (user.countEdits() > 50)
                 continue;
-            List<Wiki.Revision> contribs = wiki.contribs(usernames[i], null);
+            
+            String username = user.getUsername();
+            List<Wiki.Revision> contribs = wiki.contribs(username, null);
             if (contribs.isEmpty())
                 continue; // all deleted
             int mainspace = 0, userspace = 0;
@@ -100,7 +102,7 @@ public class UserspaceAnalyzer
             
             System.out.println("|-");
             System.out.printf("| [[User:%s]] ([[Special:Contributions/%s|contribs]]) || %s || %d || %d \n", 
-                usernames[i], usernames[i], lastedit, contribs.size(), mainspace);
+                username, username, lastedit, contribs.size(), mainspace);
         }
         System.out.println("|}");
     }

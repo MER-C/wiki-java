@@ -4326,7 +4326,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public boolean userExists(String username) throws IOException
     {
-        return getUserInfo(new String[] { username })[0] != null;
+        return getUsers(Arrays.asList(username)).get(0) != null;
     }
 
     /**
@@ -4341,9 +4341,9 @@ public class Wiki implements Comparable<Wiki>
     public boolean[] userExists(String[] usernames) throws IOException
     {
         boolean[] ret = new boolean[usernames.length];
-        Map<String, Object>[] info = getUserInfo(usernames);
+        List<User> info = getUsers(Arrays.asList(usernames));
         for (int i = 0; i < usernames.length; i++)
-            ret[i] = (info[i] != null);
+            ret[i] = (info.get(i) != null);
         return ret;
     }
 
@@ -4496,63 +4496,27 @@ public class Wiki implements Comparable<Wiki>
      */
     public User getUser(String username) throws IOException
     {
-        return getUsers(new String[] { username })[0];
+        return getUsers(Arrays.asList(username)).get(0);
     }
 
     /**
-     *  Gets the users with the given usernames. Returns {@code null} if they
-     *  don't exist. Output array is in the same order as the input array.
+     *  Gets the users with the given usernames and fills all {@linkplain Wiki.User 
+     *  available metadata and properties}. If a user doesn't exist, the result
+     *  is {@code null}. Output array is in the same order as the input array.
      *  @param usernames a list of usernames
      *  @return the users with those usernames
      *  @since 0.33
      *  @throws IOException if a network error occurs
      */
-    public User[] getUsers(String[] usernames) throws IOException
-    {
-        User[] ret = new User[usernames.length];
-        Map<String, Object>[] userinfo = getUserInfo(usernames);
-        for (int i = 0; i < usernames.length; i++)
-            ret[i] = userinfo[i] == null ? null : (User)userinfo[i].get("user");
-        return ret;
-    }
-
-    /**
-     *  Gets information about the given users. For each username, this returns
-     *  either null if the user doesn't exist, or:
-     *  <ul>
-     *  <li><b>inputname</b>: (String) the username supplied to this method
-     *  <li><b>username</b>: (String) the normalized user name
-     *  <li><b>user</b>: (User) a user object representing this user
-     *  <li><b>editcount</b>: (int) the user's edit count (see {@link
-     *    User#countEdits()})
-     *  <li><b>groups</b>: (String[]) the groups the user is in (see
-     *    [[Special:Listgrouprights]])
-     *  <li><b>rights</b>: (String[]) the stuff the user can do
-     *  <li><b>emailable</b>: (Boolean) whether the user can be emailed
-     *    through [[Special:Emailuser]] or emailUser()
-     *  <li><b>blocked</b>: (Boolean) whether the user is blocked
-     *  <li><b>gender</b>: (Wiki.Gender) the user's gender
-     *  <li><b>created</b>: (OffsetDateTime) when the user account was created
-     *  </ul>
-     *
-     *  @param usernames the list of usernames to get information for (without
-     *  the "User:" prefix)
-     *  @return (see above). The Maps will come out in the same order as the
-     *  processed array.
-     *  @throws IOException if a network error occurs
-     *  @since 0.33
-     *  @deprecated will be merged to {@link #getUsers(String[])}
-     */
-    @Deprecated
-    public Map<String, Object>[] getUserInfo(String... usernames) throws IOException
+    public List<User> getUsers(List<String> usernames) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
         getparams.put("list", "users");
         getparams.put("usprop", "editcount|groups|rights|emailable|blockinfo|gender|registration");
         Map<String, Object> postparams = new HashMap<>();
-        Map<String, Map<String, Object>> metamap = new HashMap<>();
-        for (String fragment : constructTitleString(usernames))
+        Map<String, User> metamap = new HashMap<>();
+        for (String fragment : constructTitleString(usernames.toArray(new String[0])))
         {
             postparams.put("ususers", fragment);
             String line = makeApiCall(getparams, postparams, "getUserInfo");
@@ -4564,17 +4528,13 @@ public class Wiki implements Comparable<Wiki>
                 if (result.contains("missing=\"\"") || result.contains("invalid=\"\""))
                     continue;
 
-                Map<String, Object> ret = new HashMap<>(10);
                 String parsedname = parseAttribute(result, "name", 0);
 
                 String registrationdate = parseAttribute(result, "registration", 0);
                 OffsetDateTime registration = null;
                 // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
                 if (registrationdate != null && !registrationdate.isEmpty())
-                {
                     registration = OffsetDateTime.parse(registrationdate);
-                    ret.put("created", registrationdate);
-                }
 
                 List<String> rights = new ArrayList<>();
                 for (int x = result.indexOf("<r>"); x > 0; x = result.indexOf("<r>", ++x))
@@ -4582,7 +4542,6 @@ public class Wiki implements Comparable<Wiki>
                     int y = result.indexOf("</r>", x);
                     rights.add(result.substring(x + 3, y));
                 }
-                ret.put("rights", rights.toArray(new String[rights.size()]));
 
                 List<String> groups = new ArrayList<>();
                 for (int x = result.indexOf("<g>"); x > 0; x = result.indexOf("<g>", ++x))
@@ -4590,37 +4549,24 @@ public class Wiki implements Comparable<Wiki>
                     int y = result.indexOf("</g>", x);
                     groups.add(result.substring(x + 3, y));
                 }
-                ret.put("groups", groups.toArray(new String[groups.size()]));
 
                 int editcount = Integer.parseInt(parseAttribute(result, "editcount", 0));
-                ret.put("editcount", editcount);
-
                 boolean emailable = result.contains("emailable=\"");
-                ret.put("emailable", emailable);
                 Gender gender = Gender.valueOf(parseAttribute(result, "gender", 0));
-                ret.put("gender", gender);
                 boolean blocked = result.contains("blockedby=\"");
-                ret.put("blocked", blocked);
 
-                ret.put("user", new User(parsedname, registration, rights, groups, gender, emailable, blocked, editcount));
-                ret.put("username", parsedname);
-                metamap.put(parsedname, ret);
+                User user = new User(parsedname, registration, rights, groups, gender, emailable, blocked, editcount);
+                metamap.put(parsedname, user);
             }
         }
 
-        // Reorder. Make a new map to ensure that inputname remains unique.
-        Map<String, Object>[] info = new HashMap[usernames.length];
-        for (int i = 0; i < usernames.length; i++)
-        {
-            Map<String, Object> ret = metamap.get(normalize(usernames[i]));
-            if (ret != null)
-            {
-                info[i] = new HashMap(ret);
-                info[i].put("inputname", usernames[i]);
-            }
-        }
-        log(Level.INFO, "getUserInfo", "Successfully retrieved user info for " + usernames.length + " users.");
-        return info;
+        // reorder
+        List<User> ret = new ArrayList<>();
+        for (String username : usernames)
+            ret.add(metamap.get(normalize(username)));
+        
+        log(Level.INFO, "getUsers", "Successfully retrieved user info for " + usernames.size() + " users.");
+        return ret;
     }
 
     /**
