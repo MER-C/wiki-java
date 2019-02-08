@@ -1,6 +1,6 @@
 /**
- *  @(#)WikiTest.java 0.35 20/05/2018
- *  Copyright (C) 2014-2018 MER-C
+ *  @(#)WikiTest.java 0.36 08/02/2019
+ *  Copyright (C) 2014-2019 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
