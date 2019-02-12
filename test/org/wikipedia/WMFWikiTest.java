@@ -38,7 +38,7 @@ public class WMFWikiTest
      */
     public WMFWikiTest()
     {
-        enWiki = WMFWiki.createInstance("en.wikipedia.org");
+        enWiki = WMFWiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
     }
     

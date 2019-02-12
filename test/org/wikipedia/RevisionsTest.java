@@ -37,7 +37,7 @@ public class RevisionsTest
      */
     public RevisionsTest()
     {
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
     }
     

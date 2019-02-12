@@ -33,7 +33,7 @@ public class LoggedInTests
     public static void main(String[] args) throws Exception
     {
         // login
-        Wiki wiki = Wiki.createInstance("test.wikipedia.org");
+        Wiki wiki = Wiki.newSession("test.wikipedia.org");
         LoginUtils.guiLogin(wiki);
         wiki.setThrottle(5);
   /*   

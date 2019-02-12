@@ -41,10 +41,10 @@ public class ArticleEditorIntersectorTest
      */
     public ArticleEditorIntersectorTest()
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
 
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
 
         intersector = new ArticleEditorIntersector(testWiki);

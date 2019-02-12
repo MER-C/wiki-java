@@ -40,7 +40,7 @@ public class WikitextUtilsTest
     @BeforeAll
     public static void setUpClass() throws Exception
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
     }
     

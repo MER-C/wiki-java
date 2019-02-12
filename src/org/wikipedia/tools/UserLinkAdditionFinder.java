@@ -60,7 +60,7 @@ public class UserLinkAdditionFinder
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
 
-        WMFWiki thiswiki = WMFWiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        WMFWiki thiswiki = WMFWiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         String user = parsedargs.get("--user");

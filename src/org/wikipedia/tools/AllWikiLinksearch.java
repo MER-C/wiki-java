@@ -83,7 +83,7 @@ public class AllWikiLinksearch
         
         List<Wiki> wikilist = new ArrayList<>();
         for (String lang : temp)
-            wikilist.add(Wiki.createInstance(lang + ".wikipedia.org"));
+            wikilist.add(Wiki.newSession(lang + ".wikipedia.org"));
         TOP40 = Collections.unmodifiableList(wikilist);
         TOP20 = TOP40.subList(0, 19);
 
@@ -91,16 +91,16 @@ public class AllWikiLinksearch
         wikilist = new ArrayList<>();
         for (String lang : temp)
         {
-            wikilist.add(Wiki.createInstance(lang + ".wikipedia.org"));
-            wikilist.add(Wiki.createInstance(lang + ".wiktionary.org"));
-            wikilist.add(Wiki.createInstance(lang + ".wikibooks.org"));
-            wikilist.add(Wiki.createInstance(lang + ".wikiquote.org"));
-            wikilist.add(Wiki.createInstance(lang + ".wikivoyage.org"));
+            wikilist.add(Wiki.newSession(lang + ".wikipedia.org"));
+            wikilist.add(Wiki.newSession(lang + ".wiktionary.org"));
+            wikilist.add(Wiki.newSession(lang + ".wikibooks.org"));
+            wikilist.add(Wiki.newSession(lang + ".wikiquote.org"));
+            wikilist.add(Wiki.newSession(lang + ".wikivoyage.org"));
         }
-        wikilist.add(Wiki.createInstance("meta.wikimedia.org"));
-        wikilist.add(Wiki.createInstance("commons.wikimedia.org"));
-        wikilist.add(Wiki.createInstance("mediawiki.org"));
-        wikilist.add(Wiki.createInstance("wikidata.org"));
+        wikilist.add(Wiki.newSession("meta.wikimedia.org"));
+        wikilist.add(Wiki.newSession("commons.wikimedia.org"));
+        wikilist.add(Wiki.newSession("mediawiki.org"));
+        wikilist.add(Wiki.newSession("wikidata.org"));
         MAJOR_WIKIS = Collections.unmodifiableList(wikilist);
     }
     

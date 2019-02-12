@@ -34,7 +34,7 @@ import org.wikipedia.*;
  */
 public class CCIAnalyzer
 {
-    private static Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+    private static Wiki enWiki = Wiki.newSession("en.wikipedia.org");
     
     /**
      *  Runs this program.

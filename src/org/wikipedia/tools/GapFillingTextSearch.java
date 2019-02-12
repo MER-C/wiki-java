@@ -59,7 +59,7 @@ public class GapFillingTextSearch
             .addBooleanFlag("--regex", "Treat the query as a regular expression")
             .addBooleanFlag("--case-sensitive", "Treat the query as case sensitive")
             .parse(args);
-        Wiki thiswiki = Wiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        Wiki thiswiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         boolean regex = parsedargs.containsKey("--regex");
         boolean casesensitive = parsedargs.containsKey("--case-sensitive");
         GapFillingTextSearch gfs = new GapFillingTextSearch(thiswiki);

@@ -30,11 +30,11 @@ public class WikiTests
 {
     public static void main(String[] args) throws Exception
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-        Wiki deWiki = Wiki.createInstance("de.wikipedia.org");
+        Wiki deWiki = Wiki.newSession("de.wikipedia.org");
         deWiki.setMaxLag(-1);
-        Wiki testWiki = Wiki.createInstance("test.wikipedia.org");
+        Wiki testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
 
         /*

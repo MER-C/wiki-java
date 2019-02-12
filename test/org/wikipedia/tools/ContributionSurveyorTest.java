@@ -38,7 +38,7 @@ public class ContributionSurveyorTest
      */
     public ContributionSurveyorTest()
     {
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         surveyor = new ContributionSurveyor(enWiki);
     }

@@ -49,7 +49,7 @@ public class UserspaceAnalyzer
             .addVersion("UserspaceAnalyzer v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .parse(args);
         
-        Wiki wiki = Wiki.createInstance("en.wikipedia.org");
+        Wiki wiki = Wiki.newSession("en.wikipedia.org");
         Map<String, Object>[] results = wiki.search(args[0], Wiki.USER_NAMESPACE);
         HashSet<String> users = new HashSet<>(500);
         for (Map<String, Object> result : results)

@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class EventsTest
 {
-    private static Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+    private static Wiki enWiki = Wiki.newSession("en.wikipedia.org");
     
     public EventsTest()
     {

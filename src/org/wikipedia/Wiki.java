@@ -461,7 +461,7 @@ public class Wiki implements Comparable<Wiki>
     // CONSTRUCTORS AND CONFIGURATION
 
     /**
-     *  Creates a new connection to a wiki with <a
+     *  Creates a new MediaWiki API client for the given wiki with <a
      *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
      *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the
      *  specified protocol.
@@ -487,23 +487,23 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Creates a new connection to a wiki via HTTPS. Depending on the settings
-     *  of the wiki, you may need to call {@link Wiki#getSiteInfo()} on the
-     *  returned object after this in order for some functionality to work
-     *  correctly.
+     *  Creates a new MediaWiki API client for the given wiki using HTTPS.  
+     *  Depending on the settings of the wiki, you may need to call {@link 
+     *  Wiki#getSiteInfo()} on the returned object after this in order for some 
+     *  functionality to work correctly.
      *
      *  @param domain the wiki domain name e.g. en.wikipedia.org (defaults to
      *  en.wikipedia.org)
-     *  @return the created wiki
+     *  @return the constructed API client object
      *  @since 0.34
      */
-    public static Wiki createInstance(String domain)
+    public static Wiki newSession(String domain)
     {
-        return createInstance(domain, "/w", "https://");
+        return newSession(domain, "/w", "https://");
     }
 
     /**
-     *  Creates a new connection to a wiki with <a
+     *  Creates a new MediaWiki API client for the given wiki with <a
      *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
      *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the
      *  specified protocol. Depending on the settings of the wiki, you may need
@@ -515,10 +515,10 @@ public class Wiki implements Comparable<Wiki>
      *  @param domain the wiki domain name
      *  @param scriptPath the script path
      *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
-     *  @return the constructed Wiki object
+     *  @return the constructed API client object
      *  @since 0.34
      */
-    public static Wiki createInstance(String domain, String scriptPath, String protocol)
+    public static Wiki newSession(String domain, String scriptPath, String protocol)
     {
         // Don't put network requests here. Servlets cannot afford to make
         // unnecessary network requests in initialization.

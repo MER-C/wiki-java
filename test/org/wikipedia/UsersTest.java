@@ -34,9 +34,9 @@ public class UsersTest
     
     public UsersTest()
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         testWikiUsers = Users.of(testWiki);
         enWikiUsers = Users.of(enWiki);

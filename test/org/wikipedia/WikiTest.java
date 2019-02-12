@@ -46,15 +46,15 @@ public class WikiTest
      */
     public WikiTest() throws Exception
     {
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
-        deWiki = Wiki.createInstance("de.wikipedia.org");
+        deWiki = Wiki.newSession("de.wikipedia.org");
         deWiki.setMaxLag(-1);
-        arWiki = Wiki.createInstance("ar.wikipedia.org");
+        arWiki = Wiki.newSession("ar.wikipedia.org");
         arWiki.setMaxLag(-1);
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
-        enWikt = Wiki.createInstance("en.wiktionary.org");
+        enWikt = Wiki.newSession("en.wiktionary.org");
         enWikt.setMaxLag(-1);
         enWikt.getSiteInfo();
 
@@ -64,7 +64,7 @@ public class WikiTest
     @Test
     public void testUrls()
     {
-        Wiki dummy = Wiki.createInstance("example.com", "/scriptpath", "http://");
+        Wiki dummy = Wiki.newSession("example.com", "/scriptpath", "http://");
         assertEquals("http://", dummy.getProtocol(), "protocol");
         assertEquals("example.com", dummy.getDomain(), "domain");
         assertEquals("/scriptpath", dummy.getScriptPath(), "scriptPath");
@@ -81,7 +81,7 @@ public class WikiTest
     @Test
     public void equalsAndhashCode()
     {
-        Wiki dummy = Wiki.createInstance("en.wikipedia.org");
+        Wiki dummy = Wiki.newSession("en.wikipedia.org");
         assertEquals(enWiki, dummy);
         assertEquals(enWiki.hashCode(), dummy.hashCode());
     }
@@ -97,7 +97,7 @@ public class WikiTest
         assertEquals(-1*result_1, result_2, "symmetric");
         assertTrue(result_3 > 0 && result_4 > 0, "transitivity");
 
-        Wiki dummy = Wiki.createInstance("en.wikipedia.org", "/example", "https://");
+        Wiki dummy = Wiki.newSession("en.wikipedia.org", "/example", "https://");
         int result_5 = enWiki.compareTo(dummy);
         assertTrue(result_5 > 0, "multiple instances on same domain");
     }

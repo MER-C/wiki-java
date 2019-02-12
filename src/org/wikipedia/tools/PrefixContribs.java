@@ -38,7 +38,7 @@ public class PrefixContribs
      */
     public static void main(String[] args) throws IOException
     {
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         String prefix = JOptionPane.showInputDialog(null, "Enter query string");
         if (prefix == null)

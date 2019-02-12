@@ -35,8 +35,8 @@ import org.wikipedia.*;
  */
 public class FeaturedPictureCuration
 {
-    private static final Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
-    private static final Wiki commons = Wiki.createInstance("commons.wikimedia.org");
+    private static final Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+    private static final Wiki commons = Wiki.newSession("commons.wikimedia.org");
     
     /**
      *  Runs this program.
@@ -59,7 +59,7 @@ public class FeaturedPictureCuration
             checkFPTags();
         if (parsedargs.containsKey("--checkusage"))
         {
-            Wiki wiki = Wiki.createInstance(parsedargs.get("--wiki"));
+            Wiki wiki = Wiki.newSession(parsedargs.get("--wiki"));
             Set<String> fpcanonical = getFeaturedPicturesFromList(wiki);
             
             // There is a small amount of contamination of non-featured pictures

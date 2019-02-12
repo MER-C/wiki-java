@@ -40,7 +40,7 @@ public class ExternalLinkPopularityTest
      */
     public ExternalLinkPopularityTest()
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
         elp = new ExternalLinkPopularity(testWiki);
     }

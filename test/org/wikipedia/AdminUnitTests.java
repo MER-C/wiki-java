@@ -38,7 +38,7 @@ public class AdminUnitTests
     @BeforeAll
     public static void setUpClass() throws Exception
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
         testWiki.setThrottle(1000);

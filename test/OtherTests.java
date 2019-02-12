@@ -28,7 +28,7 @@ public class OtherTests
 {
     public static void main(String[] args) throws java.io.IOException
     {
-        WMFWiki enWiki = WMFWiki.createInstance("en.wikipedia.org");
+        WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
         
         // WMFWiki.getSiteMatrix()
         // for (Wiki x : WMFWiki.getSiteMatrix())

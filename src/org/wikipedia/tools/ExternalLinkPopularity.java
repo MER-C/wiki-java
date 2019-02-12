@@ -57,7 +57,7 @@ public class ExternalLinkPopularity
             .parse(args);
         
         String wikistring = parsedargs.getOrDefault("--wiki", "en.wikipedia.org");
-        Wiki wiki = Wiki.createInstance(wikistring);
+        Wiki wiki = Wiki.newSession(wikistring);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(wiki);
         // meta-domains (edwardbetts.com = {{orphan}}
         elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));

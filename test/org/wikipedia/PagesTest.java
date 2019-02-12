@@ -37,7 +37,7 @@ public class PagesTest
      */
     public PagesTest()
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         testWiki.setMaxLag(-1);
         testWikiPages = Pages.of(testWiki);
     }

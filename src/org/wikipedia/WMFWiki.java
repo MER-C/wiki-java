@@ -52,7 +52,8 @@ public class WMFWiki extends Wiki
     public static final String SPAM_BLACKLIST_LOG = "spamblacklist";
 
     /**
-     *  Creates a new WMF wiki that has the given domain name.
+     *  Creates a new MediaWiki API client for the WMF wiki that has the given 
+     *  domain name.
      *  @param domain a WMF wiki domain name e.g. en.wikipedia.org
      */
     protected WMFWiki(String domain)
@@ -61,11 +62,12 @@ public class WMFWiki extends Wiki
     }
     
     /**
-     *  Creates a new WMF wiki that has the given domain name.
+     *  Creates a new MediaWiki API client for the WMF wiki that has the given 
+     *  domain name.
      *  @param domain a WMF wiki domain name e.g. en.wikipedia.org
-     *  @return the constructed Wiki object
+     *  @return the constructed API client object
      */
-    public static WMFWiki createInstance(String domain)
+    public static WMFWiki newSession(String domain)
     {
         WMFWiki wiki = new WMFWiki(domain);
         wiki.initVars();
@@ -80,7 +82,7 @@ public class WMFWiki extends Wiki
      */
     public static WMFWiki[] getSiteMatrix() throws IOException
     {
-        WMFWiki wiki = createInstance("en.wikipedia.org");
+        WMFWiki wiki = newSession("en.wikipedia.org");
         wiki.requiresExtension("SiteMatrix");
         wiki.setMaxLag(0);
         Map<String, String> getparams = new HashMap<>();
@@ -101,7 +103,7 @@ public class WMFWiki extends Wiki
             String temp = line.substring(b, c);
             if (temp.contains("closed=\"\"") || temp.contains("private=\"\"") || temp.contains("fishbowl=\"\""))
                 continue;
-            wikis.add(createInstance(line.substring(a, b)));
+            wikis.add(newSession(line.substring(a, b)));
         }
         int size = wikis.size();
         Logger temp = Logger.getLogger("wiki");
@@ -176,7 +178,7 @@ public class WMFWiki extends Wiki
         requiresExtension("SpamBlacklist");
         if (globalblacklist == null)
         {
-            WMFWiki meta = createInstance("meta.wikimedia.org");
+            WMFWiki meta = newSession("meta.wikimedia.org");
             globalblacklist = meta.getPageText("Spam blacklist");
         }
         if (localblacklist == null)

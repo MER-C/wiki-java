@@ -40,7 +40,7 @@ public class GapFillingTextSearchTest
      */
     public GapFillingTextSearchTest()
     {
-        enWiki = Wiki.createInstance("en.wikipedia.org");
+        enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         gfs = new GapFillingTextSearch(enWiki);
     }

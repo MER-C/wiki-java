@@ -79,7 +79,7 @@ public class ContributionSurveyor
             .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
             .parse(args);
 
-        Wiki homewiki = Wiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        Wiki homewiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         String infile = parsedargs.get("--infile");
         String outfile = parsedargs.get("--outfile");
         String wikipage = parsedargs.get("--wikipage");
@@ -404,7 +404,7 @@ public class ContributionSurveyor
             localuploads.add(upload.getTitle());
 
         // fetch commons uploads
-        Wiki commons = Wiki.createInstance("commons.wikimedia.org");
+        Wiki commons = Wiki.newSession("commons.wikimedia.org");
         Wiki.User comuser = commons.getUser(user.getUsername());
         HashSet<String> comuploads = new HashSet<>(10000);
         if (comuser != null)

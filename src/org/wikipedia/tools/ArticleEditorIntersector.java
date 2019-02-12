@@ -85,7 +85,7 @@ public class ArticleEditorIntersector
             .addSingleArgumentFlag("--file", "file", "Read in the list of articles from the given file.")
             .parse(args);
         
-        Wiki wiki = Wiki.createInstance(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        Wiki wiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         String category = parsedargs.get("--category");
         String user = parsedargs.get("--contribs");
         boolean adminmode = parsedargs.containsKey("--adminmode");

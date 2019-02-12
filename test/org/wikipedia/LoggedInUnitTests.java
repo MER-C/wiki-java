@@ -34,7 +34,7 @@ public class LoggedInUnitTests
     
     public LoggedInUnitTests() throws Exception
     {
-        testWiki = Wiki.createInstance("test.wikipedia.org");
+        testWiki = Wiki.newSession("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
         testWiki.setMaxLag(-1);
     }
@@ -44,7 +44,7 @@ public class LoggedInUnitTests
     {
         // one wiki instance = one session
         // https://github.com/MER-C/wiki-java/issues/157
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.getPageText("Main Page");        
         // should still be logged in (also checks whether the cookies work in
         // in the first place)...
