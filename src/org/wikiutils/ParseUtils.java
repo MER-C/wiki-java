@@ -323,7 +323,9 @@ public class ParseUtils
          *  @param c the character
          *  @param len the final length
          *  @return see above
+         *  @deprecated as of Java 11, use {@code String.repeat()}
          */
+        @Deprecated
         public static String getString(char c, int len)
         {
                 char[] temp = new char[len];
