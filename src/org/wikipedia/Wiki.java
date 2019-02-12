@@ -6123,7 +6123,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> newPages(Wiki.RequestHelper helper) throws IOException
     {
-        return recentChanges(helper, true);
+        return recentChanges(helper, "new");
     }
 
     /**
@@ -6139,7 +6139,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> recentChanges(Wiki.RequestHelper helper) throws IOException
     {
-        return recentChanges(helper, false);
+        return recentChanges(helper, null);
     }
 
     /**
@@ -6148,7 +6148,7 @@ public class Wiki implements Comparable<Wiki>
      *  table</a> stores edits for a <a href="https://mediawiki.org/wiki/Manual:$wgRCMaxAge">
      *  finite period of time</a>; it is not possible to retrieve pages created
      *  before then. Equivalent to [[Special:Recentchanges]].
-     *
+     * 
      *  <p>
      *  Accepted parameters from <var>helper</var> are:
      *  <ul>
@@ -6165,16 +6165,31 @@ public class Wiki implements Comparable<Wiki>
      *  </ul>
      *
      *  <p>
-     *  Note: Log entries in recent changes have a revid of 0!
+     *  If {@code rctype} is not {@code "edit"} or {@code "new"} then the results 
+     *  consist of pseudo-revisions whose data does not correspond to an actual
+     *  on-wiki state. For example:
+     *
+     *  <ul>
+     *  <li>{@code rctype == "log"} yields {@code id == 0} and {@code title} is
+     *      the log entry target
+     *  <li>{@code rctype == "external"} yields {@code id} as the most recent
+     *      edit to {@code title}, {@code previous_id == id}, {@code user} is
+     *      the external user making the change, {@code sizediff == 0} and 
+     *      {@code comment} describes the external change
+     *  <li>{@code rctype =="categorize" yields {@code title} as the category
+     *      added or removed and {@code comment} specifies the page added or
+     *      removed to that category
+     *  </ul>
      *
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
      *  provide any of the optional parameters described above
-     *  @param newpages show new pages only
+     *  @param rctype null, "edit" (edits only) or "new" (new pages); your 
+     *  mileage may vary for other types (log, external, categorize)
      *  @return the recent changes that satisfy these criteria
      *  @throws IOException if a network error occurs
      *  @since 0.35
      */
-    protected List<Revision> recentChanges(Wiki.RequestHelper helper, boolean newpages) throws IOException
+    protected List<Revision> recentChanges(Wiki.RequestHelper helper, String rctype) throws IOException
     {
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -6192,10 +6207,11 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addShowParameter());
             limit = helper.limit();
         }
-        if (newpages)
-            getparams.put("rctype", "new");
 
-        List<Revision> revisions = makeListQuery("rc", getparams, null, newpages ? "newPages" : "recentChanges", limit,
+        if (rctype != null)
+            getparams.put("rctype", rctype);
+
+        List<Revision> revisions = makeListQuery("rc", getparams, null, "recentChanges", limit,
             (line, results) ->
         {
             // xml form <rc type="edit" ns="0" title="Main Page" ... />
