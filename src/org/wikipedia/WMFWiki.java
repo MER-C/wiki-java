@@ -271,4 +271,85 @@ public class WMFWiki extends Wiki
         log(Level.INFO, "WMFWiki.getAbuselogEntries", "Sucessfully returned abuse filter log entries (" + filterlog.size() + " entries).");
         return filterlog;
     }
+    
+    /**
+     *  Renders the ledes of articles (everything in the first section) as plain 
+     *  text. Requires extension CirrusSearch. Output order is the same as input
+     *  order, and a missing page will correspond to {@code null}. The returned  
+     *  plain text has the following characteristics:
+     *  
+     *  <ul>
+     *  <li>There are no paragraph breaks or new lines.
+     *  <li>HTML block elements (e.g. &lt;blockquote&gt;), image captions, 
+     *      tables, reference markers, references and external links with no
+     *      description are all removed.
+     *  <li>Templates are evaluated. If a template yields inline text (as opposed
+     *      to a table or image) the result is not removed. That means navboxes
+     *      and hatnotes are removed, but inline warnings such as [citation 
+     *      needed] are not.
+     *  <li>The text of list items is not removed, but bullet points are.
+     *  </ul>
+     * 
+     *  @param titles a list of pages to get plain text for
+     *  @return the first section of those pages, as plain text
+     *  @throws IOException if a network error occurs
+     *  @see #getPlainText(List) 
+     */
+    public List<String> getLedeAsPlainText(List<String> titles) throws IOException
+    {
+        requiresExtension("CirrusSearch");
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
+        getparams.put("prop", "cirrusbuilddoc"); // slightly shorter output than cirrusdoc
+        
+        List<List<String>> temp = makeVectorizedQuery("cb", getparams, titles, 
+            "getLedeAsPlainText", -1, (text, result) -> 
+        {
+            result.add(parseAttribute(text, "opening_text", 0));
+        });
+        // mapping is one to one, so should flatten each entry
+        List<String> ret = new ArrayList<>();
+        for (List<String> item : temp)
+            ret.add(item.get(0));
+        return ret;
+    }
+    
+    /**
+     *  Renders articles as plain text. Requires extension CirrusSearch. Output 
+     *  order is the same as input order, and a missing page will correspond to 
+     *  {@code null}.The returned plain text has the following characteristics
+     *  additional to those mentioned in {@link #getLedeAsPlainText(List)}:
+     *  
+     *  <ul>
+     *  <li>There are no sections or section headers.
+     *  <li>References are present at the end of the text, regardless of
+     *      how they were formatted in wikitext.
+     *  <li>Some small &lt;div&gt; templates still remain.
+     *  <li>See also and external link lists remain (but the external links
+     *      themselves are removed).
+     *  </ul>
+     * 
+     *  @param titles a list of pages to get plain text for
+     *  @return those pages rendered as plain text
+     *  @throws IOException if a network error occurs
+     *  @see #getLedeAsPlainText(List)
+     */
+    public List<String> getPlainText(List<String> titles) throws IOException
+    {
+        requiresExtension("CirrusSearch");
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
+        getparams.put("prop", "cirrusbuilddoc"); // slightly shorter output than cirrusdoc
+        
+        List<List<String>> temp = makeVectorizedQuery("cb", getparams, titles, 
+            "getPlainText", -1, (text, result) -> 
+        {
+            result.add(parseAttribute(text, " text", 0)); // not to be confused with "opening_text" etc.
+        });
+        // mapping is one to one, so should flatten each entry
+        List<String> ret = new ArrayList<>();
+        for (List<String> item : temp)
+            ret.add(item.get(0));
+        return ret;
+    }
 }

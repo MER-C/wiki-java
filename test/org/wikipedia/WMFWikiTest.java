@@ -107,4 +107,27 @@ public class WMFWikiTest
         assertEquals("edit", ale.getAction());
         // TODO: test details when they are overhauled
     }
+    
+    @Test
+    public void getLedeAsPlainText() throws Exception
+    {
+        List<String> pages = Arrays.asList("Java", "Create a page", "Albert Einstein");
+        List<String> text = enWiki.getLedeAsPlainText(pages);
+        // Cannot assert more than the first two words because the result is
+        // non-deterministic. Test is potentially fragile.
+        assertTrue(text.get(0).startsWith("Java "));
+        assertTrue(text.get(1) == null);
+        assertTrue(text.get(2).startsWith("Albert Einstein "));
+    }
+    
+    @Test
+    public void getPlainText() throws Exception
+    {
+        List<String> pages = Arrays.asList("Java", "Create a page", "Albert Einstein");
+        List<String> shorttext = enWiki.getLedeAsPlainText(pages);
+        List<String> text = enWiki.getPlainText(pages);
+        assertTrue(text.get(0).startsWith(shorttext.get(0)));
+        assertTrue(text.get(1) == null);
+        assertTrue(text.get(2).startsWith(shorttext.get(2)));
+    }
 }
