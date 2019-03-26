@@ -5290,7 +5290,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatLinksHere(String title, int... ns) throws IOException
     {
-        return whatLinksHere(Arrays.asList(title), false, ns).toArray(new String[0]);
+        return whatLinksHere(Arrays.asList(title), false, ns).get(0).toArray(new String[0]);
     }
 
     /**
@@ -5338,7 +5338,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatTranscludesHere(String title, int... ns) throws IOException
     {
-        return whatTranscludesHere(Arrays.asList(title), ns).toArray(new String[0]);
+        return whatTranscludesHere(Arrays.asList(title), ns).get(0).toArray(new String[0]);
     }
 
     /**
