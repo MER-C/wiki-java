@@ -91,6 +91,40 @@ public class AdminUnitTests
     }
     
     @Test
+    public void delete() throws Exception
+    {
+        // try to delete a page that doesn't exist
+        // returns silently with log message, which is intended behavior
+        testWiki.delete("FakePage" + (int)(Math.random() * 20000), "Fake reason");
+        
+        // try to delete an actual page
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete2
+        String pagename = "User:MER-C/UnitTests/Delete2";
+        testWiki.edit(pagename, "Dummy text", "A dummy edit summary");
+        assertTrue((Boolean)testWiki.getPageInfo(pagename).get("exists"));
+        testWiki.delete(pagename, "Per cabal orders (just testing).");
+        assertFalse((Boolean)testWiki.getPageInfo(pagename).get("exists"));
+    }
+    
+    @Test
+    public void undelete() throws Exception
+    {
+        // try to undelete a page that doesn't exist
+        // returns silently with log message, which is intended behavior
+        testWiki.undelete("FakePage" + (int)(Math.random() * 20000), "Fake reason");
+        
+        // try to undelete an actual page
+        // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete2
+        String pagename = "User:MER-C/UnitTests/Delete3";
+        testWiki.edit(pagename, "Dummy text", "A dummy edit summary");
+        assertTrue((Boolean)testWiki.getPageInfo(pagename).get("exists"));
+        testWiki.delete(pagename, "Per cabal orders (just testing).");
+        assertFalse((Boolean)testWiki.getPageInfo(pagename).get("exists"));
+        testWiki.undelete(pagename, "There is no cabal.");
+        assertTrue((Boolean)testWiki.getPageInfo(pagename).get("exists"));        
+    }
+    
+    @Test
     public void revisionDelete() throws Exception
     {
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/revdel
