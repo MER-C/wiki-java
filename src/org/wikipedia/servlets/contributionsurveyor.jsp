@@ -29,7 +29,7 @@
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String bytefloor = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("bytefloor"), "150");
     
-    Wiki wiki = Wiki.createInstance(homewiki);
+    Wiki wiki = Wiki.newSession(homewiki);
     wiki.setQueryLimit(35000); // 70 network requests
 
     List<String> users = new ArrayList<>();

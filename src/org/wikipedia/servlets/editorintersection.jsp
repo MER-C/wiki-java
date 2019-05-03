@@ -79,7 +79,7 @@ first in the GUI) apply.
 <%
     }
 
-    Wiki wiki = Wiki.createInstance(wikiparam);
+    Wiki wiki = Wiki.newSession(wikiparam);
     wiki.setMaxLag(-1);
     wiki.setQueryLimit(1500);
 

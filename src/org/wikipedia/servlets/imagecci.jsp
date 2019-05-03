@@ -22,7 +22,7 @@
 
     String user = request.getParameter("user");
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
-    Wiki wiki = Wiki.createInstance(homewiki);
+    Wiki wiki = Wiki.newSession(homewiki);
 
     ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
     String[][] survey = null;

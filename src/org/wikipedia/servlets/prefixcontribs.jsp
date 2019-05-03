@@ -43,7 +43,7 @@ is performed on IP addresses. Timeouts are more likely for longer time spans.
             request.setAttribute("error", "ERROR: search key of insufficient length.");
         else
         {
-            Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+            Wiki enWiki = Wiki.newSession("en.wikipedia.org");
             enWiki.setMaxLag(-1);
             enWiki.setQueryLimit(1000);
             Wiki.RequestHelper rh = enWiki.new RequestHelper()

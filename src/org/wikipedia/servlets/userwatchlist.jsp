@@ -25,7 +25,7 @@
     skip = Math.max(skip, 0);
     boolean newonly = (request.getParameter("newonly") != null);
 
-    Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
+    Wiki enWiki = Wiki.newSession("en.wikipedia.org");
     enWiki.setMaxLag(-1);
     enWiki.setQueryLimit(30000); // 60 network requests
     Users userUtils = Users.of(enWiki);
