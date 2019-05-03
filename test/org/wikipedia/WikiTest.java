@@ -922,13 +922,15 @@ public class WikiTest
         // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
         from.put("revid", 738178354L);
         to.put("revid", Wiki.PREVIOUS_REVISION);
-        assertEquals("", enWiki.diff(from, to), "dummy edit");
+        String diff = enWiki.diff(from, to).replaceAll("<!--.*-->", "").trim();
+        assertEquals("", diff, "dummy edit");
         // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343
         // The MediaWiki API does not distinguish between a dummy edit and no
         // difference. Both are now set to the empty string.
         from.put("revid", 803731343L);
         to.put("revid", 804972897L);
-        assertEquals("", enWiki.diff(from, to), "no difference");
+        diff = enWiki.diff(from, to).replaceAll("<!--.*-->", "").trim();
+        assertEquals("", diff, "no difference");
         // no deleted pages allowed
         // FIXME: broken because makeHTTPRequest() swallows the API error
         // actual = enWiki.diff("Create a page", 0L, null, null, 804972897L, null);
