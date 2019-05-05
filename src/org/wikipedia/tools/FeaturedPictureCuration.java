@@ -52,10 +52,11 @@ public class FeaturedPictureCuration
             .addVersion("FeaturedPictureCuration v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .addBooleanFlag("--checktags", "Check whether FPs are tagged correctly (en.wp ONLY).")
             .addBooleanFlag("--checkusage", "Checks whether FPs are used in articles (en.wp or commons ONLY).")
+            .addSingleArgumentFlag("--checknoms", "April 2019", "Checks whether all FPCs for a given month have been transcluded (en.wp ONLY)")
             .addSingleArgumentFlag("--wiki", "example.org", "Fetch FPs from this wiki (see --checkusage).")
             .parse(args);
         
-        if (true || parsedargs.containsKey("--checktags"))
+        if (parsedargs.containsKey("--checktags"))
             checkFPTags();
         if (parsedargs.containsKey("--checkusage"))
         {
@@ -71,13 +72,20 @@ public class FeaturedPictureCuration
                 System.out.println("\"" + image + "\"," + usage.length + ",\"" + Arrays.toString(usage));
             }
         }
+        if (parsedargs.containsKey("--checknoms"))
+        {
+            List<String> noms = checkNominationsAreTranscluded(parsedargs.get("--checknoms"));
+            if (noms.isEmpty())
+                System.out.println("All nominations transcluded.");
+            for (String nom : noms)
+                System.out.println(nom);
+        }
         
         /*
          * Gets FPs with descriptions from the FP galleries to look for duplicates. 
          * Needs some normalisation to remove wikilinks and some better string parsing.
          *
          
-        Wiki enWiki = Wiki.createInstance("en.wikipedia.org");
         String[] fppages = enWiki.getCategoryMembers("Category:Wikipedia featured pictures categories");
         String[] texts = enWiki.getPageText(fppages);
         List<String> csv = new ArrayList<>();
@@ -153,6 +161,27 @@ public class FeaturedPictureCuration
         missingfps.removeAll(fpcanonical);
         System.out.println("Images that are tagged as FP, but aren't listed at [[WP:FP]]:");
         System.out.println(Pages.toWikitextList(missingfps, Pages.LIST_OF_LINKS, false));   
+    }
+    
+    /**
+     *  Checks whether all FPC nominations have been transcluded for a given
+     *  month. Needless to say, this should be run early in the next month.
+     *  @param month a string MMMM-YYYY (e.g. "April 2019")
+     *  @return the list of nominations not transcluded for that month
+     *  @throws IOException if a network error occurs
+     */
+    public static List<String> checkNominationsAreTranscluded(String month) throws IOException
+    {
+        String[] nominations = enWiki.getCategoryMembers("Category:Featured picture nominations/" + month);
+        boolean[] closed = enWiki.pageHasTemplate(nominations, "Template:FPCresult");
+        String[] currentnoms = enWiki.getTemplates("Wikipedia:Featured picture candidates", Wiki.PROJECT_NAMESPACE);
+        
+        List<String> results = new ArrayList();
+        for (int i = 0; i < nominations.length; i++)
+            if (!closed[i])
+                results.add(nominations[i]);
+        results.removeAll(Arrays.asList(currentnoms));
+        return results;
     }
     
     public static List<Map<String, Object>> fpSearch(String query) throws IOException
