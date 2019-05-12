@@ -17,11 +17,13 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
-package org.wikipedia;
+package org.wikipedia.tools;
 
 import java.io.*;
 import java.time.*;
 import java.util.*;
+import org.wikipedia.Events;
+import org.wikipedia.Wiki;
 
 /**
  *  Provides a listing of NPP article patrols and AFC acceptances for a given
@@ -40,61 +42,70 @@ public class NPPCheck
      */
     public static void main(String[] args) throws IOException
     {
+        if (args.length == 0)
+        {
+            System.err.println("No user specified.");
+            System.exit(1);
+        }
+        
         // patrol log
         Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser(args[0]).inNamespaces(Wiki.MAIN_NAMESPACE);
         List<Wiki.LogEntry> le = enWiki.getLogEntries("patrol", "patrol", rh);
-        Map<String, Object>[] pageinfo = processLogEntries(le, false);
-        
-        System.out.println("==NPP patrols ==");
-        System.out.println("{| class=\"wikitable sortable\"");
-        System.out.println("! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! "
-            + "Time between patrols (s) !! Page size !! Author !! Author registration timestamp !! "
-            + "Author edit count !! Author age at creation (days) !! Author blocked?");
-        OffsetDateTime last = null;
-        for (Map<String, Object> info : pageinfo)
+        System.out.println("==NPP patrols ==");        
+        if (le.isEmpty())
+            System.out.println("No new pages patrolled.");
+        else
         {
-            String title = (String)info.get("pagename");
-            if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
-                continue;
-            Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-            OffsetDateTime patroldate = entry.getTimestamp();
-            // logs are in reverse chronological order
-            Duration dt_patrol = last == null ? Duration.ofSeconds(-1) : Duration.between(patroldate, last);
-            
-            System.out.println("|-");
-            System.out.print("| [[:" + title + "]] || ");
-            outputRow(info, dt_patrol);
-            last = patroldate;
+            List<Duration> dt_patrol = Events.timeBetweenEvents(le);
+            dt_patrol.add(Duration.ofSeconds(-1));
+            Map<String, Object>[] pageinfo = processLogEntries(le, false);
+
+            System.out.println("{| class=\"wikitable sortable\"");
+            System.out.println("! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! "
+                + "Time between patrols (s) !! Page size !! Author !! Author registration timestamp !! "
+                + "Author edit count !! Author age at creation (days) !! Author blocked?");
+            for (int i = 0; i < pageinfo.length; i++)
+            {
+                Map<String, Object> info = pageinfo[i];
+                String title = (String)info.get("pagename");
+                if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
+                    continue;
+                System.out.println("|-");
+                System.out.print("| [[:" + title + "]] || ");
+                outputRow(info, dt_patrol.get(i));
+            }
+            System.out.println("|}\n");
         }
-        System.out.println("|}\n");
         
         // AFC acceptances
         rh = enWiki.new RequestHelper().byUser(args[0]).inNamespaces(118);
         le = enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
-        pageinfo = processLogEntries(le, true);
-        
         System.out.println("==AFC acceptances ==");
-        System.out.println("{| class=\"wikitable sortable\"");
-        System.out.println("! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
-            + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
-            + "Author edit count !! Author age at creation (days) !! Author blocked?");
-        last = null;
-        for (Map<String, Object> info : pageinfo)
+        if (le.isEmpty())
+            System.out.println("No AFCs accepted.");
+        else
         {
-            Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-            String title = (String)info.get("pagename");
-            if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
-                continue;
-            OffsetDateTime patroldate = entry.getTimestamp();
-            // logs are in reverse chronological order
-            Duration dt_patrol = last == null ? Duration.ofSeconds(-1) : Duration.between(patroldate, last);
-            
-            System.out.println("|-");
-            System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
-            outputRow(info, dt_patrol);
-            last = patroldate;
+            List<Duration> dt_patrol = Events.timeBetweenEvents(le);
+            dt_patrol.add(Duration.ofSeconds(-1));
+            Map<String, Object>[] pageinfo = processLogEntries(le, true);
+
+            System.out.println("{| class=\"wikitable sortable\"");
+            System.out.println("! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
+                + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
+                + "Author edit count !! Author age at creation (days) !! Author blocked?");
+            for (int i = 0; i < pageinfo.length; i++)
+            {
+                Map<String, Object> info = pageinfo[i];
+                Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
+                String title = (String)info.get("pagename");
+                if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
+                    continue;
+                System.out.println("|-");
+                System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
+                outputRow(info, dt_patrol.get(i));            
+            }
+            System.out.println("|}");
         }
-        System.out.println("|}");
     }
     
     /**
@@ -129,7 +140,7 @@ public class NPPCheck
             {
                 Wiki.Revision first = enWiki.getFirstRevision(title);
                 pageinfo[i].put("firstrevision", first);
-                if (first != null)
+                if (first != null && !first.getUser().contains(">")) // ContentTranslation ([[Bucket crusher]])
                     users.add(first.getUser());
                 else
                     users.add("Example"); // dummy value
