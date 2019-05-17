@@ -47,10 +47,15 @@ public class NPPCheck
             System.err.println("No user specified.");
             System.exit(1);
         }
-        
+        boolean all = args[0].equals("--all");
+
         // patrol log
-        Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser(args[0]).inNamespaces(Wiki.MAIN_NAMESPACE);
-        List<Wiki.LogEntry> le = enWiki.getLogEntries("patrol", "patrol", rh);
+        Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
+        if (all)
+            rh = rh.limitedTo(500);
+        else
+            rh = rh.byUser(args[0]);
+        List<Wiki.LogEntry> le = enWiki.getLogEntries("patrol", "patrol", rh);       
         System.out.println("==NPP patrols ==");        
         if (le.isEmpty())
             System.out.println("No new pages patrolled.");
@@ -61,9 +66,12 @@ public class NPPCheck
             Map<String, Object>[] pageinfo = processLogEntries(le, false);
 
             System.out.println("{| class=\"wikitable sortable\"");
-            System.out.println("! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! "
+            String header = "! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! "
                 + "Time between patrols (s) !! Page size !! Author !! Author registration timestamp !! "
-                + "Author edit count !! Author age at creation (days) !! Author blocked?");
+                + "Author edit count !! Author age at creation (days) !! Author blocked?";
+            if (all)
+                header += " !! Reviewer";
+            System.out.println(header);
             for (int i = 0; i < pageinfo.length; i++)
             {
                 Map<String, Object> info = pageinfo[i];
@@ -72,13 +80,17 @@ public class NPPCheck
                     continue;
                 System.out.println("|-");
                 System.out.print("| [[:" + title + "]] || ");
-                outputRow(info, dt_patrol.get(i));
+                outputRow(info, dt_patrol.get(i), all);
             }
             System.out.println("|}\n");
         }
         
         // AFC acceptances
-        rh = enWiki.new RequestHelper().byUser(args[0]).inNamespaces(118);
+        rh = enWiki.new RequestHelper().inNamespaces(118);
+        if (all)
+            rh = rh.limitedTo(500);
+        else
+            rh = rh.byUser(args[0]);
         le = enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
         System.out.println("==AFC acceptances ==");
         if (le.isEmpty())
@@ -90,9 +102,12 @@ public class NPPCheck
             Map<String, Object>[] pageinfo = processLogEntries(le, true);
 
             System.out.println("{| class=\"wikitable sortable\"");
-            System.out.println("! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
+            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
                 + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
-                + "Author edit count !! Author age at creation (days) !! Author blocked?");
+                + "Author edit count !! Author age at creation (days) !! Author blocked?";
+            if (all)
+                header += " !! Reviewer";
+            System.out.println(header);
             for (int i = 0; i < pageinfo.length; i++)
             {
                 Map<String, Object> info = pageinfo[i];
@@ -102,7 +117,7 @@ public class NPPCheck
                     continue;
                 System.out.println("|-");
                 System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
-                outputRow(info, dt_patrol.get(i));            
+                outputRow(info, dt_patrol.get(i), all);            
             }
             System.out.println("|}");
         }
@@ -119,6 +134,8 @@ public class NPPCheck
      */
     public static Map<String, Object>[] processLogEntries(List<Wiki.LogEntry> logs, boolean move) throws IOException
     {
+        // TODO: filter out pages that were redirects when patrolled
+        
         List<String> pages = new ArrayList<>();
         List<String> users = new ArrayList<>();
         for (Wiki.LogEntry log : logs)
@@ -157,7 +174,7 @@ public class NPPCheck
         return pageinfo;
     }
     
-    public static void outputRow(Map<String, Object> info, Duration dt_patrol)
+    public static void outputRow(Map<String, Object> info, Duration dt_patrol, boolean all)
     {
         Wiki.Revision first = (Wiki.Revision)info.get("firstrevision");
         Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
@@ -200,8 +217,12 @@ public class NPPCheck
         {
             Duration dt_account = createdate == null || registrationdate == null
                 ? Duration.ofSeconds(-86401) : Duration.between(registrationdate, createdate);
-            System.out.printf("%s || %d || %d || %b %n", 
+            System.out.printf("%s || %d || %d || %b", 
                 registrationdate, editcount, dt_account.getSeconds() / 86400, blocked);
         }
+        if (all)
+            System.out.println(" || {{user|" + entry.getUser() + "}}");
+        else
+            System.out.println();
     }
 }
