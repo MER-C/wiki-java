@@ -121,6 +121,43 @@ public class NPPCheck
             }
             System.out.println("|}");
         }
+        
+        // Pages moved from user to main
+        rh = enWiki.new RequestHelper().inNamespaces(Wiki.USER_NAMESPACE);
+        if (all)
+            rh = rh.limitedTo(500);
+        else
+            rh = rh.byUser(args[0]);
+        le = enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
+        System.out.println("==Pages moved from user to main ==");
+        if (le.isEmpty())
+            System.out.println("No pages moved from user to main.");
+        else
+        {
+            List<Duration> dt_patrol = Events.timeBetweenEvents(le);
+            dt_patrol.add(Duration.ofSeconds(-1));
+            Map<String, Object>[] pageinfo = processLogEntries(le, true);
+
+            System.out.println("{| class=\"wikitable sortable\"");
+            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
+                + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
+                + "Author edit count !! Author age at creation (days) !! Author blocked?";
+            if (all)
+                header += " !! Reviewer";
+            System.out.println(header);
+            for (int i = 0; i < pageinfo.length; i++)
+            {
+                Map<String, Object> info = pageinfo[i];
+                Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
+                String title = (String)info.get("pagename");
+                if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
+                    continue;
+                System.out.println("|-");
+                System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
+                outputRow(info, dt_patrol.get(i), all);            
+            }
+            System.out.println("|}");
+        }
     }
     
     /**
