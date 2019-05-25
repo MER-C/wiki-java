@@ -130,4 +130,50 @@ public class WMFWikiTest
         assertTrue(text.get(1) == null);
         assertTrue(text.get(2).startsWith(shorttext.get(2)));
     }
+    
+    @Test
+    public void getGlobalUserInfo() throws Exception
+    {
+        // locked account with local block
+        // https://meta.wikimedia.org/w/index.php?title=Special:CentralAuth&target=Uruguymma
+        Map<String, Object> guserinfo = WMFWiki.getGlobalUserInfo("Uruguymma");
+        assertTrue((Boolean)guserinfo.get("locked"));
+        assertEquals(38, guserinfo.get("editcount"));
+        assertEquals(OffsetDateTime.parse("2016-09-21T13:59:30Z"), guserinfo.get("registration"));
+        assertEquals(Collections.emptyList(), guserinfo.get("groups"));
+        assertEquals(Collections.emptyList(), guserinfo.get("rights"));
+        assertEquals("enwiki", guserinfo.get("home"));
+        
+        // enwiki
+        Map luserinfo = (Map)guserinfo.get("enwiki");
+        assertEquals("https://en.wikipedia.org", luserinfo.get("url"));
+        assertEquals(23, luserinfo.get("editcount"));
+        assertEquals(OffsetDateTime.parse("2016-09-21T13:59:29Z"), luserinfo.get("registration"));
+        assertEquals(Collections.emptyList(), luserinfo.get("groups"));
+        assertTrue((Boolean)luserinfo.get("blocked"));
+        assertNull(luserinfo.get("blockexpiry"));
+        assertEquals("Abusing [[WP:Sock puppetry|multiple accounts]]: Please see: "
+            + "[[w:en:Wikipedia:Sockpuppet investigations/Japanelemu]]", luserinfo.get("blockreason"));
+        
+        // eswiki
+        luserinfo = (Map)guserinfo.get("eswiki");
+        assertEquals("https://es.wikipedia.org", luserinfo.get("url"));
+        assertEquals(15, luserinfo.get("editcount"));
+        assertEquals(OffsetDateTime.parse("2017-05-31T13:45:00Z"), luserinfo.get("registration"));
+        assertEquals(Collections.emptyList(), luserinfo.get("groups"));
+        assertFalse((Boolean)luserinfo.get("blocked"));
+        assertNull(luserinfo.get("blockexpiry"));
+        assertNull(luserinfo.get("blockreason"));
+        
+        // global and local groups set
+        // https://meta.wikimedia.org/wiki/Special:CentralAuth?target=Jimbo+Wales
+        guserinfo = WMFWiki.getGlobalUserInfo("Jimbo Wales");
+        assertEquals(Arrays.asList("founder"), guserinfo.get("groups"));
+        luserinfo = (Map)guserinfo.get("enwiki");
+        assertEquals(Arrays.asList("checkuser", "founder", "oversight", "sysop"), luserinfo.get("groups"));
+        
+        // IP address (throws UnknownError)
+        // guserinfo = WMFWiki.getGlobalUserInfo("127.0.0.1");
+        // assertNull(guserinfo);
+    }
 }

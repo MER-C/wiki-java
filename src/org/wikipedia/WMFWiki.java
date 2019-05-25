@@ -84,7 +84,6 @@ public class WMFWiki extends Wiki
     {
         WMFWiki wiki = newSession("en.wikipedia.org");
         wiki.requiresExtension("SiteMatrix");
-        wiki.setMaxLag(0);
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
         String line = wiki.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
@@ -109,6 +108,125 @@ public class WMFWiki extends Wiki
         Logger temp = Logger.getLogger("wiki");
         temp.log(Level.INFO, "WMFWiki.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
         return wikis.toArray(new WMFWiki[size]);
+    }
+    
+    /**
+     *  Fetches global user info. Returns:
+     *  <ul>
+     *  <li>home - (String) a String identifying the home wiki (e.g. "enwiki" 
+     *      for the English Wikipedia)
+     *  <li>registration - (OffsetDateTime) when the single account login was created
+     *  <li>groups - (List&lt;String>) this user is a member of these global 
+     *      groups
+     *  <li>rights - (List&lt;String) this user is explicitly granted the ability
+     *      to perform these actions globally
+     *  <li>locked - (Boolean) whether this user account has been locked
+     *  <li>WIKI IDENTIFIER (e.g. "enwikisource" == "en.wikisource.org") - see below
+     *  </ul>
+     * 
+     *  <p>
+     *  For each wiki, a map is returned:
+     *  <ul>
+     *  <li>url - (String) the full URL of the wiki
+     *  <li>groups - (List&lt;String>) the local groups the user is in
+     *  <li>editcount - (Integer) the local edit count
+     *  <li>blocked - (Boolean) whether the user is blocked. Adds keys "blockexpiry"
+     *      (OffsetDateTime) and "blockreason" (String) with obvious values. If the
+     *      block is infinite, expiry is null.
+     *  <li>registration - (OffsetDateTime) the local registration date
+     *  </ul>
+     * 
+     *  @param username the username of the global user. IPs and non-existing users
+     *  are not allowed.
+     *  @return user info as described above
+     *  @throws IOException if a network error occurs
+     */
+    public static Map<String, Object> getGlobalUserInfo(String username) throws IOException
+    {
+        // fixme(?): throws UnknownError ("invaliduser" if user is an IP, doesn't exist
+        // or otherwise is invalid
+        WMFWiki wiki = newSession("en.wikipedia.org");
+        wiki.requiresExtension("CentralAuth");
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
+        getparams.put("meta", "globaluserinfo");
+        getparams.put("guiprop", "groups|merged|unattached|rights");
+        getparams.put("guiuser", wiki.normalize(username));
+        String line = wiki.makeApiCall(getparams, null, "WMFWiki.getGlobalUserInfo");
+        
+        // misc properties
+        Map<String, Object> ret = new HashMap<>();
+        ret.put("home", wiki.parseAttribute(line, "home", 0));
+        String registrationdate = wiki.parseAttribute(line, "registration", 0);
+        ret.put("registration", OffsetDateTime.parse(registrationdate));
+        ret.put("locked", line.contains("locked=\"\""));
+        int globaledits = 0;
+        
+        // global groups/rights
+        int mergedindex = line.indexOf("<merged>");
+        List<String> globalgroups = new ArrayList<>();        
+        int groupindex = line.indexOf("<groups");
+        if (groupindex > 0 && groupindex < mergedindex)
+        {
+            for (int x = line.indexOf("<g>"); x > 0; x = line.indexOf("<g>", ++x))
+            {
+                int y = line.indexOf("</g>", x);
+                globalgroups.add(line.substring(x + 3, y));
+            }        
+        }
+        ret.put("groups", globalgroups);
+        List<String> globalrights = new ArrayList<>();
+        int rightsindex = line.indexOf("<rights");
+        if (rightsindex > 0 && rightsindex < mergedindex)
+        {
+            for (int x = line.indexOf("<r>"); x > 0; x = line.indexOf("<r>", ++x))
+            {
+                int y = line.indexOf("</r>", x);
+                globalrights.add(line.substring(x + 3, y));
+            }        
+        }
+        ret.put("rights", globalrights);
+        
+        // individual wikis
+        int mergedend = line.indexOf("</merged>");
+        String[] accounts = line.substring(mergedindex, mergedend).split("<account ");
+        for (int i = 1; i < accounts.length; i++)
+        {
+            Map<String, Object> userinfo = new HashMap<>();
+            userinfo.put("url", wiki.parseAttribute(accounts[i], "url", 0));
+            int editcount = Integer.parseInt(wiki.parseAttribute(accounts[i], "editcount", 0));
+            globaledits += editcount;
+            userinfo.put("editcount", editcount);
+            
+            registrationdate = wiki.parseAttribute(accounts[i], "registration", 0);
+            OffsetDateTime registration = null;
+            // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
+            if (registrationdate != null && !registrationdate.isEmpty())
+                registration = OffsetDateTime.parse(registrationdate);
+            userinfo.put("registration", registration);
+            
+            // blocked flag
+            boolean blocked = accounts[i].contains("<blocked ");
+            userinfo.put("blocked", blocked);
+            if (blocked)
+            {
+                String expiry = wiki.parseAttribute(accounts[i], "expiry", 0);
+                userinfo.put("blockexpiry", expiry.equals("infinity") ? null : OffsetDateTime.parse(expiry));
+                userinfo.put("blockreason", wiki.parseAttribute(accounts[i], "reason", 0));
+            }
+            
+            // local groups
+            List<String> groups = new ArrayList<>();
+            for (int x = accounts[i].indexOf("<group>"); x > 0; x = accounts[i].indexOf("<group>", ++x))
+            {
+                int y = accounts[i].indexOf("</group>", x);
+                groups.add(accounts[i].substring(x + 7, y));
+            }
+            userinfo.put("groups", groups);
+            ret.put(wiki.parseAttribute(accounts[i], "wiki", 0), userinfo);
+        }
+        ret.put("editcount", globaledits);
+        return ret;
     }
 
     /**
