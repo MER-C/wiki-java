@@ -33,10 +33,7 @@
         {
             // get results
             request.setAttribute("contenttype", "text");
-            if (!earliest.isEmpty())
-                surveyor.setEarliestDateTime(earliest_odt);
-            if (!latest.isEmpty())
-                surveyor.setLatestDateTime(latest_odt);
+            surveyor.setDateRange(earliest_odt, latest_odt);
             survey = surveyor.imageContributionSurvey(wpuser);
         }
     }

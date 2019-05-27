@@ -43,15 +43,9 @@ Source code is available <a href="//github.com/MER-C/wiki-java">here</a>. Report
 bugs at <a href="//en.wikipedia.org/wiki/User_talk:MER-C">my talk page</a> or 
 the <a href="//github.com/MER-C/wiki-java/issues">Github issue tracker</a>.
         
-<p><b>Tools:</b>
-    <a href="./linksearch.jsp">Cross-wiki linksearch</a> |
-    <a href="./masslinksearch.jsp">Mass linksearch</a> |
-    <a href="./contributionsurveyor.jsp">Contribution surveyor</a> |
-    <a href="./imagecci.jsp">Image contribution surveyor</a> |
-    <a href="./editorintersection.jsp">Article-editor intersection</a> |
-    <a href="./extlinkchecker.jsp">External link checker</a> |
-    <a href="./spamarchivesearch.jsp">Spam blacklist archive search</a> |
-    <a href="./prefixcontribs.jsp">Prefix contributions</a>
+<p><b>Navigate to:</b>
+    <a href="./index.html">Tool directory</a> |
+    <a href="./doc/index.html">Javadoc</a>
 </body>
 </html>
 

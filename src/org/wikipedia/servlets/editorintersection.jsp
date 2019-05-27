@@ -130,7 +130,7 @@ first in the GUI) apply.
     {
         // group by article
         Map<String, List<Wiki.Revision>> grouppage = value.stream()
-            .collect(Collectors.groupingBy(Wiki.Revision::getPage));
+            .collect(Collectors.groupingBy(Wiki.Revision::getTitle));
         bypage.put(key, grouppage);
     });
     Pages pageUtils = Pages.of(wiki);

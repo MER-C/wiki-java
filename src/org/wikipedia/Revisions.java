@@ -164,8 +164,8 @@ public class Revisions
     }
     
     /**
-     *  Generates HTML from Wiki.Revisions. Output is similar to parsed wikitext
-     *  returned by {@link #toWikitext(Iterable)}.
+     *  Generates HTML from Wiki.Revisions. Output is a wikitable to parsed 
+     *  wikitext returned by {@link #toWikitext(Iterable)}.
      *  @param revisions the revisions to convert
      *  @return (see above)
      *  @see #toWikitext(Iterable)
@@ -174,50 +174,51 @@ public class Revisions
     {
         StringBuilder buffer = new StringBuilder(100000);
         Users users = Users.of(wiki);
-        buffer.append("<ul class=\"htmlrevisions\">\n");
-        boolean colored = true;
+        buffer.append("<table class=\"wikitable revisions\">\n");
         for (Wiki.Revision rev : revisions)
         {         
-            // alternate background color for readability
-            if (colored)
-                buffer.append("<li class=\"shaded\">(");
-            else
-                buffer.append("<li>(");
-            colored = !colored;
+            buffer.append("<tr class=\"revision\">\n");
             
             // diff link
+            buffer.append("<td class=\"difflink\">");
             String revurl = "<a href=\"" + rev.permanentUrl();
             buffer.append(revurl);
-            buffer.append("&diff=prev\">prev</a>) ");
+            buffer.append("&diff=prev\">prev</a>\n");
             
             // date
+            buffer.append("<td class=\"date\">");
             buffer.append(revurl);
             buffer.append("\">");
             buffer.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()));
-            buffer.append("</a> ");
+            buffer.append("</a>\n");
             
+            buffer.append("<td class=\"flag\">");
             if (rev.isNew())
                 buffer.append("<b>N</b>");
             else
                 buffer.append(".");
+            buffer.append("<td class=\"flag\">");
             if (rev.isMinor())
                 buffer.append("<b>m</b>");
             else
                 buffer.append(".");
+            buffer.append("<td class=\"flag\">");
             if (rev.isBot())
                 buffer.append("<b>b</b> ");
             else
-                buffer.append(". ");
+                buffer.append(".");            
+            buffer.append("\n");
             
             // page name
             String page = rev.getTitle();
-            buffer.append("<a href=\"");
+            buffer.append("<td class=\"title\"><a href=\"");
             buffer.append(wiki.getPageUrl(page));
             buffer.append("\" class=\"pagename\">");
             buffer.append(WikitextUtils.recode(page));
-            buffer.append("</a> .. ");
+            buffer.append("</a>");
             
             // user links
+            buffer.append("<td class=\"user\">");
             String temp = rev.getUser();
             if (temp != null)
                 buffer.append(users.generateHTMLSummaryLinksShort(temp));
@@ -225,10 +226,11 @@ public class Revisions
                 buffer.append(Events.DELETED_EVENT_HTML);
             
             // size
-            buffer.append(" .. (");
+            buffer.append("<td class=\"revsize\">");
             buffer.append(rev.getSize());
-            buffer.append(" bytes) (");
+            buffer.append(" bytes");
             int sizediff = rev.getSizeDiff();
+            buffer.append("<td class=\"revsizediff\">");
             if (sizediff > 0)
                 buffer.append("<span class=\"sizeincreased\">");
             else
@@ -237,14 +239,14 @@ public class Revisions
             buffer.append("</span>");
             
             // edit summary
-            buffer.append(") .. (");
+            buffer.append("<td>");
             if (rev.getParsedComment() != null)
                 buffer.append(rev.getParsedComment());
             else
                 buffer.append(Events.DELETED_EVENT_HTML);
-            buffer.append(")\n");
+            buffer.append("\n");
         }
-        buffer.append("</ul>\n");
+        buffer.append("</table>\n");
         return buffer.toString();
     }
 }

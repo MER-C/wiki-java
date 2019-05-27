@@ -20,6 +20,7 @@ table.wikitable
     border: 1px #aaa solid;
     border-collapse: collapse;
     color: black;
+    width: 100%
 }
 table.wikitable > tr > th,
 table.wikitable > tr > td,
@@ -40,6 +41,21 @@ table.wikitable > caption
     font-weight: bold;
 }
 
+/* 
+ * Styles for ParserUtils.revisionsToHTML() - note: rendered as a wikitable 
+ */
+tr.revision { font-size: 85%; }
+td.difflink { width: 2.5em; }
+td.date { width: 10em; }
+td.flag { width: 1.3em; text-align: center; }
+td.title { width: 25em; }
+td.user { width: 20em; }
+td.revsize { width: 7em; text-align: right; }
+td.revsizediff { width: 3.5em; text-align: right; }
+span.sizeincreased { color: #009900 }
+span.sizedecreased { color: #990000 }
+span.history-deleted { color: #888888; text-decoration: line-through }
+
 /* collapsibles */
 .collapsecontainer { border: 1px solid crimson }
 .collapseboxtop { display: block; background: #ffdddd; width: 100% }
@@ -48,11 +64,3 @@ table.wikitable > caption
 .collapsed { display: none }
 .tocollapse { display: block }
 .notcollapsed { display: block }
-
-/* Styles for ParserUtils.revisionsToHTML() */
-ul.htmlrevisions { font-family: monospace; font-size: 120% }
-li.shaded { background-color: #eeeeee }
-span.sizeincreased { color: #009900 }
-span.sizedecreased { color: #990000 }
-span.history-deleted { color: #888888; text-decoration: line-through }
-a.pagename { color: #0066aa }
