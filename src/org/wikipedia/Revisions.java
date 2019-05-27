@@ -173,6 +173,7 @@ public class Revisions
     public String toHTML(Iterable<Wiki.Revision> revisions)
     {
         StringBuilder buffer = new StringBuilder(100000);
+        Users users = Users.of(wiki);
         buffer.append("<ul class=\"htmlrevisions\">\n");
         boolean colored = true;
         for (Wiki.Revision rev : revisions)
@@ -219,17 +220,7 @@ public class Revisions
             // user links
             String temp = rev.getUser();
             if (temp != null)
-            {
-                buffer.append("<a href=\"");
-                buffer.append(wiki.getPageUrl("User:" + temp));
-                buffer.append("\">");
-                buffer.append(WikitextUtils.recode(temp));
-                buffer.append("</a> (<a href=\"");
-                buffer.append(wiki.getPageUrl("User talk:" + temp));
-                buffer.append("\">talk</a> | <a href=\"");
-                buffer.append(wiki.getPageUrl("Special:Contributions/" + temp));
-                buffer.append("\">contribs</a>)");
-            }
+                buffer.append(users.generateHTMLSummaryLinksShort(temp));
             else
                 buffer.append(Events.DELETED_EVENT_HTML);
             

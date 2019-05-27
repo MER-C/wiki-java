@@ -51,11 +51,26 @@ public class Users
     }
     
     /**
+     *  Creates user links in HTML of the form <samp>User (talk &middot;
+     *  contribs)</samp>
+     *  @param username the username
+     *  @return the generated HTML
+     *  @see #generateHTMLSummaryLinks(String)
+     */
+    public String generateHTMLSummaryLinksShort(String username)
+    {
+        return "<a href=\"" + wiki.getPageUrl("User:" + username) + "\">" + username + "</a> ("
+            +  "<a href=\"" + wiki.getPageUrl("User talk:" + username) + "\">talk</a> &middot; "
+            +  "<a href=\"" + wiki.getPageUrl("Special:Contributions/" + username) + "\">contribs</a>)";
+    }
+    
+    /**
      *  Creates user links in HTML of the form <samp>User (talk | contribs | 
      *  deletedcontribs | block | block log)</samp>
      *  @param username the username
      *  @return the generated HTML
-     *  @see #generateWikitextSummaryLinks(String) 
+     *  @see #generateWikitextSummaryLinks(String)
+     *  @see #generateHTMLSummaryLinksShort(String)
      */
     public String generateHTMLSummaryLinks(String username)
     {

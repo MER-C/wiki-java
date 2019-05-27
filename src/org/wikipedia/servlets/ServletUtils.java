@@ -138,4 +138,49 @@ public class ServletUtils
         // the only reason this exists is readibility 
         return "</div>\n</div>\n\n";
     }
+
+    /**
+     *  Generates pagination links.
+     *  @param urlbase the URL to the servlet that is invariant of position in 
+     *  the paginated list
+     *  @param current the current offset
+     *  @param amount the number of items per page
+     *  @param max the maximum number of items
+     *  @throws IllegalArgumentException if current &lt; 0, amount &lt; 1 or
+     *  max &lt; 1
+     *  @return HTML that contains pagination links
+     */
+    public static String generatePagination(String urlbase, int current, int amount, int max)
+    {
+        if (current < 0 || amount < 1 || max < 1)
+            throw new IllegalArgumentException("Invalid pagination - current(" + 
+                current + ") amount(" + amount + ") max(" + max + ")");
+        
+        StringBuilder sb = new StringBuilder("<p>");
+        if (current > 0)
+        {
+            sb.append("<a href=\"");
+            sb.append(urlbase);
+            sb.append(Math.max(0, current - amount));
+            sb.append("\">");
+        }
+        sb.append("Previous ");
+        sb.append(amount);
+        if (current > 0)
+            sb.append("</a>");
+        sb.append(" | ");
+
+        if (max - current > amount)
+        {
+            sb.append("<a href=\"");
+            sb.append(urlbase);
+            sb.append(current + amount);
+            sb.append("\">");
+        }
+        sb.append("Next ");
+        sb.append(amount);
+        if (max - current > amount)
+            sb.append("</a>");
+        return sb.toString();
+    }
 }

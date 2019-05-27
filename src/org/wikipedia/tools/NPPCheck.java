@@ -33,7 +33,48 @@ import org.wikipedia.Wiki;
  */
 public class NPPCheck
 {
-    private static Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+    private Wiki wiki;
+
+    /**
+     *  An enum denoting what type of review to fetch.
+     */
+    public static enum Mode
+    {
+        /**
+         *  Lists pages patrolled by a particular user.
+         */
+        PATROLS,
+
+        /**
+         *  Lists pages moved from draft space to mainspace by a particular 
+         *  user. This includes the majority of [[WP:AFC]] acceptances.
+         */
+        DRAFTS,
+
+        /**
+         *  Lists pages moved from user space to mainspace by a particular 
+         *  user. This may include a small number of [[WP:AFC]] acceptances.
+         */
+        USERSPACE;
+
+        /**
+         *  Parses a string into an instance of this enum.
+         *  @param s "patrols", "drafts" or "userspace"
+         *  @return the obvious value, or null if unrecognized
+         */
+        public static Mode fromString(String s)
+        {
+            if (s == null)
+                return null;
+            switch (s)
+            {
+                case "patrols": return PATROLS;
+                case "drafts": return DRAFTS;
+                case "userspace": return USERSPACE;
+                default: return null;
+            }
+        }
+    }
     
     /**
      *  Runs this program.
@@ -47,15 +88,17 @@ public class NPPCheck
             System.err.println("No user specified.");
             System.exit(1);
         }
-        boolean all = args[0].equals("--all");
+        String user = args[0];
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+        if (user.equals("--all"))
+        {
+            user = null;
+            enWiki.setQueryLimit(500);
+        }
+        NPPCheck check = new NPPCheck(enWiki);
 
         // patrol log
-        Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
-        if (all)
-            rh = rh.limitedTo(500);
-        else
-            rh = rh.byUser(args[0]);
-        List<Wiki.LogEntry> le = enWiki.getLogEntries("patrol", "patrol", rh);       
+        List<Wiki.LogEntry> le = check.fetchLogs(user, null, null, Mode.PATROLS);
         System.out.println("==NPP patrols ==");        
         if (le.isEmpty())
             System.out.println("No new pages patrolled.");
@@ -63,35 +106,28 @@ public class NPPCheck
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = processLogEntries(le, false);
+            Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.PATROLS);
 
             System.out.println("{| class=\"wikitable sortable\"");
             String header = "! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! "
                 + "Time between patrols (s) !! Page size !! Author !! Author registration timestamp !! "
                 + "Author edit count !! Author age at creation (days) !! Author blocked?";
-            if (all)
+            if (user == null)
                 header += " !! Reviewer";
             System.out.println(header);
             for (int i = 0; i < pageinfo.length; i++)
             {
                 Map<String, Object> info = pageinfo[i];
                 String title = (String)info.get("pagename");
-                if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
-                    continue;
                 System.out.println("|-");
                 System.out.print("| [[:" + title + "]] || ");
-                outputRow(info, dt_patrol.get(i), all);
+                check.outputRow(info, dt_patrol.get(i), user == null);
             }
             System.out.println("|}\n");
         }
         
         // AFC acceptances
-        rh = enWiki.new RequestHelper().inNamespaces(118);
-        if (all)
-            rh = rh.limitedTo(500);
-        else
-            rh = rh.byUser(args[0]);
-        le = enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
+        le = check.fetchLogs(user, null, null, Mode.DRAFTS);
         System.out.println("==AFC acceptances ==");
         if (le.isEmpty())
             System.out.println("No AFCs accepted.");
@@ -99,13 +135,13 @@ public class NPPCheck
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = processLogEntries(le, true);
+            Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.DRAFTS);
 
             System.out.println("{| class=\"wikitable sortable\"");
             String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
                 + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
                 + "Author edit count !! Author age at creation (days) !! Author blocked?";
-            if (all)
+            if (user == null)
                 header += " !! Reviewer";
             System.out.println(header);
             for (int i = 0; i < pageinfo.length; i++)
@@ -113,22 +149,15 @@ public class NPPCheck
                 Map<String, Object> info = pageinfo[i];
                 Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
                 String title = (String)info.get("pagename");
-                if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
-                    continue;
                 System.out.println("|-");
                 System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
-                outputRow(info, dt_patrol.get(i), all);            
+                check.outputRow(info, dt_patrol.get(i), user == null);
             }
             System.out.println("|}");
         }
         
         // Pages moved from user to main
-        rh = enWiki.new RequestHelper().inNamespaces(Wiki.USER_NAMESPACE);
-        if (all)
-            rh = rh.limitedTo(500);
-        else
-            rh = rh.byUser(args[0]);
-        le = enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
+        le = check.fetchLogs(user, null, null, Mode.USERSPACE);
         System.out.println("==Pages moved from user to main ==");
         if (le.isEmpty())
             System.out.println("No pages moved from user to main.");
@@ -136,13 +165,13 @@ public class NPPCheck
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = processLogEntries(le, true);
+            Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.USERSPACE);
 
             System.out.println("{| class=\"wikitable sortable\"");
             String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
                 + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
                 + "Author edit count !! Author age at creation (days) !! Author blocked?";
-            if (all)
+            if (user == null)
                 header += " !! Reviewer";
             System.out.println(header);
             for (int i = 0; i < pageinfo.length; i++)
@@ -150,26 +179,73 @@ public class NPPCheck
                 Map<String, Object> info = pageinfo[i];
                 Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
                 String title = (String)info.get("pagename");
-                if (enWiki.namespace(title) != Wiki.MAIN_NAMESPACE)
-                    continue;
                 System.out.println("|-");
                 System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
-                outputRow(info, dt_patrol.get(i), all);            
+                check.outputRow(info, dt_patrol.get(i), user == null);            
             }
             System.out.println("|}");
         }
+    }
+
+    /**
+     *  Binds an instance of this tool to a given wiki.
+     *  @param wiki the wiki to bind to
+     */
+    public NPPCheck(Wiki wiki)
+    {
+        this.wiki = wiki;
+    }
+
+    /**
+     *  Fetches a subset of new articles reviewed by a given user depending on mode.
+     *  @param user the user to fetch logs for, null or empty for all users
+     *  @param earliest fetch logs no earlier than this date
+     *  @param latest fetch logs no later than this date
+     *  @param mode which logs to fetch
+     *  @return log entries representing new articles reviewed by the user
+     *  @throws IOException if a network error occurs
+     */
+    public List<Wiki.LogEntry> fetchLogs(String user, OffsetDateTime earliest, OffsetDateTime latest, Mode mode) throws IOException
+    {
+        Wiki.RequestHelper rh = wiki.new RequestHelper()
+            .withinDateRange(earliest, latest);
+        if (user != null && !user.isEmpty())
+            rh = rh.byUser(user);
+        List<Wiki.LogEntry> le = Collections.emptyList();
+        switch (mode)
+        {
+            case PATROLS:
+                rh = rh.inNamespaces(Wiki.MAIN_NAMESPACE);
+                return wiki.getLogEntries("patrol", "patrol", rh);
+            case DRAFTS:
+                rh = rh.inNamespaces(118);
+                le = wiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
+                break;
+            case USERSPACE:
+                rh = rh.inNamespaces(Wiki.USER_NAMESPACE);
+                le = wiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
+                break;
+        }
+        List<Wiki.LogEntry> ret = new ArrayList<>();
+        for (Wiki.LogEntry log : le)
+        {
+            String newtitle = (String)log.getDetails();
+            if (wiki.namespace(newtitle) == Wiki.MAIN_NAMESPACE)
+                ret.add(log);
+        }
+        return ret;
     }
     
     /**
      *  For each log entry, fetches metadata of the accepted/patrolled article, 
      *  the first revision of the article and metadata associated with the author.
      *  @param logs a list of logs to examine
-     *  @param move is this Wiki.MOVE_LOG?
+     *  @param mode which mode this is?
      *  @return the page metadata, augmented with keys "firstrevision", 
      *  "logentry" and "creator", in the order corresponding with logs
      *  @throws IOException if a network error occurs
      */
-    public static Map<String, Object>[] processLogEntries(List<Wiki.LogEntry> logs, boolean move) throws IOException
+    public Map<String, Object>[] fetchMetadata(List<Wiki.LogEntry> logs, Mode mode) throws IOException
     {
         // TODO: filter out pages that were redirects when patrolled
         
@@ -177,22 +253,22 @@ public class NPPCheck
         List<String> users = new ArrayList<>();
         for (Wiki.LogEntry log : logs)
         {
-            String title = move ? (String)log.getDetails() : log.getTitle();
+            String title = mode == Mode.PATROLS ? log.getTitle() : (String)log.getDetails();
             pages.add(title);
         }
         
         // account for pages subsequently moved in namespace
-        enWiki.setResolveRedirects(true);
-        Map<String, Object>[] pageinfo = enWiki.getPageInfo(pages.toArray(new String[0]));
-        enWiki.setResolveRedirects(false);
+        wiki.setResolveRedirects(true);
+        Map<String, Object>[] pageinfo = wiki.getPageInfo(pages.toArray(new String[0]));
+        wiki.setResolveRedirects(false);
         
         for (int i = 0; i < pageinfo.length; i++)
         {
             Wiki.LogEntry le = logs.get(i);
             String title = (String)pageinfo[i].get("pagename");
-            if (enWiki.namespace(title) == Wiki.MAIN_NAMESPACE)
+            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE)
             {
-                Wiki.Revision first = enWiki.getFirstRevision(title);
+                Wiki.Revision first = wiki.getFirstRevision(title);
                 pageinfo[i].put("firstrevision", first);
                 if (first != null && !first.getUser().contains(">")) // ContentTranslation ([[Bucket crusher]])
                     users.add(first.getUser());
@@ -205,13 +281,13 @@ public class NPPCheck
         }
         
         // fetch info of creators
-        List<Wiki.User> userinfo = enWiki.getUsers(users);
+        List<Wiki.User> userinfo = wiki.getUsers(users);
         for (int i = 0; i < pageinfo.length; i++)
             pageinfo[i].put("creator", userinfo.get(i));
         return pageinfo;
     }
     
-    public static void outputRow(Map<String, Object> info, Duration dt_patrol, boolean all)
+    public void outputRow(Map<String, Object> info, Duration dt_patrol, boolean all)
     {
         Wiki.Revision first = (Wiki.Revision)info.get("firstrevision");
         Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");

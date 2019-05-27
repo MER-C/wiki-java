@@ -9,6 +9,37 @@ textarea { width: 700px }
 /* error messages */
 .error { color: red; font-size: 24pt }
 
+/*
+ * Wikitable style taken from
+ * https://phabricator.wikimedia.org/diffusion/SVN/browse/trunk/phase3/skins/common/shared.css
+ */
+table.wikitable 
+{
+    margin: 1em 1em 1em 0;
+    background-color: #f9f9f9;
+    border: 1px #aaa solid;
+    border-collapse: collapse;
+    color: black;
+}
+table.wikitable > tr > th,
+table.wikitable > tr > td,
+table.wikitable > * > tr > th,
+table.wikitable > * > tr > td 
+{
+    border: 1px #aaa solid;
+    padding: 0.2em;
+}
+table.wikitable > tr > th,
+table.wikitable > * > tr > th
+{
+    background-color: #f2f2f2;
+    text-align: center;
+}
+table.wikitable > caption
+{
+    font-weight: bold;
+}
+
 /* collapsibles */
 .collapsecontainer { border: 1px solid crimson }
 .collapseboxtop { display: block; background: #ffdddd; width: 100% }

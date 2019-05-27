@@ -42,4 +42,25 @@ public class ServletUtilsTest
     {
         assertEquals("", ServletUtils.sanitizeForHTML(null));
     }
+    
+    @Test
+    public void generatePagination()
+    {
+        // failure states
+        String urlbase = "https://example.com/test.jsp?offset=";
+        assertThrows(IllegalArgumentException.class, () -> ServletUtils.generatePagination(urlbase, -1, 10, 100));
+        assertThrows(IllegalArgumentException.class, () -> ServletUtils.generatePagination(urlbase, 0, 0, 100));
+        assertThrows(IllegalArgumentException.class, () -> ServletUtils.generatePagination(urlbase, 0, 0, 0));
+        
+        // test start from zero
+        assertEquals("<p>Previous 50 | <a href=\"" + urlbase + "50\">Next 50</a>", 
+            ServletUtils.generatePagination(urlbase, 0, 50, 149));
+        // test intermediate
+        assertEquals("<p><a href=\"" + urlbase + "1\">Previous 50</a> | " 
+            + "<a href=\"" + urlbase + "101\">Next 50</a>", 
+            ServletUtils.generatePagination(urlbase, 51, 50, 149));
+        // test final
+        assertEquals("<p><a href=\"" + urlbase + "50\">Previous 50</a> | Next 50",
+            ServletUtils.generatePagination(urlbase, 100, 50, 149));
+    }
 }

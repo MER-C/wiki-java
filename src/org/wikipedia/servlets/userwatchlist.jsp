@@ -151,14 +151,7 @@ Someone # Spam
     String requesturl = "./userwatchlist.jsp?page=" +  inputpage_url + "&earliest=" + earliest
         + "&latest=" + latest + "&skip=";
     out.println("<hr>");
-    if (skip > 0)
-        out.print("<a href=\"" + requesturl + Math.max(0, skip - 50) + "\">Previous 50</a> | ");
-    else
-        out.print("Previous 50 | ");
-    if (input.size() - skip > 50)
-        out.println("<a href=\"" + requesturl + (skip + 50) + "\">Next 50</a>");
-    else
-        out.println("Next 50");
+    out.println(ServletUtils.generatePagination(requesturl, skip, 50, input.size());
 
     // fetch contributions
     Wiki.RequestHelper rh = enWiki.new RequestHelper()
@@ -198,14 +191,6 @@ Someone # Spam
     }
 
     // end pagination
-    out.println("<p>");
-    if (skip > 0)
-        out.print("<a href=\"" + requesturl + Math.max(0, skip - 50) + "\">Previous 50</a> | ");
-    else
-        out.print("Previous 50 | ");
-    if (input.size() - skip > 50)
-        out.println("<a href=\"" + requesturl + (skip + 50) + "\">Next 50</a>");
-    else
-        out.println("Next 50");
+    out.println(ServletUtils.generatePagination(requesturl, skip, 50, input.size());
 %>
 <%@ include file="footer.jsp" %>
