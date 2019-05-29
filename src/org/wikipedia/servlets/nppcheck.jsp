@@ -92,7 +92,12 @@ main space for a given user (or for all users) and page metadata. A query limit 
   <th>Create timestamp
   <th>Review timestamp
   <th>Article age at review (s)
-  <th>Time between reviews (s)
+<%
+    if (!username.isEmpty())
+    {
+        out.println("<th>Time between reviews (s)");
+    }
+%>
   <th>Size
   <th>Author
   <th>Author registration timestamp
@@ -137,24 +142,29 @@ main space for a given user (or for all users) and page metadata. A query limit 
             }
         }
 
-        out.println("<tr>");
+        out.println("<tr class=\"revision\">");
         if (mode != NPPCheck.Mode.PATROLS)
         {
             String draft = entry.getTitle();
-            out.println("  <td>" + pageutils.generatePageLink(draft));
+            out.println("  <td class=\"title\">" + pageutils.generatePageLink(draft));
         }
 %>
-  <td><%= pageutils.generatePageLink(title, (Boolean)pageinfo[i].get("exists")) %>
+  <td class="title"><%= pageutils.generatePageLink(title, (Boolean)pageinfo[i].get("exists")) %>
   <td><%= createdate %>
   <td><%= patroldate %>
-  <td><%= dt_article.getSeconds() %>
-  <td><%= dt_patrol.get(i).getSeconds() %>
-  <td><%= size %>
+  <td class="revsize"><%= dt_article.getSeconds() %>
+<%
+    if (!username.isEmpty())
+    {
+        out.println("<td class=\"revsize\">" + dt_patrol.get(i).getSeconds());
+    }
+%>
+  <td class="revsize"><%= size %>
   <td><%= users.generateHTMLSummaryLinksShort(creatorname) %>
   <td><%= registrationdate %>
-  <td><%= editcount %>
-  <td><%= dt_user.getSeconds() / 86400 %>
-  <td><%= blocked %>
+  <td class="revsize"><%= editcount %>
+  <td class="revsize"><%= dt_user.getSeconds() / 86400 %>
+  <td class="boolean"><%= blocked %>
 <%
         if (username.isEmpty())
         {

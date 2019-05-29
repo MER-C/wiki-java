@@ -45,6 +45,9 @@ table.wikitable > caption
     font-weight: bold;
 }
 
+/* Miscellaneous table styles */
+td.boolean { text-align: center }
+
 /* 
  * Styles for ParserUtils.revisionsToHTML() - note: rendered as a wikitable 
  */

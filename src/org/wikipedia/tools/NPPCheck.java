@@ -93,7 +93,7 @@ public class NPPCheck
         if (user.equals("--all"))
         {
             user = null;
-            enWiki.setQueryLimit(500);
+            enWiki.setQueryLimit(10);
         }
         NPPCheck check = new NPPCheck(enWiki);
 
@@ -109,8 +109,10 @@ public class NPPCheck
             Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.PATROLS);
 
             System.out.println("{| class=\"wikitable sortable\"");
-            String header = "! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! "
-                + "Time between patrols (s) !! Page size !! Author !! Author registration timestamp !! "
+            String header = "! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! ";
+            if (user != null)
+                header += "Time between patrols (s) !! ";
+            header += "Page size !! Author !! Author registration timestamp !! "
                 + "Author edit count !! Author age at creation (days) !! Author blocked?";
             if (user == null)
                 header += " !! Reviewer";
@@ -138,8 +140,10 @@ public class NPPCheck
             Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.DRAFTS);
 
             System.out.println("{| class=\"wikitable sortable\"");
-            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
-                + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
+            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! ";
+            if (user != null)
+                header += "Time between patrols (s) !! ";
+            header += "Page size !! Author !! Author registration timestamp !! "
                 + "Author edit count !! Author age at creation (days) !! Author blocked?";
             if (user == null)
                 header += " !! Reviewer";
@@ -168,8 +172,10 @@ public class NPPCheck
             Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.USERSPACE);
 
             System.out.println("{| class=\"wikitable sortable\"");
-            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! "
-                + "Time between accepts (s) !! Page size !! Author !! Author registration timestamp !! "
+            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! ";
+            if (user != null)
+                header += "Time between patrols (s) !! ";
+            header += "Page size !! Author !! Author registration timestamp !! "
                 + "Author edit count !! Author age at creation (days) !! Author blocked?";
             if (user == null)
                 header += " !! Reviewer";
@@ -313,17 +319,15 @@ public class NPPCheck
         }
         
         if (createdate == null)
-        {
-            System.out.printf("null || %s || null || %d || %d || %s || ", 
-                patroldate, dt_patrol.getSeconds(), size, "{{user|" + username + "}}");
-        }
+            System.out.printf("null || %s || null || ",  patroldate);
         else
         {
             Duration dt_article = Duration.between(createdate, patroldate);
-            System.out.printf("%s || %s || %d || %d || %d || %s || ", 
-                createdate, patroldate, dt_article.getSeconds(), dt_patrol.getSeconds(),
-                size, "{{user|" + username + "}}");                    
+            System.out.printf("%s || %s || %d || ", createdate, patroldate, dt_article.getSeconds());                
         }
+        if (!all)
+            System.out.print(dt_patrol.getSeconds() + " || ");
+        System.out.printf("%d || %s || ", size, "{{user|" + username + "}}");        
         if (creator == null)
             System.out.println("null || -1 || -1 || " + blocked);
         else
