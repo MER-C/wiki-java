@@ -105,6 +105,19 @@ public class PagesTest
             "Test6", "");
         assertEquals(expected, Pages.parseWikitextTemplateList(list, "la"));
     }
+    
+    @Test
+    public void generatePageLink()
+    {
+        assertEquals("<a href=\"https://test.wikipedia.org/wiki/Test\">Test</a>", 
+            testWikiPages.generatePageLink("Test"));
+        assertEquals("<a href=\"https://test.wikipedia.org/wiki/Test\" class=\"new\">Test</a>", 
+            testWikiPages.generatePageLink("Test", false));
+        assertEquals("<a href=\"https://test.wikipedia.org/wiki/Test\">Caption</a>", 
+            testWikiPages.generatePageLink("Test", "Caption"));
+        assertEquals("<a href=\"https://test.wikipedia.org/wiki/Test\" class=\"new\">Caption</a>", 
+            testWikiPages.generatePageLink("Test", "Caption", false));
+    }
 
     @Test
     public void generateSummaryLinks()

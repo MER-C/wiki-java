@@ -30,6 +30,7 @@
     enWiki.setQueryLimit(30000); // 60 network requests
     Users userUtils = Users.of(enWiki);
     Revisions revisionUtils = Revisions.of(enWiki);
+    Pages pageUtils = Pages.of(enWiki);
 %>
 
 <%@ include file="datevalidate.jspf" %>
@@ -57,8 +58,8 @@ Someone # Spam
         <%
         if (inputpage != null)
         {
+            out.print("(" + pageUtils.generatePageLink(inputpage, "visit") + " &middot; ");
         %>
-        (<a href="<%= enWiki.getPageUrl(inputpage) %>">visit</a> |
         <a href="<%= enWiki.getIndexPhpUrl() + "?action=edit&title=" + inputpage_url %>">edit</a>)
         <%
         }

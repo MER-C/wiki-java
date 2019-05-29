@@ -30,10 +30,12 @@ import java.util.*;
 public class ExternalLinks
 {
     private Wiki wiki;
+    private Pages pageutils;
 
     private ExternalLinks(Wiki wiki)
     {
         this.wiki = wiki;
+        pageutils = Pages.of(wiki);
     }
     
     /**
@@ -122,11 +124,9 @@ public class ExternalLinks
         buffer.append("<p>\n<ol>\n");
         results.forEach((String[] result) ->
         {
-            buffer.append("\t<li><a href=\"");
-            buffer.append(wiki.getPageUrl(result[0]));
-            buffer.append("\">");
-            buffer.append(result[0]);
-            buffer.append("</a> uses link <a href=\"");
+            buffer.append("\t<li>");
+            buffer.append(pageutils.generatePageLink(result[0]));
+            buffer.append(" uses link <a href=\"");
             buffer.append(result[1]);
             buffer.append("\">");
             buffer.append(result[1]);

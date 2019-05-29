@@ -301,11 +301,9 @@ public class ExternalLinkPopularity
         {
             if (pagedomaintourls.isEmpty())
                 return;
-            sb.append("<h2><a href=\"");
-            sb.append(wiki.getPageUrl(page));
-            sb.append("\">");
-            sb.append(page);
-            sb.append("</a></h2>\n");
+            sb.append("<h2>");
+            sb.append(pageUtils.generatePageLink(page));
+            sb.append("</h2>\n");
             sb.append(pageUtils.generateSummaryLinks(page));
             sb.append("\n<ul>\n");
             DoubleStream.Builder scores = DoubleStream.builder();
@@ -324,11 +322,9 @@ public class ExternalLinkPopularity
                     sb.append(" link; Linksearch: ");
                 else
                     sb.append(" links; Linksearch: ");
-                sb.append("<a href=\"");
-                sb.append(wiki.getPageUrl("Special:Linksearch/*." + domain));
-                sb.append("\">http</a> <a href=\"");
-                sb.append(wiki.getPageUrl("Special:Linksearch/https://*." + domain));
-                sb.append("\">https</a>)\n");
+                sb.append(pageUtils.generatePageLink("Special:Linksearch/*." + domain, "http"));
+                sb.append(pageUtils.generatePageLink("Special:Linksearch/https://*." + domain, "https"));
+                sb.append(")\n");
                 scores.accept(numlinks);
                 dss.accept(numlinks);
                 sb.append("<ul>");

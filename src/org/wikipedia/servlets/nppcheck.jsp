@@ -52,6 +52,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
 
     Wiki enWiki = Wiki.newSession("en.wikipedia.org");
     Users users = Users.of(enWiki);
+    Pages pageutils = Pages.of(enWiki);
     enWiki.setMaxLag(-1);
     enWiki.setQueryLimit(7500);
     NPPCheck check = new NPPCheck(enWiki);
@@ -140,10 +141,10 @@ main space for a given user (or for all users) and page metadata. A query limit 
         if (mode != NPPCheck.Mode.PATROLS)
         {
             String draft = entry.getTitle();
-            out.println("  <td><a href=\"" + enWiki.getPageUrl(draft) + "\">" + draft + "</a>");
+            out.println("  <td>" + pageutils.generatePageLink(draft));
         }
 %>
-  <td><a href="<%= enWiki.getPageUrl(title) %>"><%= title %></a>
+  <td><%= pageutils.generatePageLink(title, (Boolean)pageinfo[i].get("exists")) %>
   <td><%= createdate %>
   <td><%= patroldate %>
   <td><%= dt_article.getSeconds() %>

@@ -118,6 +118,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
     for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
     {
         Wiki wiki = entry.getKey();
+        Pages pageutils = Pages.of(wiki);   
         List<String[]> value = entry.getValue();
         out.println("<h3>" + wiki.getDomain() + "</h3>");
         out.println(ExternalLinks.of(wiki).linksearchResultsToHTML(value, domain));
@@ -125,11 +126,9 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         if (value.size() > 500)
             out.print("At least ");
         out.print(value.size());
-        out.print(" links found ");
-        out.print("(<a href=\"" + wiki.getPageUrl("Special:Linksearch/*." + domain)
-            + "\">HTTP linksearch</a> | ");
-        out.println("<a href=\"" + wiki.getPageUrl("Special:Linksearch/https://*." + domain)
-            + "\">HTTPS linksearch</a>).");
+        out.print(" links found (");
+        out.print(pageutils.generatePageLink("Special:Linksearch/*." + domain, "HTTP linksearch") + " | ");
+        out.println(pageutils.generatePageLink("Special:Linksearch/https://*." + domain, "HTTPS linksearch") + ").");
     }
 %>
 <%@ include file="footer.jsp" %>

@@ -266,7 +266,7 @@ public class NPPCheck
         {
             Wiki.LogEntry le = logs.get(i);
             String title = (String)pageinfo[i].get("pagename");
-            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE)
+            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE && (Boolean)pageinfo[i].get("exists"))
             {
                 Wiki.Revision first = wiki.getFirstRevision(title);
                 pageinfo[i].put("firstrevision", first);

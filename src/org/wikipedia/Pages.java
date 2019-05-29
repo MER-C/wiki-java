@@ -240,6 +240,59 @@ public class Pages
     }
     
     /**
+     *  Outputs a hyperlink to the given page. It is assumed the page exists.
+     *  @param page a page to make a link for
+     *  @return HTML for that link
+     */
+    public String generatePageLink(String page)
+    {
+        return generatePageLink(page, WikitextUtils.recode(page), true);
+    }
+    
+    /**
+     *  Outputs a hyperlink to the given page. Tags on a CSS class for red links
+     *  if applicable.
+     *  @param page a page to make a link for
+     *  @param exists whether that page exists
+     *  @return HTML for that link
+     */
+    public String generatePageLink(String page, boolean exists)
+    {
+        return generatePageLink(page, WikitextUtils.recode(page), exists);
+    }
+
+    /**
+     *  Outputs a hyperlink to the given page. It is assumed the page exists.
+     *  @param page a page to make a link for
+     *  @param text the text for that link
+     *  @return HTML for that link
+     */    
+    public String generatePageLink(String page, String text)
+    {
+        return generatePageLink(page, text, true);
+    }
+
+    /**
+     *  Outputs a hyperlink to the given page. Tags on a CSS class for red links
+     *  if applicable.
+     *  @param page a page to make a link for
+     *  @param text the text for that link
+     *  @param exists whether that page exists
+     *  @return HTML for that link
+     */    
+    public String generatePageLink(String page, String text, boolean exists)
+    {
+        // Implementation note: class name chosen to equal MediaWiki
+        StringBuilder sb = new StringBuilder("<a href=\"");
+        sb.append(wiki.getPageUrl(page));
+        sb.append("\"");
+        sb.append(exists ? ">" : " class=\"new\">");
+        sb.append(text);
+        sb.append("</a>");
+        return sb.toString();
+    }
+    
+    /**
      *  Generates summary page links of the form Page (edit | talk | history | logs)
      *  as HTML. Doesn't support talk pages yet.
      *  @param page the page to generate links for
@@ -254,9 +307,9 @@ public class Pages
             String indexPHPURL = wiki.getIndexPhpUrl();
             String pageenc = URLEncoder.encode(page, "UTF-8");
             
-            return "<a href=\"" + wiki.getPageUrl(page) + "\">" + page + "</a> ("
+            return generatePageLink(page) + "("
                 + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=edit\">edit</a> | "
-                + "<a href=\"" + wiki.getPageUrl(wiki.getTalkPage(page)) + "\">talk</a> | "
+                + generatePageLink(wiki.getTalkPage(page), "talk") + " | "
                 + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "
                 + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=" + pageenc + "\">logs</a>)";
         }

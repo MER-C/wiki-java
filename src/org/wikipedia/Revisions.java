@@ -173,7 +173,8 @@ public class Revisions
     public String toHTML(Iterable<Wiki.Revision> revisions)
     {
         StringBuilder buffer = new StringBuilder(100000);
-        Users users = Users.of(wiki);
+        Users userutils = Users.of(wiki);
+        Pages pageutils = Pages.of(wiki);
         buffer.append("<table class=\"wikitable revisions\">\n");
         for (Wiki.Revision rev : revisions)
         {         
@@ -211,17 +212,14 @@ public class Revisions
             
             // page name
             String page = rev.getTitle();
-            buffer.append("<td class=\"title\"><a href=\"");
-            buffer.append(wiki.getPageUrl(page));
-            buffer.append("\" class=\"pagename\">");
-            buffer.append(WikitextUtils.recode(page));
-            buffer.append("</a>");
+            buffer.append("<td class=\"title\">");
+            buffer.append(pageutils.generatePageLink(page, true));
             
             // user links
             buffer.append("<td class=\"user\">");
             String temp = rev.getUser();
             if (temp != null)
-                buffer.append(users.generateHTMLSummaryLinksShort(temp));
+                buffer.append(userutils.generateHTMLSummaryLinksShort(temp));
             else
                 buffer.append(Events.DELETED_EVENT_HTML);
             

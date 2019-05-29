@@ -32,10 +32,12 @@ import java.util.*;
 public class Users
 {
     private final Wiki wiki;
+    private final Pages pageutils;
     
     private Users(Wiki wiki)
     {
         this.wiki = wiki;
+        pageutils = Pages.of(wiki);
     }
     
     /**
@@ -59,9 +61,9 @@ public class Users
      */
     public String generateHTMLSummaryLinksShort(String username)
     {
-        return "<a href=\"" + wiki.getPageUrl("User:" + username) + "\">" + username + "</a> ("
-            +  "<a href=\"" + wiki.getPageUrl("User talk:" + username) + "\">talk</a> &middot; "
-            +  "<a href=\"" + wiki.getPageUrl("Special:Contributions/" + username) + "\">contribs</a>)";
+        return pageutils.generatePageLink("User:" + username, username) + " ("
+            +  pageutils.generatePageLink("User talk:" + username, "talk") + " &middot; "
+            +  pageutils.generatePageLink("Special:Contributions/" + username, "contribs") + ")";
     }
     
     /**
@@ -77,13 +79,14 @@ public class Users
         try
         {
             String indexPHPURL = wiki.getIndexPhpUrl();
+            username = WikitextUtils.recode(username);
             String userenc = URLEncoder.encode(username, "UTF-8");
-            return "<a href=\"" + wiki.getPageUrl("User:" + username) + "\">" + username + "</a> ("
-                +  "<a href=\"" + wiki.getPageUrl("User talk:" + username) + "\">talk</a> | "
-                +  "<a href=\"" + wiki.getPageUrl("Special:Contributions/" + username) + "\">contribs</a> | "
-                +  "<a href=\"" + wiki.getPageUrl("Special:DeletedContributions/" + username) + "\">deleted contribs</a> | "
-                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
-                +  "<a href=\"" + wiki.getPageUrl("Special:Block/" + username) + "\">block</a> | "
+            return pageutils.generatePageLink("User:" + username, username) + " ("
+                +  pageutils.generatePageLink("User talk:" + username, "talk") + " | "
+                +  pageutils.generatePageLink("Special:Contributions/" + username, "contribs") + " | "
+                +  pageutils.generatePageLink("Special:DeletedContributions/" + username, "deleted contribs") + " | "
+                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\"x>logs</a> | "
+                +  pageutils.generatePageLink("Special:Block/" + username, "block") + " | "
                 +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
         }
         catch (IOException ex)

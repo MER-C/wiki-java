@@ -9,6 +9,10 @@ textarea { width: 700px }
 /* error messages */
 .error { color: red; font-size: 24pt }
 
+/* pagelinks */
+a { color: #0000bb }
+a.new { color: #bb0000 }
+
 /*
  * Wikitable style taken from
  * https://phabricator.wikimedia.org/diffusion/SVN/browse/trunk/phase3/skins/common/shared.css
