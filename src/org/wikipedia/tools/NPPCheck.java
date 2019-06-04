@@ -22,8 +22,8 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.time.*;
 import java.util.*;
-import org.wikipedia.Events;
-import org.wikipedia.Wiki;
+import java.util.regex.*;
+import org.wikipedia.*;
 
 /**
  *  Provides a listing of NPP article patrols and AFC acceptances for a given
@@ -33,7 +33,7 @@ import org.wikipedia.Wiki;
  */
 public class NPPCheck
 {
-    private Wiki wiki;
+    private WMFWiki wiki;
 
     /**
      *  An enum denoting what type of review to fetch.
@@ -83,30 +83,31 @@ public class NPPCheck
      */
     public static void main(String[] args) throws IOException
     {
-        if (args.length == 0)
+        if (false && args.length == 0)
         {
             System.err.println("No user specified.");
             System.exit(1);
         }
-        String user = args[0];
-        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+        String user = "--all"; // args[0];
+        WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
         if (user.equals("--all"))
         {
             user = null;
-            enWiki.setQueryLimit(10);
+            enWiki.setQueryLimit(50);
         }
         NPPCheck check = new NPPCheck(enWiki);
-
+        
         // patrol log
         List<Wiki.LogEntry> le = check.fetchLogs(user, null, null, Mode.PATROLS);
         System.out.println("==NPP patrols ==");        
         if (le.isEmpty())
             System.out.println("No new pages patrolled.");
+        
         else
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.PATROLS);
+            Map<String, Object>[] pageinfo = check.fetchMetadata(le);
 
             System.out.println("{| class=\"wikitable sortable\"");
             String header = "! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! ";
@@ -137,7 +138,7 @@ public class NPPCheck
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.DRAFTS);
+            Map<String, Object>[] pageinfo = check.fetchMetadata(le);
 
             System.out.println("{| class=\"wikitable sortable\"");
             String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! ";
@@ -159,7 +160,7 @@ public class NPPCheck
             }
             System.out.println("|}");
         }
-        
+
         // Pages moved from user to main
         le = check.fetchLogs(user, null, null, Mode.USERSPACE);
         System.out.println("==Pages moved from user to main ==");
@@ -169,7 +170,7 @@ public class NPPCheck
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = check.fetchMetadata(le, Mode.USERSPACE);
+            Map<String, Object>[] pageinfo = check.fetchMetadata(le);
 
             System.out.println("{| class=\"wikitable sortable\"");
             String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! ";
@@ -191,13 +192,86 @@ public class NPPCheck
             }
             System.out.println("|}");
         }
+
+/* 
+ *  EXPERIMENTAL - insert to get summary statistics for a given mode
+
+        Pattern pattern = Pattern.compile("REDACTED", Pattern.CASE_INSENSITIVE);
+
+
+            System.out.println("{| class=\"wikitable sortable\"");
+            String header = "! Draft !! Title !! Accept timestamp !! Snippet";
+            List<String> snippets = check.fetchSnippets(le);
+
+            // stats
+            Map<String, Integer> reviewhist = new HashMap<>();
+            Map<String, Integer> delhist = new HashMap<>();
+            Map<String, Integer> regexhist = new HashMap<>();
+            int totaldeleted = 0, totalregex = 0;
+            for (int i = 0; i < le.size(); i++)
+            {
+                String patroller = le.get(i).getUser();
+                String snippet = snippets.get(i);
+
+                int count = reviewhist.getOrDefault(patroller, Integer.valueOf(0));
+                reviewhist.put(patroller, count + 1);
+                if (snippet == null)
+                {
+                    count = delhist.getOrDefault(patroller, Integer.valueOf(0));
+                    delhist.put(patroller, count + 1);
+                    totaldeleted++;
+                }
+                else
+                {
+                    Matcher matcher = pattern.matcher(snippet);
+                    if (matcher.find())
+                    {
+                        count = regexhist.getOrDefault(patroller, Integer.valueOf(0));
+                        regexhist.put(patroller, count + 1);
+                        totalregex++;
+                    }
+                }
+            }
+            
+            System.out.println("{| class=\"wikitable sortable\"");
+            System.out.println("! User !! Draft !! Article !! Review timestamp !! Snippet");
+            for (int i = 0; i < le.size(); i++)
+            {
+                System.out.println("|-");
+                Wiki.LogEntry log = le.get(i);
+                String patroller = log.getUser();
+                String snippet = snippets.get(i);
+                String article = (String)log.getDetails();
+                String draft = log.getTitle();
+                OffsetDateTime timestamp = log.getTimestamp();
+                System.out.printf("| {{user|%s}} || [[%s]] || [[%s]] || %s || %s %n", 
+                    patroller, draft, article, timestamp.toString(), snippet);
+            }
+            System.out.println("|}");
+
+            System.out.println("{| class=\"wikitable sortable\"");
+            System.out.println("! User !! Reviews !! Fraction deleted !! Fraction regex match");
+            for (Map.Entry<String, Integer> entry : reviewhist.entrySet())
+            {
+                String loguser = entry.getKey();
+                int reviews = entry.getValue();
+                int deleted = delhist.getOrDefault(loguser, Integer.valueOf(0));
+                int regex = regexhist.getOrDefault(loguser, Integer.valueOf(0));
+                System.out.println("|-");
+                System.out.printf("| [[User:%s|%s]] || %d || %2.1f || %2.1f %n", loguser, 
+                    loguser, reviews, 100. * deleted/reviews, 100. * regex/reviews);
+            }
+            System.out.println("|-");
+            System.out.printf("| TOTAL || %d || %2.1f || %2.1f %n", le.size(), 100. * totaldeleted/le.size(), 100.*totalregex/le.size());
+            System.out.println("|}");
+*/
     }
 
     /**
      *  Binds an instance of this tool to a given wiki.
      *  @param wiki the wiki to bind to
      */
-    public NPPCheck(Wiki wiki)
+    public NPPCheck(WMFWiki wiki)
     {
         this.wiki = wiki;
     }
@@ -241,25 +315,46 @@ public class NPPCheck
         }
         return ret;
     }
-    
+
     /**
-     *  For each log entry, fetches metadata of the accepted/patrolled article, 
-     *  the first revision of the article and metadata associated with the author.
-     *  @param logs a list of logs to examine
-     *  @param mode which mode this is?
-     *  @return the page metadata, augmented with keys "firstrevision", 
-     *  "logentry" and "creator", in the order corresponding with logs
+     *  For each log entry, fetch a snippet of text from the article in its
+     *  current state.
+     *  @param logs a bunch of log entries
+     *  @return a list of snippets for those logs, with null indicating a deleted
+     *  page
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Object>[] fetchMetadata(List<Wiki.LogEntry> logs, Mode mode) throws IOException
+    public List<String> fetchSnippets(List<Wiki.LogEntry> logs) throws IOException
+    {
+        List<String> pages = new ArrayList<>();
+        for (Wiki.LogEntry log : logs)
+        {
+            String title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : log.getTitle();
+            pages.add(title);
+        }
+        
+        // account for pages subsequently moved in namespace
+        wiki.setResolveRedirects(true);
+        List<String> pagetext = wiki.getLedeAsPlainText(pages);
+        wiki.setResolveRedirects(false);
+        return pagetext;
+    }
+
+    /**
+     *  For each log entry, fetches metadata of the accepted/patrolled article.
+     *  @param logs a list of logs to examine
+     *  @return the page metadata, augmented with key "logentry" representing 
+     *  the input log entry.
+     *  @throws IOException if a network error occurs
+     */
+    public Map<String, Object>[] fetchMetadata(List<Wiki.LogEntry> logs) throws IOException
     {
         // TODO: filter out pages that were redirects when patrolled
         
         List<String> pages = new ArrayList<>();
-        List<String> users = new ArrayList<>();
         for (Wiki.LogEntry log : logs)
         {
-            String title = mode == Mode.PATROLS ? log.getTitle() : (String)log.getDetails();
+            String title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : log.getTitle();
             pages.add(title);
         }
         
@@ -269,13 +364,29 @@ public class NPPCheck
         wiki.setResolveRedirects(false);
         
         for (int i = 0; i < pageinfo.length; i++)
+            pageinfo[i].put("logentry", logs.get(i));
+        return pageinfo;
+    }
+
+    /**
+     *  Augments page metadata with information about the creator and first 
+     *  revision. This is a slow query, so don't push too many items through it 
+     *  in online mode.
+     *  @param metadata the output from Wiki.getPageInfo
+     *  @return the metadata, augmented with keys "creator" (Wiki.User) and 
+     *  "firstrevision" (Wiki.Revision)
+     *  @throws IOException if a network error occurs
+     */
+    public Map<String, Object>[] fetchCreatorMetadata(Map<String, Object>[] metadata) throws IOException
+    {
+        List<String> users = new ArrayList<>();
+        for (int i = 0; i < metadata.length; i++)
         {
-            Wiki.LogEntry le = logs.get(i);
-            String title = (String)pageinfo[i].get("pagename");
-            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE && (Boolean)pageinfo[i].get("exists"))
+            String title = (String)metadata[i].get("pagename");
+            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE && (Boolean)metadata[i].get("exists"))
             {
                 Wiki.Revision first = wiki.getFirstRevision(title);
-                pageinfo[i].put("firstrevision", first);
+                metadata[i].put("firstrevision", first);
                 if (first != null && !first.getUser().contains(">")) // ContentTranslation ([[Bucket crusher]])
                     users.add(first.getUser());
                 else
@@ -283,14 +394,13 @@ public class NPPCheck
             }
             else
                 users.add("Example");
-            pageinfo[i].put("logentry", le);
         }
-        
+
         // fetch info of creators
         List<Wiki.User> userinfo = wiki.getUsers(users);
-        for (int i = 0; i < pageinfo.length; i++)
-            pageinfo[i].put("creator", userinfo.get(i));
-        return pageinfo;
+        for (int i = 0; i < metadata.length; i++)
+            metadata[i].put("creator", userinfo.get(i));
+        return metadata;        
     }
     
     public void outputRow(Map<String, Object> info, Duration dt_patrol, boolean all)

@@ -20,6 +20,7 @@
 
 package org.wikipedia;
 
+import java.time.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -162,5 +163,36 @@ public class MathsAndStats
             return interpolator.apply(values.get(desired - 1), values.get(desired));
         else
             return values.get(desired);
+    }
+
+    /**
+     *  Formats durations into a human readable string consisting of usually
+     *  two units. Examples: 3s, 1m 20s, 2h 32m, 3d 12h, 11d (doesn't
+     *  go to years).
+     *  @param duration a duration 
+     *  @return the formatted duration (see above)
+     */
+    public static String formatDuration(Duration duration)
+    {
+        long seconds = duration.getSeconds();
+        long abs_seconds = duration.abs().getSeconds();
+        if (abs_seconds < 60)
+            return "" + seconds + "s";
+        
+        long minutes = seconds / 60;
+        long abs_minutes = abs_seconds / 60;
+        if (abs_minutes < 60)
+            return "" + minutes + "m " + (abs_seconds % 60) + "s";
+        
+        long hours = minutes / 60;
+        long abs_hours = abs_minutes / 60;
+        if (abs_hours < 24)
+            return "" + hours + "h " + (abs_minutes % 60) + "m";
+        
+        long days = hours / 24;
+        long abs_days = abs_hours / 24;
+        if (abs_days < 10)
+            return "" + days + "d " + (abs_hours % 24) + "h";
+        return "" + days + "d";
     }
 }

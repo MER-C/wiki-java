@@ -50,7 +50,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
     }
     out.println("<hr>");
 
-    Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+    WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
     Users users = Users.of(enWiki);
     Pages pageutils = Pages.of(enWiki);
     enWiki.setMaxLag(-1);
@@ -74,7 +74,8 @@ main space for a given user (or for all users) and page metadata. A query limit 
     dt_patrol.add(Duration.ofSeconds(-1));
     if (logsub.size() == 51)
         logsub.remove(50);
-    Map<String, Object>[] pageinfo = check.fetchMetadata(logsub, mode);
+    Map<String, Object>[] pageinfo = check.fetchMetadata(logsub);
+    pageinfo = check.fetchCreatorMetadata(pageinfo);
 
     String requesturl = "./nppcheck.jsp?username=" + username + "&earliest=" + earliest
         + "&latest=" + latest + "&mode=" + request.getParameter("mode") + "&offset=";
@@ -91,18 +92,18 @@ main space for a given user (or for all users) and page metadata. A query limit 
   <th>Article
   <th>Create timestamp
   <th>Review timestamp
-  <th>Article age at review (s)
+  <th>Article age at review
 <%
     if (!username.isEmpty())
     {
-        out.println("<th>Time between reviews (s)");
+        out.println("<th>Time between reviews");
     }
 %>
   <th>Size
   <th>Author
   <th>Author registration timestamp
   <th>Author edit count
-  <th>Author age at creation (days)
+  <th>Author age at creation
   <th>Author blocked?
 <%
     if (username.isEmpty())
@@ -150,20 +151,20 @@ main space for a given user (or for all users) and page metadata. A query limit 
         }
 %>
   <td class="title"><%= pageutils.generatePageLink(title, (Boolean)pageinfo[i].get("exists")) %>
-  <td><%= createdate %>
-  <td><%= patroldate %>
-  <td class="revsize"><%= dt_article.getSeconds() %>
+  <td class="date"><%= createdate %>
+  <td class="date"><%= patroldate %>
+  <td class="revsize"><%= MathsAndStats.formatDuration(dt_article) %>
 <%
     if (!username.isEmpty())
     {
-        out.println("<td class=\"revsize\">" + dt_patrol.get(i).getSeconds());
+        out.println("<td class=\"revsize\">" + MathsAndStats.formatDuration(dt_patrol.get(i)));
     }
 %>
   <td class="revsize"><%= size %>
   <td><%= users.generateHTMLSummaryLinksShort(creatorname) %>
-  <td><%= registrationdate %>
+  <td class="date"><%= registrationdate %>
   <td class="revsize"><%= editcount %>
-  <td class="revsize"><%= dt_user.getSeconds() / 86400 %>
+  <td class="revsize"><%= MathsAndStats.formatDuration(dt_user) %>
   <td class="boolean"><%= blocked %>
 <%
         if (username.isEmpty())
