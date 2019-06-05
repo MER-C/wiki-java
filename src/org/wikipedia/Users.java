@@ -85,7 +85,7 @@ public class Users
                 +  pageutils.generatePageLink("User talk:" + username, "talk") + " | "
                 +  pageutils.generatePageLink("Special:Contributions/" + username, "contribs") + " | "
                 +  pageutils.generatePageLink("Special:DeletedContributions/" + username, "deleted contribs") + " | "
-                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\"x>logs</a> | "
+                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
                 +  pageutils.generatePageLink("Special:Block/" + username, "block") + " | "
                 +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
         }

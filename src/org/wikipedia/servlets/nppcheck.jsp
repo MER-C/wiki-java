@@ -57,7 +57,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
     enWiki.setQueryLimit(7500);
     NPPCheck check = new NPPCheck(enWiki);
     List<Wiki.LogEntry> logs = check.fetchLogs(username, earliest_odt, latest_odt, mode);
-
+    
     if (logs.isEmpty())
     {
 %>
@@ -76,6 +76,21 @@ main space for a given user (or for all users) and page metadata. A query limit 
         logsub.remove(50);
     Map<String, Object>[] pageinfo = check.fetchMetadata(logsub);
     pageinfo = check.fetchCreatorMetadata(pageinfo);
+    List<String> snippets = check.fetchSnippets(logsub);
+    List<String> reviewers = new ArrayList<>();
+    List<String> drafts = new ArrayList<>();
+    for (Wiki.LogEntry log : logsub)
+    {
+        reviewers.add(log.getUser());
+        if (mode != NPPCheck.Mode.PATROLS)
+            drafts.add(log.getTitle());
+    }
+    List<Wiki.User> reviewerdata = new ArrayList<>();
+    if (username.isEmpty())
+        reviewerdata = enWiki.getUsers(reviewers);
+    Map<String, Object>[] draftinfo = null;
+    if (mode != NPPCheck.Mode.PATROLS)
+        draftinfo = enWiki.getPageInfo(drafts.toArray(new String[0]));
 
     String requesturl = "./nppcheck.jsp?username=" + username + "&earliest=" + earliest
         + "&latest=" + latest + "&mode=" + request.getParameter("mode") + "&offset=";
@@ -104,10 +119,14 @@ main space for a given user (or for all users) and page metadata. A query limit 
   <th>Author registration timestamp
   <th>Author edit count
   <th>Author age at creation
-  <th>Author blocked?
+  <th>Author blocked
 <%
     if (username.isEmpty())
+    {
         out.println("  <th>Reviewer");
+        out.println("  <th>Reviewer edit count");
+    }
+    out.println("<th>Snippet");
 
     for (int i = 0; i < pageinfo.length; i++)
     {
@@ -142,12 +161,12 @@ main space for a given user (or for all users) and page metadata. A query limit 
                     dt_user = Duration.between(registrationdate, createdate);
             }
         }
-
+        
         out.println("<tr class=\"revision\">");
         if (mode != NPPCheck.Mode.PATROLS)
         {
             String draft = entry.getTitle();
-            out.println("  <td class=\"title\">" + pageutils.generatePageLink(draft));
+            out.println("  <td class=\"title\">" + pageutils.generatePageLink(draft, (Boolean)draftinfo[i].get("exists")));
         }
 %>
   <td class="title"><%= pageutils.generatePageLink(title, (Boolean)pageinfo[i].get("exists")) %>
@@ -161,7 +180,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
     }
 %>
   <td class="revsize"><%= size %>
-  <td><%= users.generateHTMLSummaryLinksShort(creatorname) %>
+  <td class="user"><%= users.generateHTMLSummaryLinksShort(creatorname) %>
   <td class="date"><%= registrationdate %>
   <td class="revsize"><%= editcount %>
   <td class="revsize"><%= MathsAndStats.formatDuration(dt_user) %>
@@ -170,8 +189,10 @@ main space for a given user (or for all users) and page metadata. A query limit 
         if (username.isEmpty())
         {
             String reviewer = entry.getUser();
-            out.println("  <td>" + users.generateHTMLSummaryLinksShort(reviewer));
+            out.println("  <td class=\"user\">" + users.generateHTMLSummaryLinksShort(reviewer));
+            out.println("  <td class=\"revsize\">" + reviewerdata.get(i).countEdits());
         }
+        out.println("  <td>" + snippets.get(i));
     }
     out.println("</table>");
 
