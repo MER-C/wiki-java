@@ -307,7 +307,7 @@ public class Pages
             String indexPHPURL = wiki.getIndexPhpUrl();
             String pageenc = URLEncoder.encode(page, "UTF-8");
             
-            return generatePageLink(page) + "("
+            return generatePageLink(page) + " ("
                 + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=edit\">edit</a> | "
                 + generatePageLink(wiki.getTalkPage(page), "talk") + " | "
                 + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "

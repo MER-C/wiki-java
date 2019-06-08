@@ -77,17 +77,11 @@ main space for a given user (or for all users) and page metadata. A query limit 
     Map<String, Object>[] pageinfo = check.fetchMetadata(logsub);
     pageinfo = check.fetchCreatorMetadata(pageinfo);
     List<String> snippets = check.fetchSnippets(logsub);
-    List<String> reviewers = new ArrayList<>();
     List<String> drafts = new ArrayList<>();
-    for (Wiki.LogEntry log : logsub)
-    {
-        reviewers.add(log.getUser());
-        if (mode != NPPCheck.Mode.PATROLS)
+    if (mode != NPPCheck.Mode.PATROLS)
+        for (Wiki.LogEntry log : logsub)
             drafts.add(log.getTitle());
-    }
-    List<Wiki.User> reviewerdata = new ArrayList<>();
-    if (username.isEmpty())
-        reviewerdata = enWiki.getUsers(reviewers);
+    List<Wiki.User> reviewerdata = check.fetchReviewerMetadata(logsub, username.isEmpty());
     Map<String, Object>[] draftinfo = null;
     if (mode != NPPCheck.Mode.PATROLS)
         draftinfo = enWiki.getPageInfo(drafts.toArray(new String[0]));
@@ -144,8 +138,8 @@ main space for a given user (or for all users) and page metadata. A query limit 
         String creatorname = "null";
         boolean blocked = false;
 
-        Duration dt_article = Duration.ofSeconds(-1);
-        Duration dt_user = Duration.ofSeconds(-86401);
+        Duration dt_article = Duration.ofDays(-999999);
+        Duration dt_user = Duration.ofDays(-999999);
 
         if (first != null)
         {

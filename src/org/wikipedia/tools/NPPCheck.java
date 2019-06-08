@@ -83,12 +83,12 @@ public class NPPCheck
      */
     public static void main(String[] args) throws IOException
     {
-        if (false && args.length == 0)
+        if (args.length == 0)
         {
             System.err.println("No user specified.");
             System.exit(1);
         }
-        String user = "--all"; // args[0];
+        String user = args[0];
         WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
         if (user.equals("--all"))
         {
@@ -102,29 +102,26 @@ public class NPPCheck
         System.out.println("==NPP patrols ==");        
         if (le.isEmpty())
             System.out.println("No new pages patrolled.");
-        
         else
         {
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
             Map<String, Object>[] pageinfo = check.fetchMetadata(le);
+            pageinfo = check.fetchCreatorMetadata(pageinfo);
+            List<Wiki.User> reviewerinfo = check.fetchReviewerMetadata(le, user == null);
+            List<String> snippets = check.fetchSnippets(le);
 
             System.out.println("{| class=\"wikitable sortable\"");
-            String header = "! Title !! Create timestamp !! Patrol timestamp !! Article age at patrol (s) !! ";
-            if (user != null)
-                header += "Time between patrols (s) !! ";
-            header += "Page size !! Author !! Author registration timestamp !! "
-                + "Author edit count !! Author age at creation (days) !! Author blocked?";
-            if (user == null)
-                header += " !! Reviewer";
-            System.out.println(header);
+            System.out.println(check.outputTableHeader(Mode.PATROLS, user == null));
             for (int i = 0; i < pageinfo.length; i++)
             {
                 Map<String, Object> info = pageinfo[i];
-                String title = (String)info.get("pagename");
                 System.out.println("|-");
-                System.out.print("| [[:" + title + "]] || ");
+                System.out.print("| ");
                 check.outputRow(info, dt_patrol.get(i), user == null);
+                if (user == null)
+                    System.out.print(reviewerinfo.get(i).countEdits() + " || ");
+                System.out.println(snippets.get(i));
             }
             System.out.println("|}\n");
         }
@@ -139,24 +136,22 @@ public class NPPCheck
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
             Map<String, Object>[] pageinfo = check.fetchMetadata(le);
-
+            List<Wiki.User> reviewerinfo = check.fetchReviewerMetadata(le, user == null);
+            pageinfo = check.fetchCreatorMetadata(pageinfo);
+            List<String> snippets = check.fetchSnippets(le);
+            
             System.out.println("{| class=\"wikitable sortable\"");
-            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! ";
-            if (user != null)
-                header += "Time between patrols (s) !! ";
-            header += "Page size !! Author !! Author registration timestamp !! "
-                + "Author edit count !! Author age at creation (days) !! Author blocked?";
-            if (user == null)
-                header += " !! Reviewer";
-            System.out.println(header);
+            System.out.println(check.outputTableHeader(Mode.DRAFTS, user == null));
             for (int i = 0; i < pageinfo.length; i++)
             {
                 Map<String, Object> info = pageinfo[i];
                 Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-                String title = (String)info.get("pagename");
                 System.out.println("|-");
-                System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
+                System.out.printf("| [[:%s]] || ", entry.getTitle());
                 check.outputRow(info, dt_patrol.get(i), user == null);
+                if (user == null)
+                    System.out.print(reviewerinfo.get(i).countEdits() + " || ");
+                System.out.println(snippets.get(i));
             }
             System.out.println("|}");
         }
@@ -171,24 +166,22 @@ public class NPPCheck
             List<Duration> dt_patrol = Events.timeBetweenEvents(le);
             dt_patrol.add(Duration.ofSeconds(-1));
             Map<String, Object>[] pageinfo = check.fetchMetadata(le);
+            pageinfo = check.fetchCreatorMetadata(pageinfo);
+            List<Wiki.User> reviewerinfo = check.fetchReviewerMetadata(le, user == null);
+            List<String> snippets = check.fetchSnippets(le);
 
-            System.out.println("{| class=\"wikitable sortable\"");
-            String header = "! Draft !! Title !! Create timestamp !! Accept timestamp !! Draft age at accept (s) !! ";
-            if (user != null)
-                header += "Time between patrols (s) !! ";
-            header += "Page size !! Author !! Author registration timestamp !! "
-                + "Author edit count !! Author age at creation (days) !! Author blocked?";
-            if (user == null)
-                header += " !! Reviewer";
-            System.out.println(header);
+            System.out.println("{| class=\"wikitable sortable\"");            
+            System.out.println(check.outputTableHeader(Mode.USERSPACE, user == null));
             for (int i = 0; i < pageinfo.length; i++)
             {
                 Map<String, Object> info = pageinfo[i];
                 Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-                String title = (String)info.get("pagename");
                 System.out.println("|-");
-                System.out.printf("| [[:%s]] || [[:%s]] || ", entry.getTitle(), title);
-                check.outputRow(info, dt_patrol.get(i), user == null);            
+                System.out.printf("| [[:%s]] || ", entry.getTitle());
+                check.outputRow(info, dt_patrol.get(i), user == null);
+                if (user == null)
+                    System.out.print(reviewerinfo.get(i).countEdits() + " || ");
+                System.out.println(snippets.get(i));
             }
             System.out.println("|}");
         }
@@ -403,16 +396,60 @@ public class NPPCheck
         return metadata;        
     }
     
-    public void outputRow(Map<String, Object> info, Duration dt_patrol, boolean all)
+    /**
+     *  Fetches metadata of reviewers if this is a run that isn't for a single
+     *  user. Otherwise returns the empty list.
+     *  @param logs the logs to fetch metadata for
+     *  @param allusers (see above)
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     */
+    public List<Wiki.User> fetchReviewerMetadata(List<Wiki.LogEntry> logs, boolean allusers) throws IOException
     {
-        Wiki.Revision first = (Wiki.Revision)info.get("firstrevision");
-        Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-        Wiki.User creator = (Wiki.User)info.get("creator");
+        if (!allusers)
+            return Collections.emptyList();
+        List<String> usernames = new ArrayList<>();
+        for (Wiki.LogEntry log : logs)
+            usernames.add(log.getUser());
+        return wiki.getUsers(usernames);
+    }
+    
+    /**
+     *  Outputs a table header in wikitext.
+     *  @param mode the current mode
+     *  @param allusers whether the table contains data for all reviewers - adds 
+     *  reviewer metadata columns, removes time between reviews
+     *  @return a wikitext table header
+     */
+    public String outputTableHeader(Mode mode, boolean allusers)
+    {
+        StringBuilder header = new StringBuilder("! ");
+        if (mode != Mode.PATROLS)
+            header.append("Draft !! ");
+        header.append("Title !! Create timestamp !! Review timestamp !! Age at review !! ");
+        if (!allusers)
+            header.append("Time between patrols !! ");
+        header.append("Size !! Author !! Author registration timestamp !! ");
+        header.append("Author edit count !! Author age at creation !! Author blocked !! ");
+        if (allusers)
+            header.append("Reviewer !! Reviewer edit count !! ");
+        header.append("Snippet");
+        return header.toString();
+    }
+    
+    public void outputRow(Map<String, Object> pageinfo, Duration dt_patrol, boolean all)
+    {
+        String title = (String)pageinfo.get("pagename");
+        Wiki.Revision first = (Wiki.Revision)pageinfo.get("firstrevision");
+        Wiki.LogEntry entry = (Wiki.LogEntry)pageinfo.get("logentry");
+        Wiki.User creator = (Wiki.User)pageinfo.get("creator");
         OffsetDateTime patroldate = entry.getTimestamp();
-        int size = (Integer)info.get("size");
+        int size = (Integer)pageinfo.get("size");
 
         OffsetDateTime createdate = null;
         OffsetDateTime registrationdate = null;
+        Duration dt_article = Duration.ofDays(-999999);
+        Duration dt_account = Duration.ofDays(-999999);
         int editcount = -1;
         String username = null;
         boolean blocked = false;
@@ -420,36 +457,32 @@ public class NPPCheck
         {
             username = first.getUser();
             createdate = first.getTimestamp();
+            dt_article = Duration.between(createdate, patroldate);
             if (creator != null)
             {
                 editcount = creator.countEdits();
                 registrationdate = creator.getRegistrationDate();
+                if (registrationdate != null)
+                    dt_account = Duration.between(registrationdate, createdate);
                 blocked = creator.isBlocked();
             }
         }
         
-        if (createdate == null)
-            System.out.printf("null || %s || null || ",  patroldate);
-        else
-        {
-            Duration dt_article = Duration.between(createdate, patroldate);
-            System.out.printf("%s || %s || %d || ", createdate, patroldate, dt_article.getSeconds());                
-        }
+        // Table structure:
+        // Article | Create timestamp | Review timestamp | Article age at patrol |
+        // Time between reviews (if not all users) | Size | Author | 
+        // Author registration timestamp | Author edit count | Author age at creation |
+        // Author blocked | Reviewer (if allusers)
+        System.out.printf("[[:%s]] || %s || %s || data-sort-value=%d | %s || ", 
+            title, createdate, patroldate, dt_article.getSeconds(), 
+            MathsAndStats.formatDuration(dt_article));
         if (!all)
-            System.out.print(dt_patrol.getSeconds() + " || ");
-        System.out.printf("%d || %s || ", size, "{{user|" + username + "}}");        
-        if (creator == null)
-            System.out.println("null || -1 || -1 || " + blocked);
-        else
-        {
-            Duration dt_account = createdate == null || registrationdate == null
-                ? Duration.ofSeconds(-86401) : Duration.between(registrationdate, createdate);
-            System.out.printf("%s || %d || %d || %b", 
-                registrationdate, editcount, dt_account.getSeconds() / 86400, blocked);
-        }
+            System.out.print("data-sort-value=" + dt_patrol.getSeconds() + " | " 
+                + MathsAndStats.formatDuration(dt_patrol) + " || ");
+        System.out.printf("%d || {{noping2|%s}} || %s || %d || data-sort-value=%d | %s || %b || ", 
+            size, username, registrationdate, editcount, dt_account.getSeconds(), 
+            MathsAndStats.formatDuration(dt_account), blocked);
         if (all)
-            System.out.println(" || {{user|" + entry.getUser() + "}}");
-        else
-            System.out.println();
+            System.out.print("{{noping2|" + entry.getUser() + "}} || ");        
     }
 }
