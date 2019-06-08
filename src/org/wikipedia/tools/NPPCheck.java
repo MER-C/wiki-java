@@ -23,6 +23,7 @@ import java.io.*;
 import java.time.*;
 import java.util.*;
 import java.util.regex.*;
+import javax.security.auth.login.FailedLoginException;
 import org.wikipedia.*;
 
 /**
@@ -34,6 +35,8 @@ import org.wikipedia.*;
 public class NPPCheck
 {
     private WMFWiki wiki;
+    private String user;
+    private Mode mode = Mode.PATROLS;
 
     /**
      *  An enum denoting what type of review to fetch.
@@ -55,7 +58,12 @@ public class NPPCheck
          *  Lists pages moved from user space to mainspace by a particular 
          *  user. This may include a small number of [[WP:AFC]] acceptances.
          */
-        USERSPACE;
+        USERSPACE,
+        
+        /**
+         *  Lists unpatrolled pages (requires NPP rights).
+         */
+        UNPATROLLED;
 
         /**
          *  Parses a string into an instance of this enum.
@@ -71,8 +79,18 @@ public class NPPCheck
                 case "patrols": return PATROLS;
                 case "drafts": return DRAFTS;
                 case "userspace": return USERSPACE;
+                case "unpatrolled": return UNPATROLLED;
                 default: return null;
             }
+        }
+        
+        /**
+         *  Returns true if this mode deals with drafts.
+         *  @return (see above)
+         */
+        public boolean requiresDrafts()
+        {
+            return this == USERSPACE || this == DRAFTS;
         }
     }
     
@@ -83,107 +101,80 @@ public class NPPCheck
      */
     public static void main(String[] args) throws IOException
     {
-        if (args.length == 0)
-        {
-            System.err.println("No user specified.");
-            System.exit(1);
-        }
-        String user = args[0];
+        Map<String, String> parsedargs = new CommandLineParser()
+            .addBooleanFlag("--unpatrolled", "Output results for unpatrolled new articles (REQUIRES NPP RIGHTS)")
+            .addBooleanFlag("--patrols", "Output results from new pages patrol")
+            .addBooleanFlag("--userspace", "Output results for moves from user to main")
+            .addBooleanFlag("--drafts", "Output results for moves from draft to main")
+            .addSingleArgumentFlag("--user", "user", "Output results for this user only "
+                + "(requires one of --patrols, --userspace or --drafts)")
+            .addVersion("0.01")
+            .addHelp()
+            .parse(args);
+        String user = parsedargs.get("--user");
+        
         WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
-        if (user.equals("--all"))
-        {
-            user = null;
-            enWiki.setQueryLimit(50);
-        }
         NPPCheck check = new NPPCheck(enWiki);
         
-        // patrol log
-        List<Wiki.LogEntry> le = check.fetchLogs(user, null, null, Mode.PATROLS);
-        System.out.println("==NPP patrols ==");        
-        if (le.isEmpty())
-            System.out.println("No new pages patrolled.");
-        else
+        // NPPBrowser mode (for bulk fetching)
+        if (parsedargs.containsKey("--unpatrolled"))
         {
-            List<Duration> dt_patrol = Events.timeBetweenEvents(le);
-            dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = check.fetchMetadata(le);
-            pageinfo = check.fetchCreatorMetadata(pageinfo);
-            List<Wiki.User> reviewerinfo = check.fetchReviewerMetadata(le, user == null);
-            List<String> snippets = check.fetchSnippets(le);
-
-            System.out.println("{| class=\"wikitable sortable\"");
-            System.out.println(check.outputTableHeader(Mode.PATROLS, user == null));
-            for (int i = 0; i < pageinfo.length; i++)
+            // CLI login
+            try
             {
-                Map<String, Object> info = pageinfo[i];
-                System.out.println("|-");
-                System.out.print("| ");
-                check.outputRow(info, dt_patrol.get(i), user == null);
-                if (user == null)
-                    System.out.print(reviewerinfo.get(i).countEdits() + " || ");
-                System.out.println(snippets.get(i));
+                Console console = System.console();
+                enWiki.login(console.readLine("Username: "), console.readPassword("Password: "));
             }
-            System.out.println("|}\n");
+            catch (FailedLoginException ex)
+            {
+                System.err.println("Invalid username or password.");
+                System.exit(1);
+            }
+            
+            check.setMode(Mode.UNPATROLLED);
+            check.setUser(null);
+            
+            List<? extends Wiki.Event> le = check.fetchLogs(null, null);
+            System.out.println(check.outputTable(le));
         }
         
-        // AFC acceptances
-        le = check.fetchLogs(user, null, null, Mode.DRAFTS);
-        System.out.println("==AFC acceptances ==");
-        if (le.isEmpty())
-            System.out.println("No AFCs accepted.");
-        else
+        // patrol log
+        if (parsedargs.containsKey("--patrols"))
         {
-            List<Duration> dt_patrol = Events.timeBetweenEvents(le);
-            dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = check.fetchMetadata(le);
-            List<Wiki.User> reviewerinfo = check.fetchReviewerMetadata(le, user == null);
-            pageinfo = check.fetchCreatorMetadata(pageinfo);
-            List<String> snippets = check.fetchSnippets(le);
+            check.setMode(Mode.PATROLS);
+            check.setUser(user);
+        
+            List<? extends Wiki.Event> le = check.fetchLogs(null, null);
+            System.out.println("==NPP patrols ==");        
+            if (le.isEmpty())
+                System.out.println("No new pages patrolled.");
+            else
+                System.out.println(check.outputTable(le));
+        }
+                
+        // Pages moved from draft to main
+        if (parsedargs.containsKey("--drafts"))
+        {
+            check.setMode(Mode.DRAFTS);
+            check.setUser(user);
             
-            System.out.println("{| class=\"wikitable sortable\"");
-            System.out.println(check.outputTableHeader(Mode.DRAFTS, user == null));
-            for (int i = 0; i < pageinfo.length; i++)
-            {
-                Map<String, Object> info = pageinfo[i];
-                Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-                System.out.println("|-");
-                System.out.printf("| [[:%s]] || ", entry.getTitle());
-                check.outputRow(info, dt_patrol.get(i), user == null);
-                if (user == null)
-                    System.out.print(reviewerinfo.get(i).countEdits() + " || ");
-                System.out.println(snippets.get(i));
-            }
-            System.out.println("|}");
+            List<? extends Wiki.Event> le = check.fetchLogs(null, null);
+            System.out.println("==Pages moved from draft to main ==");
+            if (le.isEmpty())
+                System.out.println("No pages moved from draft to main.");
+            else
+                System.out.println(check.outputTable(le));
         }
 
         // Pages moved from user to main
-        le = check.fetchLogs(user, null, null, Mode.USERSPACE);
-        System.out.println("==Pages moved from user to main ==");
-        if (le.isEmpty())
-            System.out.println("No pages moved from user to main.");
-        else
+        if (parsedargs.containsKey("--userspace"))
         {
-            List<Duration> dt_patrol = Events.timeBetweenEvents(le);
-            dt_patrol.add(Duration.ofSeconds(-1));
-            Map<String, Object>[] pageinfo = check.fetchMetadata(le);
-            pageinfo = check.fetchCreatorMetadata(pageinfo);
-            List<Wiki.User> reviewerinfo = check.fetchReviewerMetadata(le, user == null);
-            List<String> snippets = check.fetchSnippets(le);
-
-            System.out.println("{| class=\"wikitable sortable\"");            
-            System.out.println(check.outputTableHeader(Mode.USERSPACE, user == null));
-            for (int i = 0; i < pageinfo.length; i++)
-            {
-                Map<String, Object> info = pageinfo[i];
-                Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
-                System.out.println("|-");
-                System.out.printf("| [[:%s]] || ", entry.getTitle());
-                check.outputRow(info, dt_patrol.get(i), user == null);
-                if (user == null)
-                    System.out.print(reviewerinfo.get(i).countEdits() + " || ");
-                System.out.println(snippets.get(i));
-            }
-            System.out.println("|}");
+            List<? extends Wiki.Event> le = check.fetchLogs(null, null);
+            System.out.println("==Pages moved from user to main ==");
+            if (le.isEmpty())
+                System.out.println("No pages moved from user to main.");
+            else
+                System.out.println(check.outputTable(le));
         }
 
 /* 
@@ -268,21 +259,61 @@ public class NPPCheck
     {
         this.wiki = wiki;
     }
+    
+    /**
+     *  Restricts results to only this user. Set to null or empty for all users.
+     *  @param user (see above)
+     */
+    public void setUser(String user)
+    {
+        if (user == null || user.isEmpty())
+        {
+            this.user = null;
+            wiki.setQueryLimit(250);
+        }
+        else
+        {
+            this.user = user;
+            wiki.setQueryLimit(Integer.MAX_VALUE);
+        }
+    }
+    
+    /**
+     *  Returns the user for which we are examining actions by, or null if we
+     *  are looking at all users.
+     *  @return (see above)
+     */
+    public String getUser()
+    {
+        return user;
+    }
+    
+    /**
+     *  Sets the type of new article to fetch.
+     *  @param mode (see above)
+     */
+    public void setMode(Mode mode)
+    {
+        this.mode = mode;
+    }
 
     /**
-     *  Fetches a subset of new articles reviewed by a given user depending on mode.
-     *  @param user the user to fetch logs for, null or empty for all users
-     *  @param earliest fetch logs no earlier than this date
-     *  @param latest fetch logs no later than this date
-     *  @param mode which logs to fetch
-     *  @return log entries representing new articles reviewed by the user
+     *  Fetches events corresponding to new articles depending on mode. If
+     *  mode is {@link Mode.UNPATROLLED}, the result is a list of {@link Wiki.Revision}
+     *  output from {@link Wiki#newPages(RequestHelper)}. You must possess NPP
+     *  rights. Otherwise the result is a list of {@link Wiki#MOVE_LOG} or 
+     *  {@link Wiki#PATROL_LOG} {@link Wiki.LogEntry}.
+     * 
+     *  @param earliest fetch events no earlier than this date
+     *  @param latest fetch events no later than this date
+     *  @return (see above)
      *  @throws IOException if a network error occurs
      */
-    public List<Wiki.LogEntry> fetchLogs(String user, OffsetDateTime earliest, OffsetDateTime latest, Mode mode) throws IOException
+    public List<? extends Wiki.Event> fetchLogs(OffsetDateTime earliest, OffsetDateTime latest) throws IOException
     {
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .withinDateRange(earliest, latest);
-        if (user != null && !user.isEmpty())
+        if (user != null)
             rh = rh.byUser(user);
         List<Wiki.LogEntry> le = Collections.emptyList();
         switch (mode)
@@ -298,6 +329,12 @@ public class NPPCheck
                 rh = rh.inNamespaces(Wiki.USER_NAMESPACE);
                 le = wiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
                 break;
+            case UNPATROLLED:
+                Map<String, Boolean> options = new HashMap<>();
+                options.put("patrolled", Boolean.FALSE);
+                options.put("redirect", Boolean.FALSE);
+                rh = rh.inNamespaces(Wiki.MAIN_NAMESPACE).filterBy(options);
+                return wiki.newPages(rh);
         }
         List<Wiki.LogEntry> ret = new ArrayList<>();
         for (Wiki.LogEntry log : le)
@@ -312,17 +349,24 @@ public class NPPCheck
     /**
      *  For each log entry, fetch a snippet of text from the article in its
      *  current state.
-     *  @param logs a bunch of log entries
+     *  @param events a bunch of events
      *  @return a list of snippets for those logs, with null indicating a deleted
      *  page
      *  @throws IOException if a network error occurs
      */
-    public List<String> fetchSnippets(List<Wiki.LogEntry> logs) throws IOException
+    public List<String> fetchSnippets(List<? extends Wiki.Event> events) throws IOException
     {
         List<String> pages = new ArrayList<>();
-        for (Wiki.LogEntry log : logs)
+        for (Wiki.Event event : events)
         {
-            String title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : log.getTitle();
+            String title;
+            if (event instanceof Wiki.LogEntry)
+            {
+                Wiki.LogEntry log = (Wiki.LogEntry)event;
+                title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : event.getTitle();
+            }
+            else
+                title = event.getTitle();
             pages.add(title);
         }
         
@@ -334,20 +378,28 @@ public class NPPCheck
     }
 
     /**
-     *  For each log entry, fetches metadata of the accepted/patrolled article.
-     *  @param logs a list of logs to examine
+     *  For each log entry, fetches metadata for the accepted/patrolled/unpatrolled
+     *  article.
+     *  @param events a list of events to examine
      *  @return the page metadata, augmented with key "logentry" representing 
      *  the input log entry.
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Object>[] fetchMetadata(List<Wiki.LogEntry> logs) throws IOException
+    public Map<String, Object>[] fetchMetadata(List<? extends Wiki.Event> events) throws IOException
     {
         // TODO: filter out pages that were redirects when patrolled
         
         List<String> pages = new ArrayList<>();
-        for (Wiki.LogEntry log : logs)
+        for (Wiki.Event event : events)
         {
-            String title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : log.getTitle();
+            String title;
+            if (event instanceof Wiki.LogEntry)
+            {
+                Wiki.LogEntry log = (Wiki.LogEntry)event;
+                title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : event.getTitle();
+            }
+            else
+                title = event.getTitle();
             pages.add(title);
         }
         
@@ -357,7 +409,7 @@ public class NPPCheck
         wiki.setResolveRedirects(false);
         
         for (int i = 0; i < pageinfo.length; i++)
-            pageinfo[i].put("logentry", logs.get(i));
+            pageinfo[i].put("logentry", events.get(i));
         return pageinfo;
     }
 
@@ -399,90 +451,138 @@ public class NPPCheck
     /**
      *  Fetches metadata of reviewers if this is a run that isn't for a single
      *  user. Otherwise returns the empty list.
-     *  @param logs the logs to fetch metadata for
-     *  @param allusers (see above)
+     *  @param events the events to fetch metadata for
      *  @return (see above)
      *  @throws IOException if a network error occurs
      */
-    public List<Wiki.User> fetchReviewerMetadata(List<Wiki.LogEntry> logs, boolean allusers) throws IOException
+    public List<Wiki.User> fetchReviewerMetadata(List<? extends Wiki.Event> events) throws IOException
     {
-        if (!allusers)
+        if (user != null)
             return Collections.emptyList();
         List<String> usernames = new ArrayList<>();
-        for (Wiki.LogEntry log : logs)
-            usernames.add(log.getUser());
+        for (Wiki.Event event : events)
+            usernames.add(event.getUser());
         return wiki.getUsers(usernames);
+    }
+    
+    public String outputTable(List<? extends Wiki.Event> le) throws IOException
+    {
+        Map<String, Object>[] pageinfo = fetchMetadata(le);
+        pageinfo = fetchCreatorMetadata(pageinfo);
+        List<Duration> dt_patrol = Events.timeBetweenEvents(le);
+        dt_patrol.add(Duration.ofSeconds(-1));
+        List<Wiki.User> reviewerinfo = fetchReviewerMetadata(le);
+        List<String> snippets = fetchSnippets(le);
+                
+        StringBuilder sb = new StringBuilder(outputTableHeader());
+        for (int i = 0; i < pageinfo.length; i++)
+        {
+            Wiki.Event entry = (Wiki.Event)pageinfo[i].get("logentry");
+            Wiki.Event first = (Wiki.Event)pageinfo[i].get("firstrevision");
+            
+            OffsetDateTime patroldate = entry.getTimestamp();
+            OffsetDateTime createdate = null;
+            OffsetDateTime registrationdate = null;
+            Duration dt_article = Duration.ofDays(-999999);
+            Duration dt_account = Duration.ofDays(-999999);
+            
+            // author metadata (may be IP address, may be account so old its
+            // creation date is null)
+            String authorname = "null";
+            Wiki.User creator = (Wiki.User)pageinfo[i].get("creator"); 
+            int editcount = -1;
+            boolean blocked = false;
+            
+            if (first != null)
+            {
+                authorname = first.getUser();
+                createdate = first.getTimestamp();
+                dt_article = Duration.between(createdate, patroldate);
+                if (creator != null)
+                {
+                    editcount = creator.countEdits();
+                    registrationdate = creator.getRegistrationDate();
+                    if (registrationdate != null)
+                        dt_account = Duration.between(registrationdate, createdate);
+                    blocked = creator.isBlocked();
+                }
+            }
+            
+            List<String> tablecells = new ArrayList<>();
+            // Draft column
+            if (mode.requiresDrafts())
+                tablecells.add("[[:" + le.get(i).getTitle() + "]]");
+            // Article column
+            tablecells.add("[[:" + pageinfo[i].get("pagename") + "]]");
+            // Creation date column
+            tablecells.add(Objects.toString(createdate));
+            if (mode != Mode.UNPATROLLED)
+            {
+                // Review date column
+                tablecells.add(patroldate.toString());
+                // Article age at review column
+                tablecells.add("data-sort-value=" + dt_article.getSeconds() + " | " 
+                    + MathsAndStats.formatDuration(dt_article));
+                // Time between reviews column                    
+                if (user != null)
+                {
+                    Duration dt_review = dt_patrol.get(i);
+                    tablecells.add("data-sort-value=" + dt_review.getSeconds() + " | " 
+                        + MathsAndStats.formatDuration(dt_review));
+                }                    
+            }
+            // Size column
+            tablecells.add("" + pageinfo[i].getOrDefault("size", -1));
+            // Author column
+            tablecells.add("{{noping2|" + authorname + "}}");              
+            // Author registration date column
+            tablecells.add(Objects.toString(registrationdate));
+            // Author edit count
+            tablecells.add(String.valueOf(editcount));
+            // Author age at creation column
+            tablecells.add("data-sort-value=" + dt_account.getSeconds() + " | " 
+                + MathsAndStats.formatDuration(dt_account));
+            // Author blocked column
+            tablecells.add(String.valueOf(blocked));
+            // Reviewer metadata group
+            if (mode != Mode.UNPATROLLED && user == null)
+            {
+                Wiki.User reviewer = reviewerinfo.get(i);
+                // Reviewer column
+                tablecells.add("{{noping2|" + reviewer.getUsername() + "}}");
+                // Reviewer edit count column
+                tablecells.add(String.valueOf(reviewer.countEdits()));
+            }
+            // Snippet column
+            tablecells.add(snippets.get(i));
+            sb.append(WikitextUtils.addTableRow(tablecells));
+        }
+        sb.append("|}\n\n");
+        return sb.toString();
     }
     
     /**
      *  Outputs a table header in wikitext.
-     *  @param mode the current mode
-     *  @param allusers whether the table contains data for all reviewers - adds 
-     *  reviewer metadata columns, removes time between reviews
      *  @return a wikitext table header
      */
-    public String outputTableHeader(Mode mode, boolean allusers)
+    public String outputTableHeader()
     {
-        StringBuilder header = new StringBuilder("! ");
-        if (mode != Mode.PATROLS)
+        StringBuilder header = new StringBuilder("{| class=\"wikitable sortable\"\n! ");
+        if (mode.requiresDrafts())
             header.append("Draft !! ");
-        header.append("Title !! Create timestamp !! Review timestamp !! Age at review !! ");
-        if (!allusers)
-            header.append("Time between patrols !! ");
+        header.append("Title !! Create timestamp !! ");
+        if (mode != Mode.UNPATROLLED)
+        {
+            header.append("Review timestamp !! Age at review !! ");
+            if (user != null)
+                header.append("Time between patrols !! ");
+        }
         header.append("Size !! Author !! Author registration timestamp !! ");
         header.append("Author edit count !! Author age at creation !! Author blocked !! ");
-        if (allusers)
+        if (mode != Mode.UNPATROLLED && user == null)
             header.append("Reviewer !! Reviewer edit count !! ");
         header.append("Snippet");
+        header.append("\n");
         return header.toString();
-    }
-    
-    public void outputRow(Map<String, Object> pageinfo, Duration dt_patrol, boolean all)
-    {
-        String title = (String)pageinfo.get("pagename");
-        Wiki.Revision first = (Wiki.Revision)pageinfo.get("firstrevision");
-        Wiki.LogEntry entry = (Wiki.LogEntry)pageinfo.get("logentry");
-        Wiki.User creator = (Wiki.User)pageinfo.get("creator");
-        OffsetDateTime patroldate = entry.getTimestamp();
-        int size = (Integer)pageinfo.get("size");
-
-        OffsetDateTime createdate = null;
-        OffsetDateTime registrationdate = null;
-        Duration dt_article = Duration.ofDays(-999999);
-        Duration dt_account = Duration.ofDays(-999999);
-        int editcount = -1;
-        String username = null;
-        boolean blocked = false;
-        if (first != null)
-        {
-            username = first.getUser();
-            createdate = first.getTimestamp();
-            dt_article = Duration.between(createdate, patroldate);
-            if (creator != null)
-            {
-                editcount = creator.countEdits();
-                registrationdate = creator.getRegistrationDate();
-                if (registrationdate != null)
-                    dt_account = Duration.between(registrationdate, createdate);
-                blocked = creator.isBlocked();
-            }
-        }
-        
-        // Table structure:
-        // Article | Create timestamp | Review timestamp | Article age at patrol |
-        // Time between reviews (if not all users) | Size | Author | 
-        // Author registration timestamp | Author edit count | Author age at creation |
-        // Author blocked | Reviewer (if allusers)
-        System.out.printf("[[:%s]] || %s || %s || data-sort-value=%d | %s || ", 
-            title, createdate, patroldate, dt_article.getSeconds(), 
-            MathsAndStats.formatDuration(dt_article));
-        if (!all)
-            System.out.print("data-sort-value=" + dt_patrol.getSeconds() + " | " 
-                + MathsAndStats.formatDuration(dt_patrol) + " || ");
-        System.out.printf("%d || {{noping2|%s}} || %s || %d || data-sort-value=%d | %s || %b || ", 
-            size, username, registrationdate, editcount, dt_account.getSeconds(), 
-            MathsAndStats.formatDuration(dt_account), blocked);
-        if (all)
-            System.out.print("{{noping2|" + entry.getUser() + "}} || ");        
     }
 }

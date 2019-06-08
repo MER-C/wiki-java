@@ -20,10 +20,10 @@
 
 package org.wikipedia;
 
+import java.util.*;
+
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Arrays;
 
 /**
  *  Unit tests for org.wikipedia.ParserUtils
@@ -51,5 +51,12 @@ public class WikitextUtilsTest
         assertEquals(Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[:Link]]"));
         assertEquals(Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[ Link | Description ]]"));
         assertEquals(Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[:Link|Description]]"));
+    }
+    
+    @Test
+    public void addTableRow()
+    {
+        List<String> cells = Arrays.asList("A", "B", "C");
+        assertEquals("|-\n| A || B || C\n", WikitextUtils.addTableRow(cells));
     }
 }

@@ -77,14 +77,15 @@ main space for a given user (or for all users) and page metadata. A query limit 
     Map<String, Object>[] pageinfo = check.fetchMetadata(logsub);
     pageinfo = check.fetchCreatorMetadata(pageinfo);
     List<String> snippets = check.fetchSnippets(logsub);
+    List<Wiki.User> reviewerdata = check.fetchReviewerMetadata(logsub, username.isEmpty());
     List<String> drafts = new ArrayList<>();
-    if (mode != NPPCheck.Mode.PATROLS)
+    Map<String, Object>[] draftinfo = null;
+    if (mode.requiresDrafts())
+    {
         for (Wiki.LogEntry log : logsub)
             drafts.add(log.getTitle());
-    List<Wiki.User> reviewerdata = check.fetchReviewerMetadata(logsub, username.isEmpty());
-    Map<String, Object>[] draftinfo = null;
-    if (mode != NPPCheck.Mode.PATROLS)
-        draftinfo = enWiki.getPageInfo(drafts.toArray(new String[0]));
+        draftinfo = enWiki.getPageInfo(drafts.toArray(new String[0]));    
+    }
 
     String requesturl = "./nppcheck.jsp?username=" + username + "&earliest=" + earliest
         + "&latest=" + latest + "&mode=" + request.getParameter("mode") + "&offset=";
@@ -95,7 +96,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
 <table class="wikitable">
 <tr>
 <%
-    if (mode != NPPCheck.Mode.PATROLS)
+    if (mode.requiresDrafts())
         out.println("  <th>Draft");
 %>
   <th>Article
@@ -157,7 +158,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
         }
         
         out.println("<tr class=\"revision\">");
-        if (mode != NPPCheck.Mode.PATROLS)
+        if (mode.requiresDrafts())
         {
             String draft = entry.getTitle();
             out.println("  <td class=\"title\">" + pageutils.generatePageLink(draft, (Boolean)draftinfo[i].get("exists")));

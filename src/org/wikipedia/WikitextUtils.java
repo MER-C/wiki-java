@@ -60,6 +60,25 @@ public class WikitextUtils
             return Arrays.asList(temp, temp);
         }        
     }
+    
+    /**
+     *  Outputs a row of a wikitext table.
+     *  @param entries the individual cells
+     *  @return wikitext for that row
+     */
+    public static String addTableRow(List<String> entries)
+    {
+        StringBuilder sb = new StringBuilder("|-\n");
+        sb.append("| ");
+        for (int i = 0; i < entries.size() - 1; i++)
+        {
+            sb.append(entries.get(i));
+            sb.append(" || ");
+        }
+        sb.append(entries.get(entries.size() - 1));
+        sb.append("\n");
+        return sb.toString();
+    }
         
     /**
      *  Reverse of Wiki.decode()

@@ -992,7 +992,7 @@ public class Wiki implements Comparable<Wiki>
 
         // user
         buffer.append(",user=");
-        buffer.append(user != null ? user.toString() : "null");
+        buffer.append(Objects.toString(user));
         buffer.append(",");
 
         // throttle mechanisms
@@ -6823,9 +6823,9 @@ public class Wiki implements Comparable<Wiki>
         {
             int hc = Long.hashCode(id);
             hc = 127 * hc + timestamp.hashCode();
-            hc = 127 * hc + (user == null ? 0 : user.hashCode());
-            hc = 127 * hc + (title == null ? 0 : title.hashCode());
-            hc = 127 * hc + (comment == null ? 0 : comment.hashCode());
+            hc = 127 * hc + Objects.hashCode(user);
+            hc = 127 * hc + Objects.hashCode(title);
+            hc = 127 * hc + Objects.hashCode(comment);
             return hc;
         }
 
@@ -6997,7 +6997,7 @@ public class Wiki implements Comparable<Wiki>
         {
             int hc = super.hashCode();
             hc = 127 * hc + type.hashCode();
-            hc = 127 * hc + (action == null ? 0 : action.hashCode());
+            hc = 127 * hc + Objects.hashCode(action);
             return hc;
         }
     }
