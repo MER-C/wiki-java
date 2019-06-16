@@ -4054,9 +4054,8 @@ public class Wiki implements Comparable<Wiki>
                     input = new GZIPInputStream(input);
                 Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 // scrape archive name for logging purposes
-                String archive = parseAttribute(line, "archivename", 0);
-                if (archive == null)
-                    archive = entry.getTitle();
+                String archive = Objects.requireNonNullElse(parseAttribute(line, "archivename", 0), 
+                    entry.getTitle());
                 log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
                 return true;
             }
@@ -4860,7 +4859,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("token", getToken("csrf"));
         postparams.put("reason", reason);
-        postparams.put("expiry", expiry == null ? "indefinite" : expiry);
+        postparams.put("expiry", Objects.requireNonNullElse(expiry, "indefinite"));
         postparams.put("reblock", "1");
         if (blockoptions != null)
         {

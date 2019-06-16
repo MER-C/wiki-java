@@ -12,9 +12,7 @@
 
     String username = ServletUtils.sanitizeForAttribute(request.getParameter("username"));
     NPPCheck.Mode mode = NPPCheck.Mode.fromString(request.getParameter("mode"));
-    String offsetparam = request.getParameter("offset");
-    if (offsetparam == null)
-        offsetparam = "0";
+    String offsetparam = Objects.requireNonNullElse(request.getParameter("offset"), "0");  
 %>
 <%@ include file="header.jsp" %>
 

@@ -13,11 +13,7 @@
     request.setAttribute("scripts", new String[] { "common.js", "collapsible.js", "EditorIntersection.js" });
 
     String wikiparam = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
-
-    String mode = request.getParameter("mode");
-    if (mode == null)
-        mode = "none";
-
+    String mode = Objects.requireNonNullElse(request.getParameter("mode"), "none");
     String pages = ServletUtils.sanitizeForHTML(request.getParameter("pages"));    
     String category = ServletUtils.sanitizeForAttribute(request.getParameter("category"));
     String user = ServletUtils.sanitizeForAttribute(request.getParameter("user"));

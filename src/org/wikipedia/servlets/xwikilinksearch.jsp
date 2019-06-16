@@ -11,16 +11,9 @@
     request.setAttribute("toolname", "Cross-wiki linksearch");
     request.setAttribute("scripts", new String[] { "common.js", "XWikiLinksearch.js" });
 
-    String mode = request.getParameter("mode");
-    if (mode == null)
-        mode = "multi";
-
+    String mode = Objects.requireNonNullElse(request.getParameter("mode"), "multi");
     String domain = ServletUtils.sanitizeForAttribute(request.getParameter("link"));
-    
-    String set = request.getParameter("set");
-    if (set == null)
-        set = "top20";
-
+    String set = Objects.requreNonNullElse(request.getParameter("set"), "top20");
     String wikiinput = request.getParameter("wiki");
     if (wikiinput != null)
         wikiinput = ServletUtils.sanitizeForAttribute(wikiinput);

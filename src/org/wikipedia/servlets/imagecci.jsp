@@ -61,7 +61,7 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 <table>
 <tr>
     <td>User to survey:
-    <td><input type=text name=user value="<%= user == null ? "" : ServletUtils.sanitizeForAttribute(user) %>" required>
+    <td><input type=text name=user value="<%= ServletUtils.sanitizeForAttribute(user) %>" required>
 <tr>
     <td>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>

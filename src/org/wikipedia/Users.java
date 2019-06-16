@@ -121,9 +121,8 @@ public class Users
      */
     public List<Wiki.Revision> createdPages(List<String> users, Wiki.RequestHelper rh) throws IOException
     {
-        if (rh == null)
-            rh = wiki.new RequestHelper();
-        rh = rh.filterBy(Map.of("new", Boolean.TRUE));
+        rh = Objects.requireNonNullElse(rh, wiki.new RequestHelper())
+            .filterBy(Map.of("new", Boolean.TRUE));
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         List<Wiki.Revision> ret = new ArrayList<>();
         for (List<Wiki.Revision> rev : contribs)
@@ -144,9 +143,8 @@ public class Users
      */
     public Map<Wiki.Revision, String> createdPagesWithText(List<String> users, Wiki.RequestHelper rh) throws IOException
     {
-        if (rh == null)
-            rh = wiki.new RequestHelper();
-        rh = rh.filterBy(Map.of("new", Boolean.TRUE));
+        rh = Objects.requireNonNullElse(rh, wiki.new RequestHelper())
+            .filterBy(Map.of("new", Boolean.TRUE));
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         
         // get text of all pages

@@ -131,11 +131,11 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <tr>
     <td><input type=radio name=mode id="radio_user" checked>
     <td>User to survey:
-    <td><input type=text name=user id=user value="<%= user == null ? "" : ServletUtils.sanitizeForAttribute(user) %>" required>
+    <td><input type=text name=user id=user value="<%= ServletUtils.sanitizeForAttribute(user) %>" required>
 <tr>
     <td><input type=radio name=mode id="radio_category">
     <td>Fetch users from category:
-    <td><input type=text name=category id=category value="<%= category == null ? "" : ServletUtils.sanitizeForAttribute(category) %>" disabled>
+    <td><input type=text name=category id=category value="<%= ServletUtils.sanitizeForAttribute(category) %>" disabled>
 <tr>
     <td colspan=2>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>
