@@ -49,7 +49,7 @@
 // Disallow bad robots
 
     String useragent = request.getHeader("User-Agent");
-    if (useragent.contains("Tweetmeme") || useragent.contains("bing.com"))
+    if (useragent.contains("Tweetmeme") || useragent.contains("bing.com") || useragent.contains("Wget"))
     {
         response.sendError(403, "robots.txt exists for a reason. Follow it!");
         return;

@@ -1,0 +1,16 @@
+runtime: java11
+entrypoint: 'java -jar start.jar'
+
+error_handlers:
+  - file: timeout.html
+
+automatic_scaling:
+    max_instances: 2
+    max_concurrent_requests: 30
+
+#handlers:
+#  - url: '/'
+#    http_headers:
+#        Strict-Transport-Security: "max-age=31536000"
+#        Content-Security-Policy: "frame-ancestors 'self'; default-src 'none'; script-src 'self'; style-src 'self'; child-src 'self'"
+#        Referrer-Policy: "no-referrer"
