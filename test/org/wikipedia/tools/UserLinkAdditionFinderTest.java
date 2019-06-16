@@ -64,11 +64,11 @@ public class UserLinkAdditionFinderTest
         // https://en.wikipedia.org/wiki/Special:Contributions/EmanningKBRA (all link adding edits revision deleted)
         // remainder of users with one edit, one link
 
-        List<String> users = Arrays.asList("Helonty", "ReteNsep", "Reyeilint", "Shittipa", "EDPerfect");
+        List<String> users = List.of("Helonty", "ReteNsep", "Reyeilint", "Shittipa", "EDPerfect");
         Map<Wiki.Revision, List<String>> linksadded = finder_en.getLinksAdded(users, null);
         Set<String> actual = linksadded.keySet().stream().map(rev -> String.valueOf(rev.getID())).collect(Collectors.toSet());
         assertEquals(4, actual.size());
-        assertTrue(actual.containsAll(Arrays.asList("834061933", "823758919", "833871994", "834097191")));
+        assertTrue(actual.containsAll(List.of("834061933", "823758919", "833871994", "834097191")));
         for (Map.Entry<Wiki.Revision, List<String>> entry : linksadded.entrySet())
         {
             Wiki.Revision revision = entry.getKey();
@@ -77,16 +77,16 @@ public class UserLinkAdditionFinderTest
 
             // https://en.wikipedia.org/wiki/Special:Diff/823758919
             if (id == 823758919L)
-                assertEquals(Arrays.asList("http://gastroinflorida.com/"), links);
+                assertEquals(List.of("http://gastroinflorida.com/"), links);
             // https://en.wikipedia.org/wiki/Special:Diff/833871994
             else if (id == 833871994L)
-                assertEquals(Arrays.asList("http://www.insurancepanda.com/"), links);
+                assertEquals(List.of("http://www.insurancepanda.com/"), links);
             // https://en.wikipedia.org/wiki/Special:Diff/834097191
             else if (id == 834097191L)
-                assertEquals(Arrays.asList("https://www.sfspa.com/"), links);
+                assertEquals(List.of("https://www.sfspa.com/"), links);
             // https://en.wikipedia.org/wiki/Special:Diff/834061933
             else if (id == 834061933L)
-                assertEquals(Arrays.asList("http://www.drgoldman.com/"), links);
+                assertEquals(List.of("http://www.drgoldman.com/"), links);
         }
         
         // check date cutoff (all users indeffed prior to this date, therefore empty)

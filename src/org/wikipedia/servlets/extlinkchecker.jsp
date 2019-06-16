@@ -38,8 +38,8 @@ long-standing reference spam.
     {
         Wiki enWiki = Wiki.newSession(wiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(enWiki);
-        elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
-        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(Arrays.asList(title));
+        elp.getExcludeList().addAll(List.of("wmflabs.org", "edwardbetts.com", "archive.org"));
+        Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(List.of(title));
         
         if (results.get(title).isEmpty())
             request.setAttribute("error", "No results found!");

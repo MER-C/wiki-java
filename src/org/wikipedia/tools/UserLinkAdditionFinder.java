@@ -89,7 +89,7 @@ public class UserLinkAdditionFinder
             users = Files.readAllLines(fp, Charset.forName("UTF-8"));
         }
         else
-            users = Arrays.asList(user);
+            users = List.of(user);
 
         // Map structure:
         // * results: revid -> links added in that revision

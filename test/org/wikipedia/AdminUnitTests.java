@@ -130,7 +130,7 @@ public class AdminUnitTests
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/revdel
         Wiki.Revision revision = testWiki.getRevision(349877L);
         testWiki.revisionDelete(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE, "Unit testing", 
-            Boolean.FALSE, Arrays.asList(revision));
+            Boolean.FALSE, List.of(revision));
         assertTrue(revision.isCommentDeleted());
         assertTrue(revision.isContentDeleted());
         assertTrue(revision.isUserDeleted());
@@ -162,7 +162,7 @@ public class AdminUnitTests
         // undo RevisionDelete test on Revision
         Wiki.Revision revision = testWiki.getRevision(349877L);
         testWiki.revisionDelete(Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, "reset test", 
-            Boolean.FALSE, Arrays.asList(revision));
+            Boolean.FALSE, List.of(revision));
         
         // undo RevisionDelete test on LogEntry
         Wiki.RequestHelper rh = testWiki.new RequestHelper()

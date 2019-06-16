@@ -88,7 +88,7 @@ public class RevisionsTest
             823352879L, // https://en.wikipedia.org/w/index.php?oldid=823352879
             823352525L  // https://en.wikipedia.org/w/index.php?oldid=823352525
         };
-        revisions = Arrays.asList(enWiki.getRevisions(oldids));
+        revisions = List.of(enWiki.getRevisions(oldids));
         assertEquals(revisions, Revisions.removeReverts(revisions), "different pages, same content");
     }
 }

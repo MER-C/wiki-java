@@ -52,7 +52,7 @@ public class ContributionSurveyorTest
     @Test
     public void contributionSurvey() throws Exception
     {
-        List<String> users = Arrays.asList(
+        List<String> users = List.of(
             "HilStev", // no edits: https://en.wikipedia.org/wiki/Special:Contributions/HilStev
             "OfficialPankajPatidar", // no mainspace edits: https://en.wikipedia.org/wiki/Special:Contributions/OfficialPankajPatidar
             "Rt11642" // mainspace edits all revisiondeleted: https://en.wikipedia.org/wiki/Special:Contributions/Rt11642
@@ -77,7 +77,7 @@ public class ContributionSurveyorTest
         
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-01&end=2018-01-24
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-07&end=2018-01-17
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(Arrays.asList("Jimbo Wales"), Wiki.MAIN_NAMESPACE);
+        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(List.of("Jimbo Wales"), Wiki.MAIN_NAMESPACE);
         assertTrue(results.get("Jimbo Wales").isEmpty(), "check date range functionality");
     }
     
@@ -90,7 +90,7 @@ public class ContributionSurveyorTest
         assertFalse(surveyor.isIgnoringMinorEdits()); 
         
         // check functionality
-        List<String> users = Arrays.asList(
+        List<String> users = List.of(
             "Jjdevine2" // https://en.wikipedia.org/wiki/Special:Contributions/Jjdevine2
         );
         Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);

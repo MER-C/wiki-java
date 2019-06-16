@@ -47,16 +47,16 @@ public class WikitextUtilsTest
     @Test
     public void parseWikilink()
     {
-        assertEquals(Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[ Link ]]"));
-        assertEquals(Arrays.asList("Link", "Link"), WikitextUtils.parseWikilink("[[:Link]]"));
-        assertEquals(Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[ Link | Description ]]"));
-        assertEquals(Arrays.asList("Link", "Description"), WikitextUtils.parseWikilink("[[:Link|Description]]"));
+        assertEquals(List.of("Link", "Link"), WikitextUtils.parseWikilink("[[ Link ]]"));
+        assertEquals(List.of("Link", "Link"), WikitextUtils.parseWikilink("[[:Link]]"));
+        assertEquals(List.of("Link", "Description"), WikitextUtils.parseWikilink("[[ Link | Description ]]"));
+        assertEquals(List.of("Link", "Description"), WikitextUtils.parseWikilink("[[:Link|Description]]"));
     }
     
     @Test
     public void addTableRow()
     {
-        List<String> cells = Arrays.asList("A", "B", "C");
+        List<String> cells = List.of("A", "B", "C");
         assertEquals("|-\n| A || B || C\n", WikitextUtils.addTableRow(cells));
     }
 }

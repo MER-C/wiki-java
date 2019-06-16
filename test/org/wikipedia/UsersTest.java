@@ -46,14 +46,14 @@ public class UsersTest
     public void createdPages() throws Exception
     {
         // no pages created
-        assertTrue(enWikiUsers.createdPages(Arrays.asList("Constance94S"), null).isEmpty(), "no pages created");
+        assertTrue(enWikiUsers.createdPages(List.of("Constance94S"), null).isEmpty(), "no pages created");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MEDIAWIKI_NAMESPACE);
-        List<Wiki.Revision> pages = enWikiUsers.createdPages(Arrays.asList("Watsonboy12"), rh);
+        List<Wiki.Revision> pages = enWikiUsers.createdPages(List.of("Watsonboy12"), rh);
         assertTrue(pages.isEmpty(), "no pages created in namespace");
 
         // verify functionality
         rh = testWiki.new RequestHelper().inNamespaces(Wiki.MAIN_NAMESPACE);
-        pages = testWikiUsers.createdPages(Arrays.asList("MER-C"), rh);
+        pages = testWikiUsers.createdPages(List.of("MER-C"), rh);
         Wiki.Revision last = pages.get(pages.size() - 1);
         assertEquals("Wiki.java Test Page", last.getTitle());
         assertEquals(28164L, last.getID());
@@ -63,13 +63,13 @@ public class UsersTest
     public void createdPagesWithText() throws Exception
     {
         // no articles created
-        assertTrue(enWikiUsers.createdPagesWithText(Arrays.asList("Constance94S"), null).isEmpty(), "no pages created");
+        assertTrue(enWikiUsers.createdPagesWithText(List.of("Constance94S"), null).isEmpty(), "no pages created");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().inNamespaces(Wiki.MEDIAWIKI_NAMESPACE);
-        Map<Wiki.Revision, String> creations = enWikiUsers.createdPagesWithText(Arrays.asList("Watsonboy12"), rh);
+        Map<Wiki.Revision, String> creations = enWikiUsers.createdPagesWithText(List.of("Watsonboy12"), rh);
         assertTrue(creations.isEmpty(), "no pages created in namespace");
                 
         // verify functionality
-        creations = testWikiUsers.createdPagesWithText(Arrays.asList("81.245.42.185"), null);
+        creations = testWikiUsers.createdPagesWithText(List.of("81.245.42.185"), null);
         Wiki.Revision revision = testWiki.getRevision(24764L);
         String text = revision.getText();
         assertEquals(text, creations.get(revision));

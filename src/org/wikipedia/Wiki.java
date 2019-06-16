@@ -2356,7 +2356,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getImagesOnPage(String title) throws IOException
     {
-        return getImagesOnPage(Arrays.asList(title)).get(0).toArray(new String[0]);
+        return getImagesOnPage(List.of(title)).get(0).toArray(new String[0]);
     }
 
     /**
@@ -2396,7 +2396,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getCategories(String title) throws IOException
     {
-        return getCategories(Arrays.asList(title), null, false).get(0).toArray(new String[0]);
+        return getCategories(List.of(title), null, false).get(0).toArray(new String[0]);
     }
 
     /**
@@ -2461,7 +2461,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getTemplates(String title, int... ns) throws IOException
     {
-        List<String> temp = getTemplates(Arrays.asList(title), ns).get(0);
+        List<String> temp = getTemplates(List.of(title), ns).get(0);
         return temp.toArray(new String[temp.size()]);
     }
 
@@ -2495,7 +2495,7 @@ public class Wiki implements Comparable<Wiki>
     public boolean[] pageHasTemplate(String[] pages, String template) throws IOException
     {
         boolean[] ret = new boolean[pages.length];
-        List<List<String>> result = getTemplates(Arrays.asList(pages), template);
+        List<List<String>> result = getTemplates(List.of(pages), template);
         for (int i = 0; i < result.size(); i++)
             ret[i] = !(result.get(i).isEmpty());
         return ret;
@@ -2607,7 +2607,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] getExternalLinksOnPage(String title) throws IOException
     {
-        List<String> temp = getExternalLinksOnPage(Arrays.asList(title)).get(0);
+        List<String> temp = getExternalLinksOnPage(List.of(title)).get(0);
         return temp.toArray(new String[temp.size()]);
     }
 
@@ -4323,7 +4323,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public boolean userExists(String username) throws IOException
     {
-        return getUsers(Arrays.asList(username)).get(0) != null;
+        return getUsers(List.of(username)).get(0) != null;
     }
 
     /**
@@ -4338,7 +4338,7 @@ public class Wiki implements Comparable<Wiki>
     public boolean[] userExists(String[] usernames) throws IOException
     {
         boolean[] ret = new boolean[usernames.length];
-        List<User> info = getUsers(Arrays.asList(usernames));
+        List<User> info = getUsers(List.of(usernames));
         for (int i = 0; i < usernames.length; i++)
             ret[i] = (info.get(i) != null);
         return ret;
@@ -4493,7 +4493,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public User getUser(String username) throws IOException
     {
-        return getUsers(Arrays.asList(username)).get(0);
+        return getUsers(List.of(username)).get(0);
     }
 
     /**
@@ -4663,7 +4663,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> contribs(String user, Wiki.RequestHelper helper) throws IOException
     {
-        return contribs(Arrays.asList(user), null, helper).get(0);
+        return contribs(List.of(user), null, helper).get(0);
     }
 
     /**
@@ -4755,7 +4755,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.put("ucuserprefix", prefix);
             List<Revision> revisions = makeListQuery("uc", getparams, null, "contribs", limit, parser);
             log(Level.INFO, "prefixContribs", "Successfully retrived prefix contributions (" + revisions.size() + " edits)");
-            return Arrays.asList(revisions);
+            return List.of(revisions);
         }
     }
 
@@ -4997,7 +4997,7 @@ public class Wiki implements Comparable<Wiki>
     public void watch(String... titles) throws IOException
     {
         watchInternal(false, titles);
-        watchlist.addAll(Arrays.asList(titles));
+        watchlist.addAll(List.of(titles));
     }
 
     /**
@@ -5013,7 +5013,7 @@ public class Wiki implements Comparable<Wiki>
     public void unwatch(String... titles) throws IOException
     {
         watchInternal(true, titles);
-        watchlist.removeAll(Arrays.asList(titles));
+        watchlist.removeAll(List.of(titles));
     }
 
     /**
@@ -5287,7 +5287,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatLinksHere(String title, int... ns) throws IOException
     {
-        return whatLinksHere(Arrays.asList(title), false, ns).get(0).toArray(new String[0]);
+        return whatLinksHere(List.of(title), false, ns).get(0).toArray(new String[0]);
     }
 
     /**
@@ -5335,7 +5335,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatTranscludesHere(String title, int... ns) throws IOException
     {
-        return whatTranscludesHere(Arrays.asList(title), ns).get(0).toArray(new String[0]);
+        return whatTranscludesHere(List.of(title), ns).get(0).toArray(new String[0]);
     }
 
     /**
@@ -5538,7 +5538,7 @@ public class Wiki implements Comparable<Wiki>
                     {
                         visitedcategories.add(member);
                         String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
-                        results.addAll(Arrays.asList(categoryMembers));
+                        results.addAll(List.of(categoryMembers));
                     }
 
                     // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
@@ -6398,7 +6398,7 @@ public class Wiki implements Comparable<Wiki>
         {
             List<String> temp = new ArrayList<>();
             temp.add(right);
-            temp.addAll(Arrays.asList(morerights));
+            temp.addAll(List.of(morerights));
             return rights.containsAll(temp);
         }
 
@@ -6780,10 +6780,10 @@ public class Wiki implements Comparable<Wiki>
             return getClass().getName()
                + "[id=" + id
                + ",timestamp=" + timestamp.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-               + ",user=\"" + ((user == null) ? "[DELETED]" : user) + "\""
+               + ",user=\"" + Objects.toString(user, "[DELETED]") + "\""
                + ",userDeleted=" + userDeleted
-               + ",title=\"" + ((title == null) ? "[null or deleted]" : title) + "\""
-               + ",comment=\"" + ((comment == null) ? "[DELETED]" : comment) + "\""
+               + ",title=\"" + Objects.toString(title, "[null or deleted]") + "\""
+               + ",comment=\"" + Objects.toString(comment, "[DELETED]") + "\""
                + ",commentDeleted=" + commentDeleted
                + ",contentDeleted=" + contentDeleted + ']';
         }
@@ -6951,10 +6951,10 @@ public class Wiki implements Comparable<Wiki>
             s.append(",type=");
             s.append(type);
             s.append(",action=");
-            s.append(action == null ? "[DELETED]" : action);
+            s.append(Objects.toString(action, "[DELETED]"));
             s.append(",details=");
             if (details instanceof Object[])
-                s.append(Arrays.asList((Object[])details)); // crude formatting hack
+                s.append(List.of((Object[])details)); // crude formatting hack
             else
                 s.append(details);
             s.append("]");
@@ -7120,11 +7120,7 @@ public class Wiki implements Comparable<Wiki>
          */
         public String diff(Revision other) throws IOException
         {
-            Map<String, Object> from = new HashMap<>();
-            from.put("revision", this);
-            Map<String, Object> to = new HashMap<>();
-            to.put("revision", other);
-            return Wiki.this.diff(from, to);
+            return Wiki.this.diff(Map.of("revision", this), Map.of("revision", other));
         }
 
         /**
@@ -7142,11 +7138,7 @@ public class Wiki implements Comparable<Wiki>
          */
         public String diff(String text) throws IOException
         {
-            Map<String, Object> from = new HashMap<>();
-            from.put("revision", this);
-            Map<String, Object> to = new HashMap<>();
-            to.put("text", text);
-            return Wiki.this.diff(from, to);
+            return Wiki.this.diff(Map.of("revision", this), Map.of("text", text));
         }
 
         /**
@@ -7575,10 +7567,9 @@ public class Wiki implements Comparable<Wiki>
          */
         protected Map<String, String> addTitleParameter()
         {
-            Map<String, String> temp = new HashMap<>();
             if (title != null)
-                temp.put(requestType + "title", title);
-            return temp;
+                return Map.of(requestType + "title", title);
+            return Collections.emptyMap();
         }
 
         /**
@@ -7588,10 +7579,9 @@ public class Wiki implements Comparable<Wiki>
          */
         protected Map<String, String> addUserParameter()
         {
-            Map<String, String> temp = new HashMap<>();
             if (byuser != null)
-                temp.put(requestType + "user", byuser);
-            return temp;
+                return Map.of(requestType + "user", byuser);
+            return Collections.emptyMap();
         }
 
         /**
@@ -7621,10 +7611,9 @@ public class Wiki implements Comparable<Wiki>
          */
         protected Map<String, String> addNamespaceParameter()
         {
-            Map<String, String> temp = new HashMap<>();
             if (localns.length != 0)
-                temp.put(requestType + "namespace", constructNamespaceString(localns));
-            return temp;
+                return Map.of(requestType + "namespace", constructNamespaceString(localns));
+            return Collections.emptyMap();
         }
 
         /**
@@ -7634,9 +7623,7 @@ public class Wiki implements Comparable<Wiki>
          */
         protected Map<String, String> addReverseParameter()
         {
-            Map<String, String> temp = new HashMap<>();
-            temp.put(requestType + "dir", reverse ? "newer" : "older");
-            return temp;
+            return Map.of(requestType + "dir", reverse ? "newer" : "older");
         }
 
         /**
@@ -7646,10 +7633,9 @@ public class Wiki implements Comparable<Wiki>
          */
         protected Map<String, String> addTagParameter()
         {
-            Map<String, String> temp = new HashMap<>();
             if (tag != null)
-                temp.put(requestType + "tag", tag);
-            return temp;
+                return Map.of(requestType + "tag", tag);
+            return Collections.emptyMap();
         }
 
         /**
@@ -7659,10 +7645,9 @@ public class Wiki implements Comparable<Wiki>
          */
         protected Map<String, String> addExcludeUserParameter()
         {
-            Map<String, String> temp = new HashMap<>();
             if (notbyuser != null)
-                temp.put(requestType + "excludeuser", notbyuser);
-            return temp;
+                return Map.of(requestType + "excludeuser", notbyuser);
+            return Collections.emptyMap();
         }
 
         /**

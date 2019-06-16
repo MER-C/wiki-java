@@ -363,10 +363,8 @@ public class NPPCheck
                 le = wiki.getLogEntries(Wiki.MOVE_LOG, "move", rh);
                 break;
             case UNPATROLLED:
-                Map<String, Boolean> options = new HashMap<>();
-                options.put("patrolled", Boolean.FALSE);
-                options.put("redirect", Boolean.FALSE);
-                rh = rh.inNamespaces(Wiki.MAIN_NAMESPACE).filterBy(options);
+                rh = rh.inNamespaces(Wiki.MAIN_NAMESPACE)
+                    .filterBy(Map.of("patrolled", Boolean.FALSE, "redirect", Boolean.FALSE));
                 return wiki.newPages(rh);
             case REDIRECTS:
                 return wiki.getAbuseLogEntries(new int[] { 342 }, rh);

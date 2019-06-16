@@ -111,7 +111,7 @@ public class WMFWikiTest
     @Test
     public void getLedeAsPlainText() throws Exception
     {
-        List<String> pages = Arrays.asList("Java", "Create a page", "Albert Einstein");
+        List<String> pages = List.of("Java", "Create a page", "Albert Einstein");
         List<String> text = enWiki.getLedeAsPlainText(pages);
         // Cannot assert more than the first two words because the result is
         // non-deterministic. Test is potentially fragile.
@@ -123,7 +123,7 @@ public class WMFWikiTest
     @Test
     public void getPlainText() throws Exception
     {
-        List<String> pages = Arrays.asList("Java", "Create a page", "Albert Einstein");
+        List<String> pages = List.of("Java", "Create a page", "Albert Einstein");
         List<String> shorttext = enWiki.getLedeAsPlainText(pages);
         List<String> text = enWiki.getPlainText(pages);
         assertTrue(text.get(0).startsWith(shorttext.get(0)));
@@ -168,9 +168,9 @@ public class WMFWikiTest
         // global and local groups set
         // https://meta.wikimedia.org/wiki/Special:CentralAuth?target=Jimbo+Wales
         guserinfo = WMFWiki.getGlobalUserInfo("Jimbo Wales");
-        assertEquals(Arrays.asList("founder"), guserinfo.get("groups"));
+        assertEquals(List.of("founder"), guserinfo.get("groups"));
         luserinfo = (Map)guserinfo.get("enwiki");
-        assertEquals(Arrays.asList("checkuser", "founder", "oversight", "sysop"), luserinfo.get("groups"));
+        assertEquals(List.of("checkuser", "founder", "oversight", "sysop"), luserinfo.get("groups"));
         
         // IP address (throws UnknownError)
         // guserinfo = WMFWiki.getGlobalUserInfo("127.0.0.1");

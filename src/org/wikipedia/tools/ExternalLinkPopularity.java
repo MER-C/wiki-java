@@ -60,13 +60,13 @@ public class ExternalLinkPopularity
         Wiki wiki = Wiki.newSession(wikistring);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(wiki);
         // meta-domains (edwardbetts.com = {{orphan}}
-        elp.getExcludeList().addAll(Arrays.asList("wmflabs.org", "edwardbetts.com", "archive.org"));
+        elp.getExcludeList().addAll(List.of("wmflabs.org", "edwardbetts.com", "archive.org"));
         elp.setMaxLinks(Integer.parseInt(parsedargs.getOrDefault("--limit", "500")));
         
         List<String> pages = new ArrayList<>();
         String category = parsedargs.get("--category");
         if (category != null)
-            pages.addAll(Arrays.asList(wiki.getCategoryMembers(category, Wiki.MAIN_NAMESPACE)));
+            pages.addAll(List.of(wiki.getCategoryMembers(category, Wiki.MAIN_NAMESPACE)));
         String article = parsedargs.get("--title");
         if (article != null)
             pages.add(article);

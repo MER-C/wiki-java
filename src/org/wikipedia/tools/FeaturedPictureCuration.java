@@ -127,9 +127,9 @@ public class FeaturedPictureCuration
         List<String> allfppages = new ArrayList<>();
         String domain = wiki.getDomain();
         if (domain.equals("en.wikipedia.org"))
-            allfppages.addAll(Arrays.asList(wiki.getCategoryMembers("Category:Wikipedia featured pictures categories")));
+            allfppages.addAll(List.of(wiki.getCategoryMembers("Category:Wikipedia featured pictures categories")));
         else if (domain.equals("commons.wikimedia.org"))
-            allfppages.addAll(Arrays.asList(wiki.getCategoryMembers("Category:Featured picture galleries")));
+            allfppages.addAll(List.of(wiki.getCategoryMembers("Category:Featured picture galleries")));
         else
             return Collections.emptySet();
 
@@ -147,7 +147,7 @@ public class FeaturedPictureCuration
     public static void checkFPTags() throws IOException
     {
         Set<String> fpcanonical = getFeaturedPicturesFromList(enWiki);
-        List<String> fpcat = Arrays.asList(enWiki.getCategoryMembers("Category:Featured pictures", Wiki.FILE_NAMESPACE));
+        List<String> fpcat = List.of(enWiki.getCategoryMembers("Category:Featured pictures", Wiki.FILE_NAMESPACE));
         
         // check for FPs that are no longer tagged as such
         List<String> missingfps = new ArrayList(fpcanonical);
@@ -180,7 +180,7 @@ public class FeaturedPictureCuration
         for (int i = 0; i < nominations.length; i++)
             if (!closed[i])
                 results.add(nominations[i]);
-        results.removeAll(Arrays.asList(currentnoms));
+        results.removeAll(List.of(currentnoms));
         return results;
     }
     
@@ -188,10 +188,10 @@ public class FeaturedPictureCuration
     {
         // maybe useful for helping people search for existing FPs before nominating...?
         List<Map<String, Object>> results = new ArrayList<>();
-        results.addAll(Arrays.asList(enWiki.search(query + " prefix:Wikipedia:Featured_pictures/")));
-        results.addAll(Arrays.asList(enWiki.search(query + " prefix:Wikipedia:Featured_picture_candidates/")));
-        results.addAll(Arrays.asList(commons.search(query + " prefix:Commons:Featured_pictures/")));
-        results.addAll(Arrays.asList(commons.search(query + " prefix:Commons:Featured_picture_candidates")));
+        results.addAll(List.of(enWiki.search(query + " prefix:Wikipedia:Featured_pictures/")));
+        results.addAll(List.of(enWiki.search(query + " prefix:Wikipedia:Featured_picture_candidates/")));
+        results.addAll(List.of(commons.search(query + " prefix:Commons:Featured_pictures/")));
+        results.addAll(List.of(commons.search(query + " prefix:Commons:Featured_picture_candidates")));
         return results;
     }
             

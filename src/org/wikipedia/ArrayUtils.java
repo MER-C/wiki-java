@@ -52,9 +52,9 @@ public class ArrayUtils
     public static String[] intersection(String[] a, String[]... b)
     {
         List<String> intersec = new ArrayList<>(5000);
-        intersec.addAll(Arrays.asList(a));
+        intersec.addAll(List.of(a));
         for (String[] subarray : b)
-            intersec.retainAll(Arrays.asList(subarray));
+            intersec.retainAll(List.of(subarray));
         return intersec.toArray(new String[intersec.size()]);
     }
 
@@ -83,9 +83,9 @@ public class ArrayUtils
     public static String[] relativeComplement(String[] a, String[]... b)
     {
         List<String> compl = new ArrayList<>(5000);
-        compl.addAll(Arrays.asList(a));
+        compl.addAll(List.of(a));
         for (String[] subarray : b)
-            compl.removeAll(Arrays.asList(subarray));
+            compl.removeAll(List.of(subarray));
         return compl.toArray(new String[compl.size()]);
     }
 }

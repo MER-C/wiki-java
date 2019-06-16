@@ -53,11 +53,11 @@ public class WikitextUtils
         // check for description, if not there then set it to the target
         int pipe = linktext.indexOf('|');
         if (pipe >= 0)
-            return Arrays.asList(linktext.substring(0, pipe).trim(), linktext.substring(pipe + 1).trim());
+            return List.of(linktext.substring(0, pipe).trim(), linktext.substring(pipe + 1).trim());
         else
         {
             String temp = linktext.trim();
-            return Arrays.asList(temp, temp);
+            return List.of(temp, temp);
         }        
     }
     

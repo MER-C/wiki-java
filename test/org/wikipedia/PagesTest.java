@@ -46,7 +46,7 @@ public class PagesTest
     public void toWikitextList()
     {
         // Wiki-markup breaking titles should not make it to this method
-        List<String> articles = Arrays.asList("File:Example.png", "Main Page",
+        List<String> articles = List.of("File:Example.png", "Main Page",
             "Category:Example", "*-algebra");
 
         String expected = "*[[:File:Example.png]]\n*[[:Main Page]]\n"
@@ -56,11 +56,11 @@ public class PagesTest
             + "#[[:*-algebra]]\n";
         assertEquals(expected, Pages.toWikitextList(articles, Pages.LIST_OF_LINKS, true), "numbered list");
 
-        articles = Arrays.asList("example.com", "example.net");
+        articles = List.of("example.com", "example.net");
         expected = "*{{spamlink|1=example.com}}\n*{{spamlink|1=example.net}}\n";
         assertEquals(expected, Pages.toWikitextTemplateList(articles, "spamlink", false), "unnumbered list of templates");
         expected = "#{{TEST|1=Hello world}}\n#{{TEST|1=Just testing}}\n";
-        articles = Arrays.asList("Hello world", "Just testing");
+        articles = List.of("Hello world", "Just testing");
         assertEquals(expected, Pages.toWikitextTemplateList(articles, "TEST", true), "numbered list of templates");
     }
 
@@ -79,12 +79,12 @@ public class PagesTest
             "*[[Link|Description]]" +
             "*[[Invalid wiki markup instance #1\n" +
             "*Not a link]]";
-        List<String> expected = Arrays.asList("File:Example.png", "Main Page",
+        List<String> expected = List.of("File:Example.png", "Main Page",
             "*-algebra", "Cape Town#Economy", "Nested list", "Link");
         assertEquals(expected, Pages.parseWikitextList(list), "unnumbered list");
 
         list = "#[[:File:Example.png]]\n#[[*-algebra]]\n#[[Cape Town#Economy]]";
-        expected = Arrays.asList("File:Example.png", "*-algebra", "Cape Town#Economy");
+        expected = List.of("File:Example.png", "*-algebra", "Cape Town#Economy");
         assertEquals(expected, Pages.parseWikitextList(list), "numbered list");
     }
 
@@ -101,7 +101,7 @@ public class PagesTest
             "*{{la|1=Test5}}\n" +
             "*{{la|x=Test6}}\n" +
             "{{la}}";
-        List<String> expected = Arrays.asList("Test", "Test2", "Test3", "Test5", 
+        List<String> expected = List.of("Test", "Test2", "Test3", "Test5", 
             "Test6", "");
         assertEquals(expected, Pages.parseWikitextTemplateList(list, "la"));
     }
@@ -144,7 +144,7 @@ public class PagesTest
     {
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Linkfinder
         String page = "User:MER-C/UnitTests/Linkfinder";
-        List<String> links = Arrays.asList("http://spam.example.com", "http://absent.example.com");
+        List<String> links = List.of("http://spam.example.com", "http://absent.example.com");
         Map<String, List<String>> inputs = new HashMap<>();
         inputs.put(page, links);
         Map<String, Map<String, Boolean>> actual = testWikiPages.containExternalLinks(inputs);

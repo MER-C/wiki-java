@@ -158,11 +158,7 @@ Someone # Spam
     Wiki.RequestHelper rh = enWiki.new RequestHelper()
         .withinDateRange(earliest_odt, latest_odt);
     if (newonly)
-    {
-        Map<String, Boolean> tempmap = new HashMap<>();
-        tempmap.put("new", Boolean.TRUE);
-        rh = rh.filterBy(tempmap);
-    }
+        rh = rh.filterBy(Map.of("new", Boolean.TRUE));
     List<String> users = new ArrayList<>(input.keySet());
     List<String> userstofetch = users.subList(skip, Math.min(skip + 50, users.size()));
     List<List<Wiki.Revision>> contribs = enWiki.contribs(userstofetch, null, rh);

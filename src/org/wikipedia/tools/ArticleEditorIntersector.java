@@ -103,7 +103,7 @@ public class ArticleEditorIntersector
         OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
         List<String> articles = null;
         if (defaultstring != null)
-            articles = Arrays.asList(defaultstring.split("\\s"));
+            articles = List.of(defaultstring.split("\\s"));
         if (filename != null)
             articles = Files.readAllLines(Paths.get(filename));
         
@@ -153,7 +153,7 @@ public class ArticleEditorIntersector
         }
         // grab from category
         if (category != null)
-            articles = Arrays.asList(wiki.getCategoryMembers(category));
+            articles = List.of(wiki.getCategoryMembers(category));
         
         if (articles.isEmpty())
         {
