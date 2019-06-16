@@ -7,7 +7,7 @@ cache:
     - $HOME/.m2/repository
 
 jdk:
-    - openjdk8
+    - openjdk11
 
 script:
     - mvn -B clean jacoco:prepare-agent install jacoco:report

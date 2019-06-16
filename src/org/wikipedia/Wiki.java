@@ -38,7 +38,7 @@ import javax.security.auth.login.*;
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
- *  Requires JDK 1.8 or greater. Uses the <a
+ *  Requires JDK 11 or greater. Uses the <a
  *  href="https://mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
  *  of MediaWiki (1.31), otherwise some functions may not work. This framework

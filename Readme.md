@@ -10,7 +10,7 @@ Some functionality provided by MediaWiki extensions deployed on Wikimedia sites
 is available in [org/wikipedia/WMFWiki.java](src/org/wikipedia/WMFWiki.java). 
 This project also contains the source code to the tools hosted at 
 https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces. 
-Requires JDK >= 1.8. For those using Java 9, only the java.base and java.logging
+Requires JDK >= 11. For those using modules, only the java.base and java.logging
 modules are required.
 
 Latest stable version: [0.36](https://github.com/MER-C/wiki-java/releases/tag/0.36) -- 
