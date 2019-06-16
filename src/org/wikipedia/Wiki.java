@@ -1554,10 +1554,12 @@ public class Wiki implements Comparable<Wiki>
      *  @return see {@link #getPageInfo(String[]) }
      *  @throws IOException if a network error occurs
      *  @since 0.28
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public Map<String, Object> getPageInfo(String page) throws IOException
     {
-        return getPageInfo(new String[] { page })[0];
+        return getPageInfo(List.of(page)).get(0);
     }
 
     /**
@@ -1585,8 +1587,7 @@ public class Wiki implements Comparable<Wiki>
      *
      *  <p>Note: <code>intestactions=X</code> is deliberately not implemented
      *  because it lowers the number of pages per network request by N, where N
-     *  is the number of actions tested. Furthermore, it doesn't give the reason
-     *  why if any given action is disallowed.
+     *  is the number of actions tested. 
      *
      *  @param pages the pages to get info for.
      *  @return (see above), or {@code null} for Special and Media pages.
@@ -1594,7 +1595,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public Map<String, Object>[] getPageInfo(String[] pages) throws IOException
+    public List<Map<String, Object>> getPageInfo(List<String> pages) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
@@ -1603,7 +1604,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, Object>> metamap = new HashMap<>();
         // copy because redirect resolver overwrites
-        String[] pages2 = Arrays.copyOf(pages, pages.length);
+        List<String> pages2 = new ArrayList<>(pages);
         for (String temp : constructTitleString(pages))
         {
             postparams.put("titles", temp);
@@ -1681,19 +1682,20 @@ public class Wiki implements Comparable<Wiki>
             }
         }
 
-        Map<String, Object>[] info = new HashMap[pages.length];
+        int size = pages.size();
+        Map<String, Object>[] info = new HashMap[size];
         // Reorder. Make a new HashMap so that inputpagename remains unique.
-        for (int i = 0; i < pages2.length; i++)
+        for (int i = 0; i < pages2.size(); i++)
         {
-            Map<String, Object> tempmap = metamap.get(normalize(pages2[i]));
+            Map<String, Object> tempmap = metamap.get(normalize(pages2.get(i)));
             if (tempmap != null)
             {
                 info[i] = new HashMap<>(tempmap);
-                info[i].put("inputpagename", pages[i]);
+                info[i].put("inputpagename", pages.get(i));
             }
         }
-        log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + Arrays.toString(pages));
-        return info;
+        log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + size + " pages.");
+        return List.of(info);
     }
 
     /**
@@ -1809,12 +1811,12 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.10
      */
-    public boolean[] exists(String[] titles) throws IOException
+    public boolean[] exists(List<String> titles) throws IOException
     {
-        boolean[] ret = new boolean[titles.length];
-        Map<String, Object>[] info = getPageInfo(titles);
-        for (int i = 0; i < titles.length; i++)
-            ret[i] = (Boolean)info[i].get("exists");
+        boolean[] ret = new boolean[titles.size()];
+        List<Map<String, Object>> info = getPageInfo(titles);
+        for (int i = 0; i < titles.size(); i++)
+            ret[i] = (Boolean)info.get(i).get("exists");
         return ret;
     }
 
@@ -1830,10 +1832,12 @@ public class Wiki implements Comparable<Wiki>
      *  a Special: or Media: page
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @see #edit
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String getPageText(String title) throws IOException
     {
-        return getPageText(new String[] { title })[0];
+        return getPageText(List.of(title)).get(0);
     }
 
     /**
@@ -1852,7 +1856,7 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.32
      *  @see #edit
      */
-    public String[] getPageText(String[] titles) throws IOException
+    public List<String> getPageText(List<String> titles) throws IOException
     {
         return getText(titles, null, -1);
     }
@@ -1872,13 +1876,13 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.35
      */
-    public String[] getText(String[] titles, long[] revids, int section) throws IOException
+    public List<String> getText(List<String> titles, long[] revids, int section) throws IOException
     {
         // determine what type of request we have. Cannot mix the two.
         // FIXME: XML bleeding to return results for lists of pages
         boolean isrevisions;
         int count = 0;
-        String[] titles2 = null;
+        List<String> titles2 = null;
         if (titles != null)
         {
             // validate titles
@@ -1886,9 +1890,9 @@ public class Wiki implements Comparable<Wiki>
                 if (namespace(title) < 0)
                     throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
             isrevisions = false;
-            count = titles.length;
+            count = titles.size();
             // copy because redirect resolver overwrites
-            titles2 = Arrays.copyOf(titles, count);
+            titles2 = new ArrayList<>(titles);
         }
         else if (revids != null)
         {
@@ -1898,7 +1902,7 @@ public class Wiki implements Comparable<Wiki>
         else
             throw new IllegalArgumentException("Either titles or revids must be specified!");
         if (count == 0)
-            return new String[0];
+            return Collections.emptyList();
 
         Map<String, String> pageTexts = new HashMap<>(2 * count);
         Map<String, String> getparams = new HashMap<>();
@@ -1940,11 +1944,11 @@ public class Wiki implements Comparable<Wiki>
         String[] ret = new String[count];
         for (int i = 0; i < count; i++)
         {
-            String key = isrevisions ? String.valueOf(revids[i]) : normalize(titles2[i]);
+            String key = isrevisions ? String.valueOf(revids[i]) : normalize(titles2.get(i));
             ret[i] = pageTexts.get(key);
         }
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + count + (isrevisions ? " revisions." : " pages."));
-        return ret;
+        return List.of(ret);
     }
 
     /**
@@ -1961,7 +1965,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (section < 0)
             throw new IllegalArgumentException("Section numbers must be positive!");
-        return getText(new String[] { title }, null, section)[0];
+        return getText(List.of(title), null, section).get(0);
     }
 
     /**
@@ -2337,7 +2341,7 @@ public class Wiki implements Comparable<Wiki>
         if (links)
             getparams.put("forcelinkupdate", "");
         Map<String, Object> postparams = new HashMap<>();
-        for (String x : constructTitleString(titles))
+        for (String x : constructTitleString(List.of(titles)))
         {
             postparams.put("title", x);
             makeApiCall(getparams, postparams, "purge");
@@ -2353,10 +2357,12 @@ public class Wiki implements Comparable<Wiki>
      *  @return the list of images used in the page.
      *  @throws IOException if a network error occurs
      *  @since 0.16
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String[] getImagesOnPage(String title) throws IOException
     {
-        return getImagesOnPage(List.of(title)).get(0).toArray(new String[0]);
+        return getImagesOnPage(List.of(title)).get(0).toArray(String[]::new);
     }
 
     /**
@@ -2393,10 +2399,12 @@ public class Wiki implements Comparable<Wiki>
      *  @return the list of categories that page is in
      *  @throws IOException if a network error occurs
      *  @since 0.16
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String[] getCategories(String title) throws IOException
     {
-        return getCategories(List.of(title), null, false).get(0).toArray(new String[0]);
+        return getCategories(List.of(title), null, false).get(0).toArray(String[]::new);
     }
 
     /**
@@ -2458,11 +2466,13 @@ public class Wiki implements Comparable<Wiki>
      *  @return the list of templates used on that page in that namespace
      *  @throws IOException if a network error occurs
      *  @since 0.16
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String[] getTemplates(String title, int... ns) throws IOException
     {
         List<String> temp = getTemplates(List.of(title), ns).get(0);
-        return temp.toArray(new String[temp.size()]);
+        return temp.toArray(String[]::new);
     }
 
     /**
@@ -2492,10 +2502,10 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    public boolean[] pageHasTemplate(String[] pages, String template) throws IOException
+    public boolean[] pageHasTemplate(List<String> pages, String template) throws IOException
     {
-        boolean[] ret = new boolean[pages.length];
-        List<List<String>> result = getTemplates(List.of(pages), template);
+        boolean[] ret = new boolean[pages.size()];
+        List<List<String>> result = getTemplates(pages, template);
         for (int i = 0; i < result.size(); i++)
             ret[i] = !(result.get(i).isEmpty());
         return ret;
@@ -2579,7 +2589,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.24
      */
-    public String[] getLinksOnPage(String title) throws IOException
+    public List<String> getLinksOnPage(String title) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "links");
@@ -2594,7 +2604,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = links.size();
         log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
-        return links.toArray(new String[size]);
+        return links;
     }
 
     /**
@@ -2604,11 +2614,13 @@ public class Wiki implements Comparable<Wiki>
      *  @return the list of external links used in the page
      *  @throws IOException if a network error occurs
      *  @since 0.29
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String[] getExternalLinksOnPage(String title) throws IOException
     {
         List<String> temp = getExternalLinksOnPage(List.of(title)).get(0);
-        return temp.toArray(new String[temp.size()]);
+        return temp.toArray(String[]::new);
     }
 
     /**
@@ -2746,10 +2758,12 @@ public class Wiki implements Comparable<Wiki>
      *  @return the page redirected to or {@code null} if not a redirect
      *  @throws IOException if a network error occurs
      *  @since 0.29
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String resolveRedirect(String title) throws IOException
     {
-        return resolveRedirects(new String[] { title })[0];
+        return resolveRedirects(List.of(title)).get(0);
     }
 
     /**
@@ -2762,14 +2776,14 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.29
      *  @author Nirvanchik/MER-C
      */
-    public String[] resolveRedirects(String[] titles) throws IOException
+    public List<String> resolveRedirects(List<String> titles) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
         if (!resolveredirect)
             getparams.put("redirects", "");
         Map<String, Object> postparams = new HashMap<>();
-        String[] ret = Arrays.copyOf(titles, titles.length);
+        List<String> ret = new ArrayList<>(titles);
         for (String blah : constructTitleString(titles))
         {
             postparams.put("titles", blah);
@@ -2791,7 +2805,7 @@ public class Wiki implements Comparable<Wiki>
      *  populated, and a network error occurs when populating it
      *  @since 0.34
      */
-    protected void resolveRedirectParser(String[] inputpages, String xml)
+    protected void resolveRedirectParser(List<String> inputpages, String xml)
     {
         // expected form: <redirects><r from="Main page" to="Main Page"/>
         // <r from="Home Page" to="Home page"/>...</redirects>
@@ -2799,9 +2813,9 @@ public class Wiki implements Comparable<Wiki>
         for (int j = xml.indexOf("<r "); j > 0; j = xml.indexOf("<r ", ++j))
         {
             String parsedtitle = parseAttribute(xml, "from", j);
-            for (int i = 0; i < inputpages.length; i++)
-                if (normalize(inputpages[i]).equals(parsedtitle))
-                    inputpages[i] = parseAttribute(xml, "to", j);
+            for (int i = 0; i < inputpages.size(); i++)
+                if (normalize(inputpages.get(i)).equals(parsedtitle))
+                    inputpages.set(i, parseAttribute(xml, "to", j));
         }
     }
 
@@ -3016,7 +3030,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IllegalArgumentException if namespace == ALL_NAMESPACES
      *  @since 0.31
      */
-    public String[] deletedPrefixIndex(String prefix, int namespace) throws IOException
+    public List<String> deletedPrefixIndex(String prefix, int namespace) throws IOException
     {
         if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
             throw new SecurityException("Permission denied: not able to view deleted history or text.");
@@ -3041,7 +3055,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = pages.size();
         log(Level.INFO, "deletedPrefixIndex", "Successfully retrieved deleted page list (" + size + " items).");
-        return pages.toArray(new String[size]);
+        return pages;
     }
 
     /**
@@ -3291,7 +3305,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public Revision getRevision(long oldid) throws IOException
     {
-        return getRevisions(new long[] { oldid })[0];
+        return getRevisions(new long[] { oldid }).get(0);
     }
 
     /**
@@ -3305,7 +3319,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.29
      */
-    public Revision[] getRevisions(long[] oldids) throws IOException
+    public List<Revision> getRevisions(long[] oldids) throws IOException
     {
         // build url and connect
         Map<String, String> getparams = new HashMap<>();
@@ -3340,7 +3354,7 @@ public class Wiki implements Comparable<Wiki>
         for (int i = 0; i < oldids.length; i++)
             revisions[i] = revs.get(oldids[i]);
         log(Level.INFO, "getRevisions", "Successfully retrieved " + oldids.length + " revisions.");
-        return revisions;
+        return List.of(revisions);
     }
 
     /**
@@ -3942,7 +3956,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.18
      */
-    public String[] getDuplicates(String file) throws IOException
+    public List<String> getDuplicates(String file) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "duplicatefiles");
@@ -3960,7 +3974,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = duplicates.size();
         log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of " + file + " (" + size + " files)");
-        return duplicates.toArray(new String[size]);
+        return duplicates;
     }
 
     /**
@@ -3974,7 +3988,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.20
      */
-    public LogEntry[] getImageHistory(String title) throws IOException
+    public List<LogEntry> getImageHistory(String title) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "imageinfo");
@@ -4000,11 +4014,11 @@ public class Wiki implements Comparable<Wiki>
         // crude hack: action adjusting for first image (in the history, not our list)
         int size = history.size();
         if (size == 0)
-            return new LogEntry[0];
+            return Collections.emptyList();
         LogEntry last = history.get(size - 1);
         last.action = "upload";
         history.set(size - 1, last);
-        return history.toArray(new LogEntry[size]);
+        return history;
     }
 
     /**
@@ -4334,11 +4348,11 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.33
      */
-    public boolean[] userExists(String[] usernames) throws IOException
+    public boolean[] userExists(List<String> usernames) throws IOException
     {
-        boolean[] ret = new boolean[usernames.length];
-        List<User> info = getUsers(List.of(usernames));
-        for (int i = 0; i < usernames.length; i++)
+        boolean[] ret = new boolean[usernames.size()];
+        List<User> info = getUsers(usernames);
+        for (int i = 0; i < usernames.size(); i++)
             ret[i] = (info.get(i) != null);
         return ret;
     }
@@ -4353,7 +4367,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.05
      */
-    public String[] allUsers(String start, int number) throws IOException
+    public List<String> allUsers(String start, int number) throws IOException
     {
         return allUsers(start, number, "", "", "", "", false, false);
     }
@@ -4365,7 +4379,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    public String[] allUsersInGroup(String group) throws IOException
+    public List<String> allUsersInGroup(String group) throws IOException
     {
         return allUsers("", -1, "", group, "", "", false, false);
     }
@@ -4377,7 +4391,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    public String[] allUsersNotInGroup(String excludegroup) throws IOException
+    public List<String> allUsersNotInGroup(String excludegroup) throws IOException
     {
         return allUsers("", -1, "", "", excludegroup, "", false, false);
     }
@@ -4389,7 +4403,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    public String[] allUsersWithRight(String rights) throws IOException
+    public List<String> allUsersWithRight(String rights) throws IOException
     {
         return allUsers("", -1, "", "", "", rights, false, false);
     }
@@ -4401,7 +4415,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public String[] allUsersWithPrefix(String prefix) throws IOException
+    public List<String> allUsersWithPrefix(String prefix) throws IOException
     {
         return allUsers("", -1, prefix, "", "", "", false, false);
     }
@@ -4426,7 +4440,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public String[] allUsers(String start, int number, String prefix, String group,
+    public List<String> allUsers(String start, int number, String prefix, String group,
         String excludegroup, String rights, boolean activeonly, boolean skipzero) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
@@ -4462,7 +4476,7 @@ public class Wiki implements Comparable<Wiki>
 
             // bail if nonsense groups/rights
             if (line.contains("Unrecognized values for parameter"))
-                return new String[0];
+                return Collections.emptyList();
 
             // parse
             next = parseAttribute(line, "aufrom", 0);
@@ -4479,7 +4493,7 @@ public class Wiki implements Comparable<Wiki>
         while (next != null);
         int size = members.size();
         log(Level.INFO, "allUsers", "Successfully retrieved user list (" + size + " users)");
-        return members.toArray(new String[size]);
+        return members;
     }
 
     /**
@@ -4489,7 +4503,9 @@ public class Wiki implements Comparable<Wiki>
      *  @return the user with that username
      *  @since 0.05
      *  @throws IOException if a network error occurs
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public User getUser(String username) throws IOException
     {
         return getUsers(List.of(username)).get(0);
@@ -4512,7 +4528,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("usprop", "editcount|groups|rights|emailable|blockinfo|gender|registration");
         Map<String, Object> postparams = new HashMap<>();
         Map<String, User> metamap = new HashMap<>();
-        for (String fragment : constructTitleString(usernames.toArray(new String[0])))
+        for (String fragment : constructTitleString(usernames))
         {
             postparams.put("ususers", fragment);
             String line = makeApiCall(getparams, postparams, "getUserInfo");
@@ -4726,7 +4742,7 @@ public class Wiki implements Comparable<Wiki>
         {
             Map<String, Object> postparams = new HashMap<>();
             List<Revision> revisions = new ArrayList<>();
-            for (String userstring : constructTitleString(users.toArray(new String[0])))
+            for (String userstring : constructTitleString(users))
             {
                 postparams.put("ucuser", userstring);
                 revisions.addAll(makeListQuery("uc", getparams, postparams, "contribs", limit, parser));
@@ -5038,7 +5054,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         if (unwatch)
             postparams.put("unwatch", "1");
-        for (String titlestring : constructTitleString(titles))
+        for (String titlestring : constructTitleString(List.of(titles)))
         {
             postparams.put("titles", titlestring);
             postparams.put("token", getToken("watch"));
@@ -5055,7 +5071,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws SecurityException if not logged in
      *  @since 0.18
      */
-    public String[] getRawWatchlist() throws IOException
+    public List<String> getRawWatchlist() throws IOException
     {
         return getRawWatchlist(true);
     }
@@ -5070,7 +5086,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws SecurityException if not logged in
      *  @since 0.18
      */
-    public String[] getRawWatchlist(boolean cache) throws IOException
+    public List<String> getRawWatchlist(boolean cache) throws IOException
     {
         // filter anons
         if (user == null)
@@ -5078,7 +5094,7 @@ public class Wiki implements Comparable<Wiki>
 
         // cache
         if (watchlist != null && cache)
-            return watchlist.toArray(new String[watchlist.size()]);
+            return new ArrayList<>(watchlist);
 
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlistraw");
@@ -5098,7 +5114,7 @@ public class Wiki implements Comparable<Wiki>
         // log
         int size = watchlist.size();
         log(Level.INFO, "getRawWatchlist", "Successfully retrieved raw watchlist (" + size + " items)");
-        return watchlist.toArray(new String[size]);
+        return new ArrayList<>(watchlist);
     }
 
     /**
@@ -5208,7 +5224,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="https://mediawiki.org/wiki/API:Search">MediaWiki
      *  documentation</a>
      */
-    public Map<String, Object>[] search(String search, int... namespaces) throws IOException
+    public List<Map<String, Object>> search(String search, int... namespaces) throws IOException
     {
         // default to main namespace
         if (namespaces.length == 0)
@@ -5242,7 +5258,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = results.size();
         log(Level.INFO, "search", "Successfully searched for string \"" + search + "\" (" + size + " items found)");
-        return results.toArray(new Map[size]);
+        return results;
     }
 
     /**
@@ -5254,7 +5270,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.10
      */
-    public String[] imageUsage(String image, int... ns) throws IOException
+    public List<String> imageUsage(String image, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "imageusage");
@@ -5271,7 +5287,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = pages.size();
         log(Level.INFO, "imageUsage", "Successfully retrieved usages of File:" + image + " (" + size + " items)");
-        return pages.toArray(new String[size]);
+        return pages;
     }
 
     /**
@@ -5286,7 +5302,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatLinksHere(String title, int... ns) throws IOException
     {
-        return whatLinksHere(List.of(title), false, ns).get(0).toArray(new String[0]);
+        return whatLinksHere(List.of(title), false, ns).get(0).toArray(String[]::new);
     }
 
     /**
@@ -5331,10 +5347,12 @@ public class Wiki implements Comparable<Wiki>
      *  @return the list of pages transcluding the specified page
      *  @throws IOException or UncheckedIOException if a netwrok error occurs
      *  @since 0.12
+     *  @deprecated this trampoline is going away
      */
+    @Deprecated(forRemoval = true)
     public String[] whatTranscludesHere(String title, int... ns) throws IOException
     {
-        return whatTranscludesHere(List.of(title), ns).get(0).toArray(new String[0]);
+        return whatTranscludesHere(List.of(title), ns).get(0).toArray(String[]::new);
     }
 
     /**
@@ -5399,7 +5417,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "categoryinfo");
         Map<String, Object> postparams = new HashMap<>();
         Map<String, int[]> metamap = new HashMap<>();
-        for (String titlestring : constructTitleString(norm_cats.toArray(new String[0])))
+        for (String titlestring : constructTitleString(norm_cats))
         {
             postparams.put("titles", titlestring);
             String result = makeApiCall(getparams, postparams, "getCategoryMemberCount");
@@ -5443,7 +5461,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.03
      */
-    public String[] getCategoryMembers(String name, int... ns) throws IOException
+    public List<String> getCategoryMembers(String name, int... ns) throws IOException
     {
         return getCategoryMembers(name, 0, new ArrayList<>(), false, ns);
     }
@@ -5459,7 +5477,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.03
      */
-    public String[] getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
+    public List<String> getCategoryMembers(String name, boolean subcat, int... ns) throws IOException
     {
         return getCategoryMembers(name, (subcat ? 1 : 0), new ArrayList<>(), false, ns);
     }
@@ -5476,7 +5494,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.31
      */
-    public String[] getCategoryMembers(String name, int maxdepth, boolean sorttimestamp, int... ns) throws IOException
+    public List<String> getCategoryMembers(String name, int maxdepth, boolean sorttimestamp, int... ns) throws IOException
     {
         return getCategoryMembers(name, maxdepth, new ArrayList<>(), sorttimestamp, ns);
     }
@@ -5494,7 +5512,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.03
      */
-    protected String[] getCategoryMembers(String name, int maxdepth, List<String> visitedcategories,
+    protected List<String> getCategoryMembers(String name, int maxdepth, List<String> visitedcategories,
         boolean sorttimestamp, int... ns) throws IOException
     {
         name = removeNamespace(normalize(name), CATEGORY_NAMESPACE);
@@ -5536,8 +5554,8 @@ public class Wiki implements Comparable<Wiki>
                     if (maxdepth > 0 && iscat && !visitedcategories.contains(member))
                     {
                         visitedcategories.add(member);
-                        String[] categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
-                        results.addAll(List.of(categoryMembers));
+                        List<String> categoryMembers = getCategoryMembers(member, maxdepth - 1, visitedcategories, sorttimestamp, ns);
+                        results.addAll(categoryMembers);
                     }
 
                     // ignore this item if we requested subcat but not CATEGORY_NAMESPACE
@@ -5553,7 +5571,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = members.size();
         log(Level.INFO, "getCategoryMembers", "Successfully retrieved contents of Category:" + name + " (" + size + " items)");
-        return members.toArray(new String[size]);
+        return members;
     }
 
     /**
@@ -5881,7 +5899,7 @@ public class Wiki implements Comparable<Wiki>
             List<String> temp = new ArrayList<>();
             while (tk.hasMoreTokens())
                 temp.add(tk.nextToken());
-            details = temp.toArray(new String[temp.size()]);
+            details = temp.toArray(String[]::new);
         }
 
         LogEntry le = new LogEntry(id, timestamp, user, reason, parsedreason, type, action, target, details);
@@ -5900,7 +5918,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.15
      */
-    public String[] prefixIndex(String prefix) throws IOException
+    public List<String> prefixIndex(String prefix) throws IOException
     {
         return listPages(prefix, null, ALL_NAMESPACES, -1, -1, null);
     }
@@ -5913,7 +5931,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.15
      */
-    public String[] shortPages(int cutoff) throws IOException
+    public List<String> shortPages(int cutoff) throws IOException
     {
         return listPages("", null, MAIN_NAMESPACE, -1, cutoff, null);
     }
@@ -5927,7 +5945,7 @@ public class Wiki implements Comparable<Wiki>
      *  @return pages below that size in that namespace
      *  @since 0.15
      */
-    public String[] shortPages(int cutoff, int namespace) throws IOException
+    public List<String> shortPages(int cutoff, int namespace) throws IOException
     {
         return listPages("", null, namespace, -1, cutoff, null);
     }
@@ -5940,7 +5958,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.15
      */
-    public String[] longPages(int cutoff) throws IOException
+    public List<String> longPages(int cutoff) throws IOException
     {
         return listPages("", null, MAIN_NAMESPACE, cutoff, -1, null);
     }
@@ -5954,7 +5972,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.15
      */
-    public String[] longPages(int cutoff, int namespace) throws IOException
+    public List<String> longPages(int cutoff, int namespace) throws IOException
     {
         return listPages("", null, namespace, cutoff, -1, null);
     }
@@ -5976,7 +5994,7 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace) throws IOException
+    public List<String> listPages(String prefix, Map<String, Object> protectionstate, int namespace) throws IOException
     {
         return listPages(prefix, protectionstate, namespace, -1, -1, null);
     }
@@ -6005,7 +6023,7 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.09
      *  @throws IOException if a network error occurs
      */
-    public String[] listPages(String prefix, Map<String, Object> protectionstate, int namespace, int minimum,
+    public List<String> listPages(String prefix, Map<String, Object> protectionstate, int namespace, int minimum,
         int maximum, Boolean redirects) throws IOException
     {
         // No varargs namespace here because MW API only supports one namespace
@@ -6065,7 +6083,7 @@ public class Wiki implements Comparable<Wiki>
 
         int size = pages.size();
         log(Level.INFO, "listPages", "Successfully retrieved page list (" + size + " pages)");
-        return pages.toArray(new String[size]);
+        return pages;
     }
 
     /**
@@ -6088,7 +6106,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="https://mediawiki.org/wiki/API:Querypage">MediaWiki
      *  documentation</a>
      */
-    public String[] queryPage(String page) throws IOException
+    public List<String> queryPage(String page) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "querypage");
@@ -6103,7 +6121,7 @@ public class Wiki implements Comparable<Wiki>
 
         int temp = pages.size();
         log(Level.INFO, "queryPage", "Successfully retrieved [[Special:" + page + "]] (" + temp + " pages)");
-        return pages.toArray(new String[temp]);
+        return pages;
     }
 
     /**
@@ -6246,7 +6264,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.23
      */
-    public String[][] getInterWikiBacklinks(String prefix) throws IOException
+    public List<String[]> getInterWikiBacklinks(String prefix) throws IOException
     {
         return getInterWikiBacklinks(prefix, "|");
     }
@@ -6284,7 +6302,7 @@ public class Wiki implements Comparable<Wiki>
      *  prefix (the MediaWiki API doesn't like this)
      *  @since 0.23
      */
-    public String[][] getInterWikiBacklinks(String prefix, String title) throws IOException
+    public List<String[]> getInterWikiBacklinks(String prefix, String title) throws IOException
     {
         // must specify a prefix
         if (title.equals("|") && prefix.isEmpty())
@@ -6311,11 +6329,11 @@ public class Wiki implements Comparable<Wiki>
         });
 
         log(Level.INFO, "getInterWikiBacklinks", "Successfully retrieved interwiki backlinks (" + links.size() + " interwikis)");
-        return links.toArray(new String[0][0]);
+        return links;
     }
 
     // INNER CLASSES
-
+    
     /**
      *  Subclass for wiki users.
      *  @since 0.05
@@ -7067,7 +7085,7 @@ public class Wiki implements Comparable<Wiki>
                 return (b < 0) ? "" : temp.substring(a, b);
             }
             else
-                return Wiki.this.getText(null, new long[] { getID() }, -1)[0];
+                return Wiki.this.getText(null, new long[] { getID() }, -1).get(0);
         }
 
         /**
@@ -7715,8 +7733,7 @@ public class Wiki implements Comparable<Wiki>
         List<String> titles, String caller, int limit, BiConsumer<String, List<String>> parser) throws IOException
     {
         // copy array so redirect resolver doesn't overwrite
-        String[] titles2 = new String[titles.size()];
-        titles.toArray(titles2);
+        List<String> titles2 = new ArrayList<>(titles);
         List<Map<String, List<String>>> stuff = new ArrayList<>();
         Map<String, Object> postparams = new HashMap<>();
         for (String temp : constructTitleString(titles2))
@@ -7757,7 +7774,7 @@ public class Wiki implements Comparable<Wiki>
         {
             String parsedtitle = map.keySet().iterator().next();
             List<String> templates = map.get(parsedtitle);
-            for (int i = 0; i < titles2.length; i++)
+            for (int i = 0; i < titles2.size(); i++)
                 if (normtitles.get(i).equals(parsedtitle))
                     ret.get(i).addAll(templates);
         });
@@ -8314,28 +8331,20 @@ public class Wiki implements Comparable<Wiki>
      *  populated, and a network error occurs when populating it
      *  @since 0.29
      */
-    protected List<String> constructTitleString(String[] titles)
+    protected List<String> constructTitleString(List<String> titles)
     {
         // sort and remove duplicates per https://mediawiki.org/wiki/API
-        String[] titlesEnc = Arrays.stream(titles)
-            .map(title -> normalize(title))
-            .distinct()
-            .sorted()
-            .toArray(String[]::new);
-
+        TreeSet<String> ts = new TreeSet<>();
+        for (String title : titles)
+            ts.add(normalize(title));
+        List<String> titles_enc = new ArrayList<>(ts);
+        
         // actually construct the string
         ArrayList<String> ret = new ArrayList<>();
-        StringBuilder buffer = new StringBuilder();
-        for (int i = 0; i < titlesEnc.length; i++)
+        for (int i = 0; i < titles.size() / slowmax + 1; i++)
         {
-            buffer.append(titlesEnc[i]);
-            if (i == titlesEnc.length - 1 || (i % slowmax) == slowmax - 1)
-            {
-                ret.add(buffer.toString());
-                buffer.setLength(0);
-            }
-            else
-                buffer.append('|');
+            ret.add(String.join("|", 
+                titles_enc.subList(i * slowmax, Math.min(titles.size(), (i + 1) * slowmax))));     
         }
         return ret;
     }

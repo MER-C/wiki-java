@@ -135,7 +135,7 @@ public class AllWikiLinksearch
             System.exit(0);
         }
         
-        List<WMFWiki> wikis = List.of(WMFWiki.getSiteMatrix());
+        List<WMFWiki> wikis = WMFWiki.getSiteMatrix();
         Map<Wiki, List<String[]>> results = crossWikiLinksearch(false, threads, domain, wikis, !httponly, false);
         
         // output results

@@ -80,14 +80,14 @@ public class WMFWiki extends Wiki
      *  @return (see above)
      *  @throws IOException if a network error occurs
      */
-    public static WMFWiki[] getSiteMatrix() throws IOException
+    public static List<WMFWiki> getSiteMatrix() throws IOException
     {
         WMFWiki wiki = newSession("en.wikipedia.org");
         wiki.requiresExtension("SiteMatrix");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
         String line = wiki.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
-        ArrayList<WMFWiki> wikis = new ArrayList<>(1000);
+        List<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
         // <site url="http://ab.wiktionary.org" code="wiktionary" closed="" />
@@ -107,7 +107,7 @@ public class WMFWiki extends Wiki
         int size = wikis.size();
         Logger temp = Logger.getLogger("wiki");
         temp.log(Level.INFO, "WMFWiki.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
-        return wikis.toArray(new WMFWiki[size]);
+        return wikis;
     }
     
     /**
@@ -259,7 +259,7 @@ public class WMFWiki extends Wiki
      *  not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:GlobalUsage">Extension:GlobalUsage</a>
      */
-    public String[][] getGlobalUsage(String title) throws IOException
+    public List<String[]> getGlobalUsage(String title) throws IOException
     {
         requiresExtension("Global Usage");
     	if (namespace(title) != FILE_NAMESPACE)
@@ -278,7 +278,7 @@ public class WMFWiki extends Wiki
                 });
         });
 
-    	return usage.toArray(new String[0][0]);
+    	return usage;
     }
     
     /**

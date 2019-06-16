@@ -79,7 +79,7 @@ public class WMFWikiTest
             () -> enWiki.getGlobalUsage("Not an image"),
             "tried to get global usage for a non-file page");
         // YARR!
-        assertEquals(0, enWiki.getGlobalUsage("File:Pirated Movie Full HD Stream.mp4").length, "unused, non-existing file");
+        assertTrue(enWiki.getGlobalUsage("File:Pirated Movie Full HD Stream.mp4").isEmpty(), "unused, non-existing file");
     }
     
     /**

@@ -37,8 +37,8 @@
         users.add(user);
     else if (category != null)
     {
-        String[] catmembers = wiki.getCategoryMembers(category, Wiki.USER_NAMESPACE);
-        if (catmembers.length == 0)
+        List<String> catmembers = wiki.getCategoryMembers(category, Wiki.USER_NAMESPACE);
+        if (catmembers.isEmpty())
             request.setAttribute("error", "Category \"" + ServletUtils.sanitizeForHTML(category) + "\" contains no users!");
         else
             for (String tempstring : catmembers)

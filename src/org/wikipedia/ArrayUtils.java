@@ -55,7 +55,7 @@ public class ArrayUtils
         intersec.addAll(List.of(a));
         for (String[] subarray : b)
             intersec.retainAll(List.of(subarray));
-        return intersec.toArray(new String[intersec.size()]);
+        return intersec.toArray(String[]::new);
     }
 
     /**
@@ -86,6 +86,6 @@ public class ArrayUtils
         compl.addAll(List.of(a));
         for (String[] subarray : b)
             compl.removeAll(List.of(subarray));
-        return compl.toArray(new String[compl.size()]);
+        return compl.toArray(String[]::new);
     }
 }

@@ -109,7 +109,7 @@ public class WikiUtils
 	{
 		try
 		{
-			return wiki.getCategoryMembers(wiki.removeNamespace(cat)).length == 0;
+			return wiki.getCategoryMembers(wiki.removeNamespace(cat)).isEmpty();
 		}
 		catch (Throwable e)
 		{

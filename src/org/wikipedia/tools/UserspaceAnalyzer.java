@@ -50,7 +50,7 @@ public class UserspaceAnalyzer
             .parse(args);
         
         Wiki wiki = Wiki.newSession("en.wikipedia.org");
-        Map<String, Object>[] results = wiki.search(args[0], Wiki.USER_NAMESPACE);
+        List<Map<String, Object>> results = wiki.search(args[0], Wiki.USER_NAMESPACE);
         HashSet<String> users = new HashSet<>(500);
         for (Map<String, Object> result : results)
         {

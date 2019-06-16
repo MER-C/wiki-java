@@ -153,7 +153,7 @@ public class ArticleEditorIntersector
         }
         // grab from category
         if (category != null)
-            articles = List.of(wiki.getCategoryMembers(category));
+            articles = wiki.getCategoryMembers(category);
         
         if (articles.isEmpty())
         {

@@ -73,17 +73,17 @@ main space for a given user (or for all users) and page metadata. A query limit 
     dt_patrol.add(Duration.ofSeconds(-1));
     if (logsub.size() == 51)
         logsub.remove(50);
-    Map<String, Object>[] pageinfo = check.fetchMetadata(logsub);
+    List<Map<String, Object>> pageinfo = check.fetchMetadata(logsub);
     pageinfo = check.fetchCreatorMetadata(pageinfo);
     List<String> snippets = check.fetchSnippets(logsub);
     List<Wiki.User> reviewerdata = check.fetchReviewerMetadata(logsub, username.isEmpty());
     List<String> drafts = new ArrayList<>();
-    Map<String, Object>[] draftinfo = null;
+    List<Map<String, Object>> draftinfo = null;
     if (mode.requiresDrafts())
     {
         for (Wiki.LogEntry log : logsub)
             drafts.add(log.getTitle());
-        draftinfo = enWiki.getPageInfo(drafts.toArray(new String[0]));    
+        draftinfo = enWiki.getPageInfo(drafts);    
     }
 
     String requesturl = "./nppcheck.jsp?username=" + username + "&earliest=" + earliest
@@ -124,7 +124,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
 
     for (int i = 0; i < pageinfo.length; i++)
     {
-        Map<String, Object> info = pageinfo[i];
+        Map<String, Object> info = pageinfo.get(i);
         Wiki.Revision first = (Wiki.Revision)info.get("firstrevision");
         Wiki.LogEntry entry = (Wiki.LogEntry)info.get("logentry");
         Wiki.User creator = (Wiki.User)info.get("creator");
@@ -160,10 +160,10 @@ main space for a given user (or for all users) and page metadata. A query limit 
         if (mode.requiresDrafts())
         {
             String draft = entry.getTitle();
-            out.println("  <td class=\"title\">" + pageutils.generatePageLink(draft, (Boolean)draftinfo[i].get("exists")));
+            out.println("  <td class=\"title\">" + pageutils.generatePageLink(draft, (Boolean)draftinfo.get(i).get("exists")));
         }
 %>
-  <td class="title"><%= pageutils.generatePageLink(title, (Boolean)pageinfo[i].get("exists")) %>
+  <td class="title"><%= pageutils.generatePageLink(title, (Boolean)pageinfo.get(i).get("exists")) %>
   <td class="date"><%= createdate %>
   <td class="date"><%= patroldate %>
   <td class="revsize"><%= MathsAndStats.formatDuration(dt_article) %>

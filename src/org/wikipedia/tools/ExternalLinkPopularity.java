@@ -66,7 +66,7 @@ public class ExternalLinkPopularity
         List<String> pages = new ArrayList<>();
         String category = parsedargs.get("--category");
         if (category != null)
-            pages.addAll(List.of(wiki.getCategoryMembers(category, Wiki.MAIN_NAMESPACE)));
+            pages.addAll(wiki.getCategoryMembers(category, Wiki.MAIN_NAMESPACE));
         String article = parsedargs.get("--title");
         if (article != null)
             pages.add(article);

@@ -419,7 +419,7 @@ public class NPPCheck
      *  the input log entry.
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Object>[] fetchMetadata(List<? extends Wiki.Event> events) throws IOException
+    public List<Map<String, Object>> fetchMetadata(List<? extends Wiki.Event> events) throws IOException
     {
         // TODO: filter out pages that were redirects when patrolled
         
@@ -439,11 +439,11 @@ public class NPPCheck
         
         // account for pages subsequently moved in namespace
         wiki.setResolveRedirects(true);
-        Map<String, Object>[] pageinfo = wiki.getPageInfo(pages.toArray(new String[0]));
+        List<Map<String, Object>> pageinfo = wiki.getPageInfo(pages);
         wiki.setResolveRedirects(false);
         
-        for (int i = 0; i < pageinfo.length; i++)
-            pageinfo[i].put("logentry", events.get(i));
+        for (int i = 0; i < pageinfo.size(); i++)
+            pageinfo.get(i).put("logentry", events.get(i));
         return pageinfo;
     }
 
@@ -456,16 +456,17 @@ public class NPPCheck
      *  "firstrevision" (Wiki.Revision)
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Object>[] fetchCreatorMetadata(Map<String, Object>[] metadata) throws IOException
+    public List<Map<String, Object>> fetchCreatorMetadata(List<Map<String, Object>> metadata) throws IOException
     {
         List<String> users = new ArrayList<>();
-        for (int i = 0; i < metadata.length; i++)
+        for (int i = 0; i < metadata.size(); i++)
         {
-            String title = (String)metadata[i].get("pagename");
-            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE && (Boolean)metadata[i].get("exists"))
+            Map<String, Object> info = metadata.get(i);
+            String title = (String)info.get("pagename");
+            if (wiki.namespace(title) == Wiki.MAIN_NAMESPACE && (Boolean)info.get("exists"))
             {
                 Wiki.Revision first = wiki.getFirstRevision(title);
-                metadata[i].put("firstrevision", first);
+                info.put("firstrevision", first);
                 if (first != null && !first.getUser().contains(">")) // ContentTranslation ([[Bucket crusher]])
                     users.add(first.getUser());
                 else
@@ -477,8 +478,8 @@ public class NPPCheck
 
         // fetch info of creators
         List<Wiki.User> userinfo = wiki.getUsers(users);
-        for (int i = 0; i < metadata.length; i++)
-            metadata[i].put("creator", userinfo.get(i));
+        for (int i = 0; i < metadata.size(); i++)
+            metadata.get(i).put("creator", userinfo.get(i));
         return metadata;        
     }
     
@@ -501,7 +502,7 @@ public class NPPCheck
     
     public String outputTable(List<? extends Wiki.Event> le) throws IOException
     {
-        Map<String, Object>[] pageinfo = fetchMetadata(le);
+        List<Map<String, Object>> pageinfo = fetchMetadata(le);
         pageinfo = fetchCreatorMetadata(pageinfo);
         List<Duration> dt_patrol = Events.timeBetweenEvents(le);
         dt_patrol.add(Duration.ofSeconds(-1));
@@ -509,10 +510,11 @@ public class NPPCheck
         List<String> snippets = fetchSnippets(le);
                 
         StringBuilder sb = new StringBuilder(outputTableHeader());
-        for (int i = 0; i < pageinfo.length; i++)
+        for (int i = 0; i < pageinfo.size(); i++)
         {
-            Wiki.Event entry = (Wiki.Event)pageinfo[i].get("logentry");
-            Wiki.Event first = (Wiki.Event)pageinfo[i].get("firstrevision");
+            Map<String, Object> info = pageinfo.get(i);
+            Wiki.Event entry = (Wiki.Event)info.get("logentry");
+            Wiki.Event first = (Wiki.Event)info.get("firstrevision");
             
             OffsetDateTime patroldate = entry.getTimestamp();
             OffsetDateTime createdate = null;
@@ -523,7 +525,7 @@ public class NPPCheck
             // author metadata (may be IP address, may be account so old its
             // creation date is null)
             String authorname = "null";
-            Wiki.User creator = (Wiki.User)pageinfo[i].get("creator"); 
+            Wiki.User creator = (Wiki.User)info.get("creator"); 
             int editcount = -1;
             boolean blocked = false;
             
@@ -547,7 +549,7 @@ public class NPPCheck
             if (mode.requiresDrafts())
                 tablecells.add("[[:" + le.get(i).getTitle() + "]]");
             // Article column
-            tablecells.add("[[:" + pageinfo[i].get("pagename") + "]]");
+            tablecells.add("[[:" + info.get("pagename") + "]]");
             // Creation date column
             tablecells.add(Objects.toString(createdate));
             if (!mode.requiresUnreviewedPages())
@@ -566,7 +568,7 @@ public class NPPCheck
                 }                    
             }
             // Size column
-            tablecells.add("" + pageinfo[i].getOrDefault("size", -1));
+            tablecells.add("" + info.getOrDefault("size", -1));
             // Author column
             tablecells.add("{{noping2|" + authorname + "}}");              
             // Author registration date column

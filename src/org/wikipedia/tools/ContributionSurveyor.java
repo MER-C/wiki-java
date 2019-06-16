@@ -107,7 +107,8 @@ public class ContributionSurveyor
         }
         else if (wikipage != null)
         {
-            List<String> list = Pages.parseWikitextList(homewiki.getPageText(wikipage));
+            String text = homewiki.getPageText(List.of(wikipage)).get(0);
+            List<String> list = Pages.parseWikitextList(text);
             for (String temp : list)
                 if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
                     users.add(homewiki.removeNamespace(temp));
@@ -405,7 +406,7 @@ public class ContributionSurveyor
 
         // fetch commons uploads
         Wiki commons = Wiki.newSession("commons.wikimedia.org");
-        Wiki.User comuser = commons.getUser(user.getUsername());
+        Wiki.User comuser = commons.getUsers(List.of(user.getUsername())).get(0);
         HashSet<String> comuploads = new HashSet<>(10000);
         if (comuser != null)
             for (Wiki.LogEntry upload : commons.getUploads(user, rh))
@@ -413,7 +414,7 @@ public class ContributionSurveyor
 
         // fetch transferred commons uploads
         HashSet<String> commonsTransfer = new HashSet<>(10000);
-        Map<String, Object>[] temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
+        List<Map<String, Object>> temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
         for (Map<String, Object> x : temp)
             commonsTransfer.add((String)x.get("title"));
 
@@ -423,9 +424,9 @@ public class ContributionSurveyor
         commonsTransfer.removeAll(comuploads);
 
         return new String[][] {
-            localuploads.toArray(new String[localuploads.size()]),
-            comuploads.toArray(new String[comuploads.size()]),
-            commonsTransfer.toArray(new String[commonsTransfer.size()])
+            localuploads.toArray(String[]::new),
+            comuploads.toArray(String[]::new),
+            commonsTransfer.toArray(String[]::new)
         };
     }
 

@@ -90,12 +90,12 @@ public class SpamArchiveSearch
         
         // there's some silly api bugs
         ArrayList<Map<String, Object>> results = new ArrayList<>(20);
-        results.addAll(List.of(meta.search(query + " \"spam blacklist\"", Wiki.TALK_NAMESPACE)));
-        results.addAll(List.of(enWiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
-        results.addAll(List.of(enWiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE)));
-        results.addAll(List.of(enWiki.search(query + " \"wikiproject spam\"", Wiki.PROJECT_TALK_NAMESPACE)));
-        results.addAll(List.of(enWiki.search(query + " \"reliable sources noticeboard\"", Wiki.PROJECT_NAMESPACE)));
-        results.addAll(List.of(enWiki.search(query + " \"external links noticeboard\"", Wiki.PROJECT_NAMESPACE)));
+        results.addAll(meta.search(query + " \"spam blacklist\"", Wiki.TALK_NAMESPACE));
+        results.addAll(enWiki.search(query + " \"spam blacklist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE));
+        results.addAll(enWiki.search(query + " \"spam whitelist\"", Wiki.MEDIAWIKI_TALK_NAMESPACE));
+        results.addAll(enWiki.search(query + " \"wikiproject spam\"", Wiki.PROJECT_TALK_NAMESPACE));
+        results.addAll(enWiki.search(query + " \"reliable sources noticeboard\"", Wiki.PROJECT_NAMESPACE));
+        results.addAll(enWiki.search(query + " \"external links noticeboard\"", Wiki.PROJECT_NAMESPACE));
 
         return results;
     }

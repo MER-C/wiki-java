@@ -122,24 +122,21 @@ public class WikiTest
     @Test
     public void setResolveRedirects() throws Exception
     {
-        String[] pages = {
-            "User:MER-C/UnitTests/redirect",
-            "User:MER-C/UnitTests/Delete"
-        };
-
+        List<String> pages = List.of("User:MER-C/UnitTests/redirect",
+            "User:MER-C/UnitTests/Delete");
+        
         testWiki.setResolveRedirects(true);
         enWiki.setResolveRedirects(true);
         assertTrue(testWiki.isResolvingRedirects());
         // https://test.wikipedia.org/w/index.php?title=User:MER-C/UnitTests/redirect&redirect=no
         // redirects to https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
-        assertEquals("This revision is not deleted!", testWiki.getPageText(pages[0]),
+        assertEquals("This revision is not deleted!", testWiki.getPageText(pages).get(0),
             "resolveredirects/getPageText");
-        Map<String, Object>[] x = testWiki.getPageInfo(pages);
-        x[0].remove("inputpagename");
-        x[1].remove("inputpagename");
-        assertEquals(x[1], x[0], "resolveredirects/getPageInfo");
-        pages = new String[] { "Main page", "Main Page" };
-        List<List<String>> y = enWiki.getTemplates(List.of(pages));
+        List<Map<String, Object>> x = testWiki.getPageInfo(pages);
+        x.get(0).remove("inputpagename");
+        x.get(1).remove("inputpagename");
+        assertEquals(x.get(1), x.get(0), "resolveredirects/getPageInfo");
+        List<List<String>> y = enWiki.getTemplates(List.of("Main page", "Main Page"));
         assertEquals(y.get(1), y.get(0), "resolveredirects/getTemplates");
     }
 
@@ -208,7 +205,7 @@ public class WikiTest
         assertEquals(530, enWiki.getPageHistory("Main Page", null).size(), "after recentchanges override");
         assertEquals(10, enWiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh).size(), "getLogEntries override");
         assertEquals(530, enWiki.getPageHistory("Main Page", null).size(), "after getLogEntries override");
-        assertEquals(500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).length, "listPages override");
+        assertEquals(500, enWiki.listPages("", null, Wiki.MAIN_NAMESPACE).size(), "listPages override");
         assertEquals(530, enWiki.getPageHistory("Main Page", null).size(), "after listPages override");
     }
 
@@ -255,7 +252,7 @@ public class WikiTest
     @Test
     public void userExists() throws Exception
     {
-        boolean[] temp = testWiki.userExists(new String[] { "MER-C", "127.0.0.1", "Djskgh;jgsd", "::/1" });
+        boolean[] temp = testWiki.userExists(List.of("MER-C", "127.0.0.1", "Djskgh;jgsd", "::/1"));
         assertTrue(temp[0], "user that exists");
         assertFalse(temp[1], "IP address");
         assertFalse(temp[2], "nonsense input");
@@ -266,7 +263,7 @@ public class WikiTest
     public void changeUserPrivileges() throws Exception
     {
         // check expiry
-        Wiki.User user = enWiki.getUser("Example");
+        Wiki.User user = enWiki.getUsers(List.of("Example")).get(0);
         List<String> granted = List.of("autopatrolled");
         assertThrows(IllegalArgumentException.class,
             () -> enWiki.changeUserPrivileges(user, granted, List.of(OffsetDateTime.MIN), Collections.emptyList(), "dummy reason"),
@@ -313,7 +310,8 @@ public class WikiTest
     @Test
     public void exists() throws Exception
     {
-        String[] titles = new String[] { "Main Page", "Tdkfgjsldf", "User:MER-C", "Wikipedia:Skfjdl", "Main Page", "Fish & chips" };
+        List<String> titles = List.of("Main Page", "Tdkfgjsldf", "User:MER-C", 
+            "Wikipedia:Skfjdl", "Main Page", "Fish & chips");
         boolean[] expected = new boolean[] { true, false, true, false, true, true };
         assertArrayEquals(expected, enWiki.exists(titles));
     }
@@ -321,18 +319,20 @@ public class WikiTest
     @Test
     public void resolveRedirects() throws Exception
     {
-        String[] titles = new String[] { "Main page", "Main Page", "sdkghsdklg", "Hello.jpg", "Main page", "Fish & chips" };
-        String[] expected = new String[] { "Main Page", "Main Page", "sdkghsdklg", "Goatse.cx", "Main Page", "Fish and chips" };
-        assertArrayEquals(expected, enWiki.resolveRedirects(titles));
-        assertEquals("الصفحة الرئيسية", arWiki.resolveRedirect("الصفحه الرئيسيه"), "rtl");
+        List<String> titles = List.of("Main page", "Main Page", "sdkghsdklg", 
+            "Hello.jpg", "Main page", "Fish & chips");
+        List<String> expected = List.of("Main Page", "Main Page", "sdkghsdklg", 
+            "Goatse.cx", "Main Page", "Fish and chips");
+        assertEquals(expected, enWiki.resolveRedirects(titles));
+        assertEquals(List.of("الصفحة الرئيسية"), arWiki.resolveRedirects(List.of("الصفحه الرئيسيه")), "rtl");
     }
 
     @Test
     public void getLinksOnPage() throws Exception
     {
-        assertArrayEquals(new String[0], enWiki.getLinksOnPage("Skfls&jdkfs"), "non-existent page");
+        assertTrue(enWiki.getLinksOnPage("Skfls&jdkfs").isEmpty(), "non-existent page");
         // User:MER-C/monobook.js has one link... despite it being preformatted (?!)
-        assertArrayEquals(new String[0], enWiki.getLinksOnPage("User:MER-C/monobook.css"), "page with no links");
+        assertTrue(enWiki.getLinksOnPage("User:MER-C/monobook.css").isEmpty(), "page with no links");
     }
 
     @Test
@@ -386,8 +386,8 @@ public class WikiTest
     @Test
     public void getImageHistory() throws Exception
     {
-        assertArrayEquals(new Wiki.LogEntry[0], enWiki.getImageHistory("File:Sdfjgh&sld.jpg"), "non-existent file");
-        assertArrayEquals(new Wiki.LogEntry[0], enWiki.getImageHistory("File:WikipediaSignpostIcon.svg"), "commons image");
+        assertTrue(enWiki.getImageHistory("File:Sdfjgh&sld.jpg").isEmpty(), "non-existent file");
+        assertTrue(enWiki.getImageHistory("File:WikipediaSignpostIcon.svg").isEmpty(), "commons image");
     }
 
     @Test
@@ -625,31 +625,31 @@ public class WikiTest
     @Test
     public void getPageInfo() throws Exception
     {
-        String[] pages = new String[] { "Main Page", "IPod", "Main_Page", "Special:Specialpages" };
-        Map<String, Object>[] pageinfo = enWiki.getPageInfo(pages);
+        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages");
+        List<Map<String, Object>> pageinfo = enWiki.getPageInfo(pages);
 
         // Main Page
-        Map<String, Object> protection = (Map<String, Object>)pageinfo[0].get("protection");
+        Map<String, Object> protection = (Map<String, Object>)pageinfo.get(0).get("protection");
         assertEquals(Wiki.FULL_PROTECTION, protection.get("edit"), "Main Page edit protection level");
         assertNull(protection.get("editexpiry"), "Main Page edit protection expiry");
         assertEquals(Wiki.FULL_PROTECTION, protection.get("move"), "Main Page move protection level");
         assertNull(protection.get("moveexpiry"), "Main Page move protection expiry");
         assertTrue((Boolean)protection.get("cascade"), "Main Page cascade protection");
-        assertEquals("Main Page", pageinfo[0].get("displaytitle"), "Main Page display title");
-        assertEquals(pages[0], pageinfo[0].get("inputpagename"), "inputpagename");
-        assertEquals(pages[0], pageinfo[0].get("pagename"), "normalized identity");
+        assertEquals("Main Page", pageinfo.get(0).get("displaytitle"), "Main Page display title");
+        assertEquals(pages.get(0), pageinfo.get(0).get("inputpagename"), "inputpagename");
+        assertEquals(pages.get(0), pageinfo.get(0).get("pagename"), "normalized identity");
 
         // different display title
-        assertEquals("iPod", pageinfo[1].get("displaytitle"), "iPod display title");
+        assertEquals("iPod", pageinfo.get(1).get("displaytitle"), "iPod display title");
 
         // Main_Page (duplicate, should be identical except for inputpagename)
-        assertEquals(pages[2], pageinfo[2].get("inputpagename"), "identity");
-        pageinfo[0].remove("inputpagename");
-        pageinfo[2].remove("inputpagename");
-        assertEquals(pageinfo[0], pageinfo[2], "duplicate");
+        assertEquals(pages.get(2), pageinfo.get(2).get("inputpagename"), "identity");
+        pageinfo.get(0).remove("inputpagename");
+        pageinfo.get(2).remove("inputpagename");
+        assertEquals(pageinfo.get(0), pageinfo.get(2), "duplicate");
 
         // Special page = return null
-        assertNull(pageinfo[3], "special page");
+        assertNull(pageinfo.get(3), "special page");
     }
 
     @Test
@@ -676,7 +676,7 @@ public class WikiTest
     @Test
     public void getDuplicates() throws Exception
     {
-        assertArrayEquals(new String[0], enWiki.getDuplicates("File:Sdfj&ghsld.jpg"), "non-existent file");
+        assertTrue(enWiki.getDuplicates("File:Sdfj&ghsld.jpg").isEmpty(), "non-existent file");
     }
 
     @Test
@@ -781,12 +781,11 @@ public class WikiTest
     @Test
     public void pageHasTemplate() throws Exception
     {
-        boolean[] b = enWiki.pageHasTemplate(new String[]
-        {
+        boolean[] b = enWiki.pageHasTemplate(List.of(
             "Wikipedia:Articles for deletion/Log/2016 September 20",
             "Main Page",
             "dsigusodgusdigusd" // non-existent, should be false
-        }, "Wikipedia:Articles for deletion/FMJAM");
+        ), "Wikipedia:Articles for deletion/FMJAM");
         assertTrue(b[0]);
         assertFalse(b[1]);
         assertFalse(b[2], "non-existent page");
@@ -1012,27 +1011,25 @@ public class WikiTest
             () -> testWiki.getPageText("Media:Example.png"),
             "Tried to get page text for a media page!");
 
-        String[] text = testWiki.getPageText(new String[]
-        {
+        List<String> text = testWiki.getPageText(List.of(
             "User:MER-C/UnitTests/Delete", // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
             "User:MER-C/UnitTests/pagetext", // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/pagetext
             "Gsgdksgjdsg", // https://test.wikipedia.org/wiki/Gsgdksgjdsg (does not exist)
             "User:NikiWiki/EmptyPage" // https://test.wikipedia.org/wiki/User:NikiWiki/EmptyPage (empty)
-
-        });
+        ));
         // API result does not include the terminating new line
-        assertEquals("This revision is not deleted!", text[0]);
+        assertEquals("This revision is not deleted!", text.get(0));
         assertEquals("&#039;&#039;italic&#039;&#039;\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;",
-            text[1], "decoding");
-        assertNull(text[2], "non-existent page");
-        assertEquals("", text[3], "empty page");
+            text.get(1), "decoding");
+        assertNull(text.get(2), "non-existent page");
+        assertEquals("", text.get(3), "empty page");
     }
 
     @Test
     public void getText() throws Exception
     {
-        assertEquals(0, testWiki.getText(new String[0], null, -1).length);
-        assertEquals(0, testWiki.getText(null, new long[0], -1).length);
+        assertTrue(testWiki.getText(Collections.emptyList(), null, -1).isEmpty());
+        assertTrue(testWiki.getText(null, new long[0], -1).isEmpty());
 
         long[] ids =
         {
@@ -1042,13 +1039,13 @@ public class WikiTest
             316531L, // https://test.wikipedia.org/w/index.php?oldid=316531 (first revision on same page)
             316533L  // https://test.wikipedia.org/w/index.php?oldid=316533 (second revision on same page)
         };
-        String[] text = testWiki.getText(null, ids, -1);
+        List<String> text = testWiki.getText(null, ids, -1);
         assertEquals("&#039;&#039;italic&#039;&#039;\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;",
-            text[0], "decoding");
-        assertEquals("", text[1], "empty revision");
-        assertNull(text[2], "content deleted");
-        assertEquals("Testing 0.2786153173518522", text[3], "same page");
-        assertEquals("Testing 0.28713760508426645", text[4], "same page");
+            text.get(0), "decoding");
+        assertEquals("", text.get(1), "empty revision");
+        assertNull(text.get(2), "content deleted");
+        assertEquals("Testing 0.2786153173518522", text.get(3), "same page");
+        assertEquals("Testing 0.28713760508426645", text.get(4), "same page");
     }
 
     @Test
@@ -1075,12 +1072,12 @@ public class WikiTest
     @Test
     public void search() throws Exception
     {
-        Map<String, Object>[] results = testWiki.search("dlgsjdglsjdgljsgljsdlg", Wiki.MEDIAWIKI_NAMESPACE);
-        assertEquals(0, results.length, "no results");
+        List<Map<String, Object>> results = testWiki.search("dlgsjdglsjdgljsgljsdlg", Wiki.MEDIAWIKI_NAMESPACE);
+        assertTrue(results.isEmpty(), "no results");
         // https://test.wikipedia.org/w/api.php?action=query&list=search&srsearch=User:%20subpageof:MER-C/UnitTests%20revision%20delete
         results = testWiki.search("User: subpageof:MER-C/UnitTests revision delete", Wiki.USER_NAMESPACE);
-        assertEquals(2, results.length, "result count");
-        Map<String, Object> result = results[0];
+        assertEquals(2, results.size(), "result count");
+        Map<String, Object> result = results.get(0);
         assertEquals("User:MER-C/UnitTests/Delete", result.get("title"), "title");
         assertEquals("This <span class=\"searchmatch\">revision</span> is not <span class=\"searchmatch\">deleted</span>!",
             result.get("snippet"), "snippet");
@@ -1118,14 +1115,14 @@ public class WikiTest
     @Test
     public void allUsersInGroup() throws Exception
     {
-        assertArrayEquals(new String[0], testWiki.allUsersInGroup("sdfkd|&"), "invalid input");
-        assertArrayEquals(new String[] { "Jimbo Wales" }, enWiki.allUsersInGroup("founder"));
+        assertTrue(testWiki.allUsersInGroup("sdfkd|&").isEmpty(), "invalid input");
+        assertEquals(List.of("Jimbo Wales"), enWiki.allUsersInGroup("founder"));
     }
 
     @Test
     public void allUserswithRight() throws Exception
     {
-        assertArrayEquals(new String[0], testWiki.allUsersWithRight("sdfkd|&"), "invalid input");
+        assertTrue(testWiki.allUsersWithRight("sdfkd|&").isEmpty(), "invalid input");
     }
 
     @Test
@@ -1137,10 +1134,10 @@ public class WikiTest
     @Test
     public void constructTitleString() throws Exception
     {
-        String[] titles = new String[102];
-        for (int i = 0; i < titles.length; i++)
-            titles[i] = "a" + i;
-        titles[101] = "A34"; // should be removed
+        List<String> titles = new ArrayList<>();
+        for (int i = 0; i < 100; i++)
+            titles.add("a" + i);
+        titles.add("A34"); // should be removed
         List<String> expected = new ArrayList<>();
         // slowmax == 50 for Wikimedia wikis if not logged in
         expected.add("A0|A1|A10|A100|A11|A12|A13|A14|A15|A16|A17|A18|A19|A2|" +
@@ -1163,10 +1160,10 @@ public class WikiTest
     {
         // https://en.wikipedia.org/w/index.php?title=Azerbaijan&offset=20180125204500&action=history
         long[] oldids = { 822342083L, 822341440L };
-        Wiki.Revision[] revisions = enWiki.getRevisions(oldids);
-        assertEquals(0, revisions[0].compareTo(revisions[0]), "self");
-        assertTrue(revisions[1].compareTo(revisions[0]) < 0, "before");
-        assertTrue(revisions[0].compareTo(revisions[1]) > 0, "after");
+        List<Wiki.Revision> revisions = enWiki.getRevisions(oldids);
+        assertEquals(0, revisions.get(0).compareTo(revisions.get(0)), "self");
+        assertTrue(revisions.get(1).compareTo(revisions.get(0)) < 0, "before");
+        assertTrue(revisions.get(0).compareTo(revisions.get(1)) > 0, "after");
     }
 
     @Test

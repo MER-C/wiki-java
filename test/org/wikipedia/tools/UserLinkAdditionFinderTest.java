@@ -22,7 +22,6 @@ package org.wikipedia.tools;
 
 import java.io.IOException;
 import java.time.*;
-import java.time.format.*;
 import java.util.*;
 import java.util.stream.*;
 import org.junit.jupiter.api.*;
@@ -97,32 +96,32 @@ public class UserLinkAdditionFinderTest
     @Test
     public void parseDiff() throws IOException
     {
-        Wiki.Revision[] revs = testWiki.getRevisions(new long[]
+        List<Wiki.Revision> revs = testWiki.getRevisions(new long[]
         {
             244169L, 244170L, 244171L, 320307L, 350372L
         });
 
         // https://test.wikipedia.org/wiki/Special:Diff/244169
-        List<String> links = finder_test.parseDiff(revs[0]);
+        List<String> links = finder_test.parseDiff(revs.get(0));
         assertNotNull(links);
         assertEquals(1, links.size());
         assertEquals("http://spam.example.com", links.get(0));
 
         // https://test.wikipedia.org/wiki/Special:Diff/244170
-        links = finder_test.parseDiff(revs[1]);
+        links = finder_test.parseDiff(revs.get(1));
         assertEquals("https://en.wikipedia.org", links.get(0));
 
         // https://test.wikipedia.org/wiki/Special:Diff/244171
-        links = finder_test.parseDiff(revs[2]);
+        links = finder_test.parseDiff(revs.get(2));
         assertEquals("http://www.example.net", links.get(0));
 
         // dummy edit
         // https://test.wikipedia.org/wiki/Special:Diff/320307
-        links = finder_test.parseDiff(revs[3]);
-        assertEquals(0, links.size());
+        links = finder_test.parseDiff(revs.get(3));
+        assertTrue(links.isEmpty());
 
         // https://test.wikipedia.org/wiki/Special:Diff/350372
-        links = finder_test.parseDiff(revs[4]);
+        links = finder_test.parseDiff(revs.get(4));
         assertEquals("http://template.example.com", links.get(0));
     }
 }

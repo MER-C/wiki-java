@@ -154,12 +154,12 @@ public class Users
         List<String> pages = new ArrayList<>();
         for (Wiki.Revision revision : temp)
             pages.add(revision.getTitle());
-        String[] pagetexts = wiki.getPageText(pages.toArray(new String[0]));        
+        List<String> pagetexts = wiki.getPageText(pages);
         Map<Wiki.Revision, String> ret = new HashMap<>();
         for (int i = 0; i < temp.size(); i++)
         {
             Wiki.Revision revision = temp.get(i);
-            ret.putIfAbsent(revision, pagetexts[i]);
+            ret.putIfAbsent(revision, pagetexts.get(i));
         }
         return ret;
     }
