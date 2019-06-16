@@ -22,6 +22,7 @@ package org.wikipedia;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -76,23 +77,16 @@ public class Users
      */
     public String generateHTMLSummaryLinks(String username)
     {
-        try
-        {
-            String indexPHPURL = wiki.getIndexPhpUrl();
-            username = WikitextUtils.recode(username);
-            String userenc = URLEncoder.encode(username, "UTF-8");
-            return pageutils.generatePageLink("User:" + username, username) + " ("
-                +  pageutils.generatePageLink("User talk:" + username, "talk") + " | "
-                +  pageutils.generatePageLink("Special:Contributions/" + username, "contribs") + " | "
-                +  pageutils.generatePageLink("Special:DeletedContributions/" + username, "deleted contribs") + " | "
-                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
-                +  pageutils.generatePageLink("Special:Block/" + username, "block") + " | "
-                +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
-        }
-        catch (IOException ex)
-        {
-            throw new UncheckedIOException(ex); // seriously?
-        }
+        String indexPHPURL = wiki.getIndexPhpUrl();
+        username = WikitextUtils.recode(username);
+        String userenc = URLEncoder.encode(username, StandardCharsets.UTF_8);
+        return pageutils.generatePageLink("User:" + username, username) + " ("
+            +  pageutils.generatePageLink("User talk:" + username, "talk") + " | "
+            +  pageutils.generatePageLink("Special:Contributions/" + username, "contribs") + " | "
+            +  pageutils.generatePageLink("Special:DeletedContributions/" + username, "deleted contribs") + " | "
+            +  "<a href=\"" + indexPHPURL + "?title=Special:Log&user=" + userenc + "\">logs</a> | "
+            +  pageutils.generatePageLink("Special:Block/" + username, "block") + " | "
+            +  "<a href=\"" + indexPHPURL + "?title=Special:Log&type=block&page=User:" + userenc + "\">block log</a>)";
     }
     
     /**
@@ -104,21 +98,14 @@ public class Users
      */
     public static String generateWikitextSummaryLinks(String username)
     {
-        try
-        {
-            String userenc = URLEncoder.encode(username, "UTF-8");
-            return "* [[User:" + username + "|" + username + "]] (" 
-                +  "[[User talk:" + username + "|talk]] | "
-                +  "[[Special:Contributions/" + username + "|contribs]] | "
-                +  "[[Special:DeletedContributions/" + username + "|deleted contribs]] | "
-                +  "[{{fullurl:Special:Log|user=" + userenc + "}} logs] | "
-                +  "[[Special:Block/" + username + "|block]] | "
-                +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
-        }
-        catch (IOException ex)
-        {
-            throw new UncheckedIOException(ex); // seriously?
-        }
+        String userenc = URLEncoder.encode(username, StandardCharsets.UTF_8);
+        return "* [[User:" + username + "|" + username + "]] (" 
+            +  "[[User talk:" + username + "|talk]] | "
+            +  "[[Special:Contributions/" + username + "|contribs]] | "
+            +  "[[Special:DeletedContributions/" + username + "|deleted contribs]] | "
+            +  "[{{fullurl:Special:Log|user=" + userenc + "}} logs] | "
+            +  "[[Special:Block/" + username + "|block]] | "
+            +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
     }
     
     /**

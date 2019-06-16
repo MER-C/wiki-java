@@ -104,14 +104,16 @@
     {
         if (user != null)
         {
-            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
+            response.setHeader("Content-Disposition", "attachment; filename=" 
+                + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
             out.print(Users.generateWikitextSummaryLinks(user));            
         }
         else // category != null
-            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(category, "UTF-8") + ".txt");
+            response.setHeader("Content-Disposition", "attachment; filename=" 
+                + URLEncoder.encode(category, StandardCharsets.UTF_8) + ".txt");
         out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         out.println();
-        out.print(survey);
+        out.prinst(survey);
         out.println(surveyor.generateWikitextFooter());
         return;
     }

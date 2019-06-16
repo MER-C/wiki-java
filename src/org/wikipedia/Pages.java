@@ -21,6 +21,7 @@ package org.wikipedia;
 
 import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.*;
 import java.util.regex.*;
@@ -302,21 +303,15 @@ public class Pages
     {
         if (wiki.namespace(page) % 2 == 1)
             return ""; // no talk pages yet
-        try
-        {
-            String indexPHPURL = wiki.getIndexPhpUrl();
-            String pageenc = URLEncoder.encode(page, "UTF-8");
-            
-            return generatePageLink(page) + " ("
-                + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=edit\">edit</a> | "
-                + generatePageLink(wiki.getTalkPage(page), "talk") + " | "
-                + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "
-                + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=" + pageenc + "\">logs</a>)";
-        }
-        catch (IOException ex)
-        {
-            throw new UncheckedIOException(ex); // seriously?
-        }
+
+        String indexPHPURL = wiki.getIndexPhpUrl();
+        String pageenc = URLEncoder.encode(page, StandardCharsets.UTF_8);
+
+        return generatePageLink(page) + " ("
+            + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=edit\">edit</a> | "
+            + generatePageLink(wiki.getTalkPage(page), "talk") + " | "
+            + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "
+            + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=" + pageenc + "\">logs</a>)";
     }
     
     /**

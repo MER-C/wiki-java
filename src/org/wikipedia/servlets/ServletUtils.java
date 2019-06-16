@@ -18,7 +18,7 @@
 
 package org.wikipedia.servlets;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.net.URLEncoder;
 import java.util.Objects;
 
@@ -85,15 +85,7 @@ public class ServletUtils
      */
     public static String sanitizeForURL(String input)
     {
-        try
-        {
-            return URLEncoder.encode(input, "UTF-8");
-        }
-        catch (UnsupportedEncodingException ex)
-        {
-            // should never happen
-            return "";
-        }
+        return URLEncoder.encode(input, StandardCharsets.UTF_8);
     }
     
     /**

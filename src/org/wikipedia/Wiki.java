@@ -23,6 +23,7 @@ package org.wikipedia;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.text.Normalizer;
 import java.time.*;
@@ -1515,15 +1516,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public String getPageUrl(String page)
     {
-        try
-        {
-            page = normalize(page).replace(' ', '_');
-            return articleUrl + URLEncoder.encode(page, "UTF-8");
-        }
-        catch (IOException ex)
-        {
-            throw new UncheckedIOException(ex); // seriously?
-        }
+        page = normalize(page).replace(' ', '_');
+        return articleUrl + URLEncoder.encode(page, StandardCharsets.UTF_8);
     }
 
     /**
@@ -6996,7 +6990,7 @@ public class Wiki implements Comparable<Wiki>
         public int hashCode()
         {
             int hc = super.hashCode();
-            hc = 127 * hc + type.hashCode();
+        hc = 127 * hc + type.hashCode();
             hc = 127 * hc + Objects.hashCode(action);
             return hc;
         }
@@ -7893,7 +7887,7 @@ public class Wiki implements Comparable<Wiki>
             urlbuilder.append('&');
             urlbuilder.append(entry.getKey());
             urlbuilder.append('=');
-            urlbuilder.append(URLEncoder.encode(entry.getValue(), "UTF-8"));
+            urlbuilder.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
         }
         String url = urlbuilder.toString();
 
@@ -7956,7 +7950,7 @@ public class Wiki implements Comparable<Wiki>
                     stringPostBody.append('&');
                     stringPostBody.append(entry.getKey());
                     stringPostBody.append('=');
-                    stringPostBody.append(URLEncoder.encode(entry.getValue().toString(), "UTF-8"));
+                    stringPostBody.append(URLEncoder.encode(entry.getValue().toString(), StandardCharsets.UTF_8));
                 }
             }
         }

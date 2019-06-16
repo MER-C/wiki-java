@@ -42,7 +42,8 @@
 <%
     if (survey != null)
     {
-        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(user, "UTF-8") + ".txt");
+        response.setHeader("Content-Disposition", "attachment; filename=" 
+            + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
         out.print(Users.generateWikitextSummaryLinks(user));
         out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         out.print(surveyor.formatImageSurveyAsWikitext(null, survey));
