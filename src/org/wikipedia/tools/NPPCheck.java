@@ -63,7 +63,12 @@ public class NPPCheck
         /**
          *  Lists unpatrolled pages (requires NPP rights).
          */
-        UNPATROLLED;
+        UNPATROLLED,
+        
+        /**
+         *  Lists articles created upon an existing redirect.
+         */
+        REDIRECTS;
 
         /**
          *  Parses a string into an instance of this enum.
@@ -80,6 +85,7 @@ public class NPPCheck
                 case "drafts": return DRAFTS;
                 case "userspace": return USERSPACE;
                 case "unpatrolled": return UNPATROLLED;
+                case "redirects": return REDIRECTS;
                 default: return null;
             }
         }
@@ -91,6 +97,15 @@ public class NPPCheck
         public boolean requiresDrafts()
         {
             return this == USERSPACE || this == DRAFTS;
+        }
+        
+        /**
+         *  Returns true if this mode deals with unreviewed articles.
+         *  @return (see above)
+         */
+        public boolean requiresUnreviewedPages()
+        {
+            return this == UNPATROLLED || this == REDIRECTS;
         }
     }
     
@@ -106,6 +121,7 @@ public class NPPCheck
             .addBooleanFlag("--patrols", "Output results from new pages patrol")
             .addBooleanFlag("--userspace", "Output results for moves from user to main")
             .addBooleanFlag("--drafts", "Output results for moves from draft to main")
+            .addBooleanFlag("--redirects", "Output results for expanded redirects")
             .addSingleArgumentFlag("--user", "user", "Output results for this user only "
                 + "(requires one of --patrols, --userspace or --drafts)")
             .addVersion("0.01")
@@ -169,10 +185,27 @@ public class NPPCheck
         // Pages moved from user to main
         if (parsedargs.containsKey("--userspace"))
         {
+            check.setMode(Mode.USERSPACE);
+            check.setUser(user);
+            
             List<? extends Wiki.Event> le = check.fetchLogs(null, null);
             System.out.println("==Pages moved from user to main ==");
             if (le.isEmpty())
                 System.out.println("No pages moved from user to main.");
+            else
+                System.out.println(check.outputTable(le));
+        }
+        
+        // Expanded redirects
+        if (parsedargs.containsKey("--redirects"))
+        {
+            check.setMode(Mode.REDIRECTS);
+            check.setUser(null);
+            
+            List<? extends Wiki.Event> le = check.fetchLogs(null, null);
+            System.out.println("==Expanded redirects ==");
+            if (le.isEmpty())
+                System.out.println("No expanded redirects.");
             else
                 System.out.println(check.outputTable(le));
         }
@@ -335,6 +368,9 @@ public class NPPCheck
                 options.put("redirect", Boolean.FALSE);
                 rh = rh.inNamespaces(Wiki.MAIN_NAMESPACE).filterBy(options);
                 return wiki.newPages(rh);
+            case REDIRECTS:
+                return wiki.getAbuseLogEntries(new int[] { 342 }, rh);
+                
         }
         List<Wiki.LogEntry> ret = new ArrayList<>();
         for (Wiki.LogEntry log : le)
@@ -516,7 +552,7 @@ public class NPPCheck
             tablecells.add("[[:" + pageinfo[i].get("pagename") + "]]");
             // Creation date column
             tablecells.add(Objects.toString(createdate));
-            if (mode != Mode.UNPATROLLED)
+            if (!mode.requiresUnreviewedPages())
             {
                 // Review date column
                 tablecells.add(patroldate.toString());
@@ -545,7 +581,7 @@ public class NPPCheck
             // Author blocked column
             tablecells.add(String.valueOf(blocked));
             // Reviewer metadata group
-            if (mode != Mode.UNPATROLLED && user == null)
+            if (!mode.requiresUnreviewedPages() && user == null)
             {
                 Wiki.User reviewer = reviewerinfo.get(i);
                 // Reviewer column
@@ -571,7 +607,7 @@ public class NPPCheck
         if (mode.requiresDrafts())
             header.append("Draft !! ");
         header.append("Title !! Create timestamp !! ");
-        if (mode != Mode.UNPATROLLED)
+        if (!mode.requiresUnreviewedPages())
         {
             header.append("Review timestamp !! Age at review !! ");
             if (user != null)
@@ -579,7 +615,7 @@ public class NPPCheck
         }
         header.append("Size !! Author !! Author registration timestamp !! ");
         header.append("Author edit count !! Author age at creation !! Author blocked !! ");
-        if (mode != Mode.UNPATROLLED && user == null)
+        if (!mode.requiresUnreviewedPages() && user == null)
             header.append("Reviewer !! Reviewer edit count !! ");
         header.append("Snippet");
         header.append("\n");
