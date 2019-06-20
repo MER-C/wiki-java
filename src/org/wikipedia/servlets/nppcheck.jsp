@@ -55,7 +55,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
     enWiki.setMaxLag(-1);
     enWiki.setQueryLimit(7500);
     NPPCheck check = new NPPCheck(enWiki);
-    check.setUser(username);
+    check.setReviewer(username);
     check.setMode(mode);
     List<? extends Wiki.Event> logs = check.fetchLogs(earliest_odt, latest_odt);
     

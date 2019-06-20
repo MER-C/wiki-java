@@ -119,6 +119,7 @@
                             <include>**/UserLinkAdditionFinderTest.java</include>
                             <include>**/ExternalLinkPopularityTest.java</include>
                             <include>**/GapFillingTextSearchTest.java</include>
+                            <include>**/NPPCheckTest.java</include>
                             <include>**/ServletUtilsTest.java</include>
                         </includes>
                     </configuration>
