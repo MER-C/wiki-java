@@ -13,7 +13,7 @@
 
     String mode = Objects.requireNonNullElse(request.getParameter("mode"), "multi");
     String domain = ServletUtils.sanitizeForAttribute(request.getParameter("link"));
-    String set = Objects.requreNonNullElse(request.getParameter("set"), "top20");
+    String set = Objects.requireNonNullElse(request.getParameter("set"), "top20");
     String wikiinput = request.getParameter("wiki");
     if (wikiinput != null)
         wikiinput = ServletUtils.sanitizeForAttribute(wikiinput);

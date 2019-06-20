@@ -100,12 +100,12 @@ public class NPPCheck
         }
         
         /**
-         *  Returns true if this mode deals with unreviewed articles.
+         *  Returns true if this mode deals with reviewed pages.
          *  @return (see above)
          */
-        public boolean requiresUnreviewedPages()
+        public boolean requiresReviews()
         {
-            return this == UNPATROLLED || this == REDIRECTS;
+            return this == PATROLS || this == DRAFTS || this == USERSPACE;
         }
     }
     
@@ -552,7 +552,7 @@ public class NPPCheck
             tablecells.add("[[:" + info.get("pagename") + "]]");
             // Creation date column
             tablecells.add(Objects.toString(createdate));
-            if (!mode.requiresUnreviewedPages())
+            if (mode.requiresReviews())
             {
                 // Review date column
                 tablecells.add(patroldate.toString());
@@ -581,7 +581,7 @@ public class NPPCheck
             // Author blocked column
             tablecells.add(String.valueOf(blocked));
             // Reviewer metadata group
-            if (!mode.requiresUnreviewedPages() && user == null)
+            if (mode.requiresReviews() && user == null)
             {
                 Wiki.User reviewer = reviewerinfo.get(i);
                 // Reviewer column
@@ -607,7 +607,7 @@ public class NPPCheck
         if (mode.requiresDrafts())
             header.append("Draft !! ");
         header.append("Title !! Create timestamp !! ");
-        if (!mode.requiresUnreviewedPages())
+        if (mode.requiresReviews())
         {
             header.append("Review timestamp !! Age at review !! ");
             if (user != null)
@@ -615,7 +615,7 @@ public class NPPCheck
         }
         header.append("Size !! Author !! Author registration timestamp !! ");
         header.append("Author edit count !! Author age at creation !! Author blocked !! ");
-        if (!mode.requiresUnreviewedPages() && user == null)
+        if (mode.requiresReviews() && user == null)
             header.append("Reviewer !! Reviewer edit count !! ");
         header.append("Snippet");
         header.append("\n");

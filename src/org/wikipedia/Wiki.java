@@ -1695,7 +1695,7 @@ public class Wiki implements Comparable<Wiki>
             }
         }
         log(Level.INFO, "getPageInfo", "Successfully retrieved page info for " + size + " pages.");
-        return List.of(info);
+        return Arrays.asList(info);
     }
 
     /**
@@ -1948,7 +1948,7 @@ public class Wiki implements Comparable<Wiki>
             ret[i] = pageTexts.get(key);
         }
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + count + (isrevisions ? " revisions." : " pages."));
-        return List.of(ret);
+        return Arrays.asList(ret);
     }
 
     /**
@@ -3354,7 +3354,7 @@ public class Wiki implements Comparable<Wiki>
         for (int i = 0; i < oldids.length; i++)
             revisions[i] = revs.get(oldids[i]);
         log(Level.INFO, "getRevisions", "Successfully retrieved " + oldids.length + " revisions.");
-        return List.of(revisions);
+        return Arrays.asList(revisions);
     }
 
     /**
@@ -4770,7 +4770,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.put("ucuserprefix", prefix);
             List<Revision> revisions = makeListQuery("uc", getparams, null, "contribs", limit, parser);
             log(Level.INFO, "prefixContribs", "Successfully retrived prefix contributions (" + revisions.size() + " edits)");
-            return List.of(revisions);
+            return Arrays.asList(revisions);
         }
     }
 
@@ -5009,10 +5009,10 @@ public class Wiki implements Comparable<Wiki>
      *  @see #unwatch
      *  @since 0.18
      */
-    public void watch(String... titles) throws IOException
+    public void watch(List<String> titles) throws IOException
     {
-        watchInternal(false, titles);
-        watchlist.addAll(List.of(titles));
+        watchInternal(titles, false);
+        watchlist.addAll(titles);
     }
 
     /**
@@ -5025,10 +5025,10 @@ public class Wiki implements Comparable<Wiki>
      *  @see #watch
      *  @since 0.18
      */
-    public void unwatch(String... titles) throws IOException
+    public void unwatch(List<String> titles) throws IOException
     {
-        watchInternal(true, titles);
-        watchlist.removeAll(List.of(titles));
+        watchInternal(titles, true);
+        watchlist.removeAll(titles);
     }
 
     /**
@@ -5043,7 +5043,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see #unwatch
      *  @since 0.18
      */
-    protected void watchInternal(boolean unwatch, String... titles) throws IOException
+    protected void watchInternal(List<String> titles, boolean unwatch) throws IOException
     {
         // create the watchlist cache
         String state = unwatch ? "unwatch" : "watch";
@@ -5054,13 +5054,13 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         if (unwatch)
             postparams.put("unwatch", "1");
-        for (String titlestring : constructTitleString(List.of(titles)))
+        for (String titlestring : constructTitleString(titles))
         {
             postparams.put("titles", titlestring);
             postparams.put("token", getToken("watch"));
             makeApiCall(getparams, postparams, state);
         }
-        log(Level.INFO, state, "Successfully " + state + "ed " + Arrays.toString(titles));
+        log(Level.INFO, state, "Successfully " + state + "ed " + titles.size() + " pages.");
     }
 
     /**
@@ -8341,10 +8341,10 @@ public class Wiki implements Comparable<Wiki>
         
         // actually construct the string
         ArrayList<String> ret = new ArrayList<>();
-        for (int i = 0; i < titles.size() / slowmax + 1; i++)
+        for (int i = 0; i < titles_enc.size() / slowmax + 1; i++)
         {
             ret.add(String.join("|", 
-                titles_enc.subList(i * slowmax, Math.min(titles.size(), (i + 1) * slowmax))));     
+                titles_enc.subList(i * slowmax, Math.min(titles_enc.size(), (i + 1) * slowmax))));     
         }
         return ret;
     }

@@ -113,7 +113,7 @@
                 + URLEncoder.encode(category, StandardCharsets.UTF_8) + ".txt");
         out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         out.println();
-        out.prinst(survey);
+        out.println(survey);
         out.println(surveyor.generateWikitextFooter());
         return;
     }

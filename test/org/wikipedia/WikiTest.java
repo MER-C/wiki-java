@@ -42,6 +42,7 @@ public class WikiTest
 
     /**
      *  Construct wiki objects for each test so that tests are independent.
+     *  Don't put network requests here.
      *  @throws Exception if a network error occurs
      */
     public WikiTest() throws Exception
@@ -56,7 +57,6 @@ public class WikiTest
         testWiki.setMaxLag(-1);
         enWikt = Wiki.newSession("en.wiktionary.org");
         enWikt.setMaxLag(-1);
-        enWikt.getSiteInfo();
 
         sha256 = MessageDigest.getInstance("SHA-256");
     }
@@ -109,14 +109,15 @@ public class WikiTest
         enWiki.setAssertionMode(Wiki.ASSERT_USER);
         assertEquals(Wiki.ASSERT_USER, enWiki.getAssertionMode(), "check assertion mode set");
         // This test runs logged out. The following assertions are expected to fail.
-        assertThrows(AssertionError.class, () -> enWiki.getPageText("Main Page"), "ASSERT_USER");
+        List<String> pages = List.of("Main Page");
+        assertThrows(AssertionError.class, () -> enWiki.getPageText(pages).get(0), "ASSERT_USER");
         enWiki.setAssertionMode(Wiki.ASSERT_BOT);
-        assertThrows(AssertionError.class, () -> enWiki.getPageText("Main Page"), "ASSERT_BOT");
+        assertThrows(AssertionError.class, () -> enWiki.getPageText(pages).get(0), "ASSERT_BOT");
         // This only trips on write requests.
         // enWiki.setAssertionMode(Wiki.ASSERT_SYSOP);
         // assertThrows(AssertionError.class, () -> enWiki.getPageText("Main Page"), "ASSERT_SYSOP");
         enWiki.setAssertionMode(Wiki.ASSERT_NONE);
-        enWiki.getPageText("Main Page"); // no exception
+        enWiki.getPageText(pages); // no exception
     }
 
     @Test
@@ -341,9 +342,9 @@ public class WikiTest
         // https://en.wikipedia.org/wiki/Template:POTD/2018-11-01
         List<String> pages = List.of("Skflsj&dkfs", "Template:POTD/2018-11-01", "User:MER-C/monobook.js");
         List<List<String>> images = enWiki.getImagesOnPage(pages);
-        assertEquals(Collections.emptyList(), images.get(0), "non-existent page");
+        assertTrue(images.get(0).isEmpty(), "non-existent page");
         assertEquals(List.of("File:Adelie Penguins on iceberg.jpg"), images.get(1));
-        assertEquals(Collections.emptyList(), images.get(2), "page with no images");
+        assertTrue(images.get(2).isEmpty(), "page with no images");
     }
 
     @Test
@@ -357,14 +358,14 @@ public class WikiTest
             "User:MER-C/monobook.js",
             "user:MER-C/UnitTests/templates test"); // same as [1]
         List<List<String>> results = testWiki.getTemplates(pages);
-        assertEquals(Collections.emptyList(), results.get(0), "non-existent page");
+        assertTrue(results.get(0).isEmpty(), "non-existent page");
         assertEquals(1, results.get(1).size());
         assertEquals("Template:La", results.get(1).get(0));
-        assertEquals(Collections.emptyList(), results.get(2), "page with no templates");
+        assertTrue(results.get(2).isEmpty(), "page with no templates");
         assertEquals(results.get(1), results.get(3), "duplicate");
 
         pages = List.of(pages.get(1));
-        assertEquals(Collections.emptyList(), testWiki.getTemplates(pages, Wiki.MAIN_NAMESPACE).get(0), "namespace filter");
+        assertTrue(testWiki.getTemplates(pages, Wiki.MAIN_NAMESPACE).get(0).isEmpty(), "namespace filter");
         assertEquals(List.of("Template:La"), testWiki.getTemplates(pages, Wiki.TEMPLATE_NAMESPACE).get(0), "namespace filter");
     }
 
@@ -797,7 +798,7 @@ public class WikiTest
         // general test (generally too non-deterministic for functionality testing)
         List<List<String>> results = enWiki.whatLinksHere(List.of("Empty page title 1234"), false);
         assertEquals(1, results.size());
-        assertEquals(Collections.emptyList(), results.get(0));
+        assertTrue(results.get(0).isEmpty());
         
         // check namespace filtering (can test functionality here)
         List<String> titles = List.of("Wikipedia:Featured picture candidates");
@@ -819,11 +820,11 @@ public class WikiTest
         List<List<String>> results = enWiki.whatTranscludesHere(titles);
         assertEquals(4, results.size());
         assertEquals(List.of("Wikipedia:Articles for deletion/Log/2018 April 23"), results.get(0));
-        assertEquals(Collections.emptyList(), results.get(1));
+        assertTrue(results.get(1).isEmpty());
         assertEquals(List.of("Wikipedia:Articles for deletion/Log/2018 April 22"), results.get(2));
         assertEquals(List.of("Wikipedia:Articles for deletion/Log/2018 April 24"), results.get(3));
         titles = List.of("Wikipedia:Articles for deletion/MegaMeeting.com");
-        assertEquals(Collections.emptyList(), enWiki.whatTranscludesHere(titles, Wiki.MAIN_NAMESPACE).get(0), "namespace filter");
+        assertTrue(enWiki.whatTranscludesHere(titles, Wiki.MAIN_NAMESPACE).get(0).isEmpty(), "namespace filter");
     }
 
     @Test
@@ -832,7 +833,7 @@ public class WikiTest
         List<Wiki.User> users = enWiki.getUsers(List.of(
             "LakeishaDurham0", // blocked spambot
             "Mifter")); // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
-        assertEquals(Collections.emptyList(), enWiki.getUploads(users.get(0), null), "no uploads");
+        assertTrue(enWiki.getUploads(users.get(0), null).isEmpty(), "no uploads");
         OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
         Wiki.RequestHelper rh = enWiki.new RequestHelper().withinDateRange(odt, odt.plusMinutes(20));
         List<Wiki.LogEntry> results = enWiki.getUploads(users.get(1), rh);
@@ -1005,10 +1006,10 @@ public class WikiTest
     public void getPageText() throws Exception
     {
         assertThrows(UnsupportedOperationException.class,
-            () -> testWiki.getPageText("Special:Specialpages"),
+            () -> testWiki.getPageText(List.of("Special:Specialpages")),
             "Tried to get page text for a special page!");
         assertThrows(UnsupportedOperationException.class,
-            () -> testWiki.getPageText("Media:Example.png"),
+            () -> testWiki.getPageText(List.of("Media:Example.png")),
             "Tried to get page text for a media page!");
 
         List<String> text = testWiki.getPageText(List.of(
@@ -1135,9 +1136,11 @@ public class WikiTest
     public void constructTitleString() throws Exception
     {
         List<String> titles = new ArrayList<>();
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 101; i++)
             titles.add("a" + i);
-        titles.add("A34"); // should be removed
+        // duplicates should be removed
+        for (int i = 0; i < 101; i++)
+            titles.add("A" + i);
         List<String> expected = new ArrayList<>();
         // slowmax == 50 for Wikimedia wikis if not logged in
         expected.add("A0|A1|A10|A100|A11|A12|A13|A14|A15|A16|A17|A18|A19|A2|" +
@@ -1198,7 +1201,7 @@ public class WikiTest
     @Test
     public void userIsAllowedTo() throws Exception
     {
-        Wiki.User user = enWiki.getUser("LornaIln046035"); // spambot
+        Wiki.User user = enWiki.getUsers(List.of("LornaIln046035")).get(0); // spambot
         assertTrue(user.isAllowedTo("read"));
         assertFalse(user.isAllowedTo("checkuser"));
         assertFalse(user.isAllowedTo("sdlkghsdlkgsd"));
@@ -1207,7 +1210,7 @@ public class WikiTest
     @Test
     public void userIsA() throws Exception
     {
-        Wiki.User me = testWiki.getUser("MER-C");
+        Wiki.User me = testWiki.getUsers(List.of("MER-C")).get(0);
         assertTrue(me.isA("sysop"));
         assertFalse(me.isA("founder"));
         assertFalse(me.isA("sdlkghsdlkgsd"));

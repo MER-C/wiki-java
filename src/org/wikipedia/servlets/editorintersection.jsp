@@ -83,7 +83,7 @@ first in the GUI) apply.
     switch (mode)
     {
         case "category":
-            pagestream = Arrays.stream(wiki.getCategoryMembers(category));
+            pagestream = wiki.getCategoryMembers(category).stream();
             break;
         case "contribs":
             pagestream = wiki.contribs(user, null).stream().map(Wiki.Revision::getTitle);

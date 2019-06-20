@@ -297,9 +297,10 @@ public class WMFWiki extends Wiki
         if (globalblacklist == null)
         {
             WMFWiki meta = newSession("meta.wikimedia.org");
-            globalblacklist = meta.getPageText("Spam blacklist");
+            globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
         }
-        Objects.requireNonNullElse(localblacklist, getPageText("MediaWiki:Spam-blacklist"));
+        if (localblacklist == null)
+            localblacklist = getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
         
         // yes, I know about the spam whitelist, but I primarily intend to use
         // this to check entire domains whereas the spam whitelist tends to 
