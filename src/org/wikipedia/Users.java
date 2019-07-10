@@ -107,6 +107,20 @@ public class Users
             +  "[[Special:Block/" + username + "|block]] | "
             +  "[{{fullurl:Special:Log|type=block&page=User:" + userenc + "}} block log])\n";
     }
+
+    /**
+     *  Creates user links in wikitext of the form <samp>User (talk &middot; 
+     *  contribs)</samp>.
+     *  @param username the username
+     *  @return the generated wikitext
+     *  @see #generateHTMLSummaryLinksShort(String) 
+     */
+    public static String generateWikitextSummaryLinksShort(String username)
+    {
+        return "[[User:" + username + "|" + username + "]] (" 
+            +  "[[User talk:" + username + "|talk]] &middot; "
+            +  "[[Special:Contributions/" + username + "|contribs]])";
+    }
     
     /**
      *  Returns a list of pages created by this user in the given namespaces
