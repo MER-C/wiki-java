@@ -5657,6 +5657,8 @@ public class Wiki implements Comparable<Wiki>
      *  <ul>
      *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime,
      *      OffsetDateTime) date range}
+     *  <li>{@link Wiki.RequestHelper#filterBy(Map) filter by}: "range" (range blocks),
+     *      ip (IP blocks), "temp" (temporary blocks), "account" (account blocks)
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
@@ -5680,13 +5682,14 @@ public class Wiki implements Comparable<Wiki>
             helper.setRequestType("bk");
             getparams.putAll(helper.addDateRangeParameters());
             getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addShowParameter());
             limit = helper.limit();
         }
         if (user != null)
             getparams.put("bkusers", normalize(user));
 
         // connection
-        List<LogEntry> entries = makeListQuery("bk", getparams, null, "getIPBlockList", limit, (line, results) ->
+        List<LogEntry> entries = makeListQuery("bk", getparams, null, "getBlockList", limit, (line, results) ->
         {
             // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot"
             // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z"
