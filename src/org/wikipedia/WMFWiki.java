@@ -116,10 +116,10 @@ public class WMFWiki extends Wiki
      *  <li>home - (String) a String identifying the home wiki (e.g. "enwiki" 
      *      for the English Wikipedia)
      *  <li>registration - (OffsetDateTime) when the single account login was created
-     *  <li>groups - (List&lt;String>) this user is a member of these global 
+     *  <li>groups - (List&lt;String&gt;) this user is a member of these global 
      *      groups
-     *  <li>rights - (List&lt;String) this user is explicitly granted the ability
-     *      to perform these actions globally
+     *  <li>rights - (List&lt;String&gt;) this user is explicitly granted the 
+     *      ability to perform these actions globally
      *  <li>locked - (Boolean) whether this user account has been locked
      *  <li>WIKI IDENTIFIER (e.g. "enwikisource" == "en.wikisource.org") - see below
      *  </ul>
@@ -128,7 +128,7 @@ public class WMFWiki extends Wiki
      *  For each wiki, a map is returned:
      *  <ul>
      *  <li>url - (String) the full URL of the wiki
-     *  <li>groups - (List&lt;String>) the local groups the user is in
+     *  <li>groups - (List&lt;String&gt;) the local groups the user is in
      *  <li>editcount - (Integer) the local edit count
      *  <li>blocked - (Boolean) whether the user is blocked. Adds keys "blockexpiry"
      *      (OffsetDateTime) and "blockreason" (String) with obvious values. If the

@@ -294,7 +294,7 @@ public class AdminStats
     /**
      *  Bins locks of global accounts by reason. The total number of locks is
      *  available in a special key "TOTAL".
-     *  @return a map: lock reason &rarrow; count
+     *  @return a map: lock reason &#8594; count
      *  @see <a href="https://meta.wikimedia.org/wiki/SRG">Requests for global
      *  locking</a>
      *  @throws IOException if a network error occurs
@@ -317,7 +317,7 @@ public class AdminStats
      *  exclusive.
      *  @param lockhist the histogram of lock reasons to group (remove the TOTAL
      *  key first)
-     *  @return a map: lock reason &rarrow; count
+     *  @return a map: lock reason &#8594; count
      */
     public Map<String, Long> groupLockReasons(Map<String, Long> lockhist)
     {
@@ -351,7 +351,7 @@ public class AdminStats
      *  The total number of blocks is available in a special key "TOTAL".
      *  @param accountsonly look at registered accounts only
      *  @param indefonly look at indefinite blocks only
-     *  @return a map: block reason &rarrow; count
+     *  @return a map: block reason &#8594; count
      *  @see <a href="https://en.wikipedia.org/wiki/Special:Blocklist">list of
      *  current blocks</a>
      *  @throws IOException if a network error occurs

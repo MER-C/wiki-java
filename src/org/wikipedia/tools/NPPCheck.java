@@ -333,7 +333,7 @@ public class NPPCheck
 
     /**
      *  Fetches events corresponding to new articles depending on mode. If
-     *  mode is {@link Mode.UNPATROLLED}, the result is a list of {@link Wiki.Revision}
+     *  mode is {@link Mode#UNPATROLLED}, the result is a list of {@link Wiki.Revision}
      *  output from {@link Wiki#newPages(RequestHelper)}. You must possess NPP
      *  rights. Otherwise the result is a list of {@link Wiki#MOVE_LOG} or 
      *  {@link Wiki#PATROL_LOG} {@link Wiki.LogEntry}.

@@ -402,7 +402,7 @@ public class WikiTest
         enWiki.getImage("File:Portrait of Jupiter from Cassini.jpg", tempfile);
         byte[] imageData = Files.readAllBytes(tempfile.toPath());
         byte[] hash = sha256.digest(imageData);
-        assertEquals("fc63c250bfce3f3511ccd144ca99b451111920c100ac55aaf3381aec98582035",
+        assertEquals("8fcc49c1e86ce65a5f1cd7d39da314315114f13c845ac2ac3532b5f85ae88af7",
             String.format("%064x", new BigInteger(1, hash)));
         Files.delete(tempfile.toPath());
     }

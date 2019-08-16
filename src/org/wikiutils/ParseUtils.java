@@ -29,7 +29,7 @@ public class ParseUtils
 	
 	/**
 	 *  Gets the target of the redirect page. 
-         *  <br><b>PRECONDITION</b>: <tt>redirect</tt> must be a Redirect.
+         *  <br><b>PRECONDITION</b>: <code>redirect</code> must be a Redirect.
 	 * 
 	 *  @param redirect The title of the redirect to get the target for.
 	 *  @param wiki The wiki object to use.
@@ -71,9 +71,9 @@ public class ParseUtils
 	}
 
 	/**
-	 * Used to check if <tt>{{bots}}</tt> or <tt>{{robots}}</tt>, case-insensitive, is present in a String.
+	 * Used to check if <code>{{bots}}</code> or <code>{{robots}}</code>, case-insensitive, is present in a String.
 	 * 
-	 * @param text The String to check for <tt>{{bots}}</tt> or <tt>{{nobots}}</tt>
+	 * @param text The String to check for <code>{{bots}}</code> or <code>{{nobots}}</code>
 	 * @param user The account to check for, without the "User:" prefix.
 	 * 
 	 * @return boolean True if this particular bot should be allowed to edit this page.
@@ -190,7 +190,7 @@ public class ParseUtils
 	 * 
 	 * @param text Text to search
 	 * @param template The Template (in template namespace) to look for. DO NOT add namespace prefix.
-	 * @param redirects Specify <tt>true</tt> to incorporate redirects in this parse job for this template.
+	 * @param redirects Specify <code>true</code> to incorporate redirects in this parse job for this template.
 	 * @param wiki The wiki object to use
 	 * 
 	 * @return The template we parsed out, in the form {{TEMPLATE|ARG1|ARG2|...}} or NULL, if we didn't find the specified template.

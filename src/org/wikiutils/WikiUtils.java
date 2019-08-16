@@ -28,7 +28,7 @@ public class WikiUtils
 
 	/**
 	 * Returns all the items in an array that are within the specified namespace. e.g.
-	 * <tt>listNamespaceSort(list, WIKI.FILE_NAMESPACE, wiki);</tt>
+	 * <code>listNamespaceSort(list, WIKI.FILE_NAMESPACE, wiki);</code>
 	 * 
 	 * @param wiki The wiki object to use.
 	 * @param ns The namespace filter.  Items in this namespace shall be returned.
@@ -54,7 +54,7 @@ public class WikiUtils
 	 * Generic find and replace method.
 	 * 
 	 * @param find The text to be found. You can use a regex for this
-	 * @param replacement The text to replace any text matching the <tt>find</tt> field
+	 * @param replacement The text to replace any text matching the <code>find</code> field
 	 * @param summary The edit summary to use
 	 * @param wiki The wiki object to use
 	 * @param pages The wiki pages to act upon.

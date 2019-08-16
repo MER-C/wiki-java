@@ -33,7 +33,7 @@ public class StringUtils
 	 * @param text main body of text to check.
 	 * @param s2 we will try to check if s2 is contained in text.
 	 * 
-	 * @return True if <tt>s2</tt> was found, case-insensitive, in <tt>text</tt>.
+	 * @return True if <code>s2</code> was found, case-insensitive, in <code>text</code>.
 	 * 
 	 */
 
@@ -108,7 +108,7 @@ public class StringUtils
 	 * Parses out the extension of a file.
 	 * 
 	 * @param f The file to get an extension from
-	 * @throws IllegalArgumentException If <tt>f</tt> is a directory.
+	 * @throws IllegalArgumentException If <code>f</code> is a directory.
 	 * @return The extension of the file, without the "."
 	 * 
 	 * @see #getFileExt(String)

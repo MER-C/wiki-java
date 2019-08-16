@@ -105,7 +105,7 @@ public class GUIUtils
 	 * user cancels/closes the dialog box.
 	 * 
 	 * @param starting Starting directory. If you want to use the user's home directory, I suggest
-	 *           using <tt>System.getProperty("user.home")</tt>
+	 *           using <code>System.getProperty("user.home")</code>
 	 * @return A list of Files representing directories the user selected.
 	 * @throws IllegalArgumentException If the solitary param is non-existent or not a directory.
 	 */
