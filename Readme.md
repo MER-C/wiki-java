@@ -49,7 +49,7 @@ isolate your development environment.
 ## Documentation
 
 * [Javadoc](https://wikipediatools.appspot.com/doc/index.html)
-* [Deploying these tools on your own server](https://wikipediatools.appspot.com/doc/org/wikipedia/servlets/package-summary.html)
+* [Deploying these tools on your own server](src/org/wikipedia/servlets/package-info.java)
 * [Extended documentation](https://github.com/MER-C/wiki-java/wiki/Extended-documentation),
   including an example program
 * See [the page on Wikipedia](https://en.wikipedia.org/wiki/User:MER-C/Wiki.java)
