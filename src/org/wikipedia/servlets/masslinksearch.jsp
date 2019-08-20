@@ -27,7 +27,7 @@
     else
         inputdomains = "";
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 
 <p>
 This tool searches a single project for a large collection of links. Enter 
@@ -104,4 +104,4 @@ for more domains.
 <%
     }
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>

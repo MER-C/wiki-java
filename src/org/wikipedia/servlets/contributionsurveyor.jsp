@@ -98,7 +98,7 @@
         }
     }
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 <%  
     if (survey != null)
     {
@@ -153,4 +153,4 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 </table>
 <input type=submit value="Survey user">
 </form>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>

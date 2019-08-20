@@ -34,7 +34,7 @@
 %>
 
 <%@ include file="datevalidate.jspf" %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 
 <p>
 This tool retrieves contributions of a list of users. There is a limit of 50
@@ -81,14 +81,14 @@ Someone # Spam
     if (inputpage == null)
     {
         %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
         <%
     }
 
     Map<String, String> input = new LinkedHashMap<>();
     if (enWiki.namespace(inputpage) == Wiki.CATEGORY_NAMESPACE)
     {
-        String[] catmembers = enWiki.getCategoryMembers(inputpage);
+        List<String> catmembers = enWiki.getCategoryMembers(inputpage);
         for (String member : catmembers)
             input.put(enWiki.removeNamespace(member), "");
     }
@@ -100,7 +100,7 @@ Someone # Spam
         {
             request.setAttribute("error", "TESTING WOOP WOOP WOOP!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
         }
         String text = enWiki.getPageText(inputpage);
@@ -108,7 +108,7 @@ Someone # Spam
         {
             request.setAttribute("error", "ERROR: page &quot;" + ServletUtils.sanitizeForHTML(inputpage) + "&quot; does not exist!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
         }
         // parse input
@@ -136,7 +136,7 @@ Someone # Spam
     {
         request.setAttribute("error", "TESTING WOOP WOOP WOOP!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
 
@@ -144,7 +144,7 @@ Someone # Spam
     {
         request.setAttribute("error", "ERROR: no users found!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
 
@@ -190,4 +190,4 @@ Someone # Spam
     // end pagination
     out.println(ServletUtils.generatePagination(requesturl, skip, 50, input.size()));
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>

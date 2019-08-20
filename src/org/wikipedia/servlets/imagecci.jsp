@@ -38,7 +38,7 @@
         }
     }
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 <%
     if (survey != null)
     {
@@ -77,4 +77,4 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
     if (user != null && survey == null)
         request.setAttribute("error", "ERROR: User " + ServletUtils.sanitizeForHTML(user) + " does not exist!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>

@@ -33,7 +33,7 @@
  *  a WAR file to deploy to your servlet container by running:
  *
  *  <pre>
- *  mvn clean package javadoc:javadoc war:war -Dmaven.test.skip
+ *  mvn clean package jetty-jspc:jspc javadoc:javadoc war:war -Dmaven.test.skip
  *  </pre>
  * 
  *  @see <a href="https://wikipediatools.appspot.com">wikipediatools.appspot.com</a>

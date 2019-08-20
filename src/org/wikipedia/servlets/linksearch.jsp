@@ -25,7 +25,7 @@
     boolean mainns = temp != null && temp.equals("0");
     int[] ns = mainns ? new int[] { Wiki.MAIN_NAMESPACE } : new int[0];
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 
 <p>
 This tool searches various Wikimedia projects for a specific link. Enter a 
@@ -76,7 +76,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
     if (domain.isEmpty())
     {
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
     Map<Wiki, List<String[]>> results = null;
@@ -99,7 +99,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
             default:
                 request.setAttribute("error", "Invalid wiki set selected!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
         }
     }
@@ -124,4 +124,4 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         out.println(pageutils.generatePageLink("Special:Linksearch/https://*." + domain, "HTTPS linksearch") + ").");
     }
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>

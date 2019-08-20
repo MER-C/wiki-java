@@ -14,7 +14,7 @@
     NPPCheck.Mode mode = NPPCheck.Mode.fromString(request.getParameter("mode"));
     String offsetparam = Objects.requireNonNullElse(request.getParameter("offset"), "0");  
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 
 <p>
 This tool retrieves recent new page patrols and moves from draft/user space to 
@@ -44,7 +44,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
     if (mode == null)
     {
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
     out.println("<hr>");
@@ -63,7 +63,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
     {
 %>
 <p>No results found!
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
 
@@ -199,5 +199,5 @@ main space for a given user (or for all users) and page metadata. A query limit 
     // output pagination
     out.println(ServletUtils.generatePagination(requesturl, offset, 50, logs.size()));
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 

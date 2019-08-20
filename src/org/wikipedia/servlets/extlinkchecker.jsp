@@ -13,7 +13,7 @@
     String wiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String title = ServletUtils.sanitizeForAttribute(request.getParameter("title"));
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 
 <p>
 This tool performs linksearches to count how many live links exist to each 
@@ -51,4 +51,4 @@ long-standing reference spam.
         }
     }
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>

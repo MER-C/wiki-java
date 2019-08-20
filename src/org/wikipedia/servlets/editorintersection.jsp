@@ -24,7 +24,7 @@
     boolean nominor = (request.getParameter("nominor") != null);
     boolean noreverts = (request.getParameter("noreverts") != null);
 %>
-<%@ include file="header.jsp" %>
+<%@ include file="header.jspf" %>
 
 <p>
 This tool retrieves the common editors of a given set of pages. Query limits of
@@ -71,7 +71,7 @@ first in the GUI) apply.
     if (request.getAttribute("error") != null)
     {
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
 
@@ -94,7 +94,7 @@ first in the GUI) apply.
         default:
             // state with no input parameters       
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
         
@@ -106,7 +106,7 @@ first in the GUI) apply.
     {
         request.setAttribute("error", "Need at least two distinct pages to perform an intersection!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
     ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
@@ -118,7 +118,7 @@ first in the GUI) apply.
     {
         request.setAttribute("error", "No intersection after applying exclusions and removing non-existing pages!");
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
 <%
     }
     Map<String, Map<String, List<Wiki.Revision>>> bypage = new HashMap<>();
@@ -167,4 +167,4 @@ first in the GUI) apply.
     out.println("<hr>");
     out.println(blah);
 %>
-<%@ include file="footer.jsp" %>
+<%@ include file="footer.jspf" %>
