@@ -372,16 +372,20 @@ public class WikiTest
     @Test
     public void getCategories() throws Exception
     {
-        List<String> pages = List.of("sdkf&hsdklj", "User:MER-C/monobook.js", "Category:~genre~ novels");
+        List<String> pages = List.of("sdkf&hsdklj", "User:MER-C/monobook.js",
+            "Category:Wikipedia articles with undisclosed paid content");
+        List<String> expected2 = List.of("Category:Hidden categories",            
+            "Category:Wikipedia articles with paid content",
+            "Category:Wikipedia maintenance categories sorted by month");
         List<List<String>> actual = enWiki.getCategories(pages, null, false);
         assertTrue(actual.get(0).isEmpty(), "non-existent page");
         assertTrue(actual.get(1).isEmpty(), "page with no categories");
-        assertEquals(actual.get(2), List.of("Category:Hidden categories"), "page with one category");
+        assertEquals(expected2, actual.get(2), "page with three categories");
 
         Wiki.RequestHelper rh = enWiki.new RequestHelper()
             .filterBy(Map.of("hidden", Boolean.FALSE));
-        actual = enWiki.getCategories(List.of("Category:~genre~ novels"), rh, false);
-        assertTrue(actual.get(0).isEmpty(), "filter hidden categories");
+        actual = enWiki.getCategories(List.of("Category:Wikipedia articles with undisclosed paid content"), rh, false);
+        assertEquals(expected2.subList(1, 3), actual.get(0), "filter hidden categories");
     }
 
     @Test
