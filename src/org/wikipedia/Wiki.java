@@ -5302,7 +5302,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String[] whatLinksHere(String title, int... ns) throws IOException
     {
-        return whatLinksHere(List.of(title), false, ns).get(0).toArray(String[]::new);
+        return whatLinksHere(List.of(title), false, false, ns).get(0).toArray(String[]::new);
     }
 
     /**
@@ -5310,17 +5310,50 @@ public class Wiki implements Comparable<Wiki>
      *  namespaces. Output order is the same as input order. Alternatively, we
      *  can retrieve a list of what redirects to a page by setting
      *  <var>redirects</var> to true. Equivalent to [[Special:Whatlinkshere]].
+     * 
+     *  <p>
+     *  If <var>addredirects</var> is true, pages that link to a redirect that
+     *  targets all given pages are added to the results. If namespaces are
+     *  specified, both redirect and linking page must be in those namespaces. 
+     *  WARNING: this is significantly slower!
      *
      *  @param titles a list of titles
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param redirects whether we should limit to redirects only
+     *  @param addredirects should we fetch all links to redirects to each page 
+     *  as well (slow)?
      *  @return the list of pages linking to the specified page
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.10
      */
-    public List<List<String>> whatLinksHere(List<String> titles, boolean redirects, int... ns) throws IOException
+    public List<List<String>> whatLinksHere(List<String> titles, boolean redirects, boolean addredirects, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        if (addredirects)
+        {
+            // only the non-vectorized API query permits this i.e. one page = at
+            // least one network request (the limit is also halved)
+            List<List<String>> ret = new ArrayList<>();
+            getparams.put("list", "backlinks");
+            getparams.put("blredirect", "1");
+            if (redirects)
+                getparams.put("blfilterredir", "redirects");
+            if (ns.length > 0)
+                getparams.put("blnamespace", constructNamespaceString(ns));
+            for (String title : titles)
+            {
+                getparams.put("bltitle", title);
+                List<String> backlinks = makeListQuery("bl", getparams, null, "whatLinksHere", -1, (result, results) ->
+                {
+                    // xml form: <bl pageid="323710" ns="0" title="MediaWiki" />
+                    for (int a = result.indexOf("<bl "); a > 0; a = result.indexOf("<bl ", ++a))
+                        results.add(parseAttribute(result, "title", a));
+                });
+                ret.add(backlinks);
+            }
+            log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + ret.size() + " pages.");
+            return ret;
+        }
         getparams.put("prop", "linkshere");
         if (ns.length > 0)
             getparams.put("lhnamespace", constructNamespaceString(ns));

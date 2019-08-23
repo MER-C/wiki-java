@@ -800,20 +800,26 @@ public class WikiTest
     public void whatLinksHere() throws Exception
     {
         // general test (generally too non-deterministic for functionality testing)
-        List<List<String>> results = enWiki.whatLinksHere(List.of("Empty page title 1234"), false);
+        List<List<String>> results = enWiki.whatLinksHere(List.of("Empty page title 1234"), false, false);
         assertEquals(1, results.size());
         assertTrue(results.get(0).isEmpty());
         
         // check namespace filtering (can test functionality here)
         List<String> titles = List.of("Wikipedia:Featured picture candidates");
-        results = enWiki.whatLinksHere(titles, false, Wiki.MAIN_NAMESPACE);
+        results = enWiki.whatLinksHere(titles, false, false, Wiki.MAIN_NAMESPACE);
         assertEquals(List.of("Wikipedia community", "Featured picture candidates", 
             "Featured picture candidate"), results.get(0), "namespace filter");
         
         // check redirect filtering
-        results = enWiki.whatLinksHere(titles, true, Wiki.MAIN_NAMESPACE);
+        results = enWiki.whatLinksHere(titles, true, false, Wiki.MAIN_NAMESPACE);
         assertEquals(List.of("Featured picture candidates", "Featured picture candidate"),
-            results.get(0), "namespace filter");        
+            results.get(0), "namespace filter");
+        
+        // check adding redirects to results
+        results = testWiki.whatLinksHere(List.of("Main Page"), false, false, Wiki.HELP_NAMESPACE);
+        assertFalse(results.get(0).contains("Help:Wiki markup"));
+        results = testWiki.whatLinksHere(List.of("Main Page"), false, true, Wiki.HELP_NAMESPACE);
+        assertTrue(results.get(0).contains("Help:Wiki markup"));
     }
 
     @Test
