@@ -2553,15 +2553,34 @@ public class Wiki implements Comparable<Wiki>
      *  @return a map of interwiki links that page has (empty if there are no
      *  links)
      *  @throws IOException if a network error occurs
+     *  @deprecated this trampoline is going away
      *  @since 0.18
      */
+    @Deprecated(forRemoval=true)
     public Map<String, String> getInterWikiLinks(String title) throws IOException
     {
+        return getInterWikiLinks(List.of(title)).get(0);
+    }
+    
+    /**
+     *  Gets the list of interwiki links a particular page has. The returned
+     *  map has the format { language code : the page on the external wiki
+     *  linked to }.
+     *
+     *  @param titles a list of pages
+     *  @return a map of interwiki links that page has (empty if there are no
+     *  links)
+     *  @throws IOException if a network error occurs
+     *  @since 0.36
+     */
+    public List<Map<String, String>> getInterWikiLinks(List<String> titles) throws IOException
+    {
+        List<String> titles2 = new ArrayList<>(titles);
         Map<String, String> getparams = new HashMap<>();
+        Map<String, Object> postparams = new HashMap<>();
         getparams.put("prop", "langlinks");
-        getparams.put("titles", normalize(title));
-
-        List<String[]> blah = makeListQuery("ll", getparams, null, "getInterWikiLinks", -1, (line, results) ->
+        
+        BiConsumer<String, List<String[]>> parser = (line, results) ->
         {
             // xml form: <ll lang="en" />Main Page</ll> or <ll lang="en" /> for [[Main Page]]
             for (int a = line.indexOf("<ll "); a > 0; a = line.indexOf("<ll ", ++a))
@@ -2572,12 +2591,46 @@ public class Wiki implements Comparable<Wiki>
                 String page = decode(line.substring(b, c));
                 results.add(new String[] { language, page });
             }
-        });
+        };
+        
+        List<Map<String, Map<String, String>>> temp = new ArrayList<>();
+        for (String chunk : constructTitleString(titles2))
+        {
+            postparams.put("titles", chunk);
+            temp.addAll(makeListQuery("ll", getparams, postparams, "getInterWikiLinks", -1, (line, results) ->
+            {
+                // Split the result into individual listings for each article.
+                String[] x = line.split("<page ");
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, x[0]);
 
-        Map<String, String> interwikis = new HashMap<>(750);
-        blah.forEach(result -> interwikis.put(result[0], result[1]));
-        log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links on " + title);
-        return interwikis;
+                // Skip first element to remove front crud.
+                for (int i = 1; i < x.length; i++)
+                {
+                    String parsedtitle = parseAttribute(x[i], "title", 0);
+                    List<String[]> list = new ArrayList<>();
+                    parser.accept(x[i], list);
+                    
+                    Map<String, String> interwikis = new HashMap<>(750);
+                    list.forEach(result -> interwikis.put(result[0], result[1]));
+
+                    Map<String, Map<String, String>> intermediate = new HashMap<>();
+                    intermediate.put(parsedtitle, interwikis);
+                    results.add(intermediate);
+                }
+            }));
+        }
+
+        // sort out the order
+        Map<String, Map<String, String>> titletointerwiki = new HashMap<>();
+        List<Map<String, String>> ret = new ArrayList<>();
+        for (var entry : temp)
+            titletointerwiki.putAll(entry);
+        for (String title : titles2)
+            ret.add(titletointerwiki.get(normalize(title)));
+        
+        log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links for " + titles.size() + " pages.");
+        return ret;
     }
 
     /**
