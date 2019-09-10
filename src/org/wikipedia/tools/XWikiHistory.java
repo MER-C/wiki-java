@@ -33,23 +33,48 @@ import org.wikipedia.*;
 public class XWikiHistory
 {
     /**
-     * @param args the command line arguments
+     *  Runs this program.
+     *  @param args the command line arguments
      */
     public static void main(String[] args) throws Exception
     {
+        // TODO: 
+        // (1) parse the Wikidata history to look for deleted pages
+        // (2) excerpts from page history - first 5 and last 5 revisions
+        // (3) page metadata and usual page links (talk, history, delete, undelete, etc.)
+        // (4) page logs
+        // (5) more creator metadata
+        
         // expected: args[0] language, args[1] = article
         WMFWiki firstwiki = WMFWiki.newSession(args[0] + ".wikipedia.org");
-        Map<String, String> interwikis = firstwiki.getInterWikiLinks(args[1]);
+        List<Map<String, String>> interwikis = firstwiki.getInterWikiLinks(List.of(args[1]));
         Map<WMFWiki, String> wikiarticles = new LinkedHashMap<>();
         wikiarticles.put(firstwiki, args[1]);
-        for (var entry : interwikis.entrySet())
+        for (var entry : interwikis.get(0).entrySet())
         {
             WMFWiki new_wiki = WMFWiki.newSession(entry.getKey() + ".wikipedia.org");
             wikiarticles.put(new_wiki, entry.getValue());
         }
         
         System.out.println("{| class=\"wikitable sortable\"");
-        System.out.println("! Language !! Page !! Creation date !! Creator !! Creator foreign edit count !! Snippet");        
+        System.out.println("! Language !! Page !! Creation date !! Creator !! Creator foreign edit count !! Snippet");
+        
+        // Wikidata
+        String wdtitle = firstwiki.getWikidataItems(List.of(args[1])).get(0);
+        if (wdtitle != null)
+        {
+            WMFWiki wikidata = WMFWiki.newSession("www.wikidata.org");
+            Wiki.Revision last = wikidata.getFirstRevision(wdtitle);
+            Wiki.User creator = wikidata.getUsers(List.of(last.getUser())).get(0);
+            List<String> cells = List.of(
+                "Wikidata",
+                "[[d:" + wdtitle + "|" + wdtitle + "]]",
+                last.getTimestamp().toString(),
+                Users.generateWikitextSummaryLinksShort(last.getUser()), 
+                creator == null ? "null" : String.valueOf(creator.countEdits()), "-");
+            System.out.println(WikitextUtils.addTableRow(cells));
+        }
+        
         for (var entry : wikiarticles.entrySet())
         {
             WMFWiki wiki = entry.getKey();

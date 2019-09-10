@@ -37,6 +37,15 @@ public class WMFWiki extends Wiki
     private static String globalblacklist;
     private String localblacklist;
     
+    // global wiki instances
+    private static WMFWiki meta = newSession("meta.wikimedia.org");
+    private static WMFWiki wikidata = newSession("wikidata.org");
+    static
+    {
+        meta.requiresExtension("SiteMatrix"); // getSiteMatrix
+        wikidata.requiresExtension("WikibaseRepository");
+    }
+    
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
      *  through [[Special:Log]] or getLogEntries.
@@ -82,11 +91,9 @@ public class WMFWiki extends Wiki
      */
     public static List<WMFWiki> getSiteMatrix() throws IOException
     {
-        WMFWiki wiki = newSession("en.wikipedia.org");
-        wiki.requiresExtension("SiteMatrix");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
-        String line = wiki.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
+        String line = meta.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
         List<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
@@ -295,10 +302,7 @@ public class WMFWiki extends Wiki
     {
         requiresExtension("SpamBlacklist");
         if (globalblacklist == null)
-        {
-            WMFWiki meta = newSession("meta.wikimedia.org");
             globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
-        }
         if (localblacklist == null)
             localblacklist = getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
         
@@ -468,6 +472,43 @@ public class WMFWiki extends Wiki
         List<String> ret = new ArrayList<>();
         for (List<String> item : temp)
             ret.add(item.get(0));
+        return ret;
+    }
+    
+    /**
+     *  Returns the Wikidata items corresponding to the given titles.
+     *  @param titles a list of page names
+     *  @return the corresponding Wikidata items, or null if either the Wikidata
+     *  item or the local article doesn't exist
+     *  @throws IOException if a network error occurs
+     */
+    public List<String> getWikidataItems(List<String> titles) throws IOException
+    {
+        String dbname = (String)getSiteInfo().get("dbname");
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "wbgetentities");
+        getparams.put("sites", dbname);
+        
+        Map<String, String> results = new HashMap<>();
+        for (String chunk : constructTitleString(titles))
+        {
+            getparams.put("titles", chunk);
+            String line = wikidata.makeApiCall(getparams, null, "getWikidataItem");
+            String[] entities = line.split("<entity ");
+            for (int i = 1; i < entities.length; i++)
+            {
+                if (entities[i].contains("missing=\"\""))
+                    continue;
+                String wdtitle = parseAttribute(entities[i], " id", 0);
+                int index = entities[i].indexOf("\"" + dbname + "\"");
+                String localtitle = parseAttribute(entities[i], "title", index);
+                results.put(localtitle, wdtitle);
+            }
+        }
+        // reorder
+        List<String> ret = new ArrayList<>();
+        for (String title : titles)
+            ret.add(results.get(normalize(title)));
         return ret;
     }
 }

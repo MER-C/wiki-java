@@ -176,4 +176,18 @@ public class WMFWikiTest
         // guserinfo = WMFWiki.getGlobalUserInfo("127.0.0.1");
         // assertNull(guserinfo);
     }
+    
+    @Test
+    public void getWikidataItems() throws Exception
+    {
+        List<String> input = List.of("Blah", "Albert Einstein", "Create a page", "Test", 
+            "Albert_Einstein", "User:MER-C");
+        List<String> actual = enWiki.getWikidataItems(input);
+        assertEquals("Q527633", actual.get(0));
+        assertEquals("Q937", actual.get(1));
+        assertNull(actual.get(2)); // local page doesn't exist
+        assertEquals("Q224615", actual.get(3));
+        assertEquals("Q937", actual.get(4));
+        assertNull(actual.get(5)); // local page exists, but no corresponding WD item
+    }
 }

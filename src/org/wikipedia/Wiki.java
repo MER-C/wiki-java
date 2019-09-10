@@ -413,6 +413,7 @@ public class Wiki implements Comparable<Wiki>
     // wiki properties
     private boolean siteinfofetched = false;
     private boolean wgCapitalLinks = true;
+    private String dbname;
     private String mwVersion;
     private ZoneId timezone = ZoneOffset.UTC;
     private Locale locale = Locale.ENGLISH;
@@ -692,6 +693,7 @@ public class Wiki implements Comparable<Wiki>
      *  <li><b>version</b>: (String) the MediaWiki version used for this wiki
      *  <li><b>timezone</b>: (ZoneId) the timezone the wiki is in, default = UTC
      *  <li><b>locale</b>: (Locale) the locale of the wiki
+     *  <li><b>dbname</b>: (String) the internal name of the database
      *  </ul>
      *
      *  @return (see above)
@@ -719,6 +721,7 @@ public class Wiki implements Comparable<Wiki>
             timezone = ZoneId.of(parseAttribute(bits, "timezone", 0));
             mwVersion = parseAttribute(bits, "generator", 0);
             locale = new Locale(parseAttribute(bits, "lang", 0));
+            dbname = parseAttribute(bits, "wikiid", 0);
 
             // parse extensions
             bits = line.substring(line.indexOf("<extensions>"), line.indexOf("</extensions>"));
@@ -763,6 +766,7 @@ public class Wiki implements Comparable<Wiki>
         siteinfo.put("version", mwVersion);
         siteinfo.put("locale", locale);
         siteinfo.put("extensions", extensions);
+        siteinfo.put("dbname", dbname);
         return siteinfo;
     }
 
@@ -5339,7 +5343,7 @@ public class Wiki implements Comparable<Wiki>
         });
 
         int size = pages.size();
-        log(Level.INFO, "imageUsage", "Successfully retrieved usages of File:" + image + " (" + size + " items)");
+        log(Level.INFO, "imageUsage", "Successfully retrieved usages of " + image + " (" + size + " items)");
         return pages;
     }
 

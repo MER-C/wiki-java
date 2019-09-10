@@ -63,8 +63,11 @@ public class FeaturedPictureCuration
             Wiki wiki = Wiki.newSession(parsedargs.get("--wiki"));
             Set<String> fpcanonical = getFeaturedPicturesFromList(wiki);
             
-            // There is a small amount of contamination of non-featured pictures
-            // on Commons.
+            // NOTE 1: API imageusage does not take into account file redirects
+            // therefore usage is always <= the real usage. File redirects should 
+            // be bypassed by editing the wiki.
+            // NOTE 2: There is a small amount of contamination of non-featured 
+            // pictures on Commons.
             enWiki.setQueryLimit(100);
             for (String image : fpcanonical)
             {
@@ -134,8 +137,11 @@ public class FeaturedPictureCuration
             return Collections.emptySet();
 
         Set<String> fps = new HashSet<>();
+        boolean temp = wiki.isResolvingRedirects();
+        wiki.setResolveRedirects(true);
         for (List<String> fpimages : wiki.getImagesOnPage(allfppages))
             fps.addAll(fpimages);
+        wiki.setResolveRedirects(temp);
         return fps;
     }
     

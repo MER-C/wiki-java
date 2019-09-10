@@ -94,15 +94,15 @@
                             <include>**/WikitextUtilsTest.java</include>
                             <include>**/ArrayUtilsTest.java</include>
                             <include>**/MathsAndStatsTest.java</include>
-                            <include>test/org/wikipedia/servlets/*Test.java</include>                            
-                            <include>test/org/wikipedia/tools/*Test.java</include>
+                            <include>**/org/wikipedia/servlets/*Test.java</include>                            
+                            <include>**/org/wikipedia/tools/*Test.java</include>
                         </includes>
                     </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.7.9</version>
+                    <version>0.8.4</version>
                     <executions>
                         <execution>
                             <id>pre-unit-test</id>
