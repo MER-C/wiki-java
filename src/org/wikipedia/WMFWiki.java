@@ -38,12 +38,15 @@ public class WMFWiki extends Wiki
     private String localblacklist;
     
     // global wiki instances
-    private static WMFWiki meta = newSession("meta.wikimedia.org");
-    private static WMFWiki wikidata = newSession("wikidata.org");
+    private static WMFWiki meta, wikidata;
     static
     {
+        meta = newSession("meta.wikimedia.org");
         meta.requiresExtension("SiteMatrix"); // getSiteMatrix
+        
+        wikidata = newSession("wikidata.org");
         wikidata.requiresExtension("WikibaseRepository");
+        wikidata.setUsingCompressedRequests(false); // huh?
     }
     
     /**
@@ -489,8 +492,22 @@ public class WMFWiki extends Wiki
         getparams.put("action", "wbgetentities");
         getparams.put("sites", dbname);
         
+        // WORKAROUND: this module doesn't accept mixed GET/POST requests
+        // often need to slice up titles into smaller chunks than slowmax (here 25)
+        // FIXME: replace with constructTitleString when Wikidata is behaving correctly
+        TreeSet<String> ts = new TreeSet<>();
+        for (String title : titles)
+            ts.add(normalize(title));
+        List<String> titles_enc = new ArrayList<>(ts);
+        ArrayList<String> titles_chunked = new ArrayList<>();
+        for (int i = 0; i < titles_enc.size() / 25 + 1; i++)
+        {
+            titles_chunked.add(String.join("|", 
+                titles_enc.subList(i * 25, Math.min(titles_enc.size(), (i + 1) * 25))));     
+        }
+        
         Map<String, String> results = new HashMap<>();
-        for (String chunk : constructTitleString(titles))
+        for (String chunk : titles_chunked)
         {
             getparams.put("titles", chunk);
             String line = wikidata.makeApiCall(getparams, null, "getWikidataItem");

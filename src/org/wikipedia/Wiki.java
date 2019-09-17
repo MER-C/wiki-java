@@ -50,10 +50,29 @@ import javax.security.auth.login.*;
  *  <a href="https://github.com/MER-C/wiki-java/wiki/Extended-documentation">here</a>.
  *  All wikilinks are relative to the English Wikipedia and all timestamps are in
  *  your wiki's time zone.
- *  </p>
+ *  <p>
  *  Please file bug reports <a href="https://en.wikipedia.org/wiki/User_talk:MER-C">here</a>
  *  or at the <a href="https://github.com/MER-C/wiki-java/issues">Github issue
  *  tracker</a>.
+ * 
+ *  <h3>Configuration variables</h3>
+ *  <p>
+ *  Some configuration is available through <code>java.util.Properties</code>. 
+ *  Set the system property <code>wiki-java.properties</code> to a file path
+ *  where a configuration file is located. The available variables are:
+ *  <ul>
+ *  <li><b>maxretries</b>: (default 2) the number of attempts to retry a network 
+ *      request before stopping
+ *  <li><b>connecttimeout</b>: (default 30000) maximum allowed time for a HTTP(s)
+ *      connection to be established in milliseconds
+ *  <li><b>readtimeout</b>: (default 180000) maximum allowed time for the read 
+ *      to take place in milliseconds (needs to be longer, some connections are 
+ *      slow and the data volume is large!). 
+ *  <li><b>loguploadsize</b>: (default 22, equivalent to 2^22 = 4 MB) controls 
+ *      the log2(size) of each chunk in chunked uploads. Disable chunked uploads 
+ *      by setting a large value here (50, equivalent to 2^50 = 1 PB will do).
+ *      Stuff you actually upload must be no larger than 4 GB.
+ * .</ul>
  *
  *  @author MER-C and contributors
  *  @version 0.36
@@ -396,7 +415,7 @@ public class Wiki implements Comparable<Wiki>
      *  resolution} and {@linkplain #setAssertionMode(int) user and bot assertions}
      *  when wanted by default. Add stuff to this map if you want to add parameters
      *  to every API call.
-     *  @see #makeApiCall(Map, Map, String)
+     *  @see #CCall(Map, Map, String)
      */
     protected ConcurrentHashMap<String, String> defaultApiParams;
 
@@ -447,18 +466,10 @@ public class Wiki implements Comparable<Wiki>
     // Store time when the last throttled action was executed
     private long lastThrottleActionTime = 0;
 
-    // retry count
-    private final int maxtries = 2;
-
-    // time to open a connection
-    private static final int CONNECTION_CONNECT_TIMEOUT_MSEC = 30000; // 30 seconds
-    // time for the read to take place. (needs to be longer, some connections are slow
-    // and the data volume is large!)
-    private static final int CONNECTION_READ_TIMEOUT_MSEC = 180000; // 180 seconds
-    // log2(upload chunk size). Default = 22 => upload size = 4 MB. Disable
-    // chunked uploads by setting a large value here (50 = 1 PB will do).
-    // Stuff you actually upload must be no larger than 2 GB.
-    private static final int LOG2_CHUNK_SIZE = 22;
+    // config via properties
+    private final int maxtries;
+    private final int connect_timeout_msec, read_timeout_msec;
+    private final int log2_upload_size;
 
     // CONSTRUCTORS AND CONFIGURATION
 
@@ -486,6 +497,26 @@ public class Wiki implements Comparable<Wiki>
         logger.setLevel(loglevel);
         logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
         cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+        
+        // read in config
+        Properties props = new Properties();
+        String filename = System.getProperty("wiki-java.properties");
+        if (filename != null)
+        {
+            try
+            {
+                InputStream in = new FileInputStream(new File(filename));
+                props.load(in);
+            }
+            catch (IOException ex)
+            {
+                logger.log(Level.WARNING, "Unable to load properties file " + filename);
+            }
+        }
+        maxtries = Integer.parseInt(props.getProperty("maxretries", "2"));
+        log2_upload_size = Integer.parseInt(props.getProperty("loguploadsize", "22")); // 4 MB
+        connect_timeout_msec = Integer.parseInt(props.getProperty("connecttimeout", "30000")); // 30 seconds
+        read_timeout_msec = Integer.parseInt(props.getProperty("readtimeout", "180000")); // 180 seconds
     }
 
     /**
@@ -4228,7 +4259,7 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("action", "upload");
         // chunked upload setup
         long filesize = file.length();
-        long chunks = (filesize >> LOG2_CHUNK_SIZE) + 1;
+        long chunks = (filesize >> log2_upload_size) + 1;
         String filekey = "";
         try (FileInputStream fi = new FileInputStream(file))
         {
@@ -4252,7 +4283,7 @@ public class Wiki implements Comparable<Wiki>
                 }
                 else
                 {
-                    long offset = i << LOG2_CHUNK_SIZE;
+                    long offset = i << log2_upload_size;
                     postparams.put("stash", "1");
                     postparams.put("offset", offset);
                     postparams.put("filesize", filesize);
@@ -4260,7 +4291,7 @@ public class Wiki implements Comparable<Wiki>
                         postparams.put("filekey", filekey);
 
                     // write the actual file
-                    long buffersize = Math.min(1 << LOG2_CHUNK_SIZE, filesize - offset);
+                    long buffersize = Math.min(1 << log2_upload_size, filesize - offset);
                     byte[] by = new byte[(int)buffersize]; // 32 bit problem. Why must array indices be ints?
                     fi.read(by);
                     postparams.put("chunk\"; filename=\"" + file.getName(), by);
@@ -8259,8 +8290,8 @@ public class Wiki implements Comparable<Wiki>
     protected URLConnection makeConnection(String url) throws IOException
     {
         URLConnection u = new URL(url).openConnection();
-        u.setConnectTimeout(CONNECTION_CONNECT_TIMEOUT_MSEC);
-        u.setReadTimeout(CONNECTION_READ_TIMEOUT_MSEC);
+        u.setConnectTimeout(connect_timeout_msec);
+        u.setReadTimeout(read_timeout_msec);
         if (zipped)
             u.setRequestProperty("Accept-encoding", "gzip");
         u.setRequestProperty("User-Agent", useragent);
