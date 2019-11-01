@@ -53,14 +53,16 @@ public class FeaturedPictureCuration
             .addBooleanFlag("--checktags", "Check whether FPs are tagged correctly (en.wp ONLY).")
             .addBooleanFlag("--checkusage", "Checks whether FPs are used in articles (en.wp or commons ONLY).")
             .addSingleArgumentFlag("--checknoms", "April 2019", "Checks whether all FPCs for a given month have been transcluded (en.wp ONLY)")
-            .addSingleArgumentFlag("--wiki", "example.org", "Fetch FPs from this wiki (see --checkusage).")
+            .addSingleArgumentFlag("--wiki", "example.org", "Fetch FPs from this wiki (see --checkusage), default en.wikipedia.org.")
             .parse(args);
         
         if (parsedargs.containsKey("--checktags"))
             checkFPTags();
         if (parsedargs.containsKey("--checkusage"))
         {
-            Wiki wiki = Wiki.newSession(parsedargs.get("--wiki"));
+            if (!parsedargs.containsKey("--wiki"))
+                System.err.println("WARNING: No wiki specified, defaulting to en.wikipedia.org.");
+            Wiki wiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
             Set<String> fpcanonical = getFeaturedPicturesFromList(wiki);
             
             // NOTE 1: API imageusage does not take into account file redirects
@@ -68,11 +70,17 @@ public class FeaturedPictureCuration
             // be bypassed by editing the wiki.
             // NOTE 2: There is a small amount of contamination of non-featured 
             // pictures on Commons.
+            List<String> fps = new ArrayList<>(fpcanonical);
+            List<Map<String, Object>> metadata = enWiki.getFileMetadata(fps);
             enWiki.setQueryLimit(100);
-            for (String image : fpcanonical)
+            for (int i = 0; i < fps.size(); i++)
             {
+                String image = fps.get(i);
+                Map<String, Object> data = metadata.get(i);
                 List<String> usage = enWiki.imageUsage(image, Wiki.MAIN_NAMESPACE);
-                System.out.println("\"" + image + "\"," + usage.size() + ",\"" + String.join(",", usage));
+                System.out.println(String.join(",", List.of(image, String.valueOf(data.get("mime")),
+                    String.valueOf(data.get("width")), String.valueOf(data.get("height")), 
+                    String.valueOf(usage.size()), "\"" + String.join(",", usage) + "\"")));
             }
         }
         if (parsedargs.containsKey("--checknoms"))
@@ -180,13 +188,14 @@ public class FeaturedPictureCuration
     {
         List<String> nominations = enWiki.getCategoryMembers("Category:Featured picture nominations/" + month);
         boolean[] closed = enWiki.pageHasTemplate(nominations, "Template:FPCresult");
-        String[] currentnoms = enWiki.getTemplates("Wikipedia:Featured picture candidates", Wiki.PROJECT_NAMESPACE);
+        List<String> currentnoms = enWiki.getTemplates(List.of("Wikipedia:Featured picture candidates"), 
+            Wiki.PROJECT_NAMESPACE).get(0);
         
         List<String> results = new ArrayList();
         for (int i = 0; i < nominations.size(); i++)
             if (!closed[i])
                 results.add(nominations.get(i));
-        results.removeAll(List.of(currentnoms));
+        results.removeAll(currentnoms);
         return results;
     }
     

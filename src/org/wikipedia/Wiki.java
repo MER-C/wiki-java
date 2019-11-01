@@ -3987,7 +3987,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Gets the file metadata for a file. The keys are:
      *
-     *  * size (file size, Integer)
+     *  * size (file size in bytes, Long)
      *  * width (Integer)
      *  * height (Integer)
      *  * sha1 (String)
@@ -4001,37 +4001,79 @@ public class Wiki implements Comparable<Wiki>
      */
     public Map<String, Object> getFileMetadata(String file) throws IOException
     {
-        // This seems a good candidate for bulk queries.
+        return getFileMetadata(List.of(file)).get(0);
+    }
+    
+    /**
+     *  Gets the file metadata for a list of files. Returns a result regardless
+     *  of whether a file is hosted locally or a shared repository (e.g. 
+     *  Wikimedia Commons). The keys are:
+     *
+     *  * size (file size in bytes, Long)
+     *  * width (Integer)
+     *  * height (Integer)
+     *  * sha1 (String)
+     *  * mime (MIME type, String)
+     *  * plus EXIF metadata (Strings)
+     *
+     *  @param files the files to get metadata for (may contain "File")
+     *  @return the metadata for each file in order, or null if the corresponding
+     *  image doesn't exist
+     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @since 0.37
+     */
+    public List<Map<String, Object>> getFileMetadata(List<String> files) throws IOException
+    {
         // Support for videos is blocked on https://phabricator.wikimedia.org/T89971
         Map<String, String> getparams = new HashMap<>();
+        Map<String, Object> postparams = new HashMap<>();
         getparams.put("action", "query");
         getparams.put("prop", "imageinfo");
         getparams.put("iiprop", "size|sha1|mime|metadata");
-        getparams.put("titles", removeNamespace(normalize(file)));
-        String line = makeApiCall(getparams, null, "getFileMetadata");
-        if (line.contains("missing=\"\""))
-            return null;
-        Map<String, Object> metadata = new HashMap<>(30);
-
-        // size, width, height, sha, mime type
-        metadata.put("size", Integer.valueOf(parseAttribute(line, "size", 0)));
-        metadata.put("width", Integer.valueOf(parseAttribute(line, "width", 0)));
-        metadata.put("height", Integer.valueOf(parseAttribute(line, "height", 0)));
-        metadata.put("sha1", parseAttribute(line, "sha1", 0));
-        metadata.put("mime", parseAttribute(line, "mime", 0));
-
-        // exif
-        while (line.contains("metadata name=\""))
+        
+        Map<String, Map<String, Object>> intermediate = new HashMap<>();
+        for (String chunk : constructTitleString(files))
         {
-            // TODO: remove this
-            int a = line.indexOf("name=\"") + 6;
-            int b = line.indexOf('\"', a);
-            String name = parseAttribute(line, "name", 0);
-            String value = parseAttribute(line, "value", 0);
-            metadata.put(name, value);
-            line = line.substring(b);
+            postparams.put("titles", chunk);            
+            String line = makeApiCall(getparams, postparams, "getFileMetadata");
+            String[] results = line.split("<page ");
+            for (int i = 1; i < results.length; i++) // 1 = skipping front crud
+            {
+                String result = results[i];
+                // missing image - missing attribute means no local file page.
+                // Query returns results from repositories (e.g. Wikimedia Commons)
+                if (!result.contains("<ii ")) 
+                    continue;
+                String parsedtitle = parseAttribute(result, "title", 0);
+                Map<String, Object> metadata = new HashMap<>(30);
+
+                // size, width, height, sha, mime type
+                metadata.put("size", Long.valueOf(parseAttribute(result, "size", 0)));
+                metadata.put("width", Integer.valueOf(parseAttribute(result, "width", 0)));
+                metadata.put("height", Integer.valueOf(parseAttribute(result, "height", 0)));
+                metadata.put("sha1", parseAttribute(result, "sha1", 0));
+                metadata.put("mime", parseAttribute(result, "mime", 0));
+
+                // exif
+                for (int j = result.indexOf("<metadata "); j > 0; j = result.indexOf("<metadata ", ++j))
+                {
+                    // FIXME: discards nesting in metadata
+                    String name = parseAttribute(result, "name", j);
+                    // for SVGs, metadata contains "width" and "height". Ignore these.
+                    if (name.equals("width") || name.equals("height"))
+                        continue;
+                    String value = parseAttribute(result, "value", j);
+                    metadata.put(name, value);
+                }
+                intermediate.put(parsedtitle, metadata);
+            }
         }
-        return metadata;
+        
+        // reorder results
+        List<Map<String, Object>> ret = new ArrayList<>();
+        for (String localtitle : files)
+            ret.add(intermediate.get(normalize(localtitle)));
+        return ret;
     }
 
     /**

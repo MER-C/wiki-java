@@ -90,9 +90,12 @@ public class XWikiHistory
             rh = rh.reverse(true);
             List<Wiki.Revision> bottomhistory = wiki.getPageHistory(page, rh);
             
-            // creator
+            // creator 
+            // some wikis still allow article creation by IPs
             String username = bottomhistory.get(0).getUser();
-            Wiki.User creator = wiki.getUsers(List.of(username)).get(0);
+            Wiki.User creator = null;
+            if (username != null)
+                creator = wiki.getUsers(List.of(username)).get(0);
             Collections.reverse(bottomhistory);
             
             List<String> tablerows = List.of(wiki.getDomain(),
@@ -103,8 +106,8 @@ public class XWikiHistory
                     + "[" + wiki.getPageUrl("User talk:" + username) + " foreign talk] &middot; "
                     + "[" + wiki.getPageUrl("Special:Contributions/" + username) + " foreign contribs] &middot; "
                     + "[[m:Special:CentralAuth/" + username + "|CA]])",
-                String.valueOf(creator.countEdits()),
-                snippet);
+                creator == null ? "0" : String.valueOf(creator.countEdits()),
+                snippet == null ? "null" : snippet);
             System.out.println(WikitextUtils.addTableRow(tablerows));
         }
         System.out.println("|}");

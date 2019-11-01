@@ -671,9 +671,49 @@ public class WikiTest
     @Test
     public void getFileMetadata() throws Exception
     {
-        assertNull(enWiki.getFileMetadata("File:Lweo&pafd.blah"), "non-existent file");
-        assertNull(enWiki.getFileMetadata("File:WikipediaSignpostIcon.svg"), "commons file");
-
+        List<Map<String, Object>> results = enWiki.getFileMetadata(List.of(
+            "File:Tianasquare.jpg", "File:Lweo&pafd.blah", "File:Phra Phuttha Chinnarat (II).jpg", 
+            "File:WikipediaSignpostIcon.svg", "File:Mandelbrotzoom 20191023.webm"));
+        
+        // https://en.wikipedia.org/wiki/File:Tianasquare.jpg
+        Map<String, Object> tankman = results.get(0);
+        assertEquals("image/jpeg", tankman.get("mime"));
+        assertEquals(330, tankman.get("width"));
+        assertEquals(218, tankman.get("height"));
+        assertEquals(48481L, tankman.get("size"));
+        
+        assertNull(results.get(1), "non-existent file");
+        
+        // Commons files return results
+        // https://en.wikipedia.org/wiki/File:Phra_Phuttha_Chinnarat_(II).jpg   
+        Map<String, Object> wat = results.get(2);
+        assertEquals("image/jpeg", wat.get("mime"));
+        assertEquals(5395, wat.get("width"));
+        assertEquals(3596, wat.get("height"));
+        assertEquals(19125101L, wat.get("size"));
+        
+        // EXIF or other metadata parsing (subset)
+        assertEquals("Canon", wat.get("Make"));
+        assertEquals("Canon EOS 5D Mark II", wat.get("Model"));
+        assertEquals("70/1", wat.get("FocalLength"));
+        assertEquals("1/80", wat.get("ExposureTime"));
+        assertEquals("4/1", wat.get("FNumber"));
+        assertEquals("250", wat.get("ISOSpeedRatings"));
+        
+        // slightly exotic file type: SVG
+        // https://en.wikipedia.org/wiki/File:WikipediaSignpostIcon.svg
+        Map<String, Object> signpost = results.get(3);
+        assertEquals("image/svg+xml", signpost.get("mime"));
+        assertEquals(46, signpost.get("width"));
+        assertEquals(55, signpost.get("height"));
+        assertEquals(3117L, signpost.get("size"));
+        
+        // large file that busts Java integer size
+        // https://en.wikipedia.org/wiki/File:Mandelbrotzoom_20191023.webm
+        Map<String, Object> fractal = results.get(4);
+        assertEquals("video/webm", fractal.get("mime"));
+        assertEquals(2703768090L, fractal.get("size"));
+        
         // further tests blocked on MediaWiki API rewrite
         // see https://phabricator.wikimedia.org/T89971
     }
