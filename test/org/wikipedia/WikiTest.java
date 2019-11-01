@@ -727,14 +727,14 @@ public class WikiTest
     @Test
     public void getInterWikiLinks() throws Exception
     {
-        List<String> inputs = List.of("Test", "Gkdfkkl&djfdf", "Blah", "Test", "Albert Einstein");        
+        List<String> inputs = List.of("Test", "Gkdfkkl&djfdf", "Perth (disambiguation)", "Test", "Albert Einstein");        
         var result = enWiki.getInterWikiLinks(inputs);
         
         assertTrue(result.get(1).isEmpty(), "non-existing page");
         assertEquals(result.get(0), result.get(3), "check duplicate removal");
         // quick functionality verification
         assertEquals(result.get(0).get("ja"), "テスト");
-        assertEquals(result.get(2).get("tr"), "Bla Bla Bla");
+        assertEquals(result.get(2).get("pl"), "Perth (ujednoznacznienie)");
         assertEquals(result.get(4).get("zh"), "阿尔伯特·爱因斯坦");
     }
 
