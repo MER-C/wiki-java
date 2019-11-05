@@ -28,6 +28,7 @@ import java.nio.file.*;
 import java.text.Normalizer;
 import java.time.*;
 import java.time.format.*;
+import java.time.temporal.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
@@ -8201,7 +8202,8 @@ public class Wiki implements Comparable<Wiki>
         {
             OffsetDateTime date = (OffsetDateTime)param;
             // https://phabricator.wikimedia.org/T16449
-            return date.atZoneSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            return date.atZoneSameInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.MICROS)
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         }
         else if (param instanceof Collection)
         {
