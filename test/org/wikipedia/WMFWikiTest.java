@@ -23,6 +23,8 @@ package org.wikipedia;
 import java.util.*;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.*;
+import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -40,6 +42,16 @@ public class WMFWikiTest
     {
         enWiki = WMFWiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
+    }
+    
+    @ParameterizedTest
+    @CsvSource({"enwiki, en.wikipedia.org",  "wikidatawiki, www.wikidata.org",
+            "zhwikiquote, zh.wikiquote.org", "commonswiki, commons.wikimedia.org",
+            "metawiki, meta.wikimedia.org"})
+    public void newSessionFromDBName(String dbname, String domain)
+    {
+        WMFWiki wiki = WMFWiki.newSessionFromDBName(dbname);
+        assertEquals(domain, wiki.getDomain());
     }
     
     @Test

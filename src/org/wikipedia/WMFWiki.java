@@ -85,6 +85,43 @@ public class WMFWiki extends Wiki
         wiki.initVars();
         return wiki;
     }
+    
+    /**
+     *  Creates a new MediaWiki API client for the WMF wiki that has the given
+     *  database name (e.g. "enwiki" for the English Wikipedia, "nlwikisource" 
+     *  for the Dutch Wikisource and "wikidatawiki" for Wikidata).
+     *  @param dbname a WMF wiki DB name
+     *  @return the constructed API client object
+     *  @throws IllegalArgumentException if the DB name is not recognized
+     */
+    public static WMFWiki newSessionFromDBName(String dbname)
+    {
+        // special cases
+        switch (dbname)
+        {
+            case "commonswiki":  return newSession("commons.wikimedia.org");
+            case "metawiki":     return newSession("meta.wikimedia.org");
+            case "wikidatawiki": return newSession("www.wikidata.org");
+        }
+        
+        // wiktionary
+        int testindex = dbname.indexOf("wiktionary");
+        if (testindex > 0)
+            return newSession(dbname.substring(0, testindex) + ".wiktionary.org");
+        
+        testindex = dbname.indexOf("wiki");
+        if (testindex > 0)
+        {
+            String langcode = dbname.substring(0, testindex);
+            // most of these are Wikipedia
+            if (dbname.endsWith("wiki"))
+                return newSession(langcode + ".wikipedia.org");
+            // Wikibooks, Wikinews, Wikiquote, Wikisource, Wikiversity, Wikivoyage
+            return newSession(langcode + "." + dbname.substring(testindex) + ".org");
+        }
+        // Fishbowl/special wikis not implemented yet
+        throw new IllegalArgumentException("Unrecognized wiki: " + dbname);
+    }
 
     /**
      *  Returns the list of publicly readable and editable wikis operated by the

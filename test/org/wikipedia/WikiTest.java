@@ -29,6 +29,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.*;
+import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -210,17 +212,19 @@ public class WikiTest
         assertEquals(530, enWiki.getPageHistory("Main Page", null).size(), "after listPages override");
     }
 
-    @Test
-    public void getTalkPage() throws Exception
+    @ParameterizedTest
+    @CsvSource({
+        "Hello, Talk:Hello",
+        "User:Hello, User talk:Hello",
+        "Talk:Hello, EXCEPTION",       // talk page of a talk page
+        "Special:Newpages, EXCEPTION", // special pages don't have talk pages
+        "Media:Wiki.png, EXCEPTION"})  // media pages don't have talk pages    
+    public void getTalkPage(String page, String talkpage) throws Exception
     {
-        assertEquals("Talk:Hello", enWiki.getTalkPage("Hello"));
-        assertEquals("User talk:Hello", enWiki.getTalkPage("User:Hello"));
-        assertThrows(IllegalArgumentException.class, () -> enWiki.getTalkPage("Talk:Hello"),
-            "tried to get talk page of a talk page");
-        assertThrows(IllegalArgumentException.class, () -> enWiki.getTalkPage("Special:Newpages"),
-            "tried to get talk page of a special page");
-        assertThrows(IllegalArgumentException.class, () -> enWiki.getTalkPage("Media:Wiki.png"),
-            "tried to get talk page of a media page");
+        if (talkpage.equals("EXCEPTION"))
+            assertThrows(IllegalArgumentException.class, () -> enWiki.getTalkPage(page));
+        else
+            assertEquals(talkpage, enWiki.getTalkPage(page));
     }
 
     @Test
