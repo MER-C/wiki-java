@@ -19,6 +19,7 @@
  */
 package org.wikipedia.tools;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import org.wikipedia.*;
@@ -32,6 +33,8 @@ import org.wikipedia.*;
  */
 public class XWikiHistory
 {
+    private static WMFWiki wikidata = WMFWiki.newSession("www.wikidata.org");
+    
     /**
      *  Runs this program.
      *  @param args the command line arguments
@@ -39,11 +42,10 @@ public class XWikiHistory
     public static void main(String[] args) throws Exception
     {
         // TODO: 
-        // (1) parse the Wikidata history to look for deleted pages
-        // (2) excerpts from page history - first 5 and last 5 revisions
-        // (3) page metadata and usual page links (talk, history, delete, undelete, etc.)
-        // (4) page logs
-        // (5) more creator metadata
+        // (1) excerpts from page history - first 5 and last 5 revisions
+        // (2) page metadata and usual page links (talk, history, delete, undelete, etc.)
+        // (3) page logs
+        // (4) more creator metadata
         
         // expected: args[0] language, args[1] = article
         WMFWiki firstwiki = WMFWiki.newSession(args[0] + ".wikipedia.org");
@@ -61,9 +63,10 @@ public class XWikiHistory
         
         // Wikidata
         String wdtitle = firstwiki.getWikidataItems(List.of(args[1])).get(0);
+        Map<Wiki, List<Wiki.LogEntry>> deletions = new HashMap<>();
         if (wdtitle != null)
         {
-            WMFWiki wikidata = WMFWiki.newSession("www.wikidata.org");
+            deletions = fetchCrossWikiDeletionLogs(wdtitle);
             Wiki.Revision last = wikidata.getFirstRevision(wdtitle);
             Wiki.User creator = wikidata.getUsers(List.of(last.getUser())).get(0);
             List<String> cells = List.of(
@@ -111,5 +114,61 @@ public class XWikiHistory
             System.out.println(WikitextUtils.addTableRow(tablerows));
         }
         System.out.println("|}");
+        
+        // output deletion logs
+        System.out.println("==Cross-wiki deletion log==");
+        System.out.println("{| class=\"wikitable sortable\"");
+        System.out.println("! Project !! Date !! Admin !! Action !! Title !! Reason");
+        deletions.forEach((wiki, entries) ->
+        {
+            String domain = wiki.getDomain();
+            for (Wiki.LogEntry le : entries)
+            {
+                System.out.println(WikitextUtils.addTableRow(List.of(
+                    domain,
+                    le.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                    le.getUser(),
+                    le.getAction(),
+                    le.getTitle(),
+                    "<nowiki>" + le.getComment() + "</nowiki>")
+                ));
+            }
+        });
+        System.out.println("|}");
+    }
+    
+    /**
+     *  Deduces whether a Wikidata item has had corresponding pages deleted, 
+     *  and if so returns the wikis where a deletion has occurred and the deletion 
+     *  logs for that page.
+     *  @param wditem the Wikidata item to look up
+     *  @return a map: the wiki and the corresponding deletion log entries
+     *  @throws Exception if a network error occurs
+     */
+    public static Map<Wiki, List<Wiki.LogEntry>> fetchCrossWikiDeletionLogs(String wditem) throws Exception
+    {
+        // Implemention note: deletion removes a page from its corresponding
+        // Wikidata item with a specific edit summary. However, edit summaries 
+        // on Wikidata are NOT what you see in the GUI. Instead they look like this:
+        //
+        // /* clientsitelink-remove:1||enwiki */ DeletedPageName
+        //
+        // WikiBase does some substitution before you see it. The API does not.
+        List<Wiki.Revision> wdhistory = wikidata.getPageHistory(wditem, null);
+        Map<Wiki, List<Wiki.LogEntry>> ret = new HashMap<>();
+        for (Wiki.Revision revision : wdhistory)
+        {
+            String comment = revision.getComment();
+            if (comment.startsWith("/* clientsitelink-remove"))
+            {
+                int end = comment.indexOf("*/") - 1;
+                String dbname = comment.substring(comment.indexOf("||") + 2, end);
+                String pagename = comment.substring(end + 3);
+                WMFWiki local = WMFWiki.newSessionFromDBName(dbname);
+                Wiki.RequestHelper rh = local.new RequestHelper().byTitle(pagename);
+                ret.put(local, local.getLogEntries(Wiki.DELETION_LOG, null, rh));
+            }
+        }
+        return ret;
     }
 }
