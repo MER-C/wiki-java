@@ -46,7 +46,7 @@ public class ContributionSurveyor
 {
     private final Wiki wiki;
     private OffsetDateTime earliestdate, latestdate;
-    private boolean nominor = true; // noreverts = true;
+    private boolean nominor = true, noreverts = true;
     private int minsizediff = 150;
 
     /**
@@ -73,7 +73,7 @@ public class ContributionSurveyor
             .addBooleanFlag("--images", "Survey images both on the home wiki and Commons.")
             .addBooleanFlag("--userspace", "Survey userspace as well.")
             .addBooleanFlag("--includeminor", "Include minor edits.")
-//            .addBooleanFlag("--includereverts", "Include reverts.")
+            .addBooleanFlag("--includereverts", "Include rollbacks.")
             .addSingleArgumentFlag("--minsize", "size", "Only includes edits that add more than size bytes (default: 150).")
             .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
             .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
@@ -88,7 +88,7 @@ public class ContributionSurveyor
         boolean images = parsedargs.containsKey("--images");
         boolean userspace = parsedargs.containsKey("--userspace");
         boolean nominor = !parsedargs.containsKey("--includeminor");
-//        boolean noreverts = !parsedargs.containsKey("--includereverts");
+        boolean noreverts = !parsedargs.containsKey("--includereverts");
         int minsize = Integer.parseInt(parsedargs.getOrDefault("--minsize", "150"));
         String earliestdatestring = parsedargs.get("--editsafter");
         String latestdatestring = parsedargs.get("--editsbefore");
@@ -165,7 +165,7 @@ public class ContributionSurveyor
         surveyor.setMinimumSizeDiff(minsize);
         surveyor.setDateRange(editsafter, editsbefore);
         surveyor.setIgnoringMinorEdits(nominor);
-//        surveyor.setIgnoringReverts(noreverts);
+        surveyor.setIgnoringReverts(noreverts);
         try (BufferedWriter outwriter = Files.newBufferedWriter(out))
         {
             outwriter.write(surveyor.massContributionSurvey(users, images, ns));
@@ -214,34 +214,34 @@ public class ContributionSurveyor
         return nominor;
     }
 
-    // Not effective until https://phabricator.wikimedia.org/T185809 is resolved
-    // and being able to get tags of revisions.
+    // Partially effective because of https://phabricator.wikimedia.org/T185809 
     
-    /*
-     *  Sets whether surveys ignore reverts. Default = true.
+    /**
+     *  Sets whether surveys ignore reverts. Currently ignores rollbacks only. 
+     *  Default = true.
      *  @param ignorereverts (see above)
      *  @see #isIgnoringReverts()
      *  @see Revisions#removeReverts
      *  @since 0.05
-     *
+     */
     public void setIgnoringReverts(boolean ignorereverts)
     {
         noreverts = ignorereverts;
     }
     
-    /*
-     *  Gets whether surveys ignore reverts. Default = true.
+    /**
+     *  Gets whether surveys ignore reverts. Currently ignores rollbacks only. 
+     *  Default = true.
      *  @return (see above)
      *  @see #setIgnoringReverts(boolean)
      *  @see Revisions#removeReverts
-     *  @since 0.04
-     *
+     *  @since 0.05
+     */
     public boolean isIgnoringReverts()
     {
         return noreverts;
     }
-    */
-
+    
     /**
      *  Sets the dates/times at which surveys start and finish; no edits will be 
      *  returned outside this range. The default, {@code null}, indicates no
@@ -336,8 +336,9 @@ public class ContributionSurveyor
         for (int i = 0; i < users.size(); i++)
         {
             List<Wiki.Revision> useredits = edits.get(i);
-//            if (noreverts)
-//                useredits = Revisions.removeReverts(useredits);
+            if (noreverts)
+                // useredits = Revisions.removeReverts(useredits);
+                useredits.removeIf(edit -> edit.getTags().contains("mw-rollback"));
             Map<String, List<Wiki.Revision>> results = useredits.stream()
             // RevisionDelete... should check for content AND no access, but with no SHA-1 that is impossible
                 .filter(rev -> !rev.isContentDeleted()) 

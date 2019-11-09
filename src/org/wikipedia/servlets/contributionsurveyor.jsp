@@ -25,6 +25,7 @@
     String category = request.getParameter("category");
     boolean nominor = (request.getParameter("nominor") != null);
     boolean noreverts = (request.getParameter("noreverts") != null);
+    boolean nodrafts = (request.getParameter("nodrafts") != null);
 
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String bytefloor = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("bytefloor"), "150");
@@ -52,11 +53,13 @@
     if (request.getAttribute("error") == null && !users.isEmpty())
     {
         surveyor.setIgnoringMinorEdits(nominor);
-//        surveyor.setIgnoringReverts(noreverts);
+        surveyor.setIgnoringReverts(noreverts);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
         
-        Map<String, Map<String, List<Wiki.Revision>>> surveydata = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        // ns 118 = draft namespace on en.wikipedia
+        int[] ns = nodrafts ? new int[] { Wiki.MAIN_NAMESPACE } : new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, 118 };
+        Map<String, Map<String, List<Wiki.Revision>>> surveydata = surveyor.contributionSurvey(users, ns);
         boolean noresults = true;
         for (Map.Entry<String, Map<String, List<Wiki.Revision>>> entry : surveydata.entrySet())
         {
@@ -142,7 +145,8 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <tr>
     <td colspan=2>Exclude:
     <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits
-<!--        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts (partial) -->
+        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>rollbacks
+        <input type=checkbox name=nodrafts value=1<%= (user == null || nodrafts) ? " checked" : "" %>>userspace and draft (ns 118) edits
 <tr>
     <td colspan=2>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"> to 

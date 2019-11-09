@@ -56,7 +56,7 @@ import javax.security.auth.login.*;
  *  or at the <a href="https://github.com/MER-C/wiki-java/issues">Github issue
  *  tracker</a>.
  * 
- *  <h3>Configuration variables</h3>
+ *  <h2>Configuration variables</h2>
  *  <p>
  *  Some configuration is available through <code>java.util.Properties</code>. 
  *  Set the system property <code>wiki-java.properties</code> to a file path
@@ -416,7 +416,7 @@ public class Wiki implements Comparable<Wiki>
      *  resolution} and {@linkplain #setAssertionMode(int) user and bot assertions}
      *  when wanted by default. Add stuff to this map if you want to add parameters
      *  to every API call.
-     *  @see #CCall(Map, Map, String)
+     *  @see #makeApiCall(Map, Map, String)
      */
     protected ConcurrentHashMap<String, String> defaultApiParams;
 
@@ -2802,10 +2802,10 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("prop", "revisions");
         getparams.put("rvlimit", "1");
         getparams.put("titles", normalize(title));
-        getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1");
+        getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1|tags");
         String line = makeApiCall(getparams, null, "getTopRevision");
         int a = line.indexOf("<rev "); // important space
-        int b = line.indexOf("/>", a);
+        int b = line.indexOf("</rev>", a);
         if (a < 0) // page does not exist
             return null;
         return parseRevision(line.substring(a, b), title);
@@ -2831,10 +2831,10 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("rvlimit", "1");
         getparams.put("rvdir", "newer");
         getparams.put("titles", normalize(title));
-        getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1");
+        getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1|tags");
         String line = makeApiCall(getparams, null, "getFirstRevision");
         int a = line.indexOf("<rev "); // important space!
-        int b = line.indexOf("/>", a);
+        int b = line.indexOf("</rev>", a);
         if (a < 0) // page does not exist
             return null;
         return parseRevision(line.substring(a, b), title);
@@ -2942,7 +2942,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "revisions");
         getparams.put("titles", normalize(title));
-        getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1");
+        getparams.put("rvprop", "timestamp|user|ids|flags|size|comment|parsedcomment|sha1|tags");
         if (helper != null)
         {
             helper.setRequestType("rv");
@@ -2958,7 +2958,7 @@ public class Wiki implements Comparable<Wiki>
         {
             for (int a = line.indexOf("<rev "); a > 0; a = line.indexOf("<rev ", ++a))
             {
-                int b = line.indexOf("/>", a);
+                int b = line.indexOf("</rev>", a);
                 results.add(parseRevision(line.substring(a, b), title));
             }
         });
@@ -3004,7 +3004,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "deletedrevisions");
-        getparams.put("drvprop", "ids|user|flags|size|comment|parsedcomment|sha1");
+        getparams.put("drvprop", "ids|user|flags|size|comment|parsedcomment|sha1|tags");
         if (helper != null)
         {
             helper.setRequestType("drv");
@@ -3028,7 +3028,7 @@ public class Wiki implements Comparable<Wiki>
                 int y = response.indexOf("</page>", x);
                 for (int z = response.indexOf("<rev ", x); z < y && z >= 0; z = response.indexOf("<rev ", ++z))
                 {
-                    int aa = response.indexOf(" />", z);
+                    int aa = response.indexOf("</rev>", z);
                     Revision temp = parseRevision(response.substring(z, aa), deltitle);
                     temp.pageDeleted = true;
                     results.add(temp);
@@ -3071,7 +3071,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "alldeletedrevisions");
-        getparams.put("adrprop", "ids|user|flags|size|comment|parsedcomment|timestamp|sha1");
+        getparams.put("adrprop", "ids|user|flags|size|comment|parsedcomment|timestamp|sha1|tags");
         if (helper != null)
         {
             helper.setRequestType("adr");
@@ -3093,7 +3093,7 @@ public class Wiki implements Comparable<Wiki>
                 int y = response.indexOf("</page>", x);
                 for (int z = response.indexOf("<rev ", x); z < y && z >= 0; z = response.indexOf("<rev ", ++z))
                 {
-                    int aa = response.indexOf(" />", z);
+                    int aa = response.indexOf("</rev>", z);
                     Revision temp = parseRevision(response.substring(z, aa), deltitle);
                     temp.pageDeleted = true;
                     results.add(temp);
@@ -3414,7 +3414,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
         getparams.put("prop", "revisions");
-        getparams.put("rvprop", "ids|timestamp|user|comment|parsedcomment|flags|size|sha1");
+        getparams.put("rvprop", "ids|timestamp|user|comment|parsedcomment|flags|size|sha1|tags");
         Map<String, Object> postparams = new HashMap<>();
         HashMap<Long, Revision> revs = new HashMap<>(2 * oldids.length);
 
@@ -3430,7 +3430,7 @@ public class Wiki implements Comparable<Wiki>
                 String title = parseAttribute(line, "title", i);
                 for (int j = line.indexOf("<rev ", i); j > 0 && j < z; j = line.indexOf("<rev ", ++j))
                 {
-                    int y = line.indexOf("/>", j);
+                    int y = line.indexOf("</rev>", j);
                     String blah = line.substring(j, y);
                     Revision rev = parseRevision(blah, title);
                     revs.put(rev.getID(), rev);
@@ -3906,6 +3906,15 @@ public class Wiki implements Comparable<Wiki>
             revision.sizediff = revision.size - Integer.parseInt(parseAttribute(xml, "oldlen", 0));
         else if (xml.contains("sizediff=\""))
             revision.sizediff = Integer.parseInt(parseAttribute(xml, "sizediff", 0));
+        
+        // tags
+        List<String> tags = new ArrayList<>();
+        if (xml.contains("<tag>"))
+        {
+            for (int idx = xml.indexOf("<tag>"); idx >= 0; idx = xml.indexOf("<tag>", ++idx))
+                tags.add(xml.substring(idx + 5, xml.indexOf("</tag>", idx)));
+        }
+        revision.setTags(tags);
 
         // revisiondelete
         revision.setCommentDeleted(xml.contains("commenthidden=\""));
@@ -4263,8 +4272,8 @@ public class Wiki implements Comparable<Wiki>
      *  Uploads an image. Equivalent to [[Special:Upload]]. Supported
      *  extensions are (case-insensitive) "png", "jpg", "gif" and "svg". You
      *  need to be logged on to do this. Automatically breaks uploads into
-     *  2^{@link #LOG2_CHUNK_SIZE} byte size chunks. This method is {@linkplain
-     *  #setThrottle(int) throttled}.
+     *  chunks of size 2^x, where x is the value of the <code>loguploadsize</code>
+     *  property. This method is {@linkplain #setThrottle(int) throttled}.
      *
      *  @param file the image file
      *  @param filename the target file name (may contain File)
@@ -4847,7 +4856,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "usercontribs");
-        getparams.put("ucprop", "title|timestamp|flags|comment|parsedcomment|ids|size|sizediff|sha1");
+        getparams.put("ucprop", "title|timestamp|flags|comment|parsedcomment|ids|size|sizediff|sha1|tags");
         if (helper != null)
         {
             helper.setRequestType("uc");
@@ -4864,7 +4873,7 @@ public class Wiki implements Comparable<Wiki>
             // xml form: <item user="Wizardman" ... size="59460" />
             for (int a = line.indexOf("<item "); a > 0; a = line.indexOf("<item ", ++a))
             {
-                int b = line.indexOf(" />", a);
+                int b = line.indexOf("</item>", a);
                 results.add(parseRevision(line.substring(a, b), ""));
             }
         };
@@ -5300,7 +5309,7 @@ public class Wiki implements Comparable<Wiki>
             throw new SecurityException("Not logged in");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlist");
-        getparams.put("wlprop", "ids|title|timestamp|user|comment|parsedcomment|sizes");
+        getparams.put("wlprop", "ids|title|timestamp|user|comment|parsedcomment|sizes|tags");
         int limit = -1;
         if (helper != null)
         {
@@ -5319,7 +5328,7 @@ public class Wiki implements Comparable<Wiki>
             // xml form: <item pageid="16396" revid="176417" ns="0" title="API:Query - Lists" />
             for (int i = line.indexOf("<item "); i > 0; i = line.indexOf("<item ", ++i))
             {
-                int j = line.indexOf("/>", i);
+                int j = line.indexOf("</item>", i);
                 results.add(parseRevision(line.substring(i, j), ""));
             }
         });
@@ -5914,7 +5923,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "logevents");
-        getparams.put("leprop", "ids|title|type|user|timestamp|comment|parsedcomment|details");
+        getparams.put("leprop", "ids|title|type|user|timestamp|comment|parsedcomment|details|tags");
         if (!logtype.equals(ALL_LOGS))
         {
             if (action == null)
@@ -6069,10 +6078,19 @@ public class Wiki implements Comparable<Wiki>
             details = temp.toArray(String[]::new);
         }
 
+        // tags
+        List<String> tags = new ArrayList<>();
+        if (xml.contains("<tag>"))
+        {
+            for (int idx = xml.indexOf("<tag>"); idx >= 0; idx = xml.indexOf("<tag>", ++idx))
+                tags.add(xml.substring(idx + 5, xml.indexOf("</tag>", idx)));
+        }
+        
         LogEntry le = new LogEntry(id, timestamp, user, reason, parsedreason, type, action, target, details);
         le.setUserDeleted(userhidden);
         le.setCommentDeleted(reasonhidden);
         le.setContentDeleted(actionhidden);
+        le.setTags(tags);
         return le;
     }
 
@@ -6375,7 +6393,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "recentchanges");
-        getparams.put("rcprop", "title|ids|user|timestamp|flags|comment|parsedcomment|sizes|sha1");
+        getparams.put("rcprop", "title|ids|user|timestamp|flags|comment|parsedcomment|sizes|sha1|tags");
         if (helper != null)
         {
             helper.setRequestType("rc");
@@ -6398,7 +6416,7 @@ public class Wiki implements Comparable<Wiki>
             // xml form <rc type="edit" ns="0" title="Main Page" ... />
             for (int i = line.indexOf("<rc "); i > 0; i = line.indexOf("<rc ", ++i))
             {
-                int j = line.indexOf("/>", i);
+                int j = line.indexOf("</rc>", i);
                 results.add(parseRevision(line.substring(i, j), ""));
             }
         });
@@ -6773,6 +6791,7 @@ public class Wiki implements Comparable<Wiki>
         private final String title;
         private final String comment;
         private final String parsedcomment;
+        private List<String> tags;
         private boolean commentDeleted = false, userDeleted = false,
             contentDeleted = false;
 
@@ -6950,6 +6969,32 @@ public class Wiki implements Comparable<Wiki>
         public boolean isContentDeleted()
         {
             return contentDeleted;
+        }
+        
+        /**
+         *  Returns the list of tags attached to this event. Modifying the
+         *  return value does not affect this Revision object or the wiki state.
+         *  @return (see above)
+         *  @see <a href="https://www.mediawiki.org/wiki/Help:Tags">MediaWiki
+         *  documentation</a>
+         *  @since 0.37
+         */
+        public List<String> getTags()
+        {
+            return new ArrayList(tags);
+        }
+        
+        /**
+         *  Sets the list of tags attached to this event. Modifying this list
+         *  does not change on-wiki state.
+         *  @param tags a list of change tags
+         *  @see <a href="https://www.mediawiki.org/wiki/Help:Tags">MediaWiki
+         *  documentation</a>
+         *  @since 0.37
+         */
+        protected void setTags(List<String> tags)
+        {
+            this.tags = tags;
         }
 
         /**

@@ -298,6 +298,7 @@ public class WikiTest
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         Wiki.Revision first = testWiki.getFirstRevision("User:MER-C/UnitTests/Delete");
         assertEquals(217080L, first.getID());
+        assertEquals(List.of("HHVM", "HotCat", "MyStupidTestTag"), first.getTags());
     }
 
     @Test
@@ -621,6 +622,8 @@ public class WikiTest
         assertTrue(le.get(0).isCommentDeleted(), "reason hidden");
         assertNull(le.get(0).getUser(), "user hidden");
         assertTrue(le.get(0).isUserDeleted(), "user hidden");
+        // tags (not related to the LogEntry being RevisionDeleted)
+        assertEquals(List.of("HotCat", "MyStupidTestTag"), le.get(0).getTags());
         // https://test.wikipedia.org/w/api.php?action=query&list=logevents&leuser=MER-C
         //     &lestart=20161002050030&leend=20161002050000&letype=delete
         rh = testWiki.new RequestHelper()
@@ -929,6 +932,11 @@ public class WikiTest
         assertFalse(rev.isCommentDeleted());
         assertFalse(rev.isContentDeleted());
         assertFalse(rev.isPageDeleted());
+        assertTrue(rev.getTags().isEmpty());
+        
+        // tags
+        rev = enWiki.getRevision(925243214L);
+        assertEquals(List.of("huggle", "mw-rollback"), rev.getTags());
 
         // revdel, logged out
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
@@ -997,15 +1005,24 @@ public class WikiTest
     public void contribs() throws Exception
     {
         List<String> users = List.of(
+            "Frank234234",
             "Dsdlgfkjsdlkfdjilgsujilvjcl", // should not exist
             "0.0.0.0", // IP address
             "Allancake" // revision deleted
         );
         List<List<Wiki.Revision>> edits = enWiki.contribs(users, null, null);
 
-        assertTrue(edits.get(0).isEmpty(), "non-existent user");
-        assertTrue(edits.get(1).isEmpty(), "IP address with no edits");
-        for (Wiki.Revision rev : edits.get(2))
+        // functionality test
+        // https://en.wikipedia.org/wiki/Special:Contributions/Frank234234
+        List<Wiki.Revision> contribs = edits.get(0);
+        assertEquals(921259981L, contribs.get(0).getID());
+        assertEquals(918474023L, contribs.get(1).getID());
+        assertEquals(List.of("visualeditor"), contribs.get(0).getTags());
+        
+        // edge cases
+        assertTrue(edits.get(1).isEmpty(), "non-existent user");
+        assertTrue(edits.get(2).isEmpty(), "IP address with no edits");
+        for (Wiki.Revision rev : edits.get(3))
         {
             if (rev.getID() == 724989913L)
             {
