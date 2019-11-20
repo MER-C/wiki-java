@@ -59,17 +59,8 @@
         
         // ns 118 = draft namespace on en.wikipedia
         int[] ns = nodrafts ? new int[] { Wiki.MAIN_NAMESPACE } : new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, 118 };
-        Map<String, Map<String, List<Wiki.Revision>>> surveydata = surveyor.contributionSurvey(users, ns);
-        boolean noresults = true;
-        for (Map.Entry<String, Map<String, List<Wiki.Revision>>> entry : surveydata.entrySet())
-        {
-            if (!entry.getValue().isEmpty())
-            {
-                noresults = false;
-                break;
-            }
-        }
-        if (noresults)
+        List<String> surveydata = surveyor.outputContributionSurvey(users, false, ns);
+        if (surveydata.isEmpty())
         {
             request.setAttribute("error", "No edits found!");
             survey = null;
@@ -77,27 +68,11 @@
         else
         {
             request.setAttribute("contenttype", "text");
-            StringBuilder sb = new StringBuilder();
-            if (category != null)
-            {
-                surveydata.forEach((username, usersurvey) ->
-                {
-                    // skip no results users
-                    if (usersurvey.isEmpty())
-                        return;
-                    
-                    sb.append("== ");
-                    sb.append(username);
-                    sb.append(" ==\n");
-                    sb.append(Users.generateWikitextSummaryLinks(username));
-                    sb.append("\n");
-                    sb.append(surveyor.formatTextSurveyAsWikitext(username, usersurvey));
-                    sb.append("\n");
-                });
-                survey = sb.toString();
-            }
-            else // user != null
-                survey = surveyor.formatTextSurveyAsWikitext(null, surveydata.entrySet().iterator().next().getValue());
+            // TODO: output as ZIP
+            String footer = "Survey URL: " + request.getRequestURL() + "?" + request.getQueryString();
+            for (int i = 0; i < surveydata.size(); i++)
+                surveydata.set(i, surveydata.get(i) + footer);
+            survey = String.join("\n", surveydata);
         }
     }
 %>
@@ -109,15 +84,12 @@
         {
             response.setHeader("Content-Disposition", "attachment; filename=" 
                 + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
-            out.print(Users.generateWikitextSummaryLinks(user));            
         }
         else // category != null
             response.setHeader("Content-Disposition", "attachment; filename=" 
                 + URLEncoder.encode(category, StandardCharsets.UTF_8) + ".txt");
-        out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
-        out.println();
-        out.println(survey);
-        out.println(surveyor.generateWikitextFooter());
+        out.print(survey);
+        
         return;
     }
  %>

@@ -52,15 +52,23 @@ public class ContributionSurveyorTest
     @Test
     public void contributionSurvey() throws Exception
     {
-        List<String> users = List.of(
-            "HilStev", // no edits: https://en.wikipedia.org/wiki/Special:Contributions/HilStev
-            "OfficialPankajPatidar", // no mainspace edits: https://en.wikipedia.org/wiki/Special:Contributions/OfficialPankajPatidar
-            "Rt11642" // mainspace edits all revisiondeleted: https://en.wikipedia.org/wiki/Special:Contributions/Rt11642
-        );
+        // https://en.wikipedia.org/wiki/Special:Contributions/HilStev               - no edits
+        // https://en.wikipedia.org/wiki/Special:Contributions/OfficialPankajPatidar - no mainspace edits
+        // https://en.wikipedia.org/wiki/Special:Contributions/Rt11642               - mainspace edits all revisiondeleted
+        List<String> users = List.of("HilStev", "OfficialPankajPatidar", "Rt11642");
         Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue(results.get(users.get(0)).isEmpty(), "User with no edits");
         assertTrue(results.get(users.get(1)).isEmpty(), "Check namespace filter");
         assertTrue(results.get(users.get(2)).isEmpty(), "Check revision deletion");
+    }
+    
+    @Test
+    public void outputContributionSurvey() throws Exception
+    {
+        // same use case as above: all three users have no surveyable edits
+        List<String> users = List.of("HilStev", "OfficialPankajPatidar", "Rt11642");
+        List<String> results = surveyor.outputContributionSurvey(users, false, Wiki.MAIN_NAMESPACE);
+        assertTrue(results.isEmpty());
     }
     
     @Test
@@ -121,5 +129,26 @@ public class ContributionSurveyorTest
         // check functionality
         results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertEquals(1, results.get(users.get(0)).size());
-    }        
+    }
+    
+    @Test
+    public void setMinimumSizeDiff() throws Exception
+    {
+        // default is addition of at least 150 bytes
+        assertEquals(150, surveyor.getMinimumSizeDiff());
+        
+        // https://en.wikipedia.org/wiki/Special:Contributions/Cyprumande
+        List<String> users = List.of("Cyprumande");
+        surveyor.setDateRange(OffsetDateTime.parse("2019-01-01T00:00:00Z"), null);
+        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertTrue(results.get(users.get(0)).isEmpty());
+        
+        // verify get/set works
+        surveyor.setMinimumSizeDiff(0);
+        assertEquals(0, surveyor.getMinimumSizeDiff());
+        
+        // check functionality
+        results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertEquals(1, results.get(users.get(0)).size());
+    }
 }

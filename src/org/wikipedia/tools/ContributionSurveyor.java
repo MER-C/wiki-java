@@ -1,6 +1,6 @@
 /**
- *  @(#)ContributionSurveyor.java 0.05 17/08/2018
- *  Copyright (C) 2011-2018 MER-C
+ *  @(#)ContributionSurveyor.java 0.06 20/11/2019
+ *  Copyright (C) 2011-2019 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -24,7 +24,7 @@ import java.util.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
-import javax.security.auth.login.CredentialNotFoundException;
+import javax.security.auth.login.*;
 import javax.swing.JFileChooser;
 
 import org.wikipedia.*;
@@ -40,7 +40,7 @@ import org.wikipedia.*;
  *  contribution surveyor (online version)</a>
  *  @see <a href="https://en.wikipedia.org/wiki/WP:CCI">Contributor Copyright
  *  Investigations</a>
- *  @version 0.04
+ *  @version 0.06
  */
 public class ContributionSurveyor
 {
@@ -48,6 +48,8 @@ public class ContributionSurveyor
     private OffsetDateTime earliestdate, latestdate;
     private boolean nominor = true, noreverts = true;
     private int minsizediff = 150;
+    private int articlesperpage = 1000;
+    private int articlespersection = 20;
 
     /**
      *  Runs this program.
@@ -62,10 +64,13 @@ public class ContributionSurveyor
             .description("Survey the contributions of a large number of wiki editors.")
             .addHelp()
             .addVersion("ContributionSurveyor v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
-            .addSingleArgumentFlag("--infile", "file", "Use file as the list of users, shows a filechooser if not specified.")
-            .addSingleArgumentFlag("--outfile", "file", "Save results to file, shows a filechooser if not specified.")
+            .addSingleArgumentFlag("--infile", "file", "Use file as the list of users. "
+                + "Shows a filechooser if not specified.")
+            .addSingleArgumentFlag("--outfile", "file", "Save results to file(s). "
+                + "Shows a filechooser if not specified. If multiple files output, use this as a prefix.")
             .addSection("Users to scan:")
             .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
+            .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits)s.")
             .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the wiki page [[Main Page]].")
             .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
             .addSingleArgumentFlag("--user", "user", "Survey the given user.")
@@ -80,6 +85,20 @@ public class ContributionSurveyor
             .parse(args);
 
         Wiki homewiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        if (parsedargs.containsKey("--login"))
+        {
+            // CLI login
+            try
+            {
+                Console console = System.console();
+                homewiki.login(console.readLine("Username: "), console.readPassword("Password: "));
+            }
+            catch (FailedLoginException ex)
+            {
+                System.err.println("Invalid username or password.");
+                System.exit(1);
+            }
+        }
         String infile = parsedargs.get("--infile");
         String outfile = parsedargs.get("--outfile");
         String wikipage = parsedargs.get("--wikipage");
@@ -143,17 +162,14 @@ public class ContributionSurveyor
         }
 
         // output file
-        Path out = null;
         if (outfile == null)
         {
             JFileChooser fc = new JFileChooser();
             fc.setDialogTitle("Select output file");
             if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
-                out = fc.getSelectedFile().toPath();
+                outfile = fc.getSelectedFile().getPath();
         }
-        else
-            out = Paths.get(outfile);
-        if (out == null)
+        if (outfile == null)
         {
             System.out.println("Error: No output file selected.");
             System.exit(0);
@@ -166,9 +182,20 @@ public class ContributionSurveyor
         surveyor.setDateRange(editsafter, editsbefore);
         surveyor.setIgnoringMinorEdits(nominor);
         surveyor.setIgnoringReverts(noreverts);
-        try (BufferedWriter outwriter = Files.newBufferedWriter(out))
+        List<String> output = surveyor.outputContributionSurvey(users, images, ns);
+        
+        Path path = Paths.get(outfile);
+        try (BufferedWriter outwriter = Files.newBufferedWriter(path))
         {
-            outwriter.write(surveyor.massContributionSurvey(users, images, ns));
+            outwriter.write(output.get(0));
+        }
+        for (int i = 1; i < output.size(); i++)
+        {
+            path = Paths.get(outfile + String.format(".%03d", i));
+            try (BufferedWriter outwriter = Files.newBufferedWriter(path))
+            {
+                outwriter.write(output.get(i));
+            }
         }
     }
 
@@ -337,8 +364,8 @@ public class ContributionSurveyor
         {
             List<Wiki.Revision> useredits = edits.get(i);
             if (noreverts)
-                // useredits = Revisions.removeReverts(useredits);
                 useredits.removeIf(edit -> edit.getTags().contains("mw-rollback"));
+                // useredits = Revisions.removeReverts(useredits);
             Map<String, List<Wiki.Revision>> results = useredits.stream()
             // RevisionDelete... should check for content AND no access, but with no SHA-1 that is impossible
                 .filter(rev -> !rev.isContentDeleted()) 
@@ -371,8 +398,9 @@ public class ContributionSurveyor
             .withinDateRange(earliestdate, latestdate)
             .inNamespaces(ns);
         List<Wiki.Revision> delcontribs = wiki.deletedContribs(username, rh);
-//        if (noreverts)
-//            delcontribs = Revisions.removeReverts(delcontribs);
+        if (noreverts)
+            delcontribs.removeIf(edit -> edit.getTags().contains("mw-rollback"));
+            // delcontribs = Revisions.removeReverts(delcontribs);
         LinkedHashMap<String, List<Wiki.Revision>> ret = new LinkedHashMap<>();
 
         // group contributions by page
@@ -432,40 +460,35 @@ public class ContributionSurveyor
     }
 
     /**
-     *  Formats a contribution survey for a single user as wikitext.
+     *  Formats a section in a text contribution survey as wikitext.
      *  @param username the relevant username (use {@code null} to omit)
      *  @param survey the survey, in form of page &#8594; edits
-     *  @return the formatted survey in wikitext
+     *  @param offset how many articles have been output via this method for this 
+     *  user so far
+     *  @return the formatted section of the survey in wikitext
      *  @see #contributionSurvey(List, int...)
      *  @since 0.04
      */
-    public String formatTextSurveyAsWikitext(String username, Map<String, List<Wiki.Revision>> survey)
+    public String outputNextSection(String username, List<Map.Entry<String, List<Wiki.Revision>>> survey, int offset)
     {
-        StringBuilder out = new StringBuilder();
-        Iterator<Map.Entry<String, List<Wiki.Revision>>> iter = survey.entrySet().iterator();
-        int numarticles = 0;
-        int totalarticles = survey.size();
-
-        while (iter.hasNext())
+        // output header
+        int maxarticles = Math.min(offset + articlespersection, survey.size());
+        StringBuilder out = new StringBuilder("=== ");
+        if (username != null)
         {
-            // add convenience breaks for long surveys
-            numarticles++;
-            if (numarticles % 20 == 1 && totalarticles > 20)
-            {
-                out.append("=== ");
-                if (username != null)
-                {
-                    out.append(username);
-                    out.append(": ");
-                }
-                out.append("Pages ");
-                out.append(numarticles);
-                out.append(" through ");
-                out.append(Math.min(numarticles + 19, totalarticles));
-                out.append(" ===\n");
-            }
-
-            Map.Entry<String, List<Wiki.Revision>> entry = iter.next();
+            out.append(username);
+            out.append(": ");
+        }
+        out.append("Pages ");
+        out.append(offset + 1);
+        out.append(" through ");
+        out.append(maxarticles);
+        out.append(" ===\n");
+        
+        // output results
+        for (int i = offset; i < maxarticles; i++)
+        {
+            var entry = survey.get(i);
             List<Wiki.Revision> edits = entry.getValue();
             out.append("*");
 
@@ -494,95 +517,49 @@ public class ContributionSurveyor
                 out.append(" edits): ");
             }
             out.append(temp);
-            out.append("\n");
-            if (numarticles % 20 == 0)
-                out.append("\n");
+            out.append("\n");                
         }
+        out.append("\n");
         return out.toString();
     }
-
+    
     /**
-     *  Formats an image contribution survey for a single user as wikitext.
+     *  Formats a section in an image contribution survey as wikitext.
      *  @param username the relevant username (use null to omit)
-     *  @param survey the survey
+     *  @param source the source of the images, typically one of "Local files", 
+     *  "Commons files", or "Transferred files"
+     *  @param survey the survey corresponding to the source of the image
+     *  @param offset how many images have been output via this method for this 
+     *  user and source of images so far
      *  @return the formatted survey in wikitext
      *  @see #imageContributionSurvey(Wiki.User)
      *  @since 0.04
      */
-    public String formatImageSurveyAsWikitext(String username, String[][] survey)
+    public String outputNextSection(String username, String source, String[] survey, int offset)
     {
-        StringBuilder out = new StringBuilder();
-        int numfiles = 0;
-        int totalfiles = survey[0].length;
-        for (String entry : survey[0])
+        // output header
+        int maxfiles = Math.min(offset + articlespersection, survey.length);
+        StringBuilder out = new StringBuilder("=== ");
+        if (username != null)
         {
-            numfiles++;
-            if (numfiles % 20 == 1)
-            {
-                out.append("\n=== ");
-                if (username != null)
-                {
-                    out.append(username);
-                    out.append(": ");
-                }
-                out.append("Local files ");
-                out.append(numfiles);
-                out.append(" through ");
-                out.append(Math.min(numfiles + 19, totalfiles));
-                out.append(" ===\n");
-            }
+            out.append(username);
+            out.append(": ");
+        }
+        out.append(source);
+        out.append(" ");
+        out.append(offset + 1);
+        out.append(" through ");
+        out.append(maxfiles);
+        out.append(" ===\n");
+        
+        // output results
+        for (int i = offset; i < maxfiles; i++)
+        {            
             out.append("*[[:");
-            out.append(entry);
+            out.append(survey[i]);
             out.append("]]\n");
         }
-
-        numfiles = 0;
-        totalfiles = survey[1].length;
-        for (String entry : survey[1])
-        {
-            numfiles++;
-            if (numfiles % 20 == 1)
-            {
-                out.append("\n=== ");
-                if (username != null)
-                {
-                    out.append(username);
-                    out.append(": ");
-                }
-                out.append("Commons files ");
-                out.append(numfiles);
-                out.append(" through ");
-                out.append(Math.min(numfiles + 19, totalfiles));
-                out.append(" ===\n");
-            }
-            out.append("*[[:");
-            out.append(entry);
-            out.append("]]\n");
-        }
-
-        numfiles = 0;
-        totalfiles = survey[2].length;
-        for (String entry : survey[2])
-        {
-            numfiles++;
-            if (numfiles % 20 == 1)
-            {
-                out.append("\n=== ");
-                if (username != null)
-                {
-                    out.append(username);
-                    out.append(": ");
-                }
-                out.append("Transferred files ");
-                out.append(numfiles);
-                out.append(" through ");
-                out.append(Math.min(numfiles + 19, totalfiles));
-                out.append(" ===\n");
-            }
-            out.append("*[[:");
-            out.append(entry);
-            out.append("]]\n");
-        }
+        out.append("\n");
         return out.toString();
     }
 
@@ -595,45 +572,78 @@ public class ContributionSurveyor
      *  @throws IOException if a network error occurs
      *  @since 0.02
      */
-    public String massContributionSurvey(List<String> usernames, boolean images, int... ns) throws IOException
+    public List<String> outputContributionSurvey(List<String> usernames, boolean images, int... ns) throws IOException
     {
-        StringBuilder out = new StringBuilder();
-        Map<String, Map<String, List<Wiki.Revision>>> results = contributionSurvey(usernames, ns);
+        // TODO: output image only CCIs via this method
+        List<String> sections = new ArrayList<>();
         List<Wiki.User> userinfo = wiki.getUsers(usernames);
-
-        Iterator<Map.Entry<String, Map<String, List<Wiki.Revision>>>> iter = results.entrySet().iterator();
+        int sectionsperpage = articlesperpage / articlespersection;  
+        var results = contributionSurvey(usernames, ns);
+        var iter = results.entrySet().iterator();
         int userindex = 0;
 
         while (iter.hasNext())
         {
-            Map.Entry<String, Map<String, List<Wiki.Revision>>> entry = iter.next();
+            // fetch text contribution survey for this user
+            // note List so we don't have to iterate over it many times (slow)
+            var entry = iter.next();
+            var tempmap = entry.getValue();
+            var survey = new ArrayList<>(tempmap.entrySet());
             String username = entry.getKey();
-            Map<String, List<Wiki.Revision>> survey = entry.getValue();
-            // skip no results users
-            if (survey.isEmpty())
-            {
-                userindex++;
-                continue;
-            }
+            // null suppresses output of usernames in headers
+            String username_out = results.size() == 1 ? null : username;
+            int sizebefore = sections.size();
 
-            out.append("== ");
-            out.append(username);
-            out.append(" ==\n");
-            out.append(Users.generateWikitextSummaryLinks(username));
-            out.append("\n");
-            out.append(formatTextSurveyAsWikitext(username, survey));
+            // populate image contribution survey for this user
+            // userinfo required because there may be IP addresses
+            String[][] imagesurvey = new String[3][0];
+            if (images && userinfo.get(userindex) != null)
+                imagesurvey = imageContributionSurvey(userinfo.get(userindex));
 
-            // survey images
+            // output text results
+            for (int i = 0; i < survey.size(); i += 20)
+                sections.add(outputNextSection(username_out, survey, i));
+            
+            // output image results
             if (images && userinfo.get(userindex) != null)
             {
-                String[][] imagesurvey = imageContributionSurvey(userinfo.get(userindex));
-                out.append(formatImageSurveyAsWikitext(username, imagesurvey));
+                for (int i = 0; i < imagesurvey[0].length; i += 20)
+                    sections.add(outputNextSection(username_out, "Local files", imagesurvey[0], i));
+                for (int i = 0; i < imagesurvey[1].length; i += 20)
+                    sections.add(outputNextSection(username_out, "Commons files", imagesurvey[1], i));
+                for (int i = 0; i < imagesurvey[2].length; i += 20)
+                    sections.add(outputNextSection(username_out, "Transferred files", imagesurvey[2], i));
             }
-            out.append("\n");
+            
+            // insert header if there were results for this user and at the 
+            // start of every new page
+            String header = "== " + username + " ==\n" + 
+                Users.generateWikitextSummaryLinks(username) + "\n";
+            for (int i = sizebefore; i < sections.size(); i++)
+            {
+                if (i == sizebefore || i % sectionsperpage == 0)
+                {
+                    String toreplace = sections.get(i);
+                    sections.set(i, header + toreplace);
+                }
+            }
             userindex++;
         }
-        out.append(generateWikitextFooter());
-        return out.toString();
+        
+        // segment sections into pages
+        StringBuilder out = new StringBuilder();
+        List<String> ret = new ArrayList<>();
+        for (int i = 0; i < sections.size(); i++)
+        {
+            out.append(sections.get(i));
+            if (i == sections.size() - 1 || i % sectionsperpage == sectionsperpage - 1)
+            {
+                out.append(generateWikitextFooter());
+                ret.add(out.toString());
+                out.setLength(0);
+            }
+        }
+        return ret;
     }
 
     /**
@@ -644,7 +654,7 @@ public class ContributionSurveyor
     public String generateWikitextFooter()
     {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        return "\nThis report generated by [https://github.com/MER-C/wiki-java ContributionSurveyor.java] at "
-            + now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + ".";
+        return "This report generated by [https://github.com/MER-C/wiki-java ContributionSurveyor.java] at "
+            + now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + ". ";
     }
 }

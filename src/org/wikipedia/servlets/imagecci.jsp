@@ -45,9 +45,15 @@
         response.setHeader("Content-Disposition", "attachment; filename=" 
             + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
         out.print(Users.generateWikitextSummaryLinks(user));
-        out.println("* Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
-        out.print(surveyor.formatImageSurveyAsWikitext(null, survey));
-        out.println(surveyor.generateWikitextFooter());
+        out.println();        
+        for (int i = 0; i < survey[0].length; i += 20)
+            out.println(surveyor.outputNextSection(null, "Local files", survey[0], i));
+        for (int i = 0; i < survey[1].length; i += 20)
+            out.println(surveyor.outputNextSection(null, "Commons files", survey[1], i));
+        for (int i = 0; i < survey[2].length; i += 20)
+            out.println(surveyor.outputNextSection(null, "Transferred files", survey[2], i));
+        out.print(surveyor.generateWikitextFooter());
+        out.println("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         return;
     }
 %>

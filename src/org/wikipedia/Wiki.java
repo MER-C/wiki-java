@@ -6981,7 +6981,7 @@ public class Wiki implements Comparable<Wiki>
          */
         public List<String> getTags()
         {
-            return new ArrayList(tags);
+            return new ArrayList<>(tags);
         }
         
         /**
