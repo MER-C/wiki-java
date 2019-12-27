@@ -6985,8 +6985,8 @@ public class Wiki implements Comparable<Wiki>
         }
         
         /**
-         *  Sets the list of tags attached to this event. Modifying this list
-         *  does not change on-wiki state.
+         *  Sets the list of tags attached to this event. Modifying the supplied
+         *  list does not affect this Revision object or change on-wiki state.
          *  @param tags a list of change tags
          *  @see <a href="https://www.mediawiki.org/wiki/Help:Tags">MediaWiki
          *  documentation</a>
@@ -6994,7 +6994,7 @@ public class Wiki implements Comparable<Wiki>
          */
         protected void setTags(List<String> tags)
         {
-            this.tags = tags;
+            this.tags = new ArrayList<>(tags);
         }
 
         /**

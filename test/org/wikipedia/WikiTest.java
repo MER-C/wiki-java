@@ -27,6 +27,7 @@ import java.security.MessageDigest;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import javax.security.auth.login.FailedLoginException;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.*;
@@ -102,6 +103,13 @@ public class WikiTest
         Wiki dummy = Wiki.newSession("en.wikipedia.org", "/example", "https://");
         int result_5 = enWiki.compareTo(dummy);
         assertTrue(result_5 > 0, "multiple instances on same domain");
+    }
+    
+    @Test
+    public void login() throws Exception
+    {
+        assertThrows(FailedLoginException.class, () -> 
+            enWiki.login("MER-C@Fake", "ObviouslyWrongPassword"), "Failed login must throw exception.");
     }
 
     @Test
@@ -298,7 +306,7 @@ public class WikiTest
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
         Wiki.Revision first = testWiki.getFirstRevision("User:MER-C/UnitTests/Delete");
         assertEquals(217080L, first.getID());
-        assertEquals(List.of("HHVM", "HotCat", "MyStupidTestTag"), first.getTags());
+        assertEquals(List.of("HotCat", "MyStupidTestTag"), first.getTags());
     }
 
     @Test
