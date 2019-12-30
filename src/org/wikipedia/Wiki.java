@@ -3816,7 +3816,9 @@ public class Wiki implements Comparable<Wiki>
         // strip extraneous information
         if (line.contains("</compare>"))
         {
-            int a = line.indexOf("<compare");
+            // a warning may occur here in certain circumstances e.g.
+            // https://en.wikipedia.org/w/api.php?&torelative=prev&maxlag=5&format=xml&action=compare&fromrev=255072509
+            int a = line.lastIndexOf("<compare");
             a = line.indexOf('>', a) + 1;
             int b = line.indexOf("</compare>", a);
             return decode(line.substring(a, b));

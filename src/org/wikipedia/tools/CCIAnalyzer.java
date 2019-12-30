@@ -46,7 +46,7 @@ import org.wikipedia.*;
  */
 public class CCIAnalyzer
 {
-    private static Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+    private Wiki wiki;
     private int diffcount = 0;
     private List<String> diffshort = new ArrayList<>(1000);
     private List<String> diffs = new ArrayList<>(1000);
@@ -62,14 +62,21 @@ public class CCIAnalyzer
     public static void main(String[] args) throws IOException
     {
         Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("CCIAnalyzer", "[options] \"[CCI page]\"")
+            .description("Filters minor edits from [[Wikipedia:Contributor copyright investigations]].")
             .addBooleanFlag("--references", "Remove all references (aggressive)")
+            .addBooleanFlag("--lists", "Remove all list items (aggressive)")
+            .addBooleanFlag("--files", "Remove all file additions (mildly aggressive)")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
+            .addVersion("0.02")
+            .addHelp()
             .parse(args);
         
         CCIAnalyzer analyzer = new CCIAnalyzer();
         int wordcount = Integer.parseInt(parsedargs.getOrDefault("--numwords", "9"));
         boolean norefs = parsedargs.containsKey("--references");
 
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setLogLevel(Level.WARNING);
         String ccipage = parsedargs.get("default");
         if (ccipage == null)
@@ -85,12 +92,17 @@ public class CCIAnalyzer
                 temp.append(line);
                 temp.append("\n");
             }
-            analyzer.loadString(temp.toString());
+            analyzer.loadString(enWiki, temp.toString());
         }
         else
             analyzer.loadWikiPage(enWiki, ccipage);
-        
-        analyzer.setCullingFunction(diff -> whitelistCull(diff) && wordCountCull(diff, wordcount, norefs));
+        Predicate<String> cullingfn = diff -> whitelistCull(diff) && 
+            analyzer.wordCountCull(diff, wordcount, norefs) && tableCull(diff);
+        if (parsedargs.containsKey("--lists"))
+            cullingfn = cullingfn.and(CCIAnalyzer::listItemCull);
+        if (parsedargs.containsKey("--files"))
+            cullingfn = cullingfn.and(CCIAnalyzer::fileAdditionCull);
+        analyzer.setCullingFunction(cullingfn);
         analyzer.analyzeDiffs();
         analyzer.writeOutput();
     }
@@ -107,6 +119,7 @@ public class CCIAnalyzer
      * 
      *  @param culler a function String &#8594; boolean, that indicates whether 
      *  a block of text added should be counted as major
+     *  @since 0.02
      */
     public void setCullingFunction(Predicate<String> culler)
     {
@@ -119,10 +132,12 @@ public class CCIAnalyzer
      *  @param wiki the wiki the page is on
      *  @param page the page to load from
      *  @throws IOException if a network error occurs
+     *  @since 0.02
      */
     public void loadWikiPage(Wiki wiki, String page) throws IOException
     {
         cci = wiki.getPageText(List.of(page)).get(0);
+        this.wiki = wiki;
         loadDiffs();
     }
     
@@ -130,15 +145,18 @@ public class CCIAnalyzer
      *  Loads diffs from the supplied String. Diffs must be of the format 
      *  [[Special:Diff/123456]].
      *  @param cci the diffs to load
+     *  @since 0.02
      */
-    public void loadString(String cci)
+    public void loadString(Wiki wiki, String cci)
     {
         this.cci = cci;
+        this.wiki = wiki;
         loadDiffs();
     }
     
     /**
      *  Loads and parses diffs from a loaded CCI.
+     *  @since 0.02
      */
     private void loadDiffs()
     {
@@ -170,12 +188,12 @@ public class CCIAnalyzer
             // https://phabricator.wikimedia.org/T15209
             try 
             {
-                String diff = enWiki.diff(Map.of("revid", oldid), Map.of("revid", Wiki.PREVIOUS_REVISION));
+                String diff = wiki.diff(Map.of("revid", oldid), Map.of("revid", Wiki.PREVIOUS_REVISION));
                 parsed++;
                 if (diff == null) // RevisionDeleted revision
                     continue;
                 // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
-                diff = diff.toLowerCase(enWiki.locale());
+                diff = diff.toLowerCase(wiki.locale());
                 diff = diff.replace(deltaend + " " + deltabegin, " ");
                 diffshort.add(edit);
                 diffs.add(diff);
@@ -219,6 +237,7 @@ public class CCIAnalyzer
      *  culling functions may be experimented with to see which works best. 
      *  Culling is not cumulative unless you save the wikipage in between and 
      *  reload the diffs.
+     *  @since 0.02
      */
     public void analyzeDiffs()
     {
@@ -271,6 +290,7 @@ public class CCIAnalyzer
     /**
      *  Returns the list of edits flagged as minor.
      *  @return (see above)
+     *  @since 0.02
      */
     public List<String> getMinorEdits()
     {
@@ -279,6 +299,7 @@ public class CCIAnalyzer
     
     /**
      *  Writes the CCI with trivial diffs removed to standard output.
+     *  @since 0.02
      */
     public void writeOutput()
     {
@@ -317,7 +338,7 @@ public class CCIAnalyzer
             cleaned.append("\n");
         }
         System.out.println(cleaned);
-        System.err.printf("%d of %d diffs and %d articles removed.", minoredits.size(), 
+        System.err.printf("%d of %d diffs and %d articles removed.%n", minoredits.size(), 
             diffcount, removedarticles);
     }
     
@@ -326,6 +347,7 @@ public class CCIAnalyzer
      *  strings arise from AFDs, RFDs, and (BLP) PRODs.
      *  @param delta the change to check
      *  @return true if the edit is major, false if it matches the whitelist
+     *  @since 0.02
      */
     public static boolean whitelistCull(String delta)
     {
@@ -364,8 +386,9 @@ public class CCIAnalyzer
      *  as minor
      *  @param removerefs remove references before counting words
      *  @return whether this is a major edit
+     *  @since 0.02
      */
-    public static boolean wordCountCull(String delta, int wordcount, boolean removerefs)
+    public boolean wordCountCull(String delta, int wordcount, boolean removerefs)
     {
         // replace wikilinks, categories and files with their descriptions
         StringBuilder temp = new StringBuilder(delta);
@@ -378,7 +401,7 @@ public class CCIAnalyzer
             if (parsedlink.get(0).length() > 100)
                 // something has gone wrong here
                 break;
-            else if (enWiki.namespace(parsedlink.get(0)) == Wiki.CATEGORY_NAMESPACE)
+            else if (wiki.namespace(parsedlink.get(0)) == Wiki.CATEGORY_NAMESPACE)
                 // I'm not interested in the category sortkey
                 temp.delete(i, j + 2);
             else
@@ -395,7 +418,13 @@ public class CCIAnalyzer
         while (tk.hasMoreTokens())
         {
             String token =  tk.nextToken();
-            if (token.split("\\s").length > wordcount)
+            String[] words = token.split("\\s");
+            int count = 0;
+            // mop up some non-words such as dashes and stray bits of wiki markup e.g. ''' Test '''
+            for (String word : words)
+                if (!word.matches("^\\p{Punct}*$"))
+                    count++;
+            if (count > wordcount)
                 return true;
         }
         return false;
@@ -405,6 +434,7 @@ public class CCIAnalyzer
      *  Removes references from the given wikitext.
      *  @param wikitext wikitext for which references should be removed
      *  @return the wikitext with references removed
+     *  @since 0.02
      */
     public static String removeReferences(String wikitext)
     {
@@ -430,10 +460,13 @@ public class CCIAnalyzer
     
     /**
      *  This function flags unnumbered list items that begin with an internal
-     *  or external link as minor edits. I'm not sure whether this is an 
-     *  aggressive option.
+     *  or external link as minor edits. Of all the culling options, this one
+     *  is probably the most aggressive - links may be followed by long
+     *  descriptions.
+     *
      *  @param delta the delta to check
      *  @return whether this is a major edit
+     *  @since 0.02
      */
     public static boolean listItemCull(String delta)
     {
@@ -446,9 +479,23 @@ public class CCIAnalyzer
      *  captions, but this is rare.
      *  @param delta the delta to check
      *  @return whether this is a major edit
+     *  @since 0.02
      */
     public static boolean fileAdditionCull(String delta)
     {
         return !delta.matches("^\\[\\[(?:file|image|category).+");
+    }
+    
+    /**
+     *  This function flags the beginning of tables. Safe, but not seen very often.
+     *  Detecting table rows is hard in this context - they start with | which is 
+     *  not a very specific pattern.
+     *  @param delta the delta to check
+     *  @return whether this is a major edit
+     *  @since 0.02
+     */
+    public static boolean tableCull(String delta)
+    {
+        return !delta.startsWith("{|");
     }
 }

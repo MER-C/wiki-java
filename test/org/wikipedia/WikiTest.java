@@ -1007,6 +1007,11 @@ public class WikiTest
         // bad revids
         assertNull(enWiki.diff(Map.of("revid", 1L << 62), Map.of("revid", 803731343L)), "bad from revid");
         assertNull(enWiki.diff(Map.of("revid", 803731343L), Map.of("revid", 1L << 62)), "bad to revid");
+        
+        // new article
+        diff = enWiki.diff(Map.of("revid", 154400451L), Map.of("revid", Wiki.PREVIOUS_REVISION));
+        assertTrue(diff.contains("'''Urmitz''' is a municipality in the [[Mayen-Koblenz|district of Mayen-Koblenz]] "
+            + "in [[Rhineland-Palatinate]], western [[Germany]]"));
     }
 
     @Test

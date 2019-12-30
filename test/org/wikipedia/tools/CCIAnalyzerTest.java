@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import org.wikipedia.Wiki;
 
 /**
  *  Unit tests for {@link CCIAnalyzer}.
@@ -54,11 +55,12 @@ public class CCIAnalyzerTest
     public void whitelistCull()
     {
         // INTEGRATION TEST
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         String cci = 
         // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]] - AFD
         "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]";
         CCIAnalyzer analyzer = new CCIAnalyzer();
-        analyzer.loadString(cci);
+        analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(CCIAnalyzer::whitelistCull);
         analyzer.analyzeDiffs();
         assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), analyzer.getMinorEdits());
@@ -68,18 +70,28 @@ public class CCIAnalyzerTest
     public void wordCountCull()
     {
         // INTEGRATION TEST
-        
-        // check whether references are removed
-        // from [[Wikipedia:Contributor copyright investigations/Dutchy85]]
-        String cci = 
-            "*[[:Smiley (1956 film)]] (3 edits): [[Special:Diff/509191673|(+7148)]][[Special:Diff/476809081|(+460)]]"
-            + "[[Special:Diff/446793589|(+205)]]";
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         CCIAnalyzer analyzer = new CCIAnalyzer();
-        analyzer.loadString(cci);
-        analyzer.setCullingFunction(diff -> CCIAnalyzer.wordCountCull(diff, 9, false));
+        
+        String cci =
+            // 13 words - checks word count threshold
+            "*'''N''' [[:Urmitz]] (1 edit): [[Special:Diff/154400451|(+283)]]" + 
+            // 15 words, but two of them are just wikitext remnants
+            "*'''N''' [[:SP-354]] (1 edit): [[Special:Diff/255072765|(+286)]]" +
+            // the second diff contains references only
+            "*[[:Smiley (1956 film)]] (2 edits): [[Special:Diff/476809081|(+460)]][[Special:Diff/446793589|(+205)]]";
+        analyzer.loadString(enWiki, cci);
+        
+        // check word count and punctuation removal
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 12, false));
         analyzer.analyzeDiffs();
         assertTrue(analyzer.getMinorEdits().isEmpty());
-        analyzer.setCullingFunction(diff -> CCIAnalyzer.wordCountCull(diff, 9, true));
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 13, false));
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/154400451|(+283)]]", "[[Special:Diff/255072765|(+286)]]"), analyzer.getMinorEdits());
+        
+        // check whether references are removed
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9, true));
         analyzer.analyzeDiffs();
         assertEquals(List.of("[[Special:Diff/446793589|(+205)]]"), analyzer.getMinorEdits());
     }
