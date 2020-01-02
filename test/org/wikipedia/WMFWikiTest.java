@@ -117,7 +117,10 @@ public class WMFWikiTest
         assertEquals("Catopsbaatar", ale.getTitle());
         assertEquals(OffsetDateTime.parse("2018-04-05T22:58:14Z"), ale.getTimestamp());
         assertEquals("edit", ale.getAction());
-        // TODO: test details when they are overhauled
+        Map<String, String> details = ale.getDetails();
+        assertEquals("1", details.get("filter_id"));
+        assertEquals("834477714", details.get("revid"));
+        assertEquals("", details.get("result"));
     }
     
     @Test

@@ -6026,12 +6026,12 @@ public class Wiki implements Comparable<Wiki>
 
         OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(xml, "timestamp", 0));
 
-        // details: TODO: make this a HashMap
-        Object details = null;
+        // details
+        Map<String, String> details = new HashMap<>();
         if (xml.contains("commenthidden")) // oversighted
             details = null;
         else if (type.equals(MOVE_LOG))
-            details = parseAttribute(xml, "target_title", 0); // the new title
+            details.put("target_title", parseAttribute(xml, "target_title", 0));
         else if (type.equals(BLOCK_LOG) || xml.contains("<block"))
         {
             int a = xml.indexOf("<block") + 7;
@@ -6040,44 +6040,41 @@ public class Wiki implements Comparable<Wiki>
             if (c > 10) // not an unblock
             {
                 int d = s.indexOf('\"', c);
-                details = new Object[]
-                {
-                    s.contains("anononly"), // anon-only
-                    s.contains("nocreate"), // account creation blocked
-                    s.contains("noautoblock"), // autoblock disabled
-                    s.contains("noemail"), // email disabled
-                    s.contains("nousertalk"), // cannot edit talk page
-                    s.substring(c, d) // duration
-                };
+                if (s.contains("anononly")) // anon-only
+                    details.put("anononly", "true");
+                if (s.contains("nocreate")) // account creation blocked
+                    details.put("nocreate", "true");
+                if (s.contains("noautoblock")) // autoblock disabled
+                    details.put("noautoblock", "true");
+                if (s.contains("noemail")) // email disabled
+                    details.put("noemail", "true");
+                if (s.contains("nousertalk")) // cannot edit talk page
+                    details.put("nousertalk", "true");
+                details.put("expiry", s.substring(c, d));
             }
         }
         else if (type.equals(PROTECTION_LOG))
         {
-            if (action.equals("unprotect"))
-                details = null;
-            else
+            if (action.equals("protect"))
             {
                 // FIXME: return a protectionstate here?
-                int a = xml.indexOf("<param>") + 7;
-                int b = xml.indexOf("</param>", a);
-                details = xml.substring(a, b);
+                details.put("protection string", parseAttribute(xml, "description", 0));
             }
         }
         else if (type.equals(USER_RENAME_LOG))
         {
             int a = xml.indexOf("<param>") + 7;
             int b = xml.indexOf("</param>", a);
-            details = decode(xml.substring(a, b)); // the new username
+            details.put("new username", decode(xml.substring(a, b)));
         }
         else if (type.equals(USER_RIGHTS_LOG))
         {
-            int a = xml.indexOf("new=\"") + 5;
+            int a = xml.indexOf("old=\"") + 5;
             int b = xml.indexOf('\"', a);
-            StringTokenizer tk = new StringTokenizer(xml.substring(a, b), ", ");
-            List<String> temp = new ArrayList<>();
-            while (tk.hasMoreTokens())
-                temp.add(tk.nextToken());
-            details = temp.toArray(String[]::new);
+            details.put("old", xml.substring(a, b));
+            int c = xml.indexOf("new=\"") + 5;
+            int d = xml.indexOf('\"', a);
+            details.put("new", xml.substring(c, d));
         }
 
         // tags
@@ -7082,7 +7079,7 @@ public class Wiki implements Comparable<Wiki>
     {
         private final String type;
         private String action;
-        private Object details;
+        private Map<String, String> details;
 
         /**
          *  Creates a new log entry. WARNING: does not perform the action
@@ -7103,7 +7100,7 @@ public class Wiki implements Comparable<Wiki>
          *  @since 0.08
          */
         protected LogEntry(long id, OffsetDateTime timestamp, String user, String comment,
-            String parsedcomment, String type, String action, String target, Object details)
+            String parsedcomment, String type, String action, String target, Map<String, String> details)
         {
             super(id, timestamp, user, target, comment, parsedcomment);
             this.type = Objects.requireNonNull(type);
@@ -7164,7 +7161,7 @@ public class Wiki implements Comparable<Wiki>
          *  @return the details of the log entry
          *  @since 0.08
          */
-        public Object getDetails()
+        public Map<String, String> getDetails()
         {
             return details;
         }
@@ -7184,10 +7181,7 @@ public class Wiki implements Comparable<Wiki>
             s.append(",action=");
             s.append(Objects.toString(action, "[DELETED]"));
             s.append(",details=");
-            if (details instanceof Object[])
-                s.append(List.of((Object[])details)); // crude formatting hack
-            else
-                s.append(details);
+            s.append(details);
             s.append("]");
             return s.toString();
         }

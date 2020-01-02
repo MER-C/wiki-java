@@ -421,11 +421,9 @@ public class WMFWiki extends Wiki
                 String loguser = parseAttribute(items[i], "user", 0);
                 String action = parseAttribute(items[i], "action", 0);
                 String target = parseAttribute(items[i], "title", 0);
-                Map<String, Object> details = new HashMap<>();
-                String revid = parseAttribute(items[i], "revid", 0); // may be null
-                if (revid != null)
-                    details.put("revid", Long.valueOf(revid));
-                details.put("filter_id", Integer.valueOf(parseAttribute(items[i], "filter_id", 0)));
+                Map<String, String> details = new HashMap<>();
+                details.put("revid", parseAttribute(items[i], "revid", 0));
+                details.put("filter_id", parseAttribute(items[i], "filter_id", 0));
                 details.put("result", parseAttribute(items[i], "result", 0));
                 results.add(new LogEntry(id, timestamp, loguser, null, null, ABUSE_LOG, action, target, details));
             }

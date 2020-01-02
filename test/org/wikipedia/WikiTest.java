@@ -596,11 +596,11 @@ public class WikiTest
         assertEquals("User:Nimimaan", le.get(0).getTitle());
         assertEquals("spambot", le.get(0).getComment());
         assertEquals("spambot", le.get(0).getParsedComment());
-//        assertEquals(new Object[] {
-//            false, true, // hard block (not anon only), account creation disabled,
-//            false, true, // autoblock enabled, email disabled
-//            true, "indefinite" // talk page access revoked, expiry
-//        }, le[0].getDetails(), "block log parameters");
+        Map<String, String> details = le.get(0).getDetails();
+        assertTrue(details.containsKey("nocreate"));
+        assertTrue(details.containsKey("noemail"));
+        assertTrue(details.containsKey("nousertalk"));
+        assertEquals("indefinite", details.get("expiry"));
 
         // New user log
         assertEquals("Nimimaan", le.get(1).getUser());
@@ -608,7 +608,7 @@ public class WikiTest
         assertEquals("create", le.get(1).getAction());
         assertEquals("", le.get(1).getComment());
         assertEquals("", le.get(1).getParsedComment());
-//        assertNull(le.get(1).getDetails(), "new user log parameters");
+        assertTrue(le.get(1).getDetails().isEmpty());
 
         // https://en.wikipedia.org/w/api.php?action=query&list=logevents&letitle=Talk:96th%20Test%20Wing/Temp
 
@@ -619,7 +619,15 @@ public class WikiTest
         le = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
         assertEquals(Wiki.MOVE_LOG, le.get(0).getType());
         assertEquals("move", le.get(0).getAction());
-        // TODO: test for new title, redirect suppression
+        assertEquals("96th Test Wing", le.get(0).getDetails().get("target_title"));
+        // TODO: test for redirect suppression - on hold pending https://phabricator.wikimedia.org/T152346
+        
+        // protection log
+        rh = enWiki.new RequestHelper()
+            .byTitle("Wikipedia:Contact us - Licensing");
+        le = enWiki.getLogEntries(Wiki.PROTECTION_LOG, null, rh);
+        assertEquals("protect", le.get(0).getAction());
+        assertEquals("‎[edit=sysop] (indefinite) ‎[move=sysop] (indefinite)", le.get(0).getDetails().get("protection string"));
 
         // RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User%3AMER-C%2FTest
