@@ -135,18 +135,7 @@ public class NPPCheck
         // NPPBrowser mode (for bulk fetching)
         if (parsedargs.containsKey("--unpatrolled"))
         {
-            // CLI login
-            try
-            {
-                Console console = System.console();
-                enWiki.login(console.readLine("Username: "), console.readPassword("Password: "));
-            }
-            catch (FailedLoginException ex)
-            {
-                System.err.println("Invalid username or password.");
-                System.exit(1);
-            }
-            
+            Users.of(enWiki).cliLogin();
             check.setMode(Mode.UNPATROLLED);
             check.setReviewer(null);
             
@@ -374,7 +363,7 @@ public class NPPCheck
         List<Wiki.LogEntry> ret = new ArrayList<>();
         for (Wiki.LogEntry log : le)
         {
-            String newtitle = (String)log.getDetails();
+            String newtitle = log.getDetails().get("target_title");
             if (wiki.namespace(newtitle) == Wiki.MAIN_NAMESPACE)
                 ret.add(log);
         }
@@ -398,7 +387,7 @@ public class NPPCheck
             if (event instanceof Wiki.LogEntry)
             {
                 Wiki.LogEntry log = (Wiki.LogEntry)event;
-                title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : event.getTitle();
+                title = log.getType().equals(Wiki.MOVE_LOG) ? log.getDetails().get("target_title") : event.getTitle();
             }
             else
                 title = event.getTitle();
@@ -431,7 +420,7 @@ public class NPPCheck
             if (event instanceof Wiki.LogEntry)
             {
                 Wiki.LogEntry log = (Wiki.LogEntry)event;
-                title = log.getType().equals(Wiki.MOVE_LOG) ? (String)log.getDetails() : event.getTitle();
+                title = log.getType().equals(Wiki.MOVE_LOG) ? log.getDetails().get("target_title") : event.getTitle();
             }
             else
                 title = event.getTitle();

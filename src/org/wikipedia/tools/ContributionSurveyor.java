@@ -86,19 +86,7 @@ public class ContributionSurveyor
 
         Wiki homewiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         if (parsedargs.containsKey("--login"))
-        {
-            // CLI login
-            try
-            {
-                Console console = System.console();
-                homewiki.login(console.readLine("Username: "), console.readPassword("Password: "));
-            }
-            catch (FailedLoginException ex)
-            {
-                System.err.println("Invalid username or password.");
-                System.exit(1);
-            }
-        }
+            Users.of(homewiki).cliLogin();
         String infile = parsedargs.get("--infile");
         String outfile = parsedargs.get("--outfile");
         String wikipage = parsedargs.get("--wikipage");

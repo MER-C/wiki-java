@@ -24,6 +24,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import javax.security.auth.login.FailedLoginException;
 
 /**
  *  Utility methods for wiki users.
@@ -176,5 +177,29 @@ public class Users
             ret.putIfAbsent(revision, pagetexts.get(i));
         }
         return ret;
+    }
+    
+    /**
+     *  Generates a CLI login prompt and logs in if successful. Exits with exit
+     *  code 1 if login is unsuccessful or code 2 if a network error occurs.
+     */
+    public void cliLogin()
+    {
+        try
+        {
+            Console console = System.console();
+            wiki.login(console.readLine("Username: "), console.readPassword("Password: "));
+        }
+        catch (FailedLoginException ex)
+        {
+            System.err.println("Invalid username or password.");
+            System.exit(1);
+        }
+        catch (IOException ex)
+        {
+            System.err.println("A network error occurred.");
+            ex.printStackTrace();
+            System.exit(2);
+        }
     }
 }
