@@ -34,10 +34,16 @@ import org.wikipedia.*;
  */
 public class AdminStats
 {
-    private final Wiki enWiki, metaWiki;
+    private static final Wiki metaWiki;
+    private final Wiki wiki;
     private OffsetDateTime start, end;
-    private List<Wiki.LogEntry> deletecache;
+    private List<Wiki.LogEntry> deletions, blocks, locks, protections;
 
+    static
+    {
+        metaWiki = Wiki.newSession("meta.wikimedia.org");
+    }
+    
     /**
      *  Runs this program. You must supply a start and end date.
      *  @param args the command line arguments
@@ -50,21 +56,28 @@ public class AdminStats
             .addSingleArgumentFlag("--end", "2019-07-01T00:00:00Z", "End date")
             .addBooleanFlag("--printfull", "Dump histograms without grouping reasons")
             .addBooleanFlag("--locks", "Fetch statistics for global locks")
-            .addBooleanFlag("--blocks", "Fetch statistics for indefinite blocks of accounts")
-            .addBooleanFlag("--allblocks", "Fetch statistics for all blocks")
+            .addBooleanFlag("--blocks", "Fetch statistics for blocks")
+            .addBooleanFlag("--indefs", "Fetch statistics for indefinite blocks only (requires --blocks)")
+            .addBooleanFlag("--accounts", "Fetch statistics for blocked accounts only (requires --blocks)")
             .addBooleanFlag("--deletions", "Fetch statistics for deletions")
+            .addBooleanFlag("--protections", "Fetch statistics for protections")
+            .addBooleanFlag("--login", "Adds a login prompt to access high limits")
             .parse(args);
         OffsetDateTime start = OffsetDateTime.parse(options.get("--start"));
         OffsetDateTime end = OffsetDateTime.parse(options.get("--end"));
         boolean printfull = options.containsKey("--printfull");
 
-        AdminStats stats = new AdminStats();
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+        if (options.containsKey("--login"))
+            Users.of(enWiki).cliLogin();
+        
+        AdminStats stats = new AdminStats(enWiki);
         stats.setDateRange(start, end);
 
         if (options.containsKey("--locks"))
         {
             Map<String, Long> lockhist = stats.lockStats();
-            long total = lockhist.remove("TOTAL");
+            long total = lockhist.get("TOTAL");
             if (!printfull)
                 lockhist = stats.groupLockReasons(lockhist);
             System.out.println("==Lock stats==");
@@ -72,11 +85,15 @@ public class AdminStats
             printHistogram(lockhist, printfull);
         }
 
-        boolean allblocks = options.containsKey("--allblocks");
-        if (options.containsKey("--blocks") || allblocks)
+        if (options.containsKey("--blocks"))
         {
-            Map<String, Long> blockhist = stats.blockStats(allblocks, allblocks);
-            long total = blockhist.remove("TOTAL");
+            Boolean accounts = null, indefs = null;
+            if (options.containsKey("--accounts"))
+                accounts = Boolean.TRUE;
+            if (options.containsKey("--indefs"))
+                indefs = Boolean.TRUE;
+            Map<String, Long> blockhist = stats.blockStats(accounts, indefs);
+            long total = blockhist.get("TOTAL");
             if (!printfull)
                 blockhist = stats.groupBlockReasons(blockhist);
             System.out.println("==Block stats==");
@@ -87,7 +104,7 @@ public class AdminStats
         if (options.containsKey("--deletions"))
         {
             Map<String, Long> deletehist = stats.deleteStats();
-            long total = deletehist.remove("TOTAL");
+            long total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("==All namespaces==");
@@ -95,7 +112,7 @@ public class AdminStats
             printHistogram(deletehist, printfull);
 
             deletehist = stats.deleteStats(Wiki.MAIN_NAMESPACE);
-            total = deletehist.remove("TOTAL");
+            total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("==Main namespace==");
@@ -103,7 +120,7 @@ public class AdminStats
             printHistogram(deletehist, printfull);
 
             deletehist = stats.deleteStats(Wiki.USER_NAMESPACE);
-            total = deletehist.remove("TOTAL");
+            total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("==User namespace==");
@@ -111,19 +128,41 @@ public class AdminStats
             printHistogram(deletehist, printfull);
 
             deletehist = stats.deleteStats(118); // draft namespace
-            total = deletehist.remove("TOTAL");
+            total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("==Draft namespace==");
             System.out.println("" + total + " deletions between " + start + " and " + end);
             printHistogram(deletehist, printfull);
         }
+        
+        if (options.containsKey("--protections"))
+        {
+            Map<String, Long> prothist = stats.protectStats();
+            long total = prothist.get("TOTAL");
+            if (!printfull)
+                prothist = stats.groupProtectionReasons(prothist);
+            System.out.println("==Protection stats==");
+            System.out.println("" + total + " protections between " + start + " and " + end);
+            printHistogram(prothist, printfull);
+            
+            prothist = stats.deleteStats(Wiki.MAIN_NAMESPACE);
+            total = prothist.get("TOTAL");
+            if (!printfull)
+                prothist = stats.groupDeleteReasons(prothist);
+            System.out.println("==Main namespace==");
+            System.out.println("" + total + " protections between " + start + " and " + end);
+            printHistogram(prothist, printfull);
+        }
     }
 
-    public AdminStats()
+    public AdminStats(Wiki wiki)
     {
-        enWiki = Wiki.newSession("en.wikipedia.org");
-        metaWiki = Wiki.newSession("meta.wikimedia.org");
+        this.wiki = wiki;
+        deletions = new ArrayList<>();
+        blocks = new ArrayList<>();
+        locks = new ArrayList<>();
+        protections = new ArrayList<>();
     }
 
     /**
@@ -136,10 +175,15 @@ public class AdminStats
     {
         this.start = start;
         this.end = end;
+        deletions.clear();
+        blocks.clear();
+        locks.clear();
+        protections.clear();
     }
 
     /**
-     *  Computes a histogram of page deletions by reason.
+     *  Computes a histogram of page deletions by reason. The total number of
+     *  deletions is available under a special TOTAL key.
      *  @param namespaces limit results to these namespaces (empty array = all
      *  namespaces)
      *  @return a (raw) histogram of deletion reasons
@@ -147,29 +191,32 @@ public class AdminStats
      */
     public Map<String, Long> deleteStats(int... namespaces) throws IOException
     {
-        if (deletecache == null)
+        if (deletions.isEmpty())
         {
-            Wiki.RequestHelper rh = enWiki.new RequestHelper()
+            Wiki.RequestHelper rh = wiki.new RequestHelper()
                 .withinDateRange(start, end);
-            deletecache = enWiki.getLogEntries("delete", "delete", rh);
-            deletecache.removeIf(log -> log.getTitle() == null || log.getComment() == null);
+            List<Wiki.LogEntry> temp = wiki.getLogEntries("delete", "delete", rh);
+            for (Wiki.LogEntry log : temp)
+                if (log.getTitle() != null && log.getComment() != null)
+                    deletions.add(log);
         }
-        Map<String, Long> ret = new HashMap<>();
-        var stream = deletecache.stream();
+        
+        List<Wiki.LogEntry> lelocal = new ArrayList<>(deletions);
         if (namespaces.length > 0)
         {
-            stream = stream.filter(log ->
+            lelocal.removeIf(log ->
             {
-                int ns = enWiki.namespace(log.getTitle());
+                int ns = wiki.namespace(log.getTitle());
                 for (int ns2 : namespaces)
                     if (ns2 == ns)
-                        return true;
-                return false;
+                        return false;
+                return true;
             });
         }
-        ret.putAll(stream.collect(Collectors.groupingBy(
+        Map<String, Long> ret = new TreeMap<>();
+        ret.putAll(lelocal.stream().collect(Collectors.groupingBy(
                 log -> log.getComment().replace("_", " ").toLowerCase(), Collectors.counting())));
-        ret.put("TOTAL", Long.valueOf(deletecache.size()));
+        ret.put("TOTAL", Long.valueOf(lelocal.size()));
         return ret;
     }
 
@@ -186,13 +233,21 @@ public class AdminStats
      */
     public Map<String, Long> groupDeleteReasons(Map<String, Long> raw)
     {
-        Map<String, Long> cleanhist = new HashMap<>();
+        Map<String, Long> cleanhist = new TreeMap<>();
         for (var entry : raw.entrySet())
         {
             String reason = entry.getKey();
             long count = entry.getValue();
-
+            if (reason.equals("TOTAL"))
+                continue;
             boolean unclassified = true;
+            
+            // consume copyright problems
+            if (reason.contains(":copyright problems"))
+            {
+                cleanhist.merge("Copyright problems", count, Long::sum);
+                unclassified = false;
+            }
 
             // general CSDs
             unclassified &= classifyReason(cleanhist, entry, "Patent nonsense", "|g1]]");
@@ -204,7 +259,7 @@ public class AdminStats
             unclassified &= classifyReason(cleanhist, entry, "Dependent on deleted page", "g8]]", "delete redirect: ", "#g8");
             unclassified &= classifyReason(cleanhist, entry, "Attack page", "g10");
             unclassified &= classifyReason(cleanhist, entry, "Spam", "g11", "spam", "advert");
-            unclassified &= classifyReason(cleanhist, entry, "Copyright problems", "g12", "|f9]]", ":copyright problems", ":copyright violations");
+            unclassified &= classifyReason(cleanhist, entry, "Copyright violations", "g12", "|f9]]", ":copyright violations");
             unclassified &= classifyReason(cleanhist, entry, "Abandoned draft", "g13");
             unclassified &= classifyReason(cleanhist, entry, "Unnecessary disambiguation", "|g14]]");
 
@@ -293,7 +348,10 @@ public class AdminStats
 
     /**
      *  Bins locks of global accounts by reason. The total number of locks is
-     *  available in a special key "TOTAL".
+     *  available in a special key "TOTAL". Caveat: it is not currently possible
+     *  to determine whether a log entry represents a lock or unlock because they
+     *  are the same action. This is buried in the log details. (FIXME for WMFWiki).
+     * 
      *  @return a map: lock reason &#8594; count
      *  @see <a href="https://meta.wikimedia.org/wiki/SRG">Requests for global
      *  locking</a>
@@ -301,31 +359,35 @@ public class AdminStats
      */
     public Map<String, Long> lockStats() throws IOException
     {
-        Wiki.RequestHelper rh = metaWiki.new RequestHelper()
-            .withinDateRange(start, end);
-        List<Wiki.LogEntry> le = metaWiki.getLogEntries("globalauth", null, rh);
-        le.removeIf(log -> log.getTitle() == null || log.getComment() == null);
-        HashMap<String, Long> ret = new HashMap<>();
-        ret.putAll(le.stream()
+        if (locks.isEmpty())
+        {
+            Wiki.RequestHelper rh = metaWiki.new RequestHelper()
+                .withinDateRange(start, end);
+            locks = metaWiki.getLogEntries("globalauth", null, rh);
+            locks.removeIf(log -> log.getTitle() == null || log.getComment() == null);
+        }
+        Map<String, Long> ret = new TreeMap<>();
+        ret.putAll(locks.stream()
             .collect(Collectors.groupingBy(log -> log.getComment().toLowerCase(), Collectors.counting())));
-        ret.put("TOTAL", Long.valueOf(le.size()));
+        ret.put("TOTAL", Long.valueOf(locks.size()));
         return ret;
     }
 
     /**
      *  Groups similar lock reasons together. Lock reasons are mutually
      *  exclusive.
-     *  @param lockhist the histogram of lock reasons to group (remove the TOTAL
-     *  key first)
+     *  @param lockhist the histogram of lock reasons to group 
      *  @return a map: lock reason &#8594; count
      */
     public Map<String, Long> groupLockReasons(Map<String, Long> lockhist)
     {
-        Map<String, Long> cleanlockhist = new HashMap<>();
+        Map<String, Long> cleanlockhist = new TreeMap<>();
         for (var entry : lockhist.entrySet())
         {
             String reason = entry.getKey();
             long count = entry.getValue();
+            if (reason.equals("TOTAL"))
+                continue;
 
             String key = "Unclassified";
             if (reason.contains("spam-only") || reason.contains("spambot"))
@@ -349,26 +411,62 @@ public class AdminStats
     /**
      *  Fetches block stats for the English Wikipedia and bins them by reason.
      *  The total number of blocks is available in a special key "TOTAL".
-     *  @param accountsonly look at registered accounts only
-     *  @param indefonly look at indefinite blocks only
+     *  @param accounts true = accounts only, false = IP addresses only, 
+     *  null = both
+     *  @param indefs true = indefinite blocks only, false = temporary blocks
+     *  only, null = both
      *  @return a map: block reason &#8594; count
-     *  @see <a href="https://en.wikipedia.org/wiki/Special:Blocklist">list of
-     *  current blocks</a>
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Long> blockStats(boolean accountsonly, boolean indefonly) throws IOException
+    public Map<String, Long> blockStats(Boolean accounts, Boolean indefs) throws IOException
     {
-        Wiki.RequestHelper rh = enWiki.new RequestHelper()
-            .withinDateRange(start, end);
-        if (accountsonly)
-            rh = rh.filterBy(Map.of("account", Boolean.TRUE));
-        if (accountsonly)
-            rh = rh.filterBy(Map.of("temp", Boolean.FALSE));
-
-        List<Wiki.LogEntry> lelocal = enWiki.getBlockList(null, rh);
-        lelocal.removeIf(log -> log.getTitle() == null || log.getComment() == null);
-        lelocal.removeIf(log -> log.getUser().equals("ProcseeBot"));
-        Map<String, Long> ret = new HashMap<>();
+        if (blocks.isEmpty())
+        {
+            Wiki.RequestHelper rh = wiki.new RequestHelper()
+                .withinDateRange(start, end);
+            // Special:Blocklist contains current blocks only
+            List<Wiki.LogEntry> lelocal = wiki.getLogEntries("block", "block", rh);
+            for (Wiki.LogEntry log : lelocal)
+                if (log.getTitle() != null && log.getComment() != null)
+                    blocks.add(log);
+        }
+        
+        // filter expiry
+        List<Wiki.LogEntry> lelocal = new ArrayList<>(blocks);
+        if (indefs != null)
+        {
+            lelocal.removeIf(log ->
+            {
+                String expiry = log.getDetails().get("expiry");
+                // https://phabricator.wikimedia.org/T241709
+                boolean indefinite = expiry.equals("indefinite") || expiry.equals("infinity") || expiry.equals("infinite") || expiry.equals("never");
+                if (Boolean.TRUE.equals(indefs) && indefinite)
+                    return false;
+                if (Boolean.FALSE.equals(indefs) && !indefinite)
+                    return false;
+                return true;
+            });
+        }
+        
+        // filter accounts
+        if (accounts != null)
+        {
+            lelocal.removeIf(log ->
+            {
+                String user = log.getTitle();
+                // quick and dirty
+                boolean ip = user.matches("User:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")
+                    || user.matches("User:([0-9a-f]{0,4}:){1,}[0-9a-f]{0,4}")
+                    || user.contains("/"); // rangeblocks, forbidden character in usernames
+                if (Boolean.TRUE.equals(accounts) && !ip)
+                    return false;
+                if (Boolean.FALSE.equals(accounts) && ip)
+                    return false;
+                return true;
+            });
+        }
+        
+        Map<String, Long> ret = new TreeMap<>();
         ret.putAll(lelocal.stream()
             .collect(Collectors.groupingBy(log -> log.getComment().toLowerCase(), Collectors.counting())));
         ret.put("TOTAL", Long.valueOf(lelocal.size()));
@@ -378,25 +476,22 @@ public class AdminStats
     /**
      *  Groups similar block reasons together. Block reasons are mutually
      *  exclusive.
-     *  @param blockhist the block reason histogram to group (remove the TOTAL
-     *  key first)
+     *  @param blockhist the block reason histogram to group
      *  @return a histogram with grouped block reasons
      */
     public Map<String, Long> groupBlockReasons(Map<String, Long> blockhist)
     {
-        Map<String, Long> cleanblockhist = new HashMap<>();
+        Map<String, Long> cleanblockhist = new TreeMap<>();
         for (var entry : blockhist.entrySet())
         {
             String reason = entry.getKey();
             long count = entry.getValue();
+            if (reason.equals("TOTAL"))
+                continue;
 
             String key = "Unclassified";
-            // sockpuppetry
-            if (reason.contains("{{checkuserblock-account}}") || reason.contains("sock") ||
-                reason.contains("block evasion") || reason.contains("term abuse") || reason.contains("banned"))
-                key = "Sockpuppetry and long term abuse";
             // spamming
-            else if (reason.contains("spam") || reason.contains("advertising") ||
+            if (reason.contains("spam") || reason.contains("advertising") ||
                 reason.contains("promotion") || reason.contains("[[wp:paid"))
                 key = "Spamming";
             // possible spamming
@@ -423,6 +518,8 @@ public class AdminStats
             // tendentious editing
             else if (reason.contains("[[wp:disruptive"))
                 key = "Disruptive editing";
+            else if (reason.contains("[[wp:edit warring"))
+                key = "Edit warring";
             // harassment
             else if (reason.contains("harass") || reason.contains("[[wp:no personal")
                 || reason.contains("{{oversight") || reason.contains("trolling")
@@ -431,6 +528,11 @@ public class AdminStats
             // addition of unsourced material
             else if (reason.contains("unsourced content") || reason.contains("citing sources"))
                 key = "Addition of unsourced material";
+            // sockpuppetry
+            // deliberately low down to capture as many underlying block reasons as possible
+            else if (reason.contains("{{checkuserblock-account}}") || reason.contains("sock") ||
+                reason.contains("block evasion") || reason.contains("term abuse") || reason.contains("banned"))
+                key = "Sockpuppetry and long term abuse";
             // proxies
             else if (reason.contains("{{colocation") || reason.contains("{{webhost") || reason.contains(" proxy}}"))
                 key = "Open proxy/webhost";
@@ -444,6 +546,98 @@ public class AdminStats
         }
         return cleanblockhist;
     }
+    
+    /**
+     *  Fetches page protection stats for the English Wikipedia and bins them 
+     *  by reason. The total number of protections is available in a special key
+     *  "TOTAL".
+     *  @param namespaces limit results to these namespaces (empty array = all
+     *  namespaces)
+     *  @return a map: block reason &#8594; count
+     *  @throws IOException if a network error occurs
+     */
+    public Map<String, Long> protectStats(int... namespaces) throws IOException
+    {
+        if (protections.isEmpty())
+        {
+            Wiki.RequestHelper rh = wiki.new RequestHelper()
+                .withinDateRange(start, end);
+            List<Wiki.LogEntry> lelocal = wiki.getLogEntries("protect", "protect", rh);
+            for (Wiki.LogEntry log : lelocal)
+                if (log.getTitle() != null && log.getComment() != null)
+                    protections.add(log);
+        }
+        
+        // namespace filter
+        List<Wiki.LogEntry> lelocal = new ArrayList<>(protections);
+        if (namespaces.length > 0)
+        {
+            lelocal.removeIf(log ->
+            {
+                int ns = wiki.namespace(log.getTitle());
+                for (int ns2 : namespaces)
+                    if (ns2 == ns)
+                        return false;
+                return true;
+            });
+        }
+        
+        Map<String, Long> ret = new TreeMap<>();
+        ret.putAll(lelocal.stream()
+            .collect(Collectors.groupingBy(log -> log.getComment().toLowerCase(), Collectors.counting())));
+        ret.put("TOTAL", Long.valueOf(lelocal.size()));
+        return ret;
+    }
+    
+    /**
+     *  Groups similar protection reasons together. Protection reasons are mutually
+     *  exclusive.
+     *  @param prothist the protection reason histogram to group
+     *  @return a histogram with grouped protection reasons
+     */
+    public Map<String, Long> groupProtectionReasons(Map<String, Long> prothist)
+    {
+        // TODO: add protection level, type and expiry
+        Map<String, Long> cleanprothist = new TreeMap<>();
+        for (var entry : prothist.entrySet())
+        {
+            String reason = entry.getKey();
+            long count = entry.getValue();
+            if (reason.equals("TOTAL"))
+                continue;
+
+            String key = "Unclassified";
+            if (reason.contains("[[wp:blp"))
+                key = "BLP violations";
+            else if (reason.contains("spam"))
+                key = "Spamming";
+            else if (reason.contains("copyright") || reason.contains("copyvio"))
+                key = "Copyright violations";
+            else if (reason.contains("arbitration enforcement") || reason.contains("wp:a/i/pia"))
+                key = "Arbitration enforcement";
+            else if (reason.contains("[[wp:pp#content dispute") || reason.contains("edit war") || reason.contains("move war"))
+                key = "Edit warring/content dispute";
+            else if (reason.contains("verifiability") || reason.contains("[[wp:intref"))
+                key = "Addition of unsourced material";
+            else if (reason.contains("vandal"))
+                key = "Vandalism";
+            else if (reason.contains("wp:pp#user pages"))
+                key = "User request";
+            else if (reason.contains("high-risk") || reason.contains("highly visible") || reason.contains("upcoming tfa"))
+                key = "High risk page";
+            
+            // deliberately low down to capture as many underlying reasons as possible
+            else if (reason.contains("sock") || reason.contains("block evasion") || reason.contains("lta"))
+                key = "Sock puppetry";
+            else if (reason.contains("[[wp:disruptive editing"))
+                key = "Unclassified disruptive editing";
+            else if (reason.contains("[[wp:salt"))
+                key = "Unclassified salting";
+
+            cleanprothist.merge(key, count, Long::sum);
+        }
+        return cleanprothist;
+    }
 
     public static void printHistogram(Map<String, Long> hist, boolean collapsible)
     {
@@ -456,9 +650,45 @@ public class AdminStats
         for (var entry : hist.entrySet())
         {
             String reason = collapsible ? "<nowiki>" + entry.getKey() + "</nowiki>" : entry.getKey();
-            System.out.println(WikitextUtils.addTableRow(List.of(reason, entry.getValue().toString())));
+            System.out.print(WikitextUtils.addTableRow(List.of(reason, entry.getValue().toString())));
         }
 
         System.out.println("|}");
+    }
+    
+    /**
+     *  Fetches the list of block log entries used to compute statistics.
+     *  @return (see above)
+     */
+    public List<Wiki.LogEntry> getBlockLogEntries()
+    {
+        return new ArrayList<>(blocks);
+    }
+    
+    /**
+     *  Fetches the list of deletion log entries used to compute statistics.
+     *  @return (see above)
+     */
+    public List<Wiki.LogEntry> getDeleteLogEntries()
+    {
+        return new ArrayList<>(deletions);
+    }
+    
+    /**
+     *  Fetches the list of global account log entries used to compute statistics.
+     *  @return (see above)
+     */
+    public List<Wiki.LogEntry> getLockLogEntries()
+    {
+        return new ArrayList<>(locks);
+    }
+    
+    /**
+     *  Fetches the list of protection log entries used to compute statistics.
+     *  @return (see above)
+     */
+    public List<Wiki.LogEntry> getProtectLogEntries()
+    {
+        return new ArrayList<>(protections);
     }
 }
