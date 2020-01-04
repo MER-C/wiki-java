@@ -31,19 +31,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class WikitextUtilsTest
 {
-    private static Wiki testWiki;
-    
-    /**
-     *  Initialize wiki objects.
-     *  @throws Exception if a network error occurs
-     */
-    @BeforeAll
-    public static void setUpClass() throws Exception
-    {
-        testWiki = Wiki.newSession("test.wikipedia.org");
-        testWiki.setMaxLag(-1);
-    }
-    
     @Test
     public void parseWikilink()
     {
@@ -58,5 +45,14 @@ public class WikitextUtilsTest
     {
         List<String> cells = List.of("A", "B", "C");
         assertEquals("|-\n| A || B || C\n", WikitextUtils.addTableRow(cells));
+    }
+    
+    @Test
+    public void removeComments()
+    {
+        assertEquals("A  B",        WikitextUtils.removeComments("A <!-- comment --> B"));
+        assertEquals("Blah ",       WikitextUtils.removeComments("Blah <!-- Unbalanced comment"));
+        assertEquals("A  B  C",     WikitextUtils.removeComments("A <!-- Two --> B <!-- Comments --> C"));
+        assertEquals("A  end2 -->", WikitextUtils.removeComments("A <!-- Two ends --> end2 -->"));
     }
 }

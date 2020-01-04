@@ -1,5 +1,5 @@
 /**
- *  @(#)CCIAnalyzer.java 0.02 27/12/2019
+ *  @(#)CCIAnalyzer.java 0.02 04/01/2020
  *  Copyright (C) 2013 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.function.*;
 import java.util.logging.*;
 import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
@@ -36,22 +36,21 @@ import org.wikipedia.*;
  *  CCIAnalyzer analyzer = new CCIAnalyzer();
  *  analyzer.loadWikiPage(enWiki, "Wikipedia:Contributor copyright investigations/Example");
  *  analyzer.setCullingFunction(diff -> CCIAnalyzer.whitelistCull(diff) 
- *      && CCIAnalyzer.wordCountCull(diff, wordcount, norefs));
+ *      && CCIAnalyzer.wordCountCull(diff, wordcount));
  *  analyzer.analyzeDiffs();
  *  analyzer.writeOutput();
  *  </pre>
  * 
  *  @author MER-C
- *  @version 0.02
+ *  @version 0.03
  */
 public class CCIAnalyzer
 {
     private Wiki wiki;
     private int diffcount = 0;
-    private List<String> diffshort = new ArrayList<>(1000);
-    private List<String> diffs = new ArrayList<>(1000);
-    private List<String> minoredits = new ArrayList<>(500);
+    private List<String> diffshort, diffs, minoredits;
     private Predicate<String> cullingfn;
+    private Function<String, String> filterfn;
     private String cci;
     
     /**
@@ -68,7 +67,7 @@ public class CCIAnalyzer
             .addBooleanFlag("--lists", "Remove all list items (aggressive)")
             .addBooleanFlag("--files", "Remove all file additions (mildly aggressive)")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
-            .addVersion("0.02")
+            .addVersion("0.03")
             .addHelp()
             .parse(args);
         
@@ -97,19 +96,24 @@ public class CCIAnalyzer
         else
             analyzer.loadWikiPage(enWiki, ccipage);
         Predicate<String> cullingfn = diff -> whitelistCull(diff) && 
-            analyzer.wordCountCull(diff, wordcount, norefs) && tableCull(diff);
+            analyzer.wordCountCull(diff, wordcount) && tableCull(diff);
         if (parsedargs.containsKey("--lists"))
             cullingfn = cullingfn.and(CCIAnalyzer::listItemCull);
         if (parsedargs.containsKey("--files"))
             cullingfn = cullingfn.and(CCIAnalyzer::fileAdditionCull);
         analyzer.setCullingFunction(cullingfn);
+        if (norefs)
+            analyzer.setFilteringFunction(CCIAnalyzer::removeReferences);
         analyzer.analyzeDiffs();
         analyzer.writeOutput();
     }
     
     public CCIAnalyzer()
     {
-        
+        filterfn = Function.identity();
+        diffshort = new ArrayList<>(1000);
+        diffs = new ArrayList<>(1000);
+        minoredits = new ArrayList<>(500);
     }
     
     /**
@@ -118,12 +122,34 @@ public class CCIAnalyzer
      *  be useful. Culling functions should expect entirely lower case strings only.
      * 
      *  @param culler a function String &#8594; boolean, that indicates whether 
-     *  a block of text added should be counted as major
+     *  a block of text added should be counted as major; must not be null
      *  @since 0.02
      */
     public void setCullingFunction(Predicate<String> culler)
     {
-        this.cullingfn = culler;
+        this.cullingfn = Objects.requireNonNull(culler);
+    }
+    
+    /**
+     *  Sets the function used by this analyzer that removes text from changes
+     *  before determining whether they are major or minor. This class defines 
+     *  several static functions that may be useful. Filtering functions should
+     *  expect entirely lower case strings only.
+     * 
+     *  <p>
+     *  {@link org.wikipedia.WikitextUtils} defines a function {@link 
+     *  WikitextUtils#removeComments}. This function is useful for filtering but
+     *  it is a semi-aggressive option. Please verify that an editor has not
+     *  pasted copyvios in HTML comments before using it - yes, I have seen this 
+     *  before!
+     * 
+     *  @param filter a function String &#8594; String that removes not major
+     *  content from a block of text; must not be null
+     *  @since 0.03
+     */
+    public void setFilteringFunction(Function<String, String> filter)
+    {
+        this.filterfn = Objects.requireNonNull(filter);
     }
     
     /**
@@ -144,6 +170,7 @@ public class CCIAnalyzer
     /**
      *  Loads diffs from the supplied String. Diffs must be of the format 
      *  [[Special:Diff/123456]].
+     *  @param wiki the wiki to load diffs from
      *  @param cci the diffs to load
      *  @since 0.02
      */
@@ -269,14 +296,18 @@ public class CCIAnalyzer
                     {
                         int y3 = addedline.indexOf(deltaend, k);
                         String delta = addedline.substring(k + deltabegin.length(), y3);
-                        major = cullingfn.test(delta);
+                        delta = delta.replace("&lt;", "<").replace("&gt;", ">");
+                        major = cullingfn.test(filterfn.apply(delta));
                         if (major)
                             break;
                         k = y3;
                     }
                 }
                 else
-                    major = cullingfn.test(addedline);
+                {
+                    addedline = addedline.replace("&lt;", "<").replace("&gt;", ">");                
+                    major = cullingfn.test(filterfn.apply(addedline));
+                }
                 if (major)
                     break;
                 j = y2;
@@ -373,22 +404,16 @@ public class CCIAnalyzer
     /**
      *  Determines whether a given delta is a major edit. A "major edit" is
      *  defined as something that adds more than the specified number of words.
-     * 
-     *  <p>
      *  A higher word count is a more aggressive setting. The default of 9 is 
-     *  sensible as in it has few false negatives. The use of reference removal
-     *  is an aggressive culling option that should not be used unless it has
-     *  been verified that the CCIed editor does not dump large quotes into
-     *  references.
+     *  sensible as in it has few false negatives. 
      * 
      *  @param delta the delta to check
      *  @param wordcount label all edits that add no more than this many words
      *  as minor
-     *  @param removerefs remove references before counting words
      *  @return whether this is a major edit
      *  @since 0.02
      */
-    public boolean wordCountCull(String delta, int wordcount, boolean removerefs)
+    public boolean wordCountCull(String delta, int wordcount)
     {
         // replace wikilinks, categories and files with their descriptions
         StringBuilder temp = new StringBuilder(delta);
@@ -408,13 +433,7 @@ public class CCIAnalyzer
                 temp.replace(i, j + 2, parsedlink.get(1));
         }
         
-        // decode() the delta
-        String delta2 = temp.toString().replace("&lt;", "<");
-        delta2 = delta2.replace("&gt;", ">");
-        
-        if (removerefs)
-            delta2 = removeReferences(delta2);
-        StringTokenizer tk = new StringTokenizer(delta2, "<>{}|=");
+        StringTokenizer tk = new StringTokenizer(temp.toString(), "<>{}|=");
         while (tk.hasMoreTokens())
         {
             String token =  tk.nextToken();
@@ -431,7 +450,11 @@ public class CCIAnalyzer
     }
     
     /**
-     *  Removes references from the given wikitext.
+     *  Removes references from the given wikitext. The use of reference removal
+     *  is an aggressive filtering option that should not be used unless it has
+     *  been verified that the CCIed editor does not dump large quotes into
+     *  references.
+     * 
      *  @param wikitext wikitext for which references should be removed
      *  @return the wikitext with references removed
      *  @since 0.02
@@ -470,7 +493,7 @@ public class CCIAnalyzer
      */
     public static boolean listItemCull(String delta)
     {
-        return !delta.matches("^\\*\\s?\\[.+");
+        return !delta.matches("^[#\\*]\\s?\\[.+");
     }
     
     /**
@@ -497,5 +520,17 @@ public class CCIAnalyzer
     public static boolean tableCull(String delta)
     {
         return !delta.startsWith("{|");
+    }
+    
+    /**
+     *  Removes external links and their captions from the supplied string.
+     *  Should be fairly safe.
+     *  @param delta the string to strip external links from
+     *  @return the string removed of external links
+     *  @since 0.03 
+     */
+    public static String removeExternalLinks(String delta)
+    {
+        return delta.replaceAll("\\[https?://.+\\]", "");
     }
 }

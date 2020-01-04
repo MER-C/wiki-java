@@ -93,4 +93,24 @@ public class WikitextUtils
         in = in.replace("'", "&#039;");
         return in;
     }
+    
+    /**
+     *  Removes HTML comments from the supplied string. 
+     *  @param delta the string to strip external links from
+     *  @return the string removed of external links
+     *  @since 0.02
+     */
+    public static String removeComments(String delta)
+    {
+        while (delta.contains("<!--"))
+        {
+            int a = delta.indexOf("<!--");
+            int b = delta.indexOf("-->");
+            if (b < 0)
+                delta = delta.substring(0, a);
+            else
+                delta = delta.substring(0, a) + delta.substring(b + 3);
+        }
+        return delta;
+    }
 }

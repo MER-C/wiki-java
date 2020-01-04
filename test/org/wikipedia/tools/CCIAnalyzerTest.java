@@ -1,5 +1,5 @@
 /**
- *  @(#)CCIAnalyzerTest.java 0.01 27/12/2019
+ *  @(#)CCIAnalyzerTest.java 0.03 04/01/2020
  *  Copyright (C) 2019 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  Unit tests for {@link CCIAnalyzer}.
@@ -31,9 +31,14 @@ import org.wikipedia.Wiki;
  */
 public class CCIAnalyzerTest
 {
+    private final Wiki enWiki;
+    private final CCIAnalyzer analyzer;
     
     public CCIAnalyzerTest()
     {
+        enWiki = Wiki.newSession("en.wikipedia.org");
+        enWiki.setMaxLag(-1);
+        analyzer = new CCIAnalyzer();
     }
     
     @Test
@@ -49,17 +54,30 @@ public class CCIAnalyzerTest
         assertEquals("Test: combined before. Sentence 2.", CCIAnalyzer.removeReferences(
             "Test: combined before<ref name=\"Before\" />. Sentence 2<ref>Test reference</ref>."));
         assertEquals("Test: multiple.", CCIAnalyzer.removeReferences("Test: multiple<ref>Reference 1</ref><ref>Reference 2</ref>."));
+        
+        // INTEGRATION TEST
+        // the second diff contains references only
+        String cci = "*[[:Smiley (1956 film)]] (2 edits): [[Special:Diff/476809081|(+460)]][[Special:Diff/446793589|(+205)]]";
+        analyzer.setFilteringFunction(CCIAnalyzer::removeReferences);
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
+        analyzer.loadString(enWiki, cci);
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/446793589|(+205)]]"), analyzer.getMinorEdits());
+    }
+    
+    @Test
+    public void removeExternalLinks()
+    {
+        assertEquals("Test  Test2", CCIAnalyzer.removeExternalLinks("Test [http://example.com Test link] Test2"));
+        assertEquals("*", CCIAnalyzer.removeExternalLinks("*[http://example.com Test link]"));
     }
     
     @Test
     public void whitelistCull()
     {
         // INTEGRATION TEST
-        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
-        String cci = 
         // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]] - AFD
-        "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]";
-        CCIAnalyzer analyzer = new CCIAnalyzer();
+        String cci = "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]";
         analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(CCIAnalyzer::whitelistCull);
         analyzer.analyzeDiffs();
@@ -70,30 +88,19 @@ public class CCIAnalyzerTest
     public void wordCountCull()
     {
         // INTEGRATION TEST
-        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
-        CCIAnalyzer analyzer = new CCIAnalyzer();
-        
         String cci =
             // 13 words - checks word count threshold
             "*'''N''' [[:Urmitz]] (1 edit): [[Special:Diff/154400451|(+283)]]" + 
-            // 15 words, but two of them are just wikitext remnants
-            "*'''N''' [[:SP-354]] (1 edit): [[Special:Diff/255072765|(+286)]]" +
-            // the second diff contains references only
-            "*[[:Smiley (1956 film)]] (2 edits): [[Special:Diff/476809081|(+460)]][[Special:Diff/446793589|(+205)]]";
+            // 15 words, but two of them are just wikitext remnants - should be
+            // removed as punctuation
+            "*'''N''' [[:SP-354]] (1 edit): [[Special:Diff/255072765|(+286)]]";
         analyzer.loadString(enWiki, cci);
-        
-        // check word count and punctuation removal
-        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 12, false));
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 12));
         analyzer.analyzeDiffs();
         assertTrue(analyzer.getMinorEdits().isEmpty());
-        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 13, false));
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 13));
         analyzer.analyzeDiffs();
         assertEquals(List.of("[[Special:Diff/154400451|(+283)]]", "[[Special:Diff/255072765|(+286)]]"), analyzer.getMinorEdits());
-        
-        // check whether references are removed
-        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9, true));
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/446793589|(+205)]]"), analyzer.getMinorEdits());
     }
     
     @Test
@@ -112,20 +119,25 @@ public class CCIAnalyzerTest
         assertFalse(CCIAnalyzer.fileAdditionCull(filestring));
     }
     
+    /**
+     *  Miscellaneous integration tests.
+     */
+    @Test
     public void loadString()
     {
-        String cci = 
-        // from [[Wikipedia:Contributor copyright investigations/Dutchy85]] - references
-        "*[[:Smiley (1956 film)]] (3 edits): [[Special:Diff/509191673|(+7148)]][[Special:Diff/476809081|(+460)]]"
-            + "[[Special:Diff/446793589|(+205)]]" +
-        "*[[:Australian cricket team in the West Indies in 1983–84]] (16 edits): [[Special:Diff/601446274|(+7142)]]"
-            + "[[Special:Diff/696963536|(+6475)]][[Special:Diff/637576690|(+5366)]][[Special:Diff/601439595|(+4500)]]"
-            + "[[Special:Diff/485135430|(+2420)]][[Special:Diff/601474114|(+2369)]][[Special:Diff/601472887|(+1223)]]"
-            + "[[Special:Diff/500172000|(+1106)]][[Special:Diff/655598008|(+647)]][[Special:Diff/601497454|(+560)]]"
-            + "[[Special:Diff/486364045|(+407)]][[Special:Diff/503566575|(+379)]][[Special:Diff/637574127|(+293)]]"
-            + "[[Special:Diff/705087540|(+287)]][[Special:Diff/601471866|(+281)]][[Special:Diff/601471765|(+230)]]" +
+        // WikitextUtils.removeComments
+        // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]]
+        String cci = "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]";
+        analyzer.loadString(enWiki, cci);
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
+        analyzer.analyzeDiffs();
+        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.setFilteringFunction(WikitextUtils::removeComments);
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), analyzer.getMinorEdits());
+        
         // from [[Wikipedia:Contributor copyright investigations/Dr. Blofeld 40]] - infoboxes
-        "*[[:Ann Thongprasom]] (1 edit): [[Special:Diff/130352114|(+460)]]" +
-        "*[[:Shoma Anand]] (1 edit): [[Special:Diff/130322991|(+460)]]";
+        // cci = "*[[:Ann Thongprasom]] (1 edit): [[Special:Diff/130352114|(+460)]]" +
+        // "*[[:Shoma Anand]] (1 edit): [[Special:Diff/130322991|(+460)]]";
     }
 }
