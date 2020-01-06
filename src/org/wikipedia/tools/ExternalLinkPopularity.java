@@ -202,7 +202,8 @@ public class ExternalLinkPopularity
     /**
      *  Determine a list of sites' popularity as external links. Each popularity
      *  score is capped at {@link #getMaxLinks()} because some domains are used 
-     *  very frequently and we don't want to be here forever. 
+     *  very frequently and we don't want to be here forever. The result is 
+     *  sorted by number of links found (least used domains first).
      * 
      *  @param data a list of domains to determine popularity for
      *  @return a Map with domain &#8594; popularity
@@ -231,7 +232,7 @@ public class ExternalLinkPopularity
             lsresults.put(domain, Math.min(count, maxlinks));
         }
         wiki.setQueryLimit(Integer.MAX_VALUE);
-        return lsresults;
+        return ArrayUtils.sortByValue(lsresults, Comparator.naturalOrder());
     }
     
     public String exportResultsAsWikitext(Map<String, Map<String, List<String>>> urldata, Map<String, Integer> popularity)

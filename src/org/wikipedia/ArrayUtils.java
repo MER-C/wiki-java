@@ -23,7 +23,7 @@ package org.wikipedia;
 import java.util.*;
 
 /**
- *  Convenience methods for dealing with lists of pages and revisions.
+ *  Convenience methods for dealing with collections of pages and revisions.
  *  @author MER-C
  *  @version 0.01
  */
@@ -87,5 +87,28 @@ public class ArrayUtils
         for (String[] subarray : b)
             compl.removeAll(List.of(subarray));
         return compl.toArray(String[]::new);
+    }
+    
+    /**
+     *  Returns a copy of the supplied map sorted by the given {@code Comparator}.
+     *  @param <K> the map key class
+     *  @param <V> the map value class (must be comparable)
+     *  @param map the input map
+     *  @param cmp the Comparator to sort by
+     *  @return the sorted map
+     *  @author <a href="https://stackoverflow.com/users/309596/carter-page">Carter 
+     *  Page</a> (modified by MER-C)
+     */
+    public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map, Comparator<? super V> cmp)
+    {
+        // from https://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values
+        List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+        list.sort(Map.Entry.comparingByValue(cmp));
+
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, V> entry : list)
+            result.put(entry.getKey(), entry.getValue());
+
+        return result;
     }
 }

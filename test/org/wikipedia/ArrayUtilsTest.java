@@ -20,6 +20,8 @@
 
 package org.wikipedia;
 
+import java.util.*;
+
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,5 +47,24 @@ public class ArrayUtilsTest
         String[] b1 = { "1", "2" };
         String[] b2 = { "3", "4", "x" };
         assertArrayEquals(new String[] { "5" }, ArrayUtils.relativeComplement(a, b1, b2));
-    }   
+    }
+    
+    @Test
+    public void sortByValue()
+    {
+        Map<String, String> test = Map.of("AAA", "Entry2", "BBB", "Entry4", "CCC", "Entry1", "DDD", "Entry3");
+        Map<String, String> sorted = ArrayUtils.sortByValue(test, Comparator.reverseOrder());
+        assertEquals(test.size(), sorted.size());
+        int count = 0;
+        for (var entry : sorted.entrySet())
+        {
+            switch (count++)
+            {
+                case 0: assertEquals(Map.entry("BBB", "Entry4"), entry); break;
+                case 1: assertEquals(Map.entry("DDD", "Entry3"), entry); break;
+                case 2: assertEquals(Map.entry("AAA", "Entry2"), entry); break;
+                case 3: assertEquals(Map.entry("CCC", "Entry1"), entry); break;
+            }
+        }
+    }
 }

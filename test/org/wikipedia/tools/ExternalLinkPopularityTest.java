@@ -93,8 +93,15 @@ public class ExternalLinkPopularityTest
         List<String> data = List.of("wikipedia.org", "obviously.invalid", "wikimedia.org");
         Map<String, Integer> results = elp.determineLinkPopularity(data);
         assertEquals(3, results.size());
-        assertEquals(500, results.get("wikipedia.org").intValue());
-        assertEquals(0, results.get("obviously.invalid").intValue());
-        assertEquals(500, results.get("wikimedia.org").intValue());        
+        int count = 0;
+        for (var entry : results.entrySet())
+        {
+            switch (count++)
+            {
+                case 0: assertEquals(Map.entry("obviously.invalid", 0), entry); break;
+                case 1: assertEquals(Map.entry("wikimedia.org", 500), entry); break;
+                case 2: assertEquals(Map.entry("wikipedia.org", 500), entry); break;
+            }
+        }
     }
 }
