@@ -63,7 +63,7 @@ public class ContributionSurveyor
             .synopsis("org.wikipedia.tools.ContributionSurveyor", "[options]")
             .description("Survey the contributions of a large number of wiki editors.")
             .addHelp()
-            .addVersion("ContributionSurveyor v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addVersion("ContributionSurveyor v0.06\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--infile", "file", "Use file as the list of users. "
                 + "Shows a filechooser if not specified.")
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s). "

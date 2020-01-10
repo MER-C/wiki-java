@@ -1,5 +1,5 @@
 /**
- *  @(#)CCIAnalyzer.java 0.02 04/01/2020
+ *  @(#)CCIAnalyzer.java 0.03 10/01/2020
  *  Copyright (C) 2013 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -66,14 +66,15 @@ public class CCIAnalyzer
             .addBooleanFlag("--references", "Remove all references (aggressive)")
             .addBooleanFlag("--lists", "Remove all list items (aggressive)")
             .addBooleanFlag("--files", "Remove all file additions (mildly aggressive)")
+            .addBooleanFlag("--extlinks", "Remove all external links")
+            .addBooleanFlag("--comments", "Remove all HTML comments (aggressive)")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
-            .addVersion("0.03")
+            .addVersion("CCIAnalyzer v0.03\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
             .parse(args);
         
         CCIAnalyzer analyzer = new CCIAnalyzer();
         int wordcount = Integer.parseInt(parsedargs.getOrDefault("--numwords", "9"));
-        boolean norefs = parsedargs.containsKey("--references");
 
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setLogLevel(Level.WARNING);
@@ -95,6 +96,7 @@ public class CCIAnalyzer
         }
         else
             analyzer.loadWikiPage(enWiki, ccipage);
+
         Predicate<String> cullingfn = diff -> whitelistCull(diff) && 
             analyzer.wordCountCull(diff, wordcount) && tableCull(diff);
         if (parsedargs.containsKey("--lists"))
@@ -102,8 +104,15 @@ public class CCIAnalyzer
         if (parsedargs.containsKey("--files"))
             cullingfn = cullingfn.and(CCIAnalyzer::fileAdditionCull);
         analyzer.setCullingFunction(cullingfn);
-        if (norefs)
-            analyzer.setFilteringFunction(CCIAnalyzer::removeReferences);
+
+        Function<String, String> filterfn = Function.identity();
+        if (parsedargs.containsKey("--references"))
+            filterfn = filterfn.andThen(CCIAnalyzer::removeReferences);
+        if (parsedargs.containsKey("--extlinks"))
+            filterfn = filterfn.andThen(CCIAnalyzer::removeExternalLinks);
+        if (parsedargs.containsKey("--comments"))
+            filterfn = filterfn.andThen(WikitextUtils::removeComments);
+        analyzer.setFilteringFunction(filterfn);
         analyzer.analyzeDiffs();
         analyzer.writeOutput();
     }
@@ -493,7 +502,8 @@ public class CCIAnalyzer
      */
     public static boolean listItemCull(String delta)
     {
-        return !delta.matches("^[#\\*]\\s?\\[.+");
+        // '* bit matches wikitext formatting for *''[[Test]]''
+        return !delta.matches("^[#\\*]\\s?'*\\s?\\[.+");
     }
     
     /**

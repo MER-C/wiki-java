@@ -77,7 +77,9 @@ public class CCIAnalyzerTest
     {
         // INTEGRATION TEST
         // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]] - AFD
-        String cci = "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]";
+        String cci = 
+            "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]" +
+            "*[[:Sabash Thambi]] (1 edit): [[Special:Diff/682049136|(+578)]]";
         analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(CCIAnalyzer::whitelistCull);
         analyzer.analyzeDiffs();
@@ -108,6 +110,19 @@ public class CCIAnalyzerTest
     {
         assertFalse(CCIAnalyzer.listItemCull("*[http://example.com External link]"));
         assertFalse(CCIAnalyzer.listItemCull("*[[Wikilink]]"));
+        assertFalse(CCIAnalyzer.listItemCull("* ''' [[Bold Wikilink]] '''"));
+        assertTrue(CCIAnalyzer.listItemCull("Don't cull this! *[[Test]]"));
+        
+        // INTEGRATION TEST
+        // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]]
+        String cci = "*'''N''' [[:We Can Be Heroes (disambiguation)]] (1 edit): [[Special:Diff/895761173|(+486)]]";
+        analyzer.loadString(enWiki, cci);
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 11));
+        analyzer.analyzeDiffs();
+        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 11) && CCIAnalyzer.listItemCull(diff));
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/895761173|(+486)]]"), analyzer.getMinorEdits());
     }
     
     @Test
@@ -117,6 +132,32 @@ public class CCIAnalyzerTest
             + "|thumb|right|400px|The interior of St Lawrence Jewry, the official church of the Lord Mayor "
             + "of London, located next to Guildhall in the City of London.]]").toLowerCase();
         assertFalse(CCIAnalyzer.fileAdditionCull(filestring));
+        
+        // INTEGRATION TEST
+        // from [[Wikipedia:Contributor copyright investigations/Lightburst]]
+        String cci = "*'''N''' [[:7Seventy7]] (2 edits): [[Special:Diff/906034889|(+6049)]][[Special:Diff/906119432|(+164)]]";
+        analyzer.loadString(enWiki, cci);
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
+        analyzer.analyzeDiffs();
+        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9) && CCIAnalyzer.fileAdditionCull(diff));
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/906119432|(+164)]]"), analyzer.getMinorEdits());
+    }
+    
+    @Test
+    public void tableCull()
+    {
+        // INTEGRATION TEST
+        // from [[Wikipedia:Contributor copyright investigations/Haikavin1990]]
+        String cci = "*[[:Manidhanum Dheivamagalam]] (2 edits): [[Special:Diff/854000150|(+1472)]][[Special:Diff/854001036|(+728)]]";
+        analyzer.loadString(enWiki, cci);
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
+        analyzer.analyzeDiffs();
+        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9) && CCIAnalyzer.tableCull(diff));
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/854001036|(+728)]]"), analyzer.getMinorEdits());
     }
     
     /**
@@ -125,9 +166,14 @@ public class CCIAnalyzerTest
     @Test
     public void loadString()
     {
-        // WikitextUtils.removeComments
-        // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]]
-        String cci = "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]";
+        String cci = 
+            // WikitextUtils.removeComments
+            // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]]
+            "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]" +
+            // copyvio, already revdeled - should be skipped in output, including to prove
+            // that this doesn't cause problems
+            // from [[Wikipedia:Contributor copyright investigations/Haikavin1990]]
+            "*[[:Amir Garib]] (1 edit): [[Special:Diff/849325539|(+1822)]]";
         analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
         analyzer.analyzeDiffs();
@@ -135,7 +181,7 @@ public class CCIAnalyzerTest
         analyzer.setFilteringFunction(WikitextUtils::removeComments);
         analyzer.analyzeDiffs();
         assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), analyzer.getMinorEdits());
-        
+                
         // from [[Wikipedia:Contributor copyright investigations/Dr. Blofeld 40]] - infoboxes
         // cci = "*[[:Ann Thongprasom]] (1 edit): [[Special:Diff/130352114|(+460)]]" +
         // "*[[:Shoma Anand]] (1 edit): [[Special:Diff/130322991|(+460)]]";
