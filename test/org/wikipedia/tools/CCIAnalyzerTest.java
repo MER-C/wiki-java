@@ -19,6 +19,7 @@
  */
 package org.wikipedia.tools;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,49 @@ public class CCIAnalyzerTest
         enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setMaxLag(-1);
         analyzer = new CCIAnalyzer();
+    }
+    
+    @Test
+    public void removeDisambiguationPages()
+    {
+        assertFalse(CCIAnalyzer.removeDisambiguationPages("Karpagam (disambiguation)"));
+        assertTrue(CCIAnalyzer.removeDisambiguationPages("Finding Dory"));
+        
+        // INTEGRATION TEST
+        // The disambiguation page edit would be culled by normal means
+        String cci = 
+            "*'''N''' [[:Karpagam (disambiguation)]] (1 edit): [[Special:Diff/902209948|(+269)]]\n" +
+            "*[[:Finding Dory]] (1 edit): [[Special:Diff/858890717|(+354)]]";
+        analyzer.loadString(enWiki, cci);
+        analyzer.analyzeDiffs();
+        assertEquals(Collections.emptyList(), analyzer.getMinorEdits());
+        
+        // the default is disambiguation culling = on
+        analyzer.setTitleFunction(title -> true);
+        analyzer.loadString(enWiki, cci);
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/902209948|(+269)]]"), analyzer.getMinorEdits());
+    }
+    
+    @Test
+    public void removeListPages()
+    {
+        assertFalse(CCIAnalyzer.removeListPages("List of YouTubers"));
+        assertTrue(CCIAnalyzer.removeListPages("Ramanujan (film)"));
+        
+        // INTEGRATION TEST
+        String cci = 
+            "*[[:List of Tamil films of 2011]] (1 edit): [[Special:Diff/472267771|(+315)]]\n" +
+            "*[[:Ramanujan (film)]] (3 edits): [[Special:Diff/573584256|(+643)]]";
+        analyzer.setTitleFunction(CCIAnalyzer::removeListPages);
+        analyzer.loadString(enWiki, cci);
+        analyzer.analyzeDiffs();
+        assertEquals(Collections.emptyList(), analyzer.getMinorEdits());
+        
+        analyzer.setTitleFunction(title -> true);
+        analyzer.loadString(enWiki, cci);
+        analyzer.analyzeDiffs();
+        assertEquals(List.of("[[Special:Diff/472267771|(+315)]]"), analyzer.getMinorEdits());
     }
     
     @Test
@@ -170,10 +214,14 @@ public class CCIAnalyzerTest
             // WikitextUtils.removeComments
             // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]]
             "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]" +
-            // copyvio, already revdeled - should be skipped in output, including to prove
-            // that this doesn't cause problems
+            // Copyvio, already revdeled - should be deleted from output.
+            // Test only proves this is not problematic.
             // from [[Wikipedia:Contributor copyright investigations/Haikavin1990]]
-            "*[[:Amir Garib]] (1 edit): [[Special:Diff/849325539|(+1822)]]";
+            "*[[:Amir Garib]] (1 edit): [[Special:Diff/849325539|(+1822)]]" +
+            // Deleted article, should be deleted from output (not implemented)
+            // Test only proves this is not problematic.
+            // from [[Wikipedia:Contributor copyright investigations/20150507 02]]
+            "*'''N''' [[:List of Papua New Guinea ODI cricket centurions]] (1 edit): [[Special:Diff/880649594|(+1775)]]";
         analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
         analyzer.analyzeDiffs();

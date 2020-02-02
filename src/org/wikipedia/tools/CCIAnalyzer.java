@@ -1,5 +1,5 @@
 /**
- *  @(#)CCIAnalyzer.java 0.03 10/01/2020
+ *  @(#)CCIAnalyzer.java 0.04 02/02/2020
  *  Copyright (C) 2013 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -42,15 +42,18 @@ import org.wikipedia.*;
  *  </pre>
  * 
  *  @author MER-C
- *  @version 0.03
+ *  @version 0.04
  */
 public class CCIAnalyzer
 {
     private Wiki wiki;
     private int diffcount = 0;
+    private int baseremovedarticles = 0;
+    private int baseremoveddiffs = 0;
     private List<String> diffshort, diffs, minoredits;
     private Predicate<String> cullingfn;
     private Function<String, String> filterfn;
+    private Predicate<String> titlefn;
     private String cci;
     
     /**
@@ -65,11 +68,12 @@ public class CCIAnalyzer
             .description("Filters minor edits from [[Wikipedia:Contributor copyright investigations]].")
             .addBooleanFlag("--references", "Remove all references (aggressive)")
             .addBooleanFlag("--lists", "Remove all list items (aggressive)")
-            .addBooleanFlag("--files", "Remove all file additions (mildly aggressive)")
+            .addBooleanFlag("--files", "Remove all file additions (aggressive)")
             .addBooleanFlag("--extlinks", "Remove all external links")
             .addBooleanFlag("--comments", "Remove all HTML comments (aggressive)")
+            .addBooleanFlag("--listpages", "Removes all list pages (aggressive)")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
-            .addVersion("CCIAnalyzer v0.03\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addVersion("CCIAnalyzer v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
             .parse(args);
         
@@ -113,13 +117,33 @@ public class CCIAnalyzer
         if (parsedargs.containsKey("--comments"))
             filterfn = filterfn.andThen(WikitextUtils::removeComments);
         analyzer.setFilteringFunction(filterfn);
+
+        Predicate<String> titlefn = CCIAnalyzer::removeDisambiguationPages;
+        if (parsedargs.containsKey("--listpages"))
+            titlefn = titlefn.and(CCIAnalyzer::removeListPages);
+        analyzer.setTitleFunction(titlefn);
+        
         analyzer.analyzeDiffs();
         analyzer.writeOutput();
     }
     
+    /**
+     *  Constructs a new analyzer object. The default functions are:
+     *  
+     *  <ul>
+     *  <li>title: {@link #removeDisambiguationPages(String) }
+     *  <li>filter: {@code Function.identity() }
+     *  <li>culling: {@code {@link #whitelistCull(String) whitelistCull(diff)} && 
+     *      {@link #wordcountCull(String, int) wordcountCull(diff, 9) } && 
+     *      {@link #tableCull(String) tableCull(diff)}}
+     *  </ul>
+     */
     public CCIAnalyzer()
     {
+        titlefn = CCIAnalyzer::removeDisambiguationPages;
         filterfn = Function.identity();
+        cullingfn = diff -> whitelistCull(diff) && wordCountCull(diff, 9) && tableCull(diff);
+        
         diffshort = new ArrayList<>(1000);
         diffs = new ArrayList<>(1000);
         minoredits = new ArrayList<>(500);
@@ -162,6 +186,18 @@ public class CCIAnalyzer
     }
     
     /**
+     *  Sets the function to be used that filters entire pages from the CCI
+     *  before diffs are loaded. Title functions should expect titles as is. If 
+     *  you change the title function, you need to reload the page.
+     *  @param titlefn a function that returns true if a title is to be retained
+     *  @since 0.04
+     */
+    public void setTitleFunction(Predicate<String> titlefn)
+    {
+        this.titlefn = Objects.requireNonNull(titlefn);
+    }
+    
+    /**
      *  Loads diffs to analyze from the given wiki page. Diffs must be of the
      *  format [[Special:Diff/123456]].
      *  @param wiki the wiki the page is on
@@ -173,6 +209,7 @@ public class CCIAnalyzer
     {
         cci = wiki.getPageText(List.of(page)).get(0);
         this.wiki = wiki;
+        filterPage();
         loadDiffs();
     }
     
@@ -187,7 +224,41 @@ public class CCIAnalyzer
     {
         this.cci = cci;
         this.wiki = wiki;
+        filterPage();
         loadDiffs();
+    }
+    
+    /**
+     *  Filters entire articles from a CCI before diffs are loaded.
+     */
+    private void filterPage()
+    {
+        // count number of diffs
+        baseremovedarticles = 0;
+        baseremoveddiffs = 0;
+        diffcount = 0;
+        for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
+            diffcount++;
+
+        StringBuilder sb = new StringBuilder();
+        for (String line : cci.split("\n"))
+        {
+            int a = line.indexOf("[[:") + 3;
+            int b = line.indexOf("]]");
+            if (titlefn.test(line.substring(a, b)))
+            {
+                sb.append(line);
+                sb.append("\n");
+            }
+            else
+            {
+                baseremovedarticles++;
+                // count number of removed diffs
+                for (int i = line.indexOf("[[Special:Diff/"); i >= 0; i = line.indexOf("[[Special:Diff/", ++i))
+                    baseremoveddiffs++;
+            }
+        }
+        cci = sb.toString();
     }
     
     /**
@@ -202,11 +273,6 @@ public class CCIAnalyzer
         String deltaend = "</ins>";
         diffs.clear();
         diffshort.clear();
-        
-        // count number of diffs
-        diffcount = 0;
-        for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
-            diffcount++;
         
         // parse the list of diffs
         int parsed = 0;
@@ -263,7 +329,7 @@ public class CCIAnalyzer
             int projected = elapsed * diffcount / parsed;
             int eta = projected - elapsed;
             System.err.printf("\r\033[K%d of %d diffs loaded (%2.2f%%, %d:%02d remaining)", 
-                parsed, diffcount, percent, eta / 60, eta % 60);
+                parsed, diffcount - baseremoveddiffs, percent, eta / 60, eta % 60);
         }
     }
     
@@ -378,8 +444,8 @@ public class CCIAnalyzer
             cleaned.append("\n");
         }
         System.out.println(cleaned);
-        System.err.printf("%d of %d diffs and %d articles removed.%n", minoredits.size(), 
-            diffcount, removedarticles);
+        System.err.printf("%d of %d diffs and %d articles removed.%n", baseremoveddiffs + minoredits.size(), 
+            diffcount, baseremovedarticles + removedarticles);
     }
     
     /**
@@ -415,6 +481,10 @@ public class CCIAnalyzer
      *  defined as something that adds more than the specified number of words.
      *  A higher word count is a more aggressive setting. The default of 9 is 
      *  sensible as in it has few false negatives. 
+     *
+     *  <p>
+     *  <b>Warning:</b> this method is very good at removing song lyrics!
+     *  Be careful.
      * 
      *  @param delta the delta to check
      *  @param wordcount label all edits that add no more than this many words
@@ -508,8 +578,8 @@ public class CCIAnalyzer
     
     /**
      *  This function flags the addition of files or categories as minor edits.
-     *  This is a slightly aggressive option - I have seen copyvios in image
-     *  captions, but this is rare.
+     *  This is an aggressive option - copyvios in file captions are surprisingly
+     *  common.
      *  @param delta the delta to check
      *  @return whether this is a major edit
      *  @since 0.02
@@ -542,5 +612,29 @@ public class CCIAnalyzer
     public static String removeExternalLinks(String delta)
     {
         return delta.replaceAll("\\[https?://.+\\]", "");
+    }
+    
+    /**
+     *  Removes disambiguation pages based on their title only.
+     *  @param title the title to test
+     *  @return false if it contains {@code " (disambiguation)"}, true otherwise
+     *  @since 0.04
+     */
+    public static boolean removeDisambiguationPages(String title)
+    {
+        return !title.contains(" (disambiguation)");
+    }
+    
+    /**
+     *  Removes list pages based on their title only. Somewhat aggressive, one
+     *  needs to check whether the list has extended descriptions in it or is a 
+     *  list of TV episodes.
+     *  @param title the title to test
+     *  @return false if it starts with {@code "List of "}, true otherwise
+     *  @since 0.04
+     */
+    public static boolean removeListPages(String title)
+    {
+        return !title.startsWith("List of ");
     }
 }

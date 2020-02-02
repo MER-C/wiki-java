@@ -37,16 +37,26 @@ public class WMFWiki extends Wiki
     private static String globalblacklist;
     private String localblacklist;
     
-    // global wiki instances
-    private static WMFWiki meta, wikidata;
+    /**
+     *  Shared instance for Meta Wiki.
+     *  @see <a href="https://meta.wikimedia.org">Main Page</a>
+     */
+    public static final WMFWiki METAWIKI;
+
+    /**
+     *  Shared instance for Wikidata.
+     *  @see <a href="https://www.wikidata.org">Main Page</a>
+     */
+    public static final WMFWiki WIKIDATA;
+
     static
     {
-        meta = newSession("meta.wikimedia.org");
-        meta.requiresExtension("SiteMatrix"); // getSiteMatrix
+        METAWIKI = newSession("meta.wikimedia.org");
+        METAWIKI.requiresExtension("SiteMatrix"); // getSiteMatrix
         
-        wikidata = newSession("wikidata.org");
-        wikidata.requiresExtension("WikibaseRepository");
-        wikidata.setUsingCompressedRequests(false); // huh?
+        WIKIDATA = newSession("wikidata.org");
+        WIKIDATA.requiresExtension("WikibaseRepository");
+        WIKIDATA.setUsingCompressedRequests(false); // huh?
     }
     
     /**
@@ -133,7 +143,7 @@ public class WMFWiki extends Wiki
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
-        String line = meta.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
+        String line = METAWIKI.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
         List<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
@@ -342,7 +352,7 @@ public class WMFWiki extends Wiki
     {
         requiresExtension("SpamBlacklist");
         if (globalblacklist == null)
-            globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
+            globalblacklist = METAWIKI.getPageText(List.of("Spam blacklist")).get(0);
         if (localblacklist == null)
             localblacklist = getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
         
@@ -545,7 +555,7 @@ public class WMFWiki extends Wiki
         for (String chunk : titles_chunked)
         {
             getparams.put("titles", chunk);
-            String line = wikidata.makeApiCall(getparams, null, "getWikidataItem");
+            String line = WIKIDATA.makeApiCall(getparams, null, "getWikidataItem");
             String[] entities = line.split("<entity ");
             for (int i = 1; i < entities.length; i++)
             {
