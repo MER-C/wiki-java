@@ -243,9 +243,15 @@ public class CCIAnalyzer
         StringBuilder sb = new StringBuilder();
         for (String line : cci.split("\n"))
         {
-            int a = line.indexOf("[[:") + 3;
+            if (!line.startsWith("*[[:") && !line.startsWith("*'''N''' [[:"))
+            {
+                sb.append(line);
+                sb.append("\n");
+                continue;
+            }
+            int a = line.indexOf("[[:");
             int b = line.indexOf("]]");
-            if (titlefn.test(line.substring(a, b)))
+            if (titlefn.test(line.substring(a + 3, b)))
             {
                 sb.append(line);
                 sb.append("\n");

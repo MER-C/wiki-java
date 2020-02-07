@@ -160,8 +160,9 @@ public class CCIAnalyzerTest
         // INTEGRATION TEST
         // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]]
         String cci = "*'''N''' [[:We Can Be Heroes (disambiguation)]] (1 edit): [[Special:Diff/895761173|(+486)]]";
-        analyzer.loadString(enWiki, cci);
+        analyzer.setTitleFunction(title -> true);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 11));
+        analyzer.loadString(enWiki, cci);
         analyzer.analyzeDiffs();
         assertTrue(analyzer.getMinorEdits().isEmpty());
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 11) && CCIAnalyzer.listItemCull(diff));

@@ -545,11 +545,14 @@ public class WMFWiki extends Wiki
             ts.add(normalize(title));
         List<String> titles_enc = new ArrayList<>(ts);
         ArrayList<String> titles_chunked = new ArrayList<>();
-        for (int i = 0; i < titles_enc.size() / 25 + 1; i++)
+        int count = 0;
+        do
         {
             titles_chunked.add(String.join("|", 
-                titles_enc.subList(i * 25, Math.min(titles_enc.size(), (i + 1) * 25))));     
+                titles_enc.subList(count, Math.min(titles_enc.size(), count + 25))));
+            count += 25;
         }
+        while (count < titles_enc.size());
         
         Map<String, String> results = new HashMap<>();
         for (String chunk : titles_chunked)
