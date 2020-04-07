@@ -8223,13 +8223,17 @@ public class Wiki implements Comparable<Wiki>
                     throw new HttpRetryException("Database lagged.", 503);
                 }
 
-                // get the response from the server
+                // Parse cookies from response and store for later. Header fields
+                // are case-insensitive and MW may serve cookies split into both
+                // 'set-cookie' and 'Set-Cookie' headers (see T249680).
                 Map<String, List<String>> headerFields = connection.getHeaderFields();
-                List<String> cookiesheader = headerFields.get("Set-Cookie");
-                if (cookiesheader != null)
-                    for (String cookie : cookiesheader)
-                        for (HttpCookie hc : HttpCookie.parse(cookie))
-                            store.add(null, hc);
+                headerFields.entrySet().stream()
+                    .filter(e -> "set-cookie".equalsIgnoreCase(e.getKey())) // key can be null
+                    .map(Map.Entry::getValue)
+                    .flatMap(List::stream)
+                    .flatMap(cookieHeader -> HttpCookie.parse(cookieHeader).stream())
+                    .forEach(cookie -> store.add(null, cookie));
+
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
                     zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
                 {
