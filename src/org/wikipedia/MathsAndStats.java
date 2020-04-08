@@ -195,4 +195,36 @@ public class MathsAndStats
             return "" + days + "d " + (abs_hours % 24) + "h";
         return "" + days + "d";
     }
+    
+    /**
+     *  Computes the Levenshtein distance between the two supplied Strings.
+     *  The Levenshtein distance is the number of single-character edits - 
+     *  insertions, deletions or substitutions - required to transform one
+     *  String to another.
+     *  @param a a String
+     *  @param b another String
+     *  @return (see above)
+     */
+    public static int levenshteinDistance(String a, String b)
+    {
+        // https://en.wikipedia.org/w/index.php?title=Wagner%E2%80%93Fischer_algorithm&oldid=904154368
+        int length_a = a.length();
+        int length_b = b.length();
+        
+        int[][] matrix = new int[length_a + 1][length_b + 1];
+        for (int i = 0; i <= length_a; i++)
+            matrix[i][0] = i;
+        for (int j = 0; j <= length_b; j++)
+            matrix[0][j] = j;
+        
+        for (int j = 1; j <= length_b; j++)
+        {
+            for (int i = 1; i <= length_a; i++)
+            {
+                int cost = a.charAt(i-1) == b.charAt(j-1) ? 0 : 1;
+                matrix[i][j] = Math.min(Math.min(matrix[i-1][j] + 1, matrix[i][j-1] + 1), matrix[i-1][j-1] + cost);
+            }
+        }
+        return matrix[length_a - 1][length_b - 1];
+    }
 }

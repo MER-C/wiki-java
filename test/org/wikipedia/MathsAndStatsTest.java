@@ -143,4 +143,19 @@ public class MathsAndStatsTest
         assertEquals("10d", MathsAndStats.formatDuration(Duration.ofSeconds(864000)));
         assertEquals("-15d", MathsAndStats.formatDuration(Duration.ofSeconds(-86400*15)));
     }
+    
+    @Test
+    public void levenshteinDistanceTest()
+    {
+        // additions and deletions = +1 per character
+        assertEquals(5, MathsAndStats.levenshteinDistance("Test", "Test more"));
+        assertEquals(5, MathsAndStats.levenshteinDistance("Test more", "Test"));
+        
+        // substitutions = +1 each
+        assertEquals(3, MathsAndStats.levenshteinDistance("111222333444555", "11_22233_4445_5"));
+        
+        // and finally, the examples given
+        assertEquals(3, MathsAndStats.levenshteinDistance("kitten", "sitting"));
+        assertEquals(3, MathsAndStats.levenshteinDistance("Sunday", "Saturday"));
+    }
 }
