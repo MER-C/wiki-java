@@ -37,28 +37,9 @@ public class WMFWiki extends Wiki
     private static String globalblacklist;
     private String localblacklist;
     
-    /**
-     *  Shared instance for Meta Wiki.
-     *  @see <a href="https://meta.wikimedia.org">Main Page</a>
-     */
-    public static final WMFWiki METAWIKI;
+    // Shared sessions
+    private static WMFWiki metawiki, wikidata;
 
-    /**
-     *  Shared instance for Wikidata.
-     *  @see <a href="https://www.wikidata.org">Main Page</a>
-     */
-    public static final WMFWiki WIKIDATA;
-
-    static
-    {
-        METAWIKI = newSession("meta.wikimedia.org");
-        METAWIKI.requiresExtension("SiteMatrix"); // getSiteMatrix
-        
-        WIKIDATA = newSession("wikidata.org");
-        WIKIDATA.requiresExtension("WikibaseRepository");
-        WIKIDATA.setUsingCompressedRequests(false); // huh?
-    }
-    
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
      *  through [[Special:Log]] or getLogEntries.
@@ -99,7 +80,8 @@ public class WMFWiki extends Wiki
     /**
      *  Creates a new MediaWiki API client for the WMF wiki that has the given
      *  database name (e.g. "enwiki" for the English Wikipedia, "nlwikisource" 
-     *  for the Dutch Wikisource and "wikidatawiki" for Wikidata).
+     *  for the Dutch Wikisource and "wikidatawiki" for Wikidata). Does NOT use
+     *  the shared sessions.
      *  @param dbname a WMF wiki DB name
      *  @return the constructed API client object
      *  @throws IllegalArgumentException if the DB name is not recognized
@@ -132,6 +114,37 @@ public class WMFWiki extends Wiki
         // Fishbowl/special wikis not implemented yet
         throw new IllegalArgumentException("Unrecognized wiki: " + dbname);
     }
+    
+    /**
+     *  Returns the shared reference to MetaWiki. This instance is modifiable.
+     *  @see <a href="https://meta.wikimedia.org">Main Page</a>
+     *  @return (see above)
+     */
+    public static WMFWiki sharedMetaWikiSession()
+    {
+        if (metawiki == null)
+        {
+            metawiki = newSession("meta.wikimedia.org");
+            metawiki.requiresExtension("SiteMatrix"); // getSiteMatrix
+        }
+        return metawiki;
+    }
+    
+    /**
+     *  Returns the shared reference to Wikidata. This instance is modifiable.
+     *  @see <a href="https://www.wikidata.org">Main Page</a>
+     *  @return (see above)
+     */
+    public static WMFWiki sharedWikidataSession()
+    {
+        if (wikidata == null)
+        {
+            wikidata = newSession("www.wikidata.org");
+            wikidata.requiresExtension("WikibaseRepository");
+            wikidata.setUsingCompressedRequests(false); // huh?
+        }
+        return wikidata;
+    }
 
     /**
      *  Returns the list of publicly readable and editable wikis operated by the
@@ -143,7 +156,7 @@ public class WMFWiki extends Wiki
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
-        String line = METAWIKI.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
+        String line = sharedMetaWikiSession().makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
         List<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
@@ -352,7 +365,7 @@ public class WMFWiki extends Wiki
     {
         requiresExtension("SpamBlacklist");
         if (globalblacklist == null)
-            globalblacklist = METAWIKI.getPageText(List.of("Spam blacklist")).get(0);
+            globalblacklist = sharedMetaWikiSession().getPageText(List.of("Spam blacklist")).get(0);
         if (localblacklist == null)
             localblacklist = getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
         
@@ -555,10 +568,11 @@ public class WMFWiki extends Wiki
         while (count < titles_enc.size());
         
         Map<String, String> results = new HashMap<>();
+        WMFWiki wikidata_l = sharedWikidataSession();
         for (String chunk : titles_chunked)
         {
             getparams.put("titles", chunk);
-            String line = WIKIDATA.makeApiCall(getparams, null, "getWikidataItem");
+            String line = wikidata_l.makeApiCall(getparams, null, "getWikidataItem");
             String[] entities = line.split("<entity ");
             for (int i = 1; i < entities.length; i++)
             {
