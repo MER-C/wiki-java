@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class WikiTest
 {
-    private final Wiki enWiki, deWiki, arWiki, testWiki, enWikt;
+    private final Wiki enWiki, deWiki, arWiki, testWiki, enWikt, commons;
     private final MessageDigest sha256;
 
     /**
@@ -60,6 +60,8 @@ public class WikiTest
         testWiki.setMaxLag(-1);
         enWikt = Wiki.newSession("en.wiktionary.org");
         enWikt.setMaxLag(-1);
+        commons = Wiki.newSession("commons.wikimedia.org");
+        commons.setMaxLag(-1);
 
         sha256 = MessageDigest.getInstance("SHA-256");
     }
@@ -910,17 +912,18 @@ public class WikiTest
     @Test
     public void getUploads() throws Exception
     {
-        List<Wiki.User> users = enWiki.getUsers(List.of(
-            "LakeishaDurham0", // blocked spambot
-            "Mifter")); // https://en.wikipedia.org/wiki/Special:ListFiles/Mifter
-        assertTrue(enWiki.getUploads(users.get(0), null).isEmpty(), "no uploads");
-        OffsetDateTime odt = OffsetDateTime.parse("2017-03-05T17:59:00Z");
-        Wiki.RequestHelper rh = enWiki.new RequestHelper().withinDateRange(odt, odt.plusMinutes(20));
-        List<Wiki.LogEntry> results = enWiki.getUploads(users.get(1), rh);
+        List<Wiki.User> users = commons.getUsers(List.of(
+            "Stanton00T", // blocked spambot
+            "Charlesjsharp")); // https://commons.wikimedia.org/wiki/Special:ListFiles/Charlesjsharp
+        assertTrue(commons.getUploads(users.get(0), null).isEmpty(), "no uploads");
+        
+        OffsetDateTime odt = OffsetDateTime.parse("2020-03-13T17:00:00Z");
+        Wiki.RequestHelper rh = commons.new RequestHelper().withinDateRange(odt, odt.plusMinutes(10));
+        List<Wiki.LogEntry> results = commons.getUploads(users.get(1), rh);
         assertEquals(3, results.size());
-        assertEquals("File:Padlock-pink.svg", results.get(0).getTitle());
-        assertEquals("File:Padlock-silver-light.svg", results.get(1).getTitle());
-        assertEquals("File:Padlock-blue.svg", results.get(2).getTitle());
+        assertEquals("File:Vervain hummingbird (Mellisuga minima) feeding.jpg", results.get(0).getTitle());
+        assertEquals("File:Red-billed streamertail (Trochilus polytmus) feeding.jpg", results.get(1).getTitle());
+        assertEquals("File:Red-billed streamertail( Trochilus polytmus) adult male 2.jpg", results.get(2).getTitle());
     }
 
     @Test
