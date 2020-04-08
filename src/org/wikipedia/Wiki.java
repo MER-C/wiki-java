@@ -3322,9 +3322,12 @@ public class Wiki implements Comparable<Wiki>
                 pro.append(value);
                 pro.append('|');
 
-                // https://phabricator.wikimedia.org/T16449
+                // https://www.mediawiki.org/wiki/Timestamp
+                // https://github.com/MER-C/wiki-java/issues/170
                 OffsetDateTime expiry = (OffsetDateTime)protectionstate.get(key + "expiry");
-                exp.append(expiry == null ? "never" : expiry.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                exp.append(expiry == null ? "never" : expiry.withOffsetSameInstant(ZoneOffset.UTC)
+                    .truncatedTo(ChronoUnit.MICROS)
+                    .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
                 exp.append('|');
             }
         });
@@ -7820,11 +7823,19 @@ public class Wiki implements Comparable<Wiki>
             OffsetDateTime odt = reverse ? earliest : latest;
             if (odt != null)
                 temp.put(requestType + "start",
-                    odt.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                    // https://www.mediawiki.org/wiki/Timestamp
+                    // https://github.com/MER-C/wiki-java/issues/170
+                    odt.withOffsetSameInstant(ZoneOffset.UTC)
+                        .truncatedTo(ChronoUnit.MICROS)
+                        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             odt = reverse ? latest : earliest;
             if (odt != null)
                 temp.put(requestType + "end",
-                    odt.withOffsetSameInstant(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                    // https://www.mediawiki.org/wiki/Timestamp
+                    // https://github.com/MER-C/wiki-java/issues/170
+                    odt.withOffsetSameInstant(ZoneOffset.UTC)
+                        .truncatedTo(ChronoUnit.MICROS)
+                        .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
             return temp;
         }
 
@@ -8320,6 +8331,7 @@ public class Wiki implements Comparable<Wiki>
         {
             OffsetDateTime date = (OffsetDateTime)param;
             // https://www.mediawiki.org/wiki/Timestamp
+            // https://github.com/MER-C/wiki-java/issues/170
             return date.atZoneSameInstant(ZoneOffset.UTC)
                 .truncatedTo(ChronoUnit.MICROS)
                 .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
