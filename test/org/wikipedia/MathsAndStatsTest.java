@@ -147,6 +147,10 @@ public class MathsAndStatsTest
     @Test
     public void levenshteinDistanceTest()
     {
+        // empty string handling
+        assertEquals(4, MathsAndStats.levenshteinDistance("", "blah"));
+        assertEquals(4, MathsAndStats.levenshteinDistance("blah", ""));
+        
         // additions and deletions = +1 per character
         assertEquals(5, MathsAndStats.levenshteinDistance("Test", "Test more"));
         assertEquals(5, MathsAndStats.levenshteinDistance("Test more", "Test"));

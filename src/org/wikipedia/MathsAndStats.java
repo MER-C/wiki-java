@@ -201,12 +201,19 @@ public class MathsAndStats
      *  The Levenshtein distance is the number of single-character edits - 
      *  insertions, deletions or substitutions - required to transform one
      *  String to another.
-     *  @param a a String
-     *  @param b another String
+     *  @param a a String (must not be null)
+     *  @param b another String (must not be null)
      *  @return (see above)
      */
     public static int levenshteinDistance(String a, String b)
     {
+        Objects.requireNonNull(a);
+        Objects.requireNonNull(b);
+        if (a.isEmpty())
+            return b.length();
+        if (b.isEmpty())
+            return a.length();
+        
         // https://en.wikipedia.org/w/index.php?title=Wagner%E2%80%93Fischer_algorithm&oldid=904154368
         int length_a = a.length();
         int length_b = b.length();

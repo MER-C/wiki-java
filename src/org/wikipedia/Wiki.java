@@ -1274,7 +1274,8 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Determines the current database replication lag.
+     *  Determines the current database replication lag. This method does not
+     *  wait if the maxlag setting is exceeded. This method is thread safe.
      *  @return the current database replication lag
      *  @throws IOException if a network error occurs
      *  @see #setMaxLag
@@ -1283,16 +1284,25 @@ public class Wiki implements Comparable<Wiki>
      *  MediaWiki documentation</a>
      *  @since 0.10
      */
-    public int getCurrentDatabaseLag() throws IOException
+    public double getCurrentDatabaseLag() throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
         getparams.put("meta", "siteinfo");
         getparams.put("siprop", "dbrepllag");
-        String line = makeApiCall(getparams, null, "getCurrentDatabaseLag");
-        String lag = parseAttribute(line, "lag", 0);
-        log(Level.INFO, "getCurrentDatabaseLag", "Current database replication lag is " + lag + " seconds");
-        return Integer.parseInt(lag);
+
+        synchronized (this)
+        {
+            // bypass lag check for this request
+            int temp = getMaxLag();
+            setMaxLag(-1);
+            String line = makeApiCall(getparams, null, "getCurrentDatabaseLag");
+            setMaxLag(temp);
+    
+            String lag = parseAttribute(line, "lag", 0);
+            log(Level.INFO, "getCurrentDatabaseLag", "Current database replication lag is " + lag + " seconds");
+            return Double.parseDouble(lag);
+        }
     }
 
     /**
