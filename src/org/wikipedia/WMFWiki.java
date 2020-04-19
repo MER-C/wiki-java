@@ -140,6 +140,9 @@ public class WMFWiki extends Wiki
         if (wikidata == null)
         {
             wikidata = newSession("www.wikidata.org");
+            // necessary for interactive tasks until the WMF get their act together
+            // https://phabricator.wikimedia.org/T243701
+            wikidata.setMaxLag(-1);
             wikidata.requiresExtension("WikibaseRepository");
             wikidata.setUsingCompressedRequests(false); // huh?
         }
