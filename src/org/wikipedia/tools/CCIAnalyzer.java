@@ -1,5 +1,5 @@
 /**
- *  @(#)CCIAnalyzer.java 0.04 02/02/2020
+ *  @(#)CCIAnalyzer.java 0.05 25/07/2020
  *  Copyright (C) 2013 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
-import java.util.regex.Pattern;
+import java.util.regex.*;
 import javax.swing.JFileChooser;
 import org.wikipedia.*;
 
@@ -35,14 +35,14 @@ import org.wikipedia.*;
  *  Wiki enWiki = Wiki.newSession("en.wikipedia.org");
  *  CCIAnalyzer analyzer = new CCIAnalyzer();
  *  analyzer.loadWikiPage(enWiki, "Wikipedia:Contributor copyright investigations/Example");
- *  analyzer.setCullingFunction(diff -> CCIAnalyzer.whitelistCull(diff) 
- *      && CCIAnalyzer.wordCountCull(diff, wordcount));
+ *  analyzer.setCullingFunction(diff -&gt; CCIAnalyzer.whitelistCull(diff) 
+ *      &amp;&amp; CCIAnalyzer.wordCountCull(diff, wordcount));
  *  analyzer.analyzeDiffs();
  *  analyzer.writeOutput();
  *  </pre>
  * 
  *  @author MER-C
- *  @version 0.04
+ *  @version 0.05
  */
 public class CCIAnalyzer
 {
@@ -56,6 +56,9 @@ public class CCIAnalyzer
     private Predicate<String> titlefn;
     private String cci;
     
+    // lazy initialized stuff
+    private static Pattern targs_pattern;
+       
     /**
      *  Runs this program.
      *  @param args the command line arguments
@@ -70,10 +73,11 @@ public class CCIAnalyzer
             .addBooleanFlag("--lists", "Remove all list items (aggressive)")
             .addBooleanFlag("--files", "Remove all file additions (aggressive)")
             .addBooleanFlag("--extlinks", "Remove all external links")
+            .addBooleanFlag("--targs", "Remove short template arguments")
             .addBooleanFlag("--comments", "Remove all HTML comments (aggressive)")
             .addBooleanFlag("--listpages", "Removes all list pages (aggressive)")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
-            .addVersion("CCIAnalyzer v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addVersion("CCIAnalyzer v0.05\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
             .parse(args);
         
@@ -112,6 +116,8 @@ public class CCIAnalyzer
         Function<String, String> filterfn = Function.identity();
         if (parsedargs.containsKey("--references"))
             filterfn = filterfn.andThen(CCIAnalyzer::removeReferences);
+        if (parsedargs.containsKey("--targs"))
+            filterfn = filterfn.andThen(CCIAnalyzer::removeTemplateArguments);
         if (parsedargs.containsKey("--extlinks"))
             filterfn = filterfn.andThen(CCIAnalyzer::removeExternalLinks);
         if (parsedargs.containsKey("--comments"))
@@ -134,7 +140,7 @@ public class CCIAnalyzer
      *  <li>title: {@link #removeDisambiguationPages(String) }
      *  <li>filter: {@code Function.identity() }
      *  <li>culling: {@code {@link #whitelistCull(String) whitelistCull(diff)} && 
-     *      {@link #wordcountCull(String, int) wordcountCull(diff, 9) } && 
+     *      {@link #wordcountCull(String, int) wordcountCull(diff, 10) } && 
      *      {@link #tableCull(String) tableCull(diff)}}
      *  </ul>
      */
@@ -142,7 +148,7 @@ public class CCIAnalyzer
     {
         titlefn = CCIAnalyzer::removeDisambiguationPages;
         filterfn = Function.identity();
-        cullingfn = diff -> whitelistCull(diff) && wordCountCull(diff, 9) && tableCull(diff);
+        cullingfn = diff -> whitelistCull(diff) && wordCountCull(diff, 10) && tableCull(diff);
         
         diffshort = new ArrayList<>(1000);
         diffs = new ArrayList<>(1000);
@@ -370,11 +376,12 @@ public class CCIAnalyzer
                 int y2 = diff.indexOf(diffaddedend, j);
                 String addedline = diff.substring(j + diffaddedbegin.length(), y2);
                 addedline = addedline.replaceFirst("^<div>", "");
-                addedline = addedline.replace("</div>;", "");
+                addedline = addedline.replaceAll("</div>.?$", "");
                 if (addedline.contains(deltabegin))
                 {
                     for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
                     {
+                        // TODO: should strip all wikilinks here instead of in word count culling
                         int y3 = addedline.indexOf(deltaend, k);
                         String delta = addedline.substring(k + deltabegin.length(), y3);
                         delta = delta.replace("&lt;", "<").replace("&gt;", ">");
@@ -562,6 +569,38 @@ public class CCIAnalyzer
                 wikitext = wikitext.substring(0, refbegin) + wikitext.substring(refend2 + 6);
             else
                 refbegin++;
+        }
+        return wikitext;
+    }
+    
+    /**
+     *  This function removes template arguments that are less than 150 
+     *  characters long. (150 characters is the default length of a major 
+     *  contribution for CCI purposes). This is a fairly safe culling function. 
+     *  The end of the argument is defined by the next instance of "|", "}" or 
+     *  the end of the string and therefore may not be the actual end of the 
+     *  argument for parsing purposes. The list of template arguments is 
+     *  hardcoded.
+     *  @param wikitext the wikitext to process
+     *  @return the processed wikitext
+     *  @since 0.05
+     */
+    public static String removeTemplateArguments(String wikitext)
+    {
+        if (targs_pattern == null)
+        {
+            targs_pattern = Pattern.compile("\\|\\s*(" + 
+                // citation templates
+                "archiveurl|archive-url|url|title|date|accessdate|access-date|archivedate|" +
+                "archive-date|last|first|work|author|publisher|" +
+                // infobox officeholder
+                "office\\d?|alma_mater|appointer\\d?|death_date)\\s*=.{0,150}?(\\||$|\\})");
+        }
+        Matcher matcher = targs_pattern.matcher(wikitext);
+        while (matcher.find())
+        {
+            wikitext = matcher.replaceAll("|");
+            matcher.reset(wikitext);
         }
         return wikitext;
     }
