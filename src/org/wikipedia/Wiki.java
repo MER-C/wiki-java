@@ -1184,7 +1184,8 @@ public class Wiki implements Comparable<Wiki>
         // check for success
         if (line.contains("result=\"Success\""))
         {
-            user = getUser(parseAttribute(line, "lgusername", 0));
+            String returned_username = parseAttribute(line, "lgusername", 0);
+            user = getUsers(List.of(returned_username)).get(0);
             boolean apihighlimit = user.isAllowedTo("apihighlimits");
             if (apihighlimit)
             {
@@ -2294,8 +2295,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
-        if (user == null || !user.isAllowedTo("delete"))
-            throw new SecurityException("Cannot delete: Permission denied");
+        checkPermissions("delete", "delete");
         throttle();
 
         // edit token
@@ -2340,8 +2340,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
-        if (user == null || !user.isAllowedTo("undelete"))
-            throw new SecurityException("Cannot undelete: Permission denied");
+        checkPermissions("undelete", "undelete");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -3008,8 +3007,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Special and Media pages do not have histories!");
-        if (user == null || !user.isAllowedTo("deletedhistory"))
-            throw new SecurityException("Permission denied: not able to view deleted history");
+        checkPermissions("fetch deleted history", "deletedhistory");
 
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -3075,8 +3073,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> deletedContribs(String username, Wiki.RequestHelper helper) throws IOException
     {
-        if (user == null || !user.isAllowedTo("deletedhistory"))
-            throw new SecurityException("Permission denied: not able to view deleted history");
+        checkPermissions("fetch deleted history", "deletedhistory");
 
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -3131,9 +3128,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<String> deletedPrefixIndex(String prefix, int namespace) throws IOException
     {
-        if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
-            throw new SecurityException("Permission denied: not able to view deleted history or text.");
-
+        checkPermissions("fetch deleted text", "deletedhistory", "deletedtext");
         // disallow ALL_NAMESPACES, this query is extremely slow and likely to error out.
         if (namespace == ALL_NAMESPACES)
             throw new IllegalArgumentException("deletedPrefixIndex: you must choose a namespace.");
@@ -3168,8 +3163,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public String getDeletedText(String page) throws IOException
     {
-        if (user == null || !user.isAllowedTo("deletedhistory", "deletedtext"))
-            throw new SecurityException("Permission denied: not able to view deleted history or text.");
+        checkPermissions("fetch deleted text", "deletedhistory", "deletedtext");
 
         // TODO: this can be multiquery(?)
         Map<String, String> getparams = new HashMap<>();
@@ -3240,8 +3234,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Tried to move a Special or Media page.");
-        if (user == null || !user.isAllowedTo("move"))
-            throw new SecurityException("Permission denied: cannot move pages.");
+        checkPermissions("move", "move");
         throttle();
 
         // protection and token
@@ -3307,8 +3300,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void protect(String page, Map<String, Object> protectionstate, String reason) throws IOException, LoginException
     {
-        if (user == null || !user.isAllowedTo("protect"))
-            throw new SecurityException("Cannot protect: permission denied.");
+        checkPermissions("protect", "protect");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -3504,8 +3496,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void rollback(Revision revision, boolean bot, String reason) throws IOException, LoginException
     {
-        if (user == null || !user.isAllowedTo("rollback"))
-            throw new SecurityException("Permission denied: cannot rollback.");
+        checkPermissions("rollback", "rollback");
         // This method is intentionally NOT throttled.
 
         // Perform the rollback.
@@ -3580,8 +3571,7 @@ public class Wiki implements Comparable<Wiki>
                 throw new UnsupportedOperationException("RevisionDeletion of pseudo-LogEntries is not supported.");
             ids[i] = temp.getID();
         }
-        if (user == null || !user.isAllowedTo("deleterevision", "deletelogentry"))
-            throw new SecurityException("Permission denied: cannot revision delete.");
+        checkPermissions("revisionDelete", "deleterevision", "deletelogentry");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -4307,10 +4297,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void upload(File file, String filename, String contents, String reason) throws IOException, LoginException
     {
-        // check for log in
-        if (user == null || !user.isAllowedTo("upload"))
-            throw new SecurityException("Permission denied: cannot upload files.");
         filename = removeNamespace(filename, FILE_NAMESPACE);
+        checkPermissions("upload", "upload");
         throttle();
 
         // protection
@@ -4430,10 +4418,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void upload(URL url, String filename, String contents, String reason) throws IOException, LoginException
     {
-        // check for log in
-        if (user == null || !user.isAllowedTo("upload_by_url"))
-            throw new SecurityException("Permission denied: cannot upload files via URL.");
         filename = removeNamespace(filename, FILE_NAMESPACE);
+        checkPermissions("upload", "upload_by_url");
         throttle();
 
         // protection
@@ -4958,8 +4944,7 @@ public class Wiki implements Comparable<Wiki>
             log(Level.WARNING, "emailUser", "User " + user.getUsername() + " is not emailable");
             return;
         }
-        if (user == null || !user.isAllowedTo("sendemail"))
-            throw new SecurityException("Permission denied: cannot email.");
+        checkPermissions("email", "sendemail");
         throttle();
 
         // post email
@@ -5016,11 +5001,9 @@ public class Wiki implements Comparable<Wiki>
     {
         // Note: blockoptions is implemented as a Map because more might be added
         // in the future.
-
         if (expiry != null && expiry.isBefore(OffsetDateTime.now()))
             throw new IllegalArgumentException("Cannot set a block with a past expiry time!");
-        if (user == null || !user.isA("sysop"))
-            throw new SecurityException("Cannot unblock: permission denied!");
+        checkPermissions("block", "block");
         throttle();
 
         // send request
@@ -5062,8 +5045,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public synchronized void unblock(String blockeduser, String reason) throws IOException, LoginException
     {
-        if (user == null || !user.isA("sysop"))
-            throw new SecurityException("Cannot unblock: permission denied!");
+        checkPermissions("unblock", "unblock");
         throttle();
 
         Map<String, String> getparams = new HashMap<>();
@@ -5201,7 +5183,6 @@ public class Wiki implements Comparable<Wiki>
     protected void watchInternal(List<String> titles, boolean unwatch) throws IOException
     {
         // create the watchlist cache
-        String state = unwatch ? "unwatch" : "watch";
         if (watchlist == null)
             getRawWatchlist();
         Map<String, String> getparams = new HashMap<>();
@@ -5209,6 +5190,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, Object> postparams = new HashMap<>();
         if (unwatch)
             postparams.put("unwatch", "1");
+        String state = unwatch ? "unwatch" : "watch";
         for (String titlestring : constructTitleString(titles))
         {
             postparams.put("titles", titlestring);
@@ -5243,11 +5225,8 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<String> getRawWatchlist(boolean cache) throws IOException
     {
-        // filter anons
-        if (user == null)
-            throw new SecurityException("The watchlist is available for registered users only.");
-
         // cache
+        checkPermissions("access the watchlist", "viewmywatchlist");
         if (watchlist != null && cache)
             return new ArrayList<>(watchlist);
 
@@ -5320,8 +5299,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> watchlist(Wiki.RequestHelper helper) throws IOException
     {
-        if (user == null)
-            throw new SecurityException("Not logged in");
+        checkPermissions("access the watchlist", "x");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlist");
         getparams.put("wlprop", "ids|title|timestamp|user|comment|parsedcomment|sizes|tags");
@@ -8065,7 +8043,22 @@ public class Wiki implements Comparable<Wiki>
     }
 
     // miscellany
-
+    
+    /**
+     *  Convenience method for checking user permissions.
+     *  @param right a user rights
+     *  @param morerights additional user rights
+     *  @throws SecurityException if the permission check fails
+     *  @since 0.37
+     */
+    protected void checkPermissions(String action, String right, String... morerights)
+    {
+        if (user == null)
+            throw new SecurityException("Cannot " + action + ": not logged in.");
+        if (!user.isAllowedTo(right, morerights))
+            throw new SecurityException("Cannot " + action + ": permission denied.");
+    }
+            
     /**
      *  Constructs, sends and handles calls to the MediaWiki API. This is a
      *  low-level method for making your own, custom API calls.
