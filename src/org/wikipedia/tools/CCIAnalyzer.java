@@ -56,6 +56,9 @@ public class CCIAnalyzer
     private Predicate<String> titlefn;
     private String cci;
     
+    // Default size addition limit for CCIs
+    private static int MAX_EDIT_SIZE = 150;
+    
     // lazy initialized stuff
     private static Pattern targs_pattern;
        
@@ -594,7 +597,7 @@ public class CCIAnalyzer
                 "archiveurl|archive-url|url|title|date|accessdate|access-date|archivedate|" +
                 "archive-date|last|first|work|author|publisher|" +
                 // infobox officeholder
-                "office\\d?|alma_mater|appointer\\d?|death_date)\\s*=.{0,150}?(\\||$|\\})");
+                "office\\d?|alma_mater|appointer\\d?|death_date)\\s*=.{0," + MAX_EDIT_SIZE + "}?(\\||$|\\})");
         }
         Matcher matcher = targs_pattern.matcher(wikitext);
         while (matcher.find())
@@ -617,21 +620,42 @@ public class CCIAnalyzer
      */
     public static boolean listItemCull(String delta)
     {
-        // '* bit matches wikitext formatting for *''[[Test]]''
+        // '* bit matches wikitext formatting for bold or italic formatting
         return !delta.matches("^[#\\*]\\s?'*\\s?\\[.+");
     }
     
     /**
      *  This function flags the addition of files or categories as minor edits.
-     *  This is an aggressive option - copyvios in file captions are surprisingly
-     *  common.
+     *  This should be fairly safe - edits are flagged as minor only if file
+     *  captions are less than 150 characters long.
      *  @param delta the delta to check
      *  @return whether this is a major edit
      *  @since 0.02
      */
     public static boolean fileAdditionCull(String delta)
     {
-        return !delta.matches("^\\[\\[(?:file|image|category).+");
+        if (delta.matches("^\\[\\[\\s?(?:file|image).+"))
+        {
+            String[] temp = delta.split("\\|");
+            // The first item will always be the filename.
+            // The second and third items may be image parameters for MediaWiki 
+            // (always short and less than 10 characters). They are optional.
+            // The last item(s) should be the caption (although it may be broken up by
+            // wikilinks and template arguments).
+            int count = 0;
+            for (int i = 1; i < temp.length; i++)
+            {
+                int length = temp[i].length();
+                if (count > 0 || length > 15)
+                    count += length;
+                if (count > MAX_EDIT_SIZE)
+                    return true;
+            }
+            return false;
+        }
+        if (delta.matches("^\\[\\[\\scategory:.+"))
+            return false;
+        return true;
     }
     
     /**
