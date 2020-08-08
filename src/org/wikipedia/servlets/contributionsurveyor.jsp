@@ -117,7 +117,7 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <tr>
     <td colspan=2>Exclude:
     <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits
-        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>rollbacks
+        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts
         <input type=checkbox name=nodrafts value=1<%= (user == null || nodrafts) ? " checked" : "" %>>userspace and draft (ns 118) edits
 <tr>
     <td colspan=2>Show changes from:

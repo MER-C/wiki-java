@@ -112,9 +112,10 @@ public class ContributionSurveyorTest
     @Test
     public void setIgnoringReverts() throws Exception
     {
-        // reverts (rollbacks) are ignored by default
+        // reverts are ignored by default
         assertTrue(surveyor.isIgnoringReverts()); 
         
+        // rollbacks with tag mw-rollback
         // https://en.wikipedia.org/w/index.php?title=Special:Contributions&dir=prev&offset=20191109040135&target=Dl2000
         List<String> users = List.of("Dl2000");
         surveyor.setIgnoringMinorEdits(false);
@@ -129,6 +130,16 @@ public class ContributionSurveyorTest
         // check functionality
         results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertEquals(1, results.get(users.get(0)).size());
+        
+        // reverts with tag mw-manual-revert
+        // https://en.wikipedia.org/w/index.php?title=Special:Contributions&offset=20200808093000&target=SouthAfricanCitizen
+        users = List.of("SouthAfricanCitizen");
+        surveyor.setDateRange(OffsetDateTime.parse("2020-08-08T09:00:00Z"), OffsetDateTime.parse("2020-08-08T09:30:00Z"));
+        results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertEquals(1, results.get(users.get(0)).size());
+        surveyor.setIgnoringReverts(true);
+        results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertTrue(results.get(users.get(0)).isEmpty());
     }
     
     @Test

@@ -352,8 +352,14 @@ public class ContributionSurveyor
         {
             List<Wiki.Revision> useredits = edits.get(i);
             if (noreverts)
-                useredits.removeIf(edit -> edit.getTags().contains("mw-rollback"));
+            {
+                useredits.removeIf(edit -> 
+                {
+                    List<String> tags = edit.getTags();
+                    return tags.contains("mw-rollback") || tags.contains("mw-manual-revert");
+                });
                 // useredits = Revisions.removeReverts(useredits);
+            }
             Map<String, List<Wiki.Revision>> results = useredits.stream()
             // RevisionDelete... should check for content AND no access, but with no SHA-1 that is impossible
                 .filter(rev -> !rev.isContentDeleted()) 
