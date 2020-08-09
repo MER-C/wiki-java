@@ -25,6 +25,7 @@ import java.util.*;
 import java.util.logging.*;
 import java.util.stream.*;
 import java.time.*;
+import javax.security.auth.login.*;
 
 /**
  *  Stuff specific to Wikimedia wikis.
@@ -39,7 +40,7 @@ public class WMFWiki extends Wiki
     
     // Shared sessions
     private static WMFWiki metawiki, wikidata;
-
+    
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
      *  through [[Special:Log]] or getLogEntries.
@@ -592,5 +593,94 @@ public class WMFWiki extends Wiki
         for (String title : titles)
             ret.add(results.get(normalize(title)));
         return ret;
+    }
+    
+    /**
+     *  Patrols or unpatrols new pages using the PageTriage extension. If a page
+     *  is not in the queue, then this method adds the page to the PageTriage
+     *  queue, which also unpatrols it.
+     * 
+     *  @param pageid the page to (un)patrol
+     *  @param reason the reason for (un)patrolling the page for the log
+     *  @param patrol true to patrol, false to unpatrol
+     *  @param skipnotif does not send a notification to the author when the page
+     *  is (un)patrolled, ignored for old pages
+     *  @throws IOException if a network error occurs
+     *  @throws SecurityException if one does not have the rights to patrol pages
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if user is blocked
+     *  @throws IllegalArgumentException if the page is not in a namespace where
+     *  PageTriage is enabled.
+     *  @since 0.02
+     *  @see <a href="https://en.wikipedia.org/wiki/Wikipedia:Page_Curation">Extension
+     *  documentation</a>
+     */
+    public void triageNewPage(long pageid, String reason, boolean patrol, boolean skipnotif) throws IOException, LoginException
+    {
+        pageTriageAction(pageid, reason, patrol, skipnotif);
+    }
+    
+    /**
+     *  Internal method for handling PageTriage actions.
+     *  @param pageid the page to (un)patrol or add to the queue
+     *  @param reason the reason for (un)patrolling the page
+     *  @param patrol whether to (un)patrol the page, or null to add it to the queue
+     *  @param skipnotif do not notify the article author. Only applicable if 
+     *  {@code patrol != null}.
+     *  @throws IOException if a network error occurs
+     *  @throws SecurityException if one does not have the rights to patrol pages
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if user is blocked
+     *  @throws IllegalArgumentException if the page is not in a namespace where
+     *  PageTriage is enabled.
+     *  @since 0.02
+     *  @see <a href="https://en.wikipedia.org/wiki/Wikipedia:Page_Curation">Extension
+     *  documentation</a>
+     *  @see <a href="https://en.wikipedia.org/w/api.php?action=help&modules=pagetriageaction">API
+     *  documentation</a>
+     */
+    protected synchronized void pageTriageAction(long pageid, String reason, Boolean patrol, boolean skipnotif) throws IOException, LoginException
+    {
+        requiresExtension("PageTriage");
+        checkPermissions("patrol", "patrol");
+        throttle();
+        
+        Map<String, Object> params = new HashMap<>();
+        params.put("action", "pagetriageaction");
+        params.put("pageid", pageid);
+        params.put("token", getToken("csrf"));
+        if (reason != null)
+            params.put("note", reason);
+        if (patrol != null)
+        {
+            params.put("reviewed", patrol ? "1" : "0");
+            if (skipnotif)
+                params.put("skipnotif", "1");
+        }
+        else
+            params.put("enqueue", "1");
+        
+        // Unfortunately there is no way to tell whether a particular page is
+        // in a PageTriage queue, so we are left with this.
+        try
+        {
+            String response = makeApiCall(new HashMap<>(), params, "pageTriageAction");
+            System.out.println(response);
+            // done
+            if (!response.contains("<pagetriageaction result=\"success\""))
+                checkErrorsAndUpdateStatus(response, "pageTriageAction");
+            log(Level.INFO, "pageTriageAction", "Successfully (un)patrolled page " + pageid);
+        }
+        catch (UnknownError e)
+        {
+            // Enqueue pages that aren't in the queue and unpatrol requested.
+            String message = e.getMessage();
+            if (message.contains("<error code=\"bad-pagetriage-page\"") && Boolean.FALSE.equals(patrol))
+                pageTriageAction(pageid, reason, null, false);
+            else if (message.contains("<error code=\"bad-pagetriage-enqueue-invalidnamespace\""))
+                throw new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.");
+            else
+                throw e;
+        }
     }
 }

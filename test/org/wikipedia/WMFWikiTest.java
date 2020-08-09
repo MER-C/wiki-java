@@ -205,4 +205,11 @@ public class WMFWikiTest
         assertEquals("Q937", actual.get(4));
         assertNull(actual.get(5)); // local page exists, but no corresponding WD item
     }
+    
+    @Test
+    public void triageNewPage() throws Exception
+    {
+        assertThrows(SecurityException.class, 
+            () -> enWiki.triageNewPage(64721139L, "Testing (should fail)", true, true));
+    }
 }
