@@ -1418,21 +1418,34 @@ public class Wiki implements Comparable<Wiki>
         if (section >= 0)
             getparams.put("section", String.valueOf(section));
 
-        String response = makeApiCall(getparams, postparams, "parse");
-        if (response.contains("error code=\""))
-            // Bad section numbers, revids, deleted pages should all end up here.
-            // FIXME: makeHTTPRequest() swallows the API error "missingtitle"
-            // (deleted pages) to throw an UnknownError instead.
-            return null;
-        int y = response.indexOf('>', response.indexOf("<text")) + 1;
-        int z = response.indexOf("</text>");
+        try
+        {
+            String response = makeApiCall(getparams, postparams, "parse");
+            int y = response.indexOf('>', response.indexOf("<text")) + 1;
+            int z = response.indexOf("</text>");
 
-        // Rewrite URLs to replace useless relative links and make images work on
-        // locally saved copies of wiki pages.
-        String html = decode(response.substring(y, z));
-        html = html.replace("href=\"/wiki", "href=\"" + protocol + domain + "/wiki");
-        html = html.replace(" src=\"//", " src=\"" + protocol); // a little fragile for my liking, but will do
-        return html;
+            // Rewrite URLs to replace useless relative links and make images work on
+            // locally saved copies of wiki pages.
+            String html = decode(response.substring(y, z));
+            html = html.replace("href=\"/wiki", "href=\"" + protocol + domain + "/wiki");
+            html = html.replace(" src=\"//", " src=\"" + protocol); // a little fragile for my liking, but will do
+            return html;
+        }
+        catch (UnknownError e)
+        {
+            // Bad section numbers, revids, deleted pages should all end up here.
+            String error = parseAttribute(e.getMessage(), "code", 0);
+            switch (error)
+            {
+                case "missingtitle":
+                case "missingcontent":
+                case "nosuchsection":
+                case "nosuchrevid":
+                    return null;
+                default:
+                    throw e;
+            }
+        }
     }
 
     /**
@@ -3814,30 +3827,46 @@ public class Wiki implements Comparable<Wiki>
                 throw new IllegalArgumentException("To content not specified!");
         }
 
-        String line = makeApiCall(getparams, postparams, "diff");
-
-        // strip extraneous information
-        if (line.contains("</compare>"))
+        try
         {
-            // a warning may occur here in certain circumstances e.g.
-            // https://en.wikipedia.org/w/api.php?&torelative=prev&maxlag=5&format=xml&action=compare&fromrev=255072509
-            int a = line.lastIndexOf("<compare");
-            a = line.indexOf('>', a) + 1;
-            int b = line.indexOf("</compare>", a);
-            return decode(line.substring(a, b));
+            String line = makeApiCall(getparams, postparams, "diff");
+
+            // strip extraneous information
+            if (line.contains("</compare>"))
+            {
+                // a warning may occur here in certain circumstances e.g.
+                // https://en.wikipedia.org/w/api.php?&torelative=prev&maxlag=5&format=xml&action=compare&fromrev=255072509
+                int a = line.lastIndexOf("<compare");
+                a = line.indexOf('>', a) + 1;
+                int b = line.indexOf("</compare>", a);
+                return decode(line.substring(a, b));
+            }
+            else if (line.contains("<compare "))
+                // <compare> tag has no content if there is no diff or the two
+                // revisions are identical. In particular, the API does not
+                // distinguish between:
+                // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343 (no difference)
+                // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
+                return "";
+            else
+                throw new AssertionError("Unreachable.");
         }
-        else if (line.contains("<compare "))
-            // <compare> tag has no content if there is no diff or the two
-            // revisions are identical. In particular, the API does not
-            // distinguish between:
-            // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343 (no difference)
-            // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev (dummy edit)
-            return "";
-        else
+        catch (UnknownError e)
+        {
             // Bad section numbers, revids, deleted pages should all end up here.
-            // FIXME: fetch() swallows the API error "missingtitle" (deleted
-            // pages) to throw an UnknownError instead.
-            return null;
+            String error = parseAttribute(e.getMessage(), "code", 0);
+            switch (error)
+            {
+                case "missingtitle":
+                case "missingcontent":
+                case "nosuchfromsection":
+                case "nosuchtosection":
+                case "nosuchrevid":
+                    return null;
+                default:
+                    throw e;
+            }
+        }
     }
 
     /**
@@ -8300,16 +8329,13 @@ public class Wiki implements Comparable<Wiki>
                     throw new AssertionError(description);
                 case "permissiondenied":
                     throw new SecurityException(description);
-                // harmless, pass error to calling method
-                case "nosuchsection":     // getSectionText(), parse()
-                case "nosuchfromsection": // diff()
-                case "nosuchtosection":   // diff()
-                case "nosuchrevid":       // parse(), diff()
+                // Harmless, response goes to calling method. TODO: remove this.
+                case "nosuchsection":     // getSectionText()
                 case "cantundelete":      // undelete(), page has no deleted revisions
                     break;
                 // Something *really* bad happened. Most of these are self-explanatory
                 // and are indicative of bugs (not necessarily in this framework) or
-                // can be avoided entirely.
+                // can be avoided entirely. Others are kicked to the caller to handle.
                 default:
                     throw new UnknownError("MW API error. Server response was: " + response);
             }
