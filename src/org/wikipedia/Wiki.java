@@ -22,6 +22,7 @@ package org.wikipedia;
 
 import java.io.*;
 import java.net.*;
+import java.net.http.*;
 import java.nio.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -442,6 +443,7 @@ public class Wiki implements Comparable<Wiki>
     private ArrayList<Integer> ns_subpages = null;
 
     // user management
+    private HttpClient client;
     private final CookieManager cookies;
     private User user;
     private int statuscounter = 0;
@@ -469,7 +471,7 @@ public class Wiki implements Comparable<Wiki>
 
     // config via properties
     private final int maxtries;
-    private final int connect_timeout_msec, read_timeout_msec;
+    private final int read_timeout_msec;
     private final int log2_upload_size;
 
     // CONSTRUCTORS AND CONFIGURATION
@@ -497,7 +499,6 @@ public class Wiki implements Comparable<Wiki>
 
         logger.setLevel(loglevel);
         logger.log(Level.CONFIG, "[{0}] Using Wiki.java {1}", new Object[] { domain, version });
-        cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
         
         // read in config
         Properties props = new Properties();
@@ -516,8 +517,12 @@ public class Wiki implements Comparable<Wiki>
         }
         maxtries = Integer.parseInt(props.getProperty("maxretries", "2"));
         log2_upload_size = Integer.parseInt(props.getProperty("loguploadsize", "22")); // 4 MB
-        connect_timeout_msec = Integer.parseInt(props.getProperty("connecttimeout", "30000")); // 30 seconds
         read_timeout_msec = Integer.parseInt(props.getProperty("readtimeout", "180000")); // 180 seconds
+        cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
+        client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .cookieHandler(cookies)
+            .build();
     }
 
     /**
@@ -557,7 +562,7 @@ public class Wiki implements Comparable<Wiki>
         // Don't put network requests here. Servlets cannot afford to make
         // unnecessary network requests in initialization.
         Wiki wiki = new Wiki(domain, scriptPath, protocol);
-        wiki.initVars(); // construct URL bases
+        wiki.initVars();
         return wiki;
     }
 
@@ -4016,16 +4021,20 @@ public class Wiki implements Comparable<Wiki>
 
         // then we read the image
         logurl(url2, "getImage");
-        URLConnection connection = makeConnection(url2);
-        connection.connect();
-
-        // download image to the file
-        InputStream input = connection.getInputStream();
-        if ("gzip".equals(connection.getContentEncoding()))
-            input = new GZIPInputStream(input);
-        Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
-        return true;
+        HttpRequest request = makeConnection(url2).GET().build();
+        try
+        {
+            HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            boolean zip = "gzip".equals(response.headers().firstValue("Content-Encoding").orElse(""));
+            InputStream input = zip ? new GZIPInputStream(response.body()) : response.body();
+            Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            log(Level.INFO, "getImage", "Successfully retrieved image \"" + title + "\"");
+            return true;
+        }
+        catch (InterruptedException ex)
+        {
+            return false; // hmmmm
+        }
     }
 
     /**
@@ -4233,19 +4242,23 @@ public class Wiki implements Comparable<Wiki>
                 // this is it
                 String url = parseAttribute(line, "url", a);
                 logurl(url, "getOldImage");
-                URLConnection connection = makeConnection(url);
-                connection.connect();
-
-                // download image to file
-                InputStream input = connection.getInputStream();
-                if ("gzip".equals(connection.getContentEncoding()))
-                    input = new GZIPInputStream(input);
-                Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                // scrape archive name for logging purposes
-                String archive = Objects.requireNonNullElse(parseAttribute(line, "archivename", 0), 
-                    entry.getTitle());
-                log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
-                return true;
+                HttpRequest request = makeConnection(url).GET().build();
+                try
+                {
+                    HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+                    boolean zip = "gzip".equals(response.headers().firstValue("Content-Encoding").orElse(""));
+                    InputStream input = zip ? new GZIPInputStream(response.body()) : response.body();
+                    Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    // scrape archive name for logging purposes
+                    String archive = Objects.requireNonNullElse(parseAttribute(line, "archivename", 0), 
+                        entry.getTitle());
+                    log(Level.INFO, "getOldImage", "Successfully retrieved old image \"" + archive + "\"");
+                    return true;
+                }
+                catch (InterruptedException ex)
+                {
+                    // hmmm
+                }
             }
         }
         return false;
@@ -5328,7 +5341,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<Revision> watchlist(Wiki.RequestHelper helper) throws IOException
     {
-        checkPermissions("access the watchlist", "x");
+        checkPermissions("access the watchlist", "viewmywatchlist");
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "watchlist");
         getparams.put("wlprop", "ids|title|timestamp|user|comment|parsedcomment|sizes|tags");
@@ -8147,8 +8160,8 @@ public class Wiki implements Comparable<Wiki>
         boolean isPOST = (postparams != null && !postparams.isEmpty());
         StringBuilder stringPostBody = new StringBuilder();
         boolean multipart = false;
-        byte[] multipartPostBody = null;
-        String boundary = "----------NEXT PART----------";
+        ArrayList<byte[]> multipartPostBody = new ArrayList<>();
+        String boundary = "----------NEXT PART----------";        
         if (isPOST)
         {
             // determine whether this is a multipart post and convert any values
@@ -8164,35 +8177,25 @@ public class Wiki implements Comparable<Wiki>
 
             // now we know how we're sending it, construct the post body
             if (multipart)
-            {
-                String nextpart = "--" + boundary + "\r\n";
-                ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                try (DataOutputStream out = new DataOutputStream(bout))
+            {        
+                byte[] nextpart = ("--" + boundary + "\r\n\"Content-Disposition: form-data; name=\\\"\"")
+                    .getBytes(StandardCharsets.UTF_8);
+                for (Map.Entry<String, ?> entry : postparams.entrySet())
                 {
-                    out.writeBytes(nextpart);
-
-                    // write params
-                    for (Map.Entry<String, ?> entry : postparams.entrySet())
+                    multipartPostBody.add(nextpart);
+                    Object value = entry.getValue();
+                    multipartPostBody.add((entry.getKey() + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+                    if (value instanceof String)
+                        multipartPostBody.add(("Content-Type: text/plain; charset=UTF-8\r\n\r\n" + (String)value + "\r\n")
+                            .getBytes(StandardCharsets.UTF_8));
+                    else if (value instanceof byte[])
                     {
-                        String name = entry.getKey();
-                        Object value = entry.getValue();
-                        out.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"\r\n");
-                        if (value instanceof String)
-                        {
-                            out.writeBytes("Content-Type: text/plain; charset=UTF-8\r\n\r\n");
-                            out.write(((String)value).getBytes("UTF-8"));
-                        }
-                        else if (value instanceof byte[])
-                        {
-                            out.writeBytes("Content-Type: application/octet-stream\r\n\r\n");
-                            out.write((byte[])value);
-                        }
-                        out.writeBytes("\r\n");
-                        out.writeBytes(nextpart);
+                        multipartPostBody.add("Content-Type: application/octet-stream\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                        multipartPostBody.add((byte[])value);
+                        multipartPostBody.add("\r\n".getBytes(StandardCharsets.UTF_8));
                     }
-                    out.writeBytes("--\r\n");
                 }
-                multipartPostBody = bout.toByteArray();
+                multipartPostBody.add((boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
             }
             else
             {
@@ -8216,69 +8219,26 @@ public class Wiki implements Comparable<Wiki>
             tries--;
             try
             {
-                // Cookie handling should be handled locally instead of setting
-                // the system wide cookie manager to make sure a local state is
-                // saved per instance
-                // modified from https://stackoverflow.com/questions/16150089
-                // see https://github.com/MER-C/wiki-java/issues/157
-                URLConnection connection = makeConnection(url);
-                CookieStore store = cookies.getCookieStore();
-                List<HttpCookie> cookielist = store.getCookies();
-                if (!cookielist.isEmpty())
-                {
-                    StringJoiner sb = new StringJoiner(";");
-                    for (HttpCookie cookie : cookielist)
-                        sb.add(cookie.toString());
-                    connection.setRequestProperty("Cookie", sb.toString());
-                }
-
+                var connection = makeConnection(url);
                 if (isPOST)
                 {
-                    connection.setDoOutput(true);
                     if (multipart)
-                        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-                }
-                connection.connect();
-                if (isPOST)
-                {
-                    // send the post body
-                    if (multipart)
-                    {
-                        try (OutputStream uout = connection.getOutputStream())
-                        {
-                            uout.write(multipartPostBody);
-                        }
-                    }
+                        connection = connection.POST(HttpRequest.BodyPublishers.ofByteArrays(multipartPostBody))
+                            .header("Content-Type", "multipart/form-data; boundary=" + boundary);
                     else
-                    {
-                        try (OutputStreamWriter out = new OutputStreamWriter(connection.getOutputStream(), "UTF-8"))
-                        {
-                            out.write(stringPostBody.toString());
-                        }
-                    }
+                        connection = connection.POST(HttpRequest.BodyPublishers.ofString(stringPostBody.toString()))
+                            .header("Content-Type", "application/x-www-form-urlencoded");
                 }
 
-                // Check database lag and retry if necessary. These retries
-                // don't count.
-                if (checkLag(connection))
+                HttpResponse<InputStream> hr = client.send(connection.build(), HttpResponse.BodyHandlers.ofInputStream());
+                if (checkLag(hr))
                 {
                     tries++;
                     throw new HttpRetryException("Database lagged.", 503);
                 }
 
-                // Parse cookies from response and store for later. Header fields
-                // are case-insensitive and MW may serve cookies split into both
-                // 'set-cookie' and 'Set-Cookie' headers (see T249680).
-                Map<String, List<String>> headerFields = connection.getHeaderFields();
-                headerFields.entrySet().stream()
-                    .filter(e -> "set-cookie".equalsIgnoreCase(e.getKey())) // key can be null
-                    .map(Map.Entry::getValue)
-                    .flatMap(List::stream)
-                    .flatMap(cookieHeader -> HttpCookie.parse(cookieHeader).stream())
-                    .forEach(cookie -> store.add(null, cookie));
-
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                    zipped ? new GZIPInputStream(connection.getInputStream()) : connection.getInputStream(), "UTF-8")))
+                    zipped ? new GZIPInputStream(hr.body()) : hr.body(), "UTF-8")))
                 {
                     response = in.lines().collect(Collectors.joining("\n"));
                 }
@@ -8382,51 +8342,56 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Checks for database lag and sleeps if {@code lag < getMaxLag()}.
-     *  @param connection the URL connection used in the request
+     *  @param response the HTTP response received
      *  @return true if there was sufficient database lag.
+     *  @throws InterruptedException if any wait was interrupted
      *  @see #getMaxLag()
      *  @see <a href="https://mediawiki.org/wiki/Manual:Maxlag_parameter">
      *  MediaWiki documentation</a>
      *  @since 0.32
      */
-    protected synchronized boolean checkLag(URLConnection connection)
+    protected synchronized boolean checkLag(HttpResponse response) throws InterruptedException
     {
-        int lag = connection.getHeaderFieldInt("X-Database-Lag", -5);
+        HttpHeaders hdrs = response.headers();
+        long lag = hdrs.firstValueAsLong("X-Database-Lag").orElse(-5);
         // X-Database-Lag is the current lag rounded down to the nearest integer.
         // Thus, we need to retry in case of equality.
         if (lag >= maxlag)
         {
-            try
-            {
-                int time = connection.getHeaderFieldInt("Retry-After", 10);
-                logger.log(Level.WARNING, "Current database lag {0} s exceeds maxlag of {1} s, waiting {2} s.", new Object[] { lag, maxlag, time });
-                Thread.sleep(time * 1000L);
-            }
-            catch (InterruptedException ignored)
-            {
-            }
+            long time = hdrs.firstValueAsLong("Retry-After").orElse(10);
+            logger.log(Level.WARNING, "Current database lag {0} s exceeds maxlag of {1} s, waiting {2} s.", new Object[] { lag, maxlag, time });
+            Thread.sleep(time * 1000L);
             return true;
         }
         return false;
     }
 
     /**
-     *  Creates a new URL connection. Override to change SSL handling, use a
-     *  proxy, etc.
+     *  Sets the HTTPClient used by this instance. Use this to set a proxy, 
+     *  SSL parameters and the connection timeout.
+     *  @param builder a HTTP request builder
+     *  @since 0.37
+     */
+    public void setHttpClient(HttpClient.Builder builder)
+    {
+        client = builder.cookieHandler(cookies).build();
+    }
+
+    /**
+     *  Creates a new HTTP request. Override to change request properties.
      *  @param url a URL string
-     *  @return a connection to that URL
+     *  @return a HTTP request builder for that URL
      *  @throws IOException if a network error occurs
      *  @since 0.31
      */
-    protected URLConnection makeConnection(String url) throws IOException
+    protected HttpRequest.Builder makeConnection(String url) throws IOException
     {
-        URLConnection u = new URL(url).openConnection();
-        u.setConnectTimeout(connect_timeout_msec);
-        u.setReadTimeout(read_timeout_msec);
+        var builder = HttpRequest.newBuilder(URI.create(url))
+            .timeout(Duration.ofMillis(read_timeout_msec))
+            .header("User-Agent", useragent);
         if (zipped)
-            u.setRequestProperty("Accept-encoding", "gzip");
-        u.setRequestProperty("User-Agent", useragent);
-        return u;
+            builder = builder.header("Accept-encoding", "gzip");
+        return builder;
     }
 
     /**
