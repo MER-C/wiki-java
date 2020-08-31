@@ -3030,7 +3030,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "deletedrevisions");
-        getparams.put("drvprop", "ids|user|flags|size|comment|parsedcomment|sha1|tags");
+        getparams.put("drvprop", "timestamp|ids|user|flags|size|comment|parsedcomment|sha1|tags");
         if (helper != null)
         {
             helper.setRequestType("drv");
@@ -3045,10 +3045,10 @@ public class Wiki implements Comparable<Wiki>
 
         List<Revision> delrevs = makeListQuery("drv", getparams, null, "getDeletedHistory", limit, (response, results) ->
         {
-            int x = response.indexOf("<deletedrevs>");
+            int x = response.indexOf("<deletedrevisions>");
             if (x < 0) // no deleted history
                 return;
-            for (x = response.indexOf("<page ", x); x > 0; x = response.indexOf("<page ", ++x))
+            for (x = response.indexOf("<page "); x > 0; x = response.indexOf("<page ", ++x))
             {
                 String deltitle = parseAttribute(response, "title", x);
                 int y = response.indexOf("</page>", x);
