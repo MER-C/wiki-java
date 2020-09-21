@@ -1638,6 +1638,7 @@ public class Wiki implements Comparable<Wiki>
      *    protection state} of the page. Does not cover implied protection
      *    levels (e.g. MediaWiki namespace).
      *  <li><b>exists</b>: (Boolean) whether the page exists
+     *  <li><b>redirect</b>: (Boolean) whether the page is a redirection
      *  <li><b>lastpurged</b>: (OffsetDateTime) when the page was last purged or
      *    <code>null</code> if the page does not exist
      *  <li><b>lastrevid</b>: (Long) the revid of the top revision or -1L if the
@@ -1738,6 +1739,7 @@ public class Wiki implements Comparable<Wiki>
 
                 tempmap.put("displaytitle", parseAttribute(item, "displaytitle", 0));
                 tempmap.put("timestamp", OffsetDateTime.now(timezone));
+                tempmap.put("redirect", item.contains("redirect=\"\""));
 
                 // number of watchers
                 if (item.contains("watchers=\""))
