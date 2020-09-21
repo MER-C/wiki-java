@@ -6102,12 +6102,30 @@ public class Wiki implements Comparable<Wiki>
         }
         else if (type.equals(USER_RIGHTS_LOG))
         {
-            int a = xml.indexOf("old=\"") + 5;
-            int b = xml.indexOf('\"', a);
-            details.put("old", xml.substring(a, b));
-            int c = xml.indexOf("new=\"") + 5;
-            int d = xml.indexOf('\"', a);
-            details.put("new", xml.substring(c, d));
+            int a = xml.indexOf("<oldgroups>");
+            if (a != -1) {
+	            int b = xml.indexOf("</oldgroups>", a);
+	            var oldgroups = xml.substring(a + 11, b);
+	            var old_list = new ArrayList<String>();
+	            for (int end = 0, start = oldgroups.indexOf("<g>"); start != -1; start = oldgroups.indexOf("<g>", end)) {
+	                end = oldgroups.indexOf("</g>", start);
+	                old_list.add(oldgroups.substring(start + 3, end));
+	            }
+	            details.put("oldgroups", String.join(",", old_list));
+            } else // self-closing empty "<oldgroups />" tag
+                details.put("oldgroups", "");
+            int c = xml.indexOf("<newgroups>");
+            if (c != -1) {
+	            int d = xml.indexOf("</newgroups>", c);
+	            var newgroups = xml.substring(c + 11, d);
+	            var new_list = new ArrayList<String>();
+	            for (int end = 0, start = newgroups.indexOf("<g>"); start != -1; start = newgroups.indexOf("<g>", end)) {
+	                end = newgroups.indexOf("</g>", start);
+	                new_list.add(newgroups.substring(start + 3, end));
+	            }
+	            details.put("newgroups", String.join(",", new_list));
+            } else // self-closing empty "<newgroups />" tag
+                details.put("newgroups", "");
         }
 
         // tags
@@ -7177,7 +7195,8 @@ public class Wiki implements Comparable<Wiki>
          *      <td>new Object[] { boolean anononly, boolean nocreate, boolean
          *      noautoblock, boolean noemail, boolean nousertalk, String duration }
          *  <tr><td>USER_RIGHTS_LOG
-         *      <td>The new user rights (String[])
+         *      <td>The old ("oldgroups") and new ("newgroups") user rights,
+         *          comma-separated
          *  <tr><td>PROTECTION_LOG
          *      <td>if action == "protect" or "modify" return the protection level
          *          (int, -2 if unrecognized) if action == "move_prot" return
