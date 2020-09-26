@@ -630,6 +630,15 @@ public class WikiTest
         le = enWiki.getLogEntries(Wiki.PROTECTION_LOG, null, rh);
         assertEquals("protect", le.get(0).getAction());
         assertEquals("‎[edit=sysop] (indefinite) ‎[move=sysop] (indefinite)", le.get(0).getDetails().get("protection string"));
+        
+        // user rights log
+        rh = enWiki.new RequestHelper().byUser("MER-C").byTitle("User:Siddiqsazzad001");
+        le = enWiki.getLogEntries(Wiki.USER_RIGHTS_LOG, null, rh);
+        assertEquals(Wiki.USER_RIGHTS_LOG, le.get(0).getType());
+        assertEquals("rights", le.get(0).getAction());
+        details = le.get(0).getDetails();
+        assertEquals("extendedconfirmed,patroller,reviewer,rollbacker", details.get("oldgroups"));
+        assertEquals("extendedconfirmed", details.get("newgroups"));
 
         // RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User%3AMER-C%2FTest
@@ -655,7 +664,7 @@ public class WikiTest
     @Test
     public void getPageInfo() throws Exception
     {
-        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages");
+        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage");
         List<Map<String, Object>> pageinfo = enWiki.getPageInfo(pages);
 
         // Main Page
@@ -677,9 +686,12 @@ public class WikiTest
         pageinfo.get(0).remove("inputpagename");
         pageinfo.get(2).remove("inputpagename");
         assertEquals(pageinfo.get(0), pageinfo.get(2), "duplicate");
-
+        
         // Special page = return null
         assertNull(pageinfo.get(3), "special page");
+        
+        // redirect
+        assertTrue((Boolean)pageinfo.get(4).get("redirect"));
     }
 
     @Test
