@@ -1,6 +1,6 @@
 /**
  *  @(#)package-info.java 0.01 15/02/2018
- *  Copyright (C) 2018 MER-C
+ *  Copyright (C) 2018-20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -24,7 +24,8 @@
  *
  *  <p>
  *  This package does not, and will not, have any dependencies outside of the
- *  core JDK. Only the java.base and java.logging modules are required.
+ *  core JDK. Only the java.base, java.net.http and java.logging modules are 
+ *  required.
  *
  *  <p>
  *  All methods should work on a vanilla installation of MediaWiki with the 

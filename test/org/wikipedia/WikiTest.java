@@ -755,6 +755,28 @@ public class WikiTest
         // further tests blocked on MediaWiki API rewrite
         // see https://phabricator.wikimedia.org/T89971
     }
+    
+    @Test
+    public void listDeletedFiles() throws Exception
+    {
+        List<Wiki.LogEntry> files = enWiki.listDeletedFiles("fdb4e6b0e934c02e52cd732508247b895ac6a805", null, null);
+        // test is unstable, so filter by date range to make it stable
+        OffsetDateTime start = OffsetDateTime.parse("2007-08-07T00:00:00Z");
+        OffsetDateTime end = OffsetDateTime.parse("2007-08-08T00:00:00Z");
+        for (Wiki.LogEntry file : files)
+        {
+            OffsetDateTime ts = file.getTimestamp();
+            if (ts.isAfter(start) && ts.isBefore(end))
+            {
+                // [[Special:Undelete/File:Example.png]]
+                assertEquals("2007-08-07T08:35:39Z", ts.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                assertEquals("Ilmari Karonen", file.getUser());
+                assertNull(file.getComment()); // no privileges => no content
+                assertNull(file.getParsedComment());
+                assertEquals(Wiki.UPLOAD_LOG, file.getType());
+            }
+        }
+    }
 
     @Test
     public void getDuplicates() throws Exception

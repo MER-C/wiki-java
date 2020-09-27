@@ -3071,6 +3071,59 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
+     *  Lists deleted files. <a href="https://phabricator.wikimedia.org/T60993">This 
+     *  is deliberately NOT a privileged action</a>, although if you do not have
+     *  {@code deletedhistory} rights then you will not get an edit summary. 
+     *  Accepted parameters from <var>helper</var> are:
+     *
+     *  <ul>
+     *  <li>{@link Wiki.RequestHelper#withinDateRange(OffsetDateTime, OffsetDateTime) date range}
+     *      (upload date)
+     *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
+     *  </ul>
+     *
+     *  @param sha1 the SHA-1 of the deleted file (optional)
+     *  @param prefix a filename prefix (excludes File: prefix, optional)
+     *  @param helper a vehicle for optional parameters detailed above
+     *  @return a list of deleted files that match the criteria
+     *  @throws IOException if a network error occurs
+     *  @since 0.37
+     */
+    public List<LogEntry> listDeletedFiles(String sha1, String prefix, Wiki.RequestHelper helper) throws IOException
+    {
+        int limit = -1;
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("list", "filearchive");
+        if (user != null && user.isAllowedTo("deletedhistory", "deletedtext"))
+            getparams.put("faprop", "timestamp|ids|user|description|parseddescription");
+        else
+            getparams.put("faprop", "timestamp|ids|user");
+        if (prefix != null)
+            getparams.put("faprefix", normalize(prefix));
+        if (sha1 != null)
+            getparams.put("fasha1", sha1);
+        if (helper != null)
+        {
+            helper.setRequestType("fa");
+            getparams.putAll(helper.addDateRangeParameters());
+            limit = helper.limit();
+        }
+
+        List<LogEntry> archive = makeListQuery("fa", getparams, null, "listDeletedFiles", limit, (response, results) ->
+        {
+            for (int x = response.indexOf("<fa "); x > 0; x = response.indexOf("<fa ", ++x))
+            {
+                int y = response.indexOf(" />", x + 1);
+                String entry = response.substring(x, y);
+                results.add(parseLogEntry(entry, null, Wiki.UPLOAD_LOG, "upload", null));
+            }
+        });
+
+        log(Level.INFO, "Successfully fetched " + archive.size() + " deleted file metadata.", "deletedRevs");
+        return archive;
+    }
+
+    /**
      *  Gets the deleted contributions of a user in the given namespace.
      *  Equivalent to [[Special:Deletedcontributions]]. Accepted parameters from
      *  <var>helper</var> are:
