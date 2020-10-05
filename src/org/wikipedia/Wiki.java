@@ -1808,8 +1808,10 @@ public class Wiki implements Comparable<Wiki>
         if (!title.contains(":"))
             return MAIN_NAMESPACE;
         title = title.replace("_", " ");
-        String namespace = title.substring(0, 1).toUpperCase(locale) + title.substring(1, title.indexOf(':'));
-        return namespaces.getOrDefault(namespace, MAIN_NAMESPACE);
+        String namespace = title.substring(0, title.indexOf(':'));
+        Map<String, Integer> tempmap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        tempmap.putAll(namespaces);
+        return tempmap.getOrDefault(namespace, MAIN_NAMESPACE);
     }
 
     /**
