@@ -1,6 +1,6 @@
 /**
- *  @(#)AdminStats.java 0.01 15/07/2019
- *  Copyright (C) 2019 MER-C
+ *  @(#)AdminStats.java 0.02 01/01/2021
+ *  Copyright (C) 2019-2021 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -30,19 +30,21 @@ import org.wikipedia.*;
  *  Outputs admin action reason stats for the English Wikipedia and global lock
  *  reason stats for all Wikimedia wikis.
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
 public class AdminStats
 {
     private static final Wiki metaWiki;
     private final Wiki wiki;
     private OffsetDateTime start, end;
-    private List<Wiki.LogEntry> deletions, blocks, locks, protections;
+    private List<Wiki.LogEntry> deletions, blocks, locks, protections, gblocks;
 
     static
     {
         metaWiki = Wiki.newSession("meta.wikimedia.org");
     }
+    
+    // TODO: global block log
     
     /**
      *  Runs this program. You must supply a start and end date.
@@ -61,6 +63,7 @@ public class AdminStats
             .addBooleanFlag("--accounts", "Fetch statistics for blocked accounts only (requires --blocks)")
             .addBooleanFlag("--deletions", "Fetch statistics for deletions")
             .addBooleanFlag("--protections", "Fetch statistics for protections")
+            .addBooleanFlag("--globalblocks", "Fetch statistics for global blocks")
             .addBooleanFlag("--login", "Adds a login prompt to access high limits")
             .parse(args);
         OffsetDateTime start = OffsetDateTime.parse(options.get("--start"));
@@ -107,7 +110,7 @@ public class AdminStats
             long total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
-            System.out.println("==All namespaces==");
+            System.out.println("==Deletion stats==");
             System.out.println("" + total + " deletions between " + start + " and " + end);
             printHistogram(deletehist, printfull);
 
@@ -115,7 +118,7 @@ public class AdminStats
             total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
-            System.out.println("==Main namespace==");
+            System.out.println("===Main namespace===");
             System.out.println("" + total + " deletions between " + start + " and " + end);
             printHistogram(deletehist, printfull);
 
@@ -123,7 +126,7 @@ public class AdminStats
             total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
-            System.out.println("==User namespace==");
+            System.out.println("===User namespace===");
             System.out.println("" + total + " deletions between " + start + " and " + end);
             printHistogram(deletehist, printfull);
 
@@ -131,7 +134,7 @@ public class AdminStats
             total = deletehist.get("TOTAL");
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
-            System.out.println("==Draft namespace==");
+            System.out.println("===Draft namespace===");
             System.out.println("" + total + " deletions between " + start + " and " + end);
             printHistogram(deletehist, printfull);
         }
@@ -146,13 +149,25 @@ public class AdminStats
             System.out.println("" + total + " protections between " + start + " and " + end);
             printHistogram(prothist, printfull);
             
-            prothist = stats.deleteStats(Wiki.MAIN_NAMESPACE);
+            prothist.clear();
+            prothist = stats.protectStats(Wiki.MAIN_NAMESPACE);
             total = prothist.get("TOTAL");
             if (!printfull)
-                prothist = stats.groupDeleteReasons(prothist);
-            System.out.println("==Main namespace==");
+                prothist = stats.groupProtectionReasons(prothist);
+            System.out.println("===Main namespace===");
             System.out.println("" + total + " protections between " + start + " and " + end);
             printHistogram(prothist, printfull);
+        }
+        
+        if (options.containsKey("--globalblocks"))
+        {
+            Map<String, Long> blockhist = stats.globalBlockStats();
+            long total = blockhist.get("TOTAL");
+            if (!printfull)
+                blockhist = stats.groupGlobalBlockReasons(blockhist);
+            System.out.println("==Global block stats==");
+            System.out.println("" + total + " global blocks between " + start + " and " + end);
+            printHistogram(blockhist, printfull);
         }
     }
 
@@ -163,6 +178,7 @@ public class AdminStats
         blocks = new ArrayList<>();
         locks = new ArrayList<>();
         protections = new ArrayList<>();
+        gblocks = new ArrayList<>();
     }
 
     /**
@@ -195,7 +211,7 @@ public class AdminStats
         {
             Wiki.RequestHelper rh = wiki.new RequestHelper()
                 .withinDateRange(start, end);
-            List<Wiki.LogEntry> temp = wiki.getLogEntries("delete", "delete", rh);
+            List<Wiki.LogEntry> temp = wiki.getLogEntries(Wiki.DELETION_LOG, "delete", rh);
             for (Wiki.LogEntry log : temp)
                 if (log.getTitle() != null && log.getComment() != null)
                     deletions.add(log);
@@ -254,7 +270,7 @@ public class AdminStats
             unclassified &= classifyReason(cleanhist, entry, "Test page", "|g2]]");
             unclassified &= classifyReason(cleanhist, entry, "Vandalism", "|g3]]");
             unclassified &= classifyReason(cleanhist, entry, "Created by block/ban evading sockpuppet", "|g5]]", "csd g5");
-            unclassified &= classifyReason(cleanhist, entry, "Maintenance", "|g6]]", "history merge");
+            unclassified &= classifyReason(cleanhist, entry, "Maintenance", "|g6]]", "history merge", "history-merge");
             unclassified &= classifyReason(cleanhist, entry, "Author/user request", "g7]]", "|u1]]", "user request", "csd u1", "author request");
             unclassified &= classifyReason(cleanhist, entry, "Dependent on deleted page", "g8]]", "delete redirect: ", "#g8");
             unclassified &= classifyReason(cleanhist, entry, "Attack page", "g10");
@@ -287,7 +303,8 @@ public class AdminStats
             unclassified &= classifyReason(cleanhist, entry, "Corrupt file", "|f2]]");
             unclassified &= classifyReason(cleanhist, entry, "Lack of copyright information (files)", "|f3]]", "|f4]]", "|f11]]");
             unclassified &= classifyReason(cleanhist, entry, "Problems with non-free files", "|f5]]", "|f6]]", "|f7]]");
-            unclassified &= classifyReason(cleanhist, entry, "File moved to Commons", "|f8]]", "nowcommons", "now on commons");
+            unclassified &= classifyReason(cleanhist, entry, "File moved to Commons", "|f8]]", "nowcommons", 
+                "now on commons", "now on wikimedia commons");
 
             // PROD
             unclassified &= classifyReason(cleanhist, entry, "Expired PROD", "[[wp:prod|", "proposed deletion");
@@ -317,7 +334,10 @@ public class AdminStats
                 unclassified = false;
             }
             if (unclassified)
+            {
+//                System.out.println(reason + ": " + count);
                 cleanhist.merge("Unclassified", count, Long::sum);
+            }
         }
         return cleanhist;
     }
@@ -363,7 +383,7 @@ public class AdminStats
         {
             Wiki.RequestHelper rh = metaWiki.new RequestHelper()
                 .withinDateRange(start, end);
-            locks = metaWiki.getLogEntries("globalauth", null, rh);
+            locks = metaWiki.getLogEntries(WMFWiki.GLOBAL_AUTH_LOG, null, rh);
             locks.removeIf(log -> log.getTitle() == null || log.getComment() == null);
         }
         Map<String, Long> ret = new TreeMap<>();
@@ -390,19 +410,23 @@ public class AdminStats
                 continue;
 
             String key = "Unclassified";
-            if (reason.contains("spam-only") || reason.contains("spambot"))
+            if (reason.equals(""))
+                key = "(no reason given)";
+            else if (reason.contains("spam"))
                 key = "Spamming";
-            else if (reason.contains("long-term abuse") || reason.contains("banned"))
+            else if (reason.contains("long-term abuse") || reason.contains("banned") || reason.contains("lock evasion"))
                 key = "Long term abuse";
             else if (reason.contains("cross-wiki abuse") || reason.contains("crosswiki abuse"))
                 key = "Cross wiki abuse";
-            else if (reason.contains("user name") || reason.contains("username"))
+            else if (reason.contains("user name") || reason.contains("username") || reason.contains("impersonation"))
                 key = "Inappropriate username";
             else if (reason.contains("compromised"))
                 key = "Compromised";
             else if (reason.contains("vandalism"))
                 key = "Vandalism";
-
+//            else
+//                System.out.println(reason + ": " + count);
+            
             cleanlockhist.merge(key, count, Long::sum);
         }
         return cleanlockhist;
@@ -425,7 +449,7 @@ public class AdminStats
             Wiki.RequestHelper rh = wiki.new RequestHelper()
                 .withinDateRange(start, end);
             // Special:Blocklist contains current blocks only
-            List<Wiki.LogEntry> lelocal = wiki.getLogEntries("block", "block", rh);
+            List<Wiki.LogEntry> lelocal = wiki.getLogEntries(Wiki.BLOCK_LOG, "block", rh);
             for (Wiki.LogEntry log : lelocal)
                 if (log.getTitle() != null && log.getComment() != null)
                     blocks.add(log);
@@ -497,6 +521,9 @@ public class AdminStats
             // possible spamming
             else if (reason.contains("{{uw-softerblock}}") || reason.contains("{{uw-causeblock}}"))
                 key = "Promotional username soft blocks";
+            // copyright problems
+            else if (reason.contains("copyright"))
+                key = "Copyright violations";
             // vandals
             else if (reason.contains("vandalism") || reason.contains("{{uw-vaublock}}")
                 || reason.contains("{{school block}}"))
@@ -528,19 +555,24 @@ public class AdminStats
             // addition of unsourced material
             else if (reason.contains("unsourced content") || reason.contains("citing sources"))
                 key = "Addition of unsourced material";
-            // sockpuppetry
-            // deliberately low down to capture as many underlying block reasons as possible
-            else if (reason.contains("{{checkuserblock-account}}") || reason.contains("sock") ||
-                reason.contains("block evasion") || reason.contains("term abuse") || reason.contains("banned"))
-                key = "Sockpuppetry and long term abuse";
             // proxies
             else if (reason.contains("{{colocation") || reason.contains("{{webhost") || reason.contains(" proxy}}"))
                 key = "Open proxy/webhost";
+            // sockpuppetry
+            // deliberately low down to capture as many underlying block reasons as possible
+            // must be after proxies because some proxies use the SOCKS protocol and this is cited
+            // in block summaries
+            else if (reason.contains("{{checkuserblock-account}}") || reason.contains("sock") ||
+                reason.contains("block evasion") || reason.contains("term abuse") || reason.contains("banned"))
+                key = "Sockpuppetry and long term abuse";
             // anon block
             else if (reason.contains("{{rangeblock") || reason.contains("{{checkuser"))
                 key = "Range blocks";
             else if (reason.contains("{{anonblock"))
                 key = "Anonymous blocks";
+//            else
+//                System.out.println(reason + ": " + count);
+
 
             cleanblockhist.merge(key, count, Long::sum);
         }
@@ -562,7 +594,7 @@ public class AdminStats
         {
             Wiki.RequestHelper rh = wiki.new RequestHelper()
                 .withinDateRange(start, end);
-            List<Wiki.LogEntry> lelocal = wiki.getLogEntries("protect", "protect", rh);
+            List<Wiki.LogEntry> lelocal = wiki.getLogEntries(Wiki.PROTECTION_LOG, "protect", rh);
             for (Wiki.LogEntry log : lelocal)
                 if (log.getTitle() != null && log.getComment() != null)
                     protections.add(log);
@@ -607,14 +639,20 @@ public class AdminStats
                 continue;
 
             String key = "Unclassified";
-            if (reason.contains("[[wp:blp"))
+            if (reason.equals(""))
+                key = "(no reason given)";
+            // deliberately high up
+            else if (reason.contains("arbitration enforcement") || reason.contains("wp:a/i/pia"))
+                key = "Arbitration enforcement";
+            else if (reason.contains("[[wp:gs/"))
+                key = "General sanctions enforcement";
+            // remaining content based reasons
+            else if (reason.contains("[[wp:blp"))
                 key = "BLP violations";
             else if (reason.contains("spam"))
                 key = "Spamming";
             else if (reason.contains("copyright") || reason.contains("copyvio"))
                 key = "Copyright violations";
-            else if (reason.contains("arbitration enforcement") || reason.contains("wp:a/i/pia"))
-                key = "Arbitration enforcement";
             else if (reason.contains("[[wp:pp#content dispute") || reason.contains("edit war") || reason.contains("move war"))
                 key = "Edit warring/content dispute";
             else if (reason.contains("verifiability") || reason.contains("[[wp:intref"))
@@ -633,10 +671,77 @@ public class AdminStats
                 key = "Unclassified disruptive editing";
             else if (reason.contains("[[wp:salt"))
                 key = "Unclassified salting";
+//            else
+//                System.out.println(reason + ": " + count);
 
             cleanprothist.merge(key, count, Long::sum);
         }
         return cleanprothist;
+    }
+    
+    /**
+     *  Bins locks of global accounts by reason. The total number of blocks is
+     *  available in a special key "TOTAL". 
+     * 
+     *  @return a map: block reason &#8594; count
+     *  @see <a href="https://meta.wikimedia.org/wiki/SRG">Requests for global
+     *  blocks</a>
+     *  @throws IOException if a network error occurs
+     *  @since 0.02
+     */
+    public Map<String, Long> globalBlockStats() throws IOException
+    {
+        if (gblocks.isEmpty())
+        {
+            Wiki.RequestHelper rh = metaWiki.new RequestHelper()
+                .withinDateRange(start, end);
+            gblocks = metaWiki.getLogEntries(WMFWiki.GLOBAL_BLOCK_LOG, "gblock2", rh);
+            gblocks.removeIf(log -> log.getTitle() == null || log.getComment() == null);
+        }
+        Map<String, Long> ret = new TreeMap<>();
+        ret.putAll(gblocks.stream()
+            .collect(Collectors.groupingBy(log -> log.getComment().toLowerCase(), Collectors.counting())));
+        ret.put("TOTAL", Long.valueOf(gblocks.size()));
+        return ret;
+    }
+    
+    /**
+     *  Groups similar global block reasons together. Block reasons are mutually
+     *  exclusive.
+     *  @param blockhist the block reason histogram to group
+     *  @return a histogram with grouped block reasons
+     *  @since 0.02
+     */
+    public Map<String, Long> groupGlobalBlockReasons(Map<String, Long> blockhist)
+    {
+        Map<String, Long> cleanblockhist = new TreeMap<>();
+        for (var entry : blockhist.entrySet())
+        {
+            String reason = entry.getKey();
+            long count = entry.getValue();
+            if (reason.equals("TOTAL"))
+                continue;
+
+            String key = "Unclassified";
+            // spamming
+            if (reason.equals(""))
+                key = "(no reason given)";
+            else if (reason.contains("spam"))
+                key = "Spamming";
+            else if (reason.contains("long-term abuse") || reason.contains("banned") || reason.contains("lock evasion"))
+                key = "Long term abuse";
+            else if (reason.contains("cross-wiki abuse") || reason.contains("crosswiki abuse") || reason.contains("cross wiki abuse"))
+                key = "Cross wiki abuse";
+            else if (reason.contains("open prox"))
+                key = "Open proxy/webhost";
+            else if (reason.contains("vandalism"))
+                key = "Vandalism";
+//            else
+//                System.out.println(reason + ": " + count);
+
+            cleanblockhist.merge(key, count, Long::sum);
+        }
+        return cleanblockhist;
     }
 
     public static void printHistogram(Map<String, Long> hist, boolean collapsible)
@@ -688,6 +793,16 @@ public class AdminStats
      *  @return (see above)
      */
     public List<Wiki.LogEntry> getProtectLogEntries()
+    {
+        return new ArrayList<>(protections);
+    }
+    
+    /**
+     *  Fetches the list of global block log entries used to compute statistics.
+     *  @return (see above)
+     *  @since 0.02
+     */
+    public List<Wiki.LogEntry> getGlobalBlockLogEntries()
     {
         return new ArrayList<>(protections);
     }

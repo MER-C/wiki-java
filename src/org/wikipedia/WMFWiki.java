@@ -54,6 +54,19 @@ public class WMFWiki extends Wiki
      *  @see Wiki#getLogEntries
      */
     public static final String SPAM_BLACKLIST_LOG = "spamblacklist";
+    
+    /**
+     *  Denotes the global auth log (contains (un)lock/(un)hide actions). 
+     *  Requires extension CentralAuth.
+     *  @see Wiki#getLogEntries
+     */
+    public static final String GLOBAL_AUTH_LOG = "globalauth";
+    
+    /**
+     *  Denotes the global (IP) block log. Requires extension GlobalBlocking.
+     *  @see Wiki#getLogEntries
+     */
+    public static final String GLOBAL_BLOCK_LOG = "gblblock";
 
     /**
      *  Creates a new MediaWiki API client for the WMF wiki that has the given 

@@ -7,6 +7,12 @@ error_handlers:
 automatic_scaling:
     min_instances: 1
     max_instances: 1
+    min_pending_latency: 15000ms
+    max_pending_latency: 15000ms
+    max_concurrent_requests: 80
+
+inbound_services:
+  - warmup
 
 #handlers:
 #  - url: '/'

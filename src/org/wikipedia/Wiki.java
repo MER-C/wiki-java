@@ -5942,6 +5942,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "blocks");
+        getparams.put("bkprop", "id|user|by|timestamp|expiry|reason|flags|restrictions");
         if (helper != null)
         {
             helper.setRequestType("bk");
@@ -5962,7 +5963,7 @@ public class Wiki implements Comparable<Wiki>
             for (int a = line.indexOf("<block "); a > 0; a = line.indexOf("<block ", ++a))
             {
                 // find entry
-                int b = line.indexOf("/>", a);
+                int b = Math.max(line.indexOf("/>", a), line.indexOf("</block>", a));
                 String temp = line.substring(a, b);
 
                 String blocker = parseAttribute(temp, "by", 0);
@@ -6141,6 +6142,23 @@ public class Wiki implements Comparable<Wiki>
                 if (s.contains("nousertalk")) // cannot edit talk page
                     details.put("nousertalk", "true");
                 details.put("expiry", s.substring(c, d));
+                
+                // partial block parameters
+                System.out.println(s);
+                if (s.contains("<restrictions>"))
+                {
+                    details.put("partial", "true");
+                    if (s.contains("<namespaces>"))
+                    {
+                        details.put("type", "namespaces");
+                        // TODO: add the actual namespaces
+                    }
+                    else if (s.contains("<pages>"))
+                    {
+                        details.put("type", "pages");
+                        // TODO: add the actual pages
+                    }
+                }
             }
         }
         else if (type.equals(PROTECTION_LOG))
