@@ -99,8 +99,8 @@ public class AllWikiLinksearch
         }
         wikilist.add(Wiki.newSession("meta.wikimedia.org"));
         wikilist.add(Wiki.newSession("commons.wikimedia.org"));
-        wikilist.add(Wiki.newSession("mediawiki.org"));
-        wikilist.add(Wiki.newSession("wikidata.org"));
+        wikilist.add(Wiki.newSession("www.mediawiki.org"));
+        wikilist.add(Wiki.newSession("www.wikidata.org"));
         MAJOR_WIKIS = Collections.unmodifiableList(wikilist);
     }
     
@@ -212,6 +212,7 @@ public class AllWikiLinksearch
             }
             catch (IOException ex)
             {
+                ex.printStackTrace();
                 return null;
             }
         }, (wiki1, wiki2) -> { throw new RuntimeException("Duplicate wikis!"); }, TreeMap::new));

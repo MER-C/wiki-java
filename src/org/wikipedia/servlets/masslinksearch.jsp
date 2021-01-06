@@ -6,7 +6,7 @@
     Affero GNU GPL version 3 or later, see <https://www.gnu.org/licenses/agpl.html> 
     for details. There is NO WARRANTY, to the extent permitted by law.
 -->
-
+<%@ include file="security.jspf" %>
 <%
     request.setAttribute("toolname", "Mass linksearch");
 

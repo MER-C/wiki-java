@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --%>
-
+<%@ include file="security.jspf" %>
 <%@ include file="datevalidate.jspf" %>
 <%
     request.setAttribute("toolname", "Contribution surveyor");
@@ -98,7 +98,7 @@
 This tool generates a listing of a user's edits for use at <a
 href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations</a>
 and other venues. It isolates and ranks major edits by size. A query limit of
-35000 edits applies.
+10000 edits (after namespace filter and minor edit exclusion) applies.
 
 <p>
 <form action="./contributionsurveyor.jsp" method=GET>
