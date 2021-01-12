@@ -21,6 +21,7 @@
 package org.wikipedia.tools;
 
 import java.io.IOException;
+import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,8 +45,6 @@ public class AdminStats
         metaWiki = Wiki.newSession("meta.wikimedia.org");
     }
     
-    // TODO: global block log
-    
     /**
      *  Runs this program. You must supply a start and end date.
      *  @param args the command line arguments
@@ -66,6 +65,11 @@ public class AdminStats
             .addBooleanFlag("--globalblocks", "Fetch statistics for global blocks")
             .addBooleanFlag("--login", "Adds a login prompt to access high limits")
             .parse(args);
+        if (!options.containsKey("--start") || !options.containsKey("--end"))
+        {
+            System.err.println("ERROR: You must specify a start and end date.");
+            System.exit(1);
+        }
         OffsetDateTime start = OffsetDateTime.parse(options.get("--start"));
         OffsetDateTime end = OffsetDateTime.parse(options.get("--end"));
         boolean printfull = options.containsKey("--printfull");
@@ -85,7 +89,7 @@ public class AdminStats
                 lockhist = stats.groupLockReasons(lockhist);
             System.out.println("==Lock stats==");
             System.out.println("" + total + " locks between " + start + " and " + end);
-            printHistogram(lockhist, printfull);
+            export(lockhist, "locks.csv");
         }
 
         if (options.containsKey("--blocks"))
@@ -101,7 +105,7 @@ public class AdminStats
                 blockhist = stats.groupBlockReasons(blockhist);
             System.out.println("==Block stats==");
             System.out.println("" + total + " blocks between " + start + " and " + end);
-            printHistogram(blockhist, printfull);
+            export(blockhist, "blocks.csv");
         }
 
         if (options.containsKey("--deletions"))
@@ -112,7 +116,7 @@ public class AdminStats
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("==Deletion stats==");
             System.out.println("" + total + " deletions between " + start + " and " + end);
-            printHistogram(deletehist, printfull);
+            export(deletehist, "deletions-all.csv");
 
             deletehist = stats.deleteStats(Wiki.MAIN_NAMESPACE);
             total = deletehist.get("TOTAL");
@@ -120,7 +124,7 @@ public class AdminStats
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("===Main namespace===");
             System.out.println("" + total + " deletions between " + start + " and " + end);
-            printHistogram(deletehist, printfull);
+            export(deletehist, "deletions-main.csv");
 
             deletehist = stats.deleteStats(Wiki.USER_NAMESPACE);
             total = deletehist.get("TOTAL");
@@ -128,7 +132,7 @@ public class AdminStats
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("===User namespace===");
             System.out.println("" + total + " deletions between " + start + " and " + end);
-            printHistogram(deletehist, printfull);
+            export(deletehist, "deletions-user.csv");
 
             deletehist = stats.deleteStats(118); // draft namespace
             total = deletehist.get("TOTAL");
@@ -136,7 +140,7 @@ public class AdminStats
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("===Draft namespace===");
             System.out.println("" + total + " deletions between " + start + " and " + end);
-            printHistogram(deletehist, printfull);
+            export(deletehist, "deletions-draft.csv");
         }
         
         if (options.containsKey("--protections"))
@@ -147,7 +151,7 @@ public class AdminStats
                 prothist = stats.groupProtectionReasons(prothist);
             System.out.println("==Protection stats==");
             System.out.println("" + total + " protections between " + start + " and " + end);
-            printHistogram(prothist, printfull);
+            export(prothist, "protections-all.csv");
             
             prothist.clear();
             prothist = stats.protectStats(Wiki.MAIN_NAMESPACE);
@@ -156,7 +160,7 @@ public class AdminStats
                 prothist = stats.groupProtectionReasons(prothist);
             System.out.println("===Main namespace===");
             System.out.println("" + total + " protections between " + start + " and " + end);
-            printHistogram(prothist, printfull);
+            export(prothist, "protections-main.csv");
         }
         
         if (options.containsKey("--globalblocks"))
@@ -167,7 +171,7 @@ public class AdminStats
                 blockhist = stats.groupGlobalBlockReasons(blockhist);
             System.out.println("==Global block stats==");
             System.out.println("" + total + " global blocks between " + start + " and " + end);
-            printHistogram(blockhist, printfull);
+            export(blockhist, "gblocks.csv");
         }
     }
 
@@ -744,23 +748,20 @@ public class AdminStats
         return cleanblockhist;
     }
 
-    public static void printHistogram(Map<String, Long> hist, boolean collapsible)
+    /**
+     *  Exports results to wikitext and prints them out to standard output, and
+     *  exports results to CSV writing them to the given filename.
+     *  @param hist the histogram to export
+     *  @param filename the CSV filename to export to
+     *  @throws IOException if a filesystem error occurs
+     */
+    public static void export(Map<String, Long> hist, String filename) throws IOException
     {
-        if (collapsible)
-            System.out.println("{| class=\"wikitable sortable collapsible collapsed\"");
-        else
-            System.out.println("{| class=\"wikitable sortable\"");
-
-        System.out.println("! Reason !! Count");
-        for (var entry : hist.entrySet())
-        {
-            String reason = collapsible ? "<nowiki>" + entry.getKey() + "</nowiki>" : entry.getKey();
-            System.out.print(WikitextUtils.addTableRow(List.of(reason, entry.getValue().toString())));
-        }
-
-        System.out.println("|}");
+        DataTable dt = DataTable.create(hist, List.of("Reason", "Count"));
+        System.out.println(dt.formatAsWikitext());
+        Files.writeString(Paths.get(filename), dt.formatAsCSV());
     }
-    
+       
     /**
      *  Fetches the list of block log entries used to compute statistics.
      *  @return (see above)

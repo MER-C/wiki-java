@@ -96,8 +96,8 @@ public class WikitextUtils
     
     /**
      *  Removes HTML comments from the supplied string. 
-     *  @param delta the string to strip external links from
-     *  @return the string removed of external links
+     *  @param delta the string to strip HTML comments from
+     *  @return the string minus HTML comments
      *  @since 0.02
      */
     public static String removeComments(String delta)
@@ -105,7 +105,7 @@ public class WikitextUtils
         while (delta.contains("<!--"))
         {
             int a = delta.indexOf("<!--");
-            int b = delta.indexOf("-->");
+            int b = delta.indexOf("-->", a);
             if (b < 0)
                 delta = delta.substring(0, a);
             else

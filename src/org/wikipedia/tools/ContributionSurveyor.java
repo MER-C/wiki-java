@@ -107,12 +107,12 @@ public class ContributionSurveyor
         // fetch user list
         if (user != null)
             users.add(user);
-        else if (category != null)
+        if (category != null)
         {
             for (String member : homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
                 users.add(homewiki.removeNamespace(member));
         }
-        else if (wikipage != null)
+        if (wikipage != null)
         {
             String text = homewiki.getPageText(List.of(wikipage)).get(0);
             List<String> list = Pages.parseWikitextList(text);
@@ -120,7 +120,7 @@ public class ContributionSurveyor
                 if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
                     users.add(homewiki.removeNamespace(temp));
         }
-        else // file IO
+        if (users.isEmpty()) // file IO
         {
             Path path = null;
             if (infile == null)

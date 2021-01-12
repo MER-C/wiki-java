@@ -54,5 +54,6 @@ public class WikitextUtilsTest
         assertEquals("Blah ",       WikitextUtils.removeComments("Blah <!-- Unbalanced comment"));
         assertEquals("A  B  C",     WikitextUtils.removeComments("A <!-- Two --> B <!-- Comments --> C"));
         assertEquals("A  end2 -->", WikitextUtils.removeComments("A <!-- Two ends --> end2 -->"));
+        assertEquals("-->End at 0", WikitextUtils.removeComments("-->End at 0<!--"));
     }
 }
