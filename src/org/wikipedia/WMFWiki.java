@@ -678,7 +678,6 @@ public class WMFWiki extends Wiki
         try
         {
             String response = makeApiCall(new HashMap<>(), params, "pageTriageAction");
-            System.out.println(response);
             // done
             if (!response.contains("<pagetriageaction result=\"success\""))
                 checkErrorsAndUpdateStatus(response, "pageTriageAction");
