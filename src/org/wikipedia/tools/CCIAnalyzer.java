@@ -1,5 +1,5 @@
 /**
- *  @(#)CCIAnalyzer.java 0.05 25/07/2020
+ *  @(#)CCIAnalyzer.java 0.06 03/04/2021
  *  Copyright (C) 2013 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 package org.wikipedia.tools;
 
 import java.io.*;
-import java.nio.file.Files;
+import java.nio.file.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
@@ -42,19 +42,14 @@ import org.wikipedia.*;
  *  </pre>
  * 
  *  @author MER-C
- *  @version 0.05
+ *  @version 0.06
  */
 public class CCIAnalyzer
 {
     private Wiki wiki;
-    private int diffcount = 0;
-    private int baseremovedarticles = 0;
-    private int baseremoveddiffs = 0;
-    private List<String> diffshort, diffs, minoredits;
     private Predicate<String> cullingfn;
     private Function<String, String> filterfn;
     private Predicate<String> titlefn;
-    private String cci;
     
     // Default size addition limit for CCIs
     private static int MAX_EDIT_SIZE = 150;
@@ -79,18 +74,47 @@ public class CCIAnalyzer
             .addBooleanFlag("--targs", "Remove short template arguments")
             .addBooleanFlag("--comments", "Remove all HTML comments (aggressive)")
             .addBooleanFlag("--listpages", "Removes all list pages (aggressive)")
+            .addBooleanFlag("--single", "Only cull the supplied page")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
-            .addVersion("CCIAnalyzer v0.05\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt, example.txt.001, example.txt.002, ...")
+            .addVersion("CCIAnalyzer v0.06\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
             .parse(args);
         
         CCIAnalyzer analyzer = new CCIAnalyzer();
-        int wordcount = Integer.parseInt(parsedargs.getOrDefault("--numwords", "9"));
+        int wordcount = Integer.parseInt(parsedargs.getOrDefault("--numwords", "10"));
 
+        // output file(s)
+        String outfile = parsedargs.get("--outfile");
+        if (outfile == null)
+        {
+            JFileChooser fc = new JFileChooser();
+            fc.setDialogTitle("Select output file");
+            if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
+                outfile = fc.getSelectedFile().getPath();
+        }
+        if (outfile == null)
+        {
+            System.out.println("Error: No output file selected.");
+            System.exit(0);
+        }
+
+        // load CCIs
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
         enWiki.setLogLevel(Level.WARNING);
         String ccipage = parsedargs.get("default");
-        if (ccipage == null)
+        List<CCIPage> pages;
+        if (ccipage != null)
+        {
+            if (parsedargs.containsKey("--single"))
+                pages = analyzer.loadWikiPages(enWiki, List.of(ccipage));
+            else
+            {
+                List<String> ccipages = enWiki.prefixIndex(ccipage);
+                pages = analyzer.loadWikiPages(enWiki, ccipages);
+            }
+        }
+        else
         {
             // read in from file
             JFileChooser fc = new JFileChooser();
@@ -103,11 +127,10 @@ public class CCIAnalyzer
                 temp.append(line);
                 temp.append("\n");
             }
-            analyzer.loadString(enWiki, temp.toString());
+            pages = List.of(analyzer.loadString(enWiki, temp.toString()));
         }
-        else
-            analyzer.loadWikiPage(enWiki, ccipage);
 
+        // set up culling
         Predicate<String> cullingfn = diff -> whitelistCull(diff) && 
             analyzer.wordCountCull(diff, wordcount) && tableCull(diff);
         if (parsedargs.containsKey("--lists"))
@@ -132,8 +155,16 @@ public class CCIAnalyzer
             titlefn = titlefn.and(CCIAnalyzer::removeListPages);
         analyzer.setTitleFunction(titlefn);
         
-        analyzer.analyzeDiffs();
-        analyzer.writeOutput();
+        // do the stuff
+        Path path = Paths.get(outfile);
+        int counter = 0;
+        for (CCIPage page : pages)
+        {
+            analyzer.loadDiffs(page);
+            analyzer.analyzeDiffs(page);
+            Files.writeString(path, analyzer.createOutput(page));
+            path = Paths.get(outfile + String.format(".%03d", ++counter));
+        }
     }
     
     /**
@@ -152,10 +183,6 @@ public class CCIAnalyzer
         titlefn = CCIAnalyzer::removeDisambiguationPages;
         filterfn = Function.identity();
         cullingfn = diff -> whitelistCull(diff) && wordCountCull(diff, 10) && tableCull(diff);
-        
-        diffshort = new ArrayList<>(1000);
-        diffs = new ArrayList<>(1000);
-        minoredits = new ArrayList<>(500);
     }
     
     /**
@@ -207,50 +234,50 @@ public class CCIAnalyzer
     }
     
     /**
-     *  Loads diffs to analyze from the given wiki page. Diffs must be of the
-     *  format [[Special:Diff/123456]].
+     *  Loads the given pages and filters them.
      *  @param wiki the wiki the page is on
-     *  @param page the page to load from
+     *  @param pages the pages to load from
+     *  @return the loaded and filtered pages
      *  @throws IOException if a network error occurs
      *  @since 0.02
      */
-    public void loadWikiPage(Wiki wiki, String page) throws IOException
+    public List<CCIPage> loadWikiPages(Wiki wiki, List<String> pages) throws IOException
     {
-        cci = wiki.getPageText(List.of(page)).get(0);
         this.wiki = wiki;
-        filterPage();
-        loadDiffs();
+        List<CCIPage> ccis = new ArrayList<>();
+        List<String> text = wiki.getPageText(pages);
+        for (int i = 0; i < text.size(); i++)
+        {
+            CCIPage page = new CCIPage(pages.get(i), text.get(i));
+            filterPage(page);
+            ccis.add(page);
+        }
+        return ccis;
     }
     
     /**
-     *  Loads diffs from the supplied String. Diffs must be of the format 
-     *  [[Special:Diff/123456]].
+     *  Loads the given string and filters it.
      *  @param wiki the wiki to load diffs from
-     *  @param cci the diffs to load
+     *  @param cci the string to load
+     *  @return the loaded CCIPage
      *  @since 0.02
      */
-    public void loadString(Wiki wiki, String cci)
+    public CCIPage loadString(Wiki wiki, String cci)
     {
-        this.cci = cci;
         this.wiki = wiki;
-        filterPage();
-        loadDiffs();
+        CCIPage page = new CCIPage("[Loaded String]", cci);
+        filterPage(page);
+        return page;
     }
     
     /**
      *  Filters entire articles from a CCI before diffs are loaded.
+     *  @param cci the CCI page to be filtered
      */
-    private void filterPage()
+    private void filterPage(CCIPage page)
     {
-        // count number of diffs
-        baseremovedarticles = 0;
-        baseremoveddiffs = 0;
-        diffcount = 0;
-        for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
-            diffcount++;
-
         StringBuilder sb = new StringBuilder();
-        for (String line : cci.split("\n"))
+        for (String line : page.cci.split("\n"))
         {
             if (!line.startsWith("*[[:") && !line.startsWith("*'''N''' [[:"))
             {
@@ -267,27 +294,35 @@ public class CCIAnalyzer
             }
             else
             {
-                baseremovedarticles++;
+                page.baseremovedarticles++;
                 // count number of removed diffs
                 for (int i = line.indexOf("[[Special:Diff/"); i >= 0; i = line.indexOf("[[Special:Diff/", ++i))
-                    baseremoveddiffs++;
+                    page.baseremoveddiffs++;
             }
         }
-        cci = sb.toString();
+        page.cci = sb.toString();
     }
     
     /**
-     *  Loads and parses diffs from a loaded CCI.
+     *  Loads and parses diffs from a loaded CCI. Diffs must be of the format 
+     *  [[Special:Diff/123456]].
+     *  @param ccipage the CCI page containing the diffs to be loaded
+     *  @throws IllegalArgumentException if the CCI is not loaded
      *  @since 0.02
      */
-    private void loadDiffs()
+    public void loadDiffs(CCIPage ccipage)
     {
+        String cci = ccipage.cci;
+        if (cci == null)
+            throw new IllegalArgumentException("CCI not loaded: [[" + ccipage.title + "]]");
+        System.err.println("Loading [[" + ccipage.title + "]]:");
+        
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
         String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
         String deltaend = "</ins>";
-        diffs.clear();
-        diffshort.clear();
+        ccipage.diffs.clear();
+        ccipage.diffshort.clear();
         
         // parse the list of diffs
         int parsed = 0;
@@ -312,8 +347,8 @@ public class CCIAnalyzer
                 // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
                 diff = diff.toLowerCase(wiki.locale());
                 diff = diff.replace(deltaend + " " + deltabegin, " ");
-                diffshort.add(edit);
-                diffs.add(diff);
+                ccipage.diffshort.add(edit);
+                ccipage.diffs.add(diff);
                 exception = false;
             }
             catch (IOException ex)
@@ -339,13 +374,14 @@ public class CCIAnalyzer
             }
             
             long now = System.currentTimeMillis();
-            double percent = 100.0 * parsed / diffcount;
+            double percent = 100.0 * parsed / ccipage.diffcount;
             int elapsed = (int)((now - start) / 1000.0);
-            int projected = elapsed * diffcount / parsed;
+            int projected = elapsed * ccipage.diffcount / parsed;
             int eta = projected - elapsed;
             System.err.printf("\r\033[K%d of %d diffs loaded (%2.2f%%, %d:%02d remaining)", 
-                parsed, diffcount - baseremoveddiffs, percent, eta / 60, eta % 60);
+                parsed, ccipage.diffcount - ccipage.baseremoveddiffs, percent, eta / 60, eta % 60);
         }
+        System.err.println();
     }
     
     /**
@@ -354,11 +390,12 @@ public class CCIAnalyzer
      *  culling functions may be experimented with to see which works best. 
      *  Culling is not cumulative unless you save the wikipage in between and 
      *  reload the diffs.
+     *  @param page the CCI page to analyze diffs for
      *  @since 0.02
      */
-    public void analyzeDiffs()
+    public void analyzeDiffs(CCIPage page)
     {
-        minoredits.clear();
+        page.minoredits.clear();
         
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
@@ -367,9 +404,9 @@ public class CCIAnalyzer
         String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
         String deltaend = "</ins>";
         
-        for (int i = 0; i < diffs.size(); i++)
+        for (int i = 0; i < page.diffs.size(); i++)
         {
-            String diff = diffs.get(i);
+            String diff = page.diffs.get(i);
             // If the diff is empty (see https://en.wikipedia.org/w/index.php?diff=343490272)
             // it will not contain diffaddedbegin -> default major to true.
             boolean major = true;
@@ -404,44 +441,40 @@ public class CCIAnalyzer
                 j = y2;
             }
             if (!major)
-                minoredits.add(diffshort.get(i));
-            
+                page.minoredits.add(page.diffshort.get(i));
         }
     }
     
     /**
-     *  Returns the list of edits flagged as minor.
-     *  @return (see above)
+     *  Generates output for the given CCI page.
+     *  @param page the CCI page to generate output for
      *  @since 0.02
      */
-    public List<String> getMinorEdits()
+    public String createOutput(CCIPage page)
     {
-        return new ArrayList<>(minoredits);
-    }
-    
-    /**
-     *  Writes the CCI with trivial diffs removed to standard output.
-     *  @since 0.02
-     */
-    public void writeOutput()
-    {
-        System.err.println();
-        StringBuilder ccib = new StringBuilder(cci);
+        StringBuilder out = new StringBuilder();
+        StringBuilder ccib = new StringBuilder(page.cci);
+        if (ccib == null)
+            throw new IllegalArgumentException("CCI not loaded: [[" + page.title + "]]");
         
         // remove all minor edits from the CCI
-        for (String minoredit : minoredits)
+        for (String minoredit : page.minoredits)
         {
             int x = ccib.indexOf(minoredit);
             ccib.delete(x, x + minoredit.length());
             
+            // sanity check output section
             // we don't care about minor edits that add less than 500 chars
             int yy = minoredit.indexOf('|') + 2;
             int zz = minoredit.indexOf(")]]");
             int size = Integer.parseInt(minoredit.substring(yy, zz));
             if (size > 499)
-                System.out.println(minoredit);
+            {
+                out.append(minoredit);
+                out.append("\n");
+            }
         }
-        System.out.println("----------------------");
+        out.append("----------------------\n");
         
         // clean up output CCI listing
         String[] articles = ccib.toString().split("\\n");
@@ -459,9 +492,11 @@ public class CCIAnalyzer
             cleaned.append(article);
             cleaned.append("\n");
         }
-        System.out.println(cleaned);
-        System.err.printf("%d of %d diffs and %d articles removed.%n", baseremoveddiffs + minoredits.size(), 
-            diffcount, baseremovedarticles + removedarticles);
+        out.append(cleaned);
+        out.append("\n");
+        System.err.printf("%d of %d diffs and %d articles removed.%n", page.baseremoveddiffs + page.minoredits.size(), 
+            page.diffcount, page.baseremovedarticles + removedarticles);
+        return out.toString();
     }
     
     /**
@@ -705,5 +740,43 @@ public class CCIAnalyzer
     public static boolean removeListPages(String title)
     {
         return !title.startsWith("List of ");
+    }
+    
+    /**
+     *  A representation of a page in a CCI.
+     *  @since 0.06
+     */
+    public class CCIPage
+    {
+        private String title;
+        private String cci;
+        private int diffcount;
+        private int baseremoveddiffs;
+        private int baseremovedarticles;
+        private List<String> diffshort, diffs, minoredits;
+        
+        private CCIPage(String title, String cci)
+        {
+            this.title = title;
+            this.cci = cci;
+            
+            diffshort = new ArrayList<>(1000);
+            diffs = new ArrayList<>(1000);
+            minoredits = new ArrayList<>(500);
+            
+            // count diffs
+            for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
+                diffcount++;
+        }
+        
+       /**
+        *  Returns the list of edits flagged as minor.
+        *  @return (see above)
+        *  @since 0.02
+        */
+       public List<String> getMinorEdits()
+       {
+           return new ArrayList<>(minoredits);
+       }
     }
 }

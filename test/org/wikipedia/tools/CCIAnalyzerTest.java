@@ -53,15 +53,17 @@ public class CCIAnalyzerTest
         String cci = 
             "*'''N''' [[:Karpagam (disambiguation)]] (1 edit): [[Special:Diff/902209948|(+269)]]\n" +
             "*[[:Finding Dory]] (1 edit): [[Special:Diff/858890717|(+354)]]";
-        analyzer.loadString(enWiki, cci);
-        analyzer.analyzeDiffs();
-        assertEquals(Collections.emptyList(), analyzer.getMinorEdits());
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertEquals(Collections.emptyList(), page.getMinorEdits());
         
         // the default is disambiguation culling = on
         analyzer.setTitleFunction(title -> true);
-        analyzer.loadString(enWiki, cci);
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/902209948|(+269)]]"), analyzer.getMinorEdits());
+        page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/902209948|(+269)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -75,14 +77,16 @@ public class CCIAnalyzerTest
             "*[[:List of Tamil films of 2011]] (1 edit): [[Special:Diff/472267771|(+315)]]\n" +
             "*[[:Ramanujan (film)]] (3 edits): [[Special:Diff/573584256|(+643)]]";
         analyzer.setTitleFunction(CCIAnalyzer::removeListPages);
-        analyzer.loadString(enWiki, cci);
-        analyzer.analyzeDiffs();
-        assertEquals(Collections.emptyList(), analyzer.getMinorEdits());
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertEquals(Collections.emptyList(), page.getMinorEdits());
         
         analyzer.setTitleFunction(title -> true);
-        analyzer.loadString(enWiki, cci);
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/472267771|(+315)]]"), analyzer.getMinorEdits());
+        page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/472267771|(+315)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -104,9 +108,10 @@ public class CCIAnalyzerTest
         String cci = "*[[:Smiley (1956 film)]] (2 edits): [[Special:Diff/476809081|(+460)]][[Special:Diff/446793589|(+205)]]";
         analyzer.setFilteringFunction(CCIAnalyzer::removeReferences);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
-        analyzer.loadString(enWiki, cci);
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/446793589|(+205)]]"), analyzer.getMinorEdits());
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/446793589|(+205)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -124,10 +129,11 @@ public class CCIAnalyzerTest
         String cci = 
             "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]" +
             "*[[:Sabash Thambi]] (1 edit): [[Special:Diff/682049136|(+578)]]";
-        analyzer.loadString(enWiki, cci);
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(CCIAnalyzer::whitelistCull);
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), analyzer.getMinorEdits());
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -140,13 +146,14 @@ public class CCIAnalyzerTest
             // 15 words, but two of them are just wikitext remnants - should be
             // removed as punctuation
             "*'''N''' [[:SP-354]] (1 edit): [[Special:Diff/255072765|(+286)]]";
-        analyzer.loadString(enWiki, cci);
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 12));
-        analyzer.analyzeDiffs();
-        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertTrue(page.getMinorEdits().isEmpty());
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 13));
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/154400451|(+283)]]", "[[Special:Diff/255072765|(+286)]]"), analyzer.getMinorEdits());
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/154400451|(+283)]]", "[[Special:Diff/255072765|(+286)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -162,12 +169,13 @@ public class CCIAnalyzerTest
         String cci = "*'''N''' [[:We Can Be Heroes (disambiguation)]] (1 edit): [[Special:Diff/895761173|(+486)]]";
         analyzer.setTitleFunction(title -> true);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 11));
-        analyzer.loadString(enWiki, cci);
-        analyzer.analyzeDiffs();
-        assertTrue(analyzer.getMinorEdits().isEmpty());
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertTrue(page.getMinorEdits().isEmpty());
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 11) && CCIAnalyzer.listItemCull(diff));
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/895761173|(+486)]]"), analyzer.getMinorEdits());
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/895761173|(+486)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -181,13 +189,14 @@ public class CCIAnalyzerTest
         // INTEGRATION TEST
         // from [[Wikipedia:Contributor copyright investigations/Lightburst]]
         String cci = "*'''N''' [[:7Seventy7]] (2 edits): [[Special:Diff/906034889|(+6049)]][[Special:Diff/906119432|(+164)]]";
-        analyzer.loadString(enWiki, cci);
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
-        analyzer.analyzeDiffs();
-        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertTrue(page.getMinorEdits().isEmpty());
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9) && CCIAnalyzer.fileAdditionCull(diff));
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/906119432|(+164)]]"), analyzer.getMinorEdits());
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/906119432|(+164)]]"), page.getMinorEdits());
     }
     
     @Test
@@ -196,13 +205,14 @@ public class CCIAnalyzerTest
         // INTEGRATION TEST
         // from [[Wikipedia:Contributor copyright investigations/Haikavin1990]]
         String cci = "*[[:Manidhanum Dheivamagalam]] (2 edits): [[Special:Diff/854000150|(+1472)]][[Special:Diff/854001036|(+728)]]";
-        analyzer.loadString(enWiki, cci);
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
-        analyzer.analyzeDiffs();
-        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertTrue(page.getMinorEdits().isEmpty());
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9) && CCIAnalyzer.tableCull(diff));
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/854001036|(+728)]]"), analyzer.getMinorEdits());
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/854001036|(+728)]]"), page.getMinorEdits());
     }
     
     /**
@@ -223,13 +233,14 @@ public class CCIAnalyzerTest
             // Test only proves this is not problematic.
             // from [[Wikipedia:Contributor copyright investigations/20150507 02]]
             "*'''N''' [[:List of Papua New Guinea ODI cricket centurions]] (1 edit): [[Special:Diff/880649594|(+1775)]]";
-        analyzer.loadString(enWiki, cci);
+        CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
-        analyzer.analyzeDiffs();
-        assertTrue(analyzer.getMinorEdits().isEmpty());
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertTrue(page.getMinorEdits().isEmpty());
         analyzer.setFilteringFunction(WikitextUtils::removeComments);
-        analyzer.analyzeDiffs();
-        assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), analyzer.getMinorEdits());
+        analyzer.analyzeDiffs(page);
+        assertEquals(List.of("[[Special:Diff/924018716|(+458)]]"), page.getMinorEdits());
                 
         // from [[Wikipedia:Contributor copyright investigations/Dr. Blofeld 40]] - infoboxes
         // cci = "*[[:Ann Thongprasom]] (1 edit): [[Special:Diff/130352114|(+460)]]" +

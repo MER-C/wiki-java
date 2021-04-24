@@ -139,14 +139,8 @@ public class ContributionSurveyor
             }
             List<String> templist = Files.readAllLines(path);
             for (String line : templist)
-            {
                 if (homewiki.namespace(line) == Wiki.USER_NAMESPACE)
-                {
-                    // line = line.replace("[*#]\\s?\\[\\[:?", "");
-                    // line = line.replace("\\]\\]", "");
                     users.add(homewiki.removeNamespace(line));
-                }
-            }
         }
 
         // output file
