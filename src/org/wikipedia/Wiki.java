@@ -1669,12 +1669,13 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("inprop", "protection|displaytitle|watchers");
         Map<String, Object> postparams = new HashMap<>();
         Map<String, Map<String, Object>> metamap = new HashMap<>();
-        // copy because redirect resolver overwrites
+        // copy because normalization and redirect resolvers overwrite
         List<String> pages2 = new ArrayList<>(pages);
         for (String temp : constructTitleString(pages))
         {
             postparams.put("titles", temp);
             String line = makeApiCall(getparams, postparams, "getPageInfo");
+            resolveNormalizedParser(pages2, line);
             if (resolveredirect)
                 resolveRedirectParser(pages2, line);
 
@@ -1683,9 +1684,13 @@ public class Wiki implements Comparable<Wiki>
             // </page>
             for (int j = line.indexOf("<page "); j > 0; j = line.indexOf("<page ", ++j))
             {
-                int x = line.indexOf("</page>", j);
+                int x = Math.max(line.indexOf("</page>", j), line.indexOf(" />", j));
                 String item = line.substring(j, x);
                 Map<String, Object> tempmap = new HashMap<>(15);
+
+                // either Special: or Media:, skip this page
+                if (item.contains("special=\"\""))
+                	continue;
 
                 // does the page exist?
                 String parsedtitle = parseAttribute(item, "title", 0);
@@ -1754,7 +1759,7 @@ public class Wiki implements Comparable<Wiki>
         // Reorder. Make a new HashMap so that inputpagename remains unique.
         for (int i = 0; i < pages2.size(); i++)
         {
-            Map<String, Object> tempmap = metamap.get(normalize(pages2.get(i)));
+            Map<String, Object> tempmap = metamap.get(pages2.get(i));
             if (tempmap != null)
             {
                 info[i] = new HashMap<>(tempmap);
@@ -1960,7 +1965,7 @@ public class Wiki implements Comparable<Wiki>
                     throw new UnsupportedOperationException("Cannot retrieve \"" + title + "\": namespace < 0.");
             isrevisions = false;
             count = titles.size();
-            // copy because redirect resolver overwrites
+            // copy because normalization and redirect resolvers overwrite
             titles2 = new ArrayList<>(titles);
         }
         else if (revids != null)
@@ -1988,8 +1993,12 @@ public class Wiki implements Comparable<Wiki>
             postparams.put(isrevisions ? "revids" : "titles", chunk);
             String temp = makeApiCall(getparams, postparams, "getText");
             String[] results = temp.split(isrevisions ? "<rev " : "<page ");
-            if (!isrevisions && resolveredirect)
-                resolveRedirectParser(titles2, results[0]);
+            if (!isrevisions)
+            {
+                resolveNormalizedParser(titles2, results[0]);
+                if (resolveredirect)
+                    resolveRedirectParser(titles2, results[0]);
+            }
 
             // skip first element to remove front crud
             for (int i = 1; i < results.length; i++)
@@ -2013,7 +2022,7 @@ public class Wiki implements Comparable<Wiki>
         String[] ret = new String[count];
         for (int i = 0; i < count; i++)
         {
-            String key = isrevisions ? String.valueOf(revids[i]) : normalize(titles2.get(i));
+            String key = isrevisions ? String.valueOf(revids[i]) : titles2.get(i);
             ret[i] = pageTexts.get(key);
         }
         log(Level.INFO, "getPageText", "Successfully retrieved text of " + count + (isrevisions ? " revisions." : " pages."));
@@ -2668,6 +2677,7 @@ public class Wiki implements Comparable<Wiki>
             {
                 // Split the result into individual listings for each article.
                 String[] x = line.split("<page ");
+                resolveNormalizedParser(titles2, x[0]);
                 if (resolveredirect)
                     resolveRedirectParser(titles2, x[0]);
 
@@ -2694,7 +2704,7 @@ public class Wiki implements Comparable<Wiki>
         for (var entry : temp)
             titletointerwiki.putAll(entry);
         for (String title : titles2)
-            ret.add(titletointerwiki.get(normalize(title)));
+            ret.add(titletointerwiki.get(title));
         
         log(Level.INFO, "getInterWikiLinks", "Successfully retrieved interwiki links for " + titles.size() + " pages.");
         return ret;
@@ -2889,7 +2899,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Gets the newest page name or the name of a page where the asked pages
      *  redirect.
-     *  @param titles a list of titles.
+     *  @param titles a list of titles. These are normalized in the process.
      *  @return for each title, the page redirected to or the original page
      *  title if not a redirect
      *  @throws IOException or UncheckedIOException if a network error occurs
@@ -2908,6 +2918,7 @@ public class Wiki implements Comparable<Wiki>
         {
             postparams.put("titles", blah);
             String line = makeApiCall(getparams, postparams, "resolveRedirects");
+            resolveNormalizedParser(ret, line);
             resolveRedirectParser(ret, line);
         }
         return ret;
@@ -2921,20 +2932,38 @@ public class Wiki implements Comparable<Wiki>
      *  @param inputpages the array of pages to resolve redirects for. Entries
      *  will be overwritten.
      *  @param xml the xml to parse
-     *  @throws UncheckedIOException if the namespace cache has not been
-     *  populated, and a network error occurs when populating it
      *  @since 0.34
      */
     protected void resolveRedirectParser(List<String> inputpages, String xml)
     {
         // expected form: <redirects><r from="Main page" to="Main Page"/>
         // <r from="Home Page" to="Home page"/>...</redirects>
-        // TODO: look for the <r> tag instead
         for (int j = xml.indexOf("<r "); j > 0; j = xml.indexOf("<r ", ++j))
         {
             String parsedtitle = parseAttribute(xml, "from", j);
             for (int i = 0; i < inputpages.size(); i++)
-                if (normalize(inputpages.get(i)).equals(parsedtitle))
+                if (inputpages.get(i).equals(parsedtitle))
+                    inputpages.set(i, parseAttribute(xml, "to", j));
+        }
+    }
+
+    /**
+     *  Parses the output of queries that normalize page titles.
+     *
+     *  @param inputpages the array of pages to normalize titles for. Entries
+     *  will be overwritten.
+     *  @param xml the xml to parse
+     *  @since 0.36
+     */
+    protected void resolveNormalizedParser(List<String> inputpages, String xml)
+    {
+    	// expected form: <normalized><n from="User:Male dewiki user" to="Benutzer:Male dewiki user"/>
+        // <r from="User:Female dewiki user" to="Benutzerin:Female dewiki user"/>...</normalized>
+        for (int j = xml.indexOf("<n "); j > 0; j = xml.indexOf("<n ", ++j))
+        {
+            String parsedtitle = parseAttribute(xml, "from", j);
+            for (int i = 0; i < inputpages.size(); i++)
+                if (inputpages.get(i).equals(parsedtitle))
                     inputpages.set(i, parseAttribute(xml, "to", j));
         }
     }
@@ -4140,12 +4169,17 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("action", "query");
         getparams.put("prop", "imageinfo");
         getparams.put("iiprop", "size|sha1|mime|metadata");
-        
+        // copy because normalization and redirect resolvers overwrite
+        List<String> files2 = new ArrayList<>(files);
+
         Map<String, Map<String, Object>> intermediate = new HashMap<>();
         for (String chunk : constructTitleString(files))
         {
             postparams.put("titles", chunk);            
             String line = makeApiCall(getparams, postparams, "getFileMetadata");
+            resolveNormalizedParser(files2, line);
+            if (resolveredirect)
+                resolveRedirectParser(files2, line);
             String[] results = line.split("<page ");
             for (int i = 1; i < results.length; i++) // 1 = skipping front crud
             {
@@ -4181,8 +4215,8 @@ public class Wiki implements Comparable<Wiki>
         
         // reorder results
         List<Map<String, Object>> ret = new ArrayList<>();
-        for (String localtitle : files)
-            ret.add(intermediate.get(normalize(localtitle)));
+        for (String normalizedtitle : files2)
+            ret.add(intermediate.get(normalizedtitle));
         return ret;
     }
 
@@ -5686,7 +5720,9 @@ public class Wiki implements Comparable<Wiki>
         {
             postparams.put("titles", titlestring);
             String result = makeApiCall(getparams, postparams, "getCategoryMemberCount");
-            // no redirect resolution, because category members don't follow redirects
+            resolveNormalizedParser(norm_cats, result);
+            if (resolveredirect)
+                resolveRedirectParser(norm_cats, result);
 
             // form: <page _idx="2504643" pageid="2504643" ns="14" title="Category:Albert Einstein">
             // <categoryinfo size="95" pages="87" files="0" subcats="8" />
@@ -5712,7 +5748,7 @@ public class Wiki implements Comparable<Wiki>
         // reorder
         List<int[]> ret = new ArrayList<>();
         for (String category : norm_cats)
-            ret.add(metamap.get(normalize(category)));
+            ret.add(metamap.get(category));
         log(Level.INFO, "getCategoryMemberCounts", "Successfully retrieved category member counts for " + categories.size() + " categories.");
         return ret;
     }
@@ -6144,7 +6180,6 @@ public class Wiki implements Comparable<Wiki>
                 details.put("expiry", s.substring(c, d));
                 
                 // partial block parameters
-                System.out.println(s);
                 if (s.contains("<restrictions>"))
                 {
                     details.put("partial", "true");
@@ -8075,7 +8110,7 @@ public class Wiki implements Comparable<Wiki>
     protected List<List<String>> makeVectorizedQuery(String queryPrefix, Map<String, String> getparams,
         List<String> titles, String caller, int limit, BiConsumer<String, List<String>> parser) throws IOException
     {
-        // copy array so redirect resolver doesn't overwrite
+        // copy because normalization and redirect resolvers overwrite
         List<String> titles2 = new ArrayList<>(titles);
         List<Map<String, List<String>>> stuff = new ArrayList<>();
         Map<String, Object> postparams = new HashMap<>();
@@ -8086,6 +8121,7 @@ public class Wiki implements Comparable<Wiki>
             {
                 // Split the result into individual listings for each article.
                 String[] x = line.split("<page ");
+                resolveNormalizedParser(titles2, x[0]);
                 if (resolveredirect)
                     resolveRedirectParser(titles2, x[0]);
 
@@ -8103,14 +8139,10 @@ public class Wiki implements Comparable<Wiki>
             }));
         }
 
-        // fill the return list
-        List<List<String>> ret = new ArrayList<>();
-        List<String> normtitles = new ArrayList<>();
-        for (String localtitle : titles2)
-        {
-            normtitles.add(normalize(localtitle));
-            ret.add(new ArrayList<>());
-        }
+        // prepare the return list
+        List<List<String>> ret = Stream.generate(() -> new ArrayList<String>())
+            .limit(titles2.size())
+            .collect(Collectors.toCollection(ArrayList::new));
         // then retrieve the results from the intermediate list of maps,
         // ensuring results correspond to inputs
         stuff.forEach(map ->
@@ -8118,7 +8150,7 @@ public class Wiki implements Comparable<Wiki>
             String parsedtitle = map.keySet().iterator().next();
             List<String> templates = map.get(parsedtitle);
             for (int i = 0; i < titles2.size(); i++)
-                if (normtitles.get(i).equals(parsedtitle))
+                if (titles2.get(i).equals(parsedtitle))
                     ret.get(i).addAll(templates);
         });
         return ret;
@@ -8641,24 +8673,19 @@ public class Wiki implements Comparable<Wiki>
      *  Cuts up a list of titles into batches for prop=X&amp;titles=Y type queries.
      *  @param titles a list of titles.
      *  @return the titles ready for insertion into a URL
-     *  @throws UncheckedIOException if the namespace cache has not been
-     *  populated, and a network error occurs when populating it
      *  @since 0.29
      */
     protected List<String> constructTitleString(List<String> titles)
     {
-        // sort and remove duplicates per https://mediawiki.org/wiki/API
-        TreeSet<String> ts = new TreeSet<>();
-        for (String title : titles)
-            ts.add(normalize(title));
-        List<String> titles_enc = new ArrayList<>(ts);
+        // sort and remove duplicates
+        List<String> titles_unique = titles.stream().sorted().distinct().collect(Collectors.toList());
         
         // actually construct the string
         ArrayList<String> ret = new ArrayList<>();
-        for (int i = 0; i < titles_enc.size() / slowmax + 1; i++)
+        for (int i = 0; i < titles_unique.size() / slowmax + 1; i++)
         {
             ret.add(String.join("|", 
-                titles_enc.subList(i * slowmax, Math.min(titles_enc.size(), (i + 1) * slowmax))));     
+            		titles_unique.subList(i * slowmax, Math.min(titles_unique.size(), (i + 1) * slowmax))));     
         }
         return ret;
     }
@@ -8666,7 +8693,10 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Convenience method for normalizing MediaWiki titles. (Converts all
      *  underscores to spaces, localizes namespace names, fixes case of first
-     *  char and does some other unicode fixes).
+     *  char and does some other unicode fixes). Beware that this will not
+     *  produce the same results as server-side normalization in a few corner
+     *  cases, most notably: HTML entities and gender distinction in the user
+     *  namespace prefix.
      *  @param s the string to normalize
      *  @return the normalized string
      *  @throws IllegalArgumentException if the title is invalid
