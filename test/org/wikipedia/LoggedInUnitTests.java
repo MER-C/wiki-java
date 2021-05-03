@@ -21,6 +21,7 @@ package org.wikipedia;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,9 +31,10 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class LoggedInUnitTests
 {
-    private final Wiki testWiki;
+    private static Wiki testWiki;
     
-    public LoggedInUnitTests() throws Exception
+    @BeforeAll
+    public static void setUpClass() throws Exception
     {
         testWiki = Wiki.newSession("test.wikipedia.org");
         org.wikiutils.LoginUtils.guiLogin(testWiki);
@@ -45,13 +47,13 @@ public class LoggedInUnitTests
         // one wiki instance = one session
         // https://github.com/MER-C/wiki-java/issues/157
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
-        enWiki.getPageText("Main Page");        
+        enWiki.getPageText(List.of("Main Page"));
         // should still be logged in (also checks whether the cookies work in
         // in the first place)...
         testWiki.setAssertionMode(Wiki.ASSERT_USER);
-        testWiki.getPageText("Main Page");
+        testWiki.getPageText(List.of("Main Page"));
         enWiki.setAssertionMode(Wiki.ASSERT_USER);
-        assertThrows(AssertionError.class, () -> enWiki.getPageText("Main Page"),
+        assertThrows(AssertionError.class, () -> enWiki.getPageText(List.of("Main Page")),
             "cross-contamination between sessions");        
     }       
     
@@ -76,7 +78,7 @@ public class LoggedInUnitTests
             testWiki.getImage(uploadDest, actual);
             assertArrayEquals(Files.readAllBytes(expected.toPath()), 
                 Files.readAllBytes(actual.toPath()), "upload: image");
-            assertEquals(description, testWiki.getPageText("File:" + uploadDest), "upload: description");
+            assertEquals(description, testWiki.getPageText(List.of("File:" + uploadDest)).get(0), "upload: description");
             assertEquals(reason, testWiki.getTopRevision("File:" + uploadDest).getComment(), "upload: reason");
 
             // upload via URL
@@ -95,7 +97,7 @@ public class LoggedInUnitTests
             // 1.55 MB file
             assertArrayEquals(Files.readAllBytes(expected.toPath()), 
                 Files.readAllBytes(actual.toPath()), "upload via url: image");
-            assertEquals(description, testWiki.getPageText("File:" + uploadDest), "upload via url: description");
+            assertEquals(description, testWiki.getPageText(List.of("File:" + uploadDest)).get(0), "upload via url: description");
             assertEquals(reason, testWiki.getTopRevision("File:" + uploadDest).getComment(), "upload via url: reason");
         }
         finally
@@ -113,7 +115,7 @@ public class LoggedInUnitTests
         String page = "User:MER-C/BotSandbox";
         String summary = "Test edit " + Math.random();
         testWiki.edit(page, text, summary);
-        assertEquals(text, testWiki.getPageText(page), "page text");
+        assertEquals(text, testWiki.getPageText(List.of(page)).get(0), "page text");
         assertEquals(summary, testWiki.getTopRevision(page).getComment(), "edit summary");
     }
 }

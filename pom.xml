@@ -1,7 +1,7 @@
 <project>
     <groupId>org.wikipedia</groupId>
     <artifactId>wiki-java</artifactId>
-    <version>0.36-SNAPSHOT</version>
+    <version>0.37-SNAPSHOT</version>
     <modelVersion>4.0.0</modelVersion>
 
     <build>
@@ -25,7 +25,7 @@
                                     <version>3.5.0</version>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <version>11</version>
+                                    <version>16</version>
                                 </requireJavaVersion>
                             </rules>
                         </configuration>
@@ -40,6 +40,8 @@
                     <configuration>
                         <source>11</source>
                         <target>11</target>
+                        <testSource>16</testSource>
+                        <testTarget>16</testTarget>
                         <includes>
                             <include>**/*.java</include>
                         </includes>
@@ -84,19 +86,14 @@
                     <version>3.0.0-M3</version>
                     <configuration>
                         <includes>
-                            <include>**/WikiTest.java</include>
-                            <include>**/WMFWikiTest.java</include>
-                            <include>**/EventsTest.java</include>
-                            <include>**/ExternalLinksTest.java</include>
-                            <include>**/PagesTest.java</include>
-                            <include>**/RevisionsTest.java</include>
-                            <include>**/UsersTest.java</include>
-                            <include>**/WikitextUtilsTest.java</include>
-                            <include>**/ArrayUtilsTest.java</include>
-                            <include>**/MathsAndStatsTest.java</include>
+                            <include>**/org/wikipedia/*Test.java</include>
                             <include>**/org/wikipedia/servlets/*Test.java</include>                            
                             <include>**/org/wikipedia/tools/*Test.java</include>
                         </includes>
+                        <excludes>
+                            <exclude>**/org/wikipedia/AdminUnitTests.java</exclude>
+                            <exclude>**/org/wikipedia/LoggedInUnitTests.java</exclude>
+                        </excludes>
                     </configuration>
                 </plugin>
                 <plugin>

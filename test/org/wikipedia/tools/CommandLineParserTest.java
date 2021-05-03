@@ -98,19 +98,25 @@ public class CommandLineParserTest
             .addBooleanFlag("--boolean", "A boolean flag.")
             .addSingleArgumentFlag("--flag", "[string]", "Set some value to string.")
             .buildHelpString();
-        String expected = "SYNOPSIS:\n" +
-            "\tjava TestProgram [test arguments]\n\n" +
-            "DESCRIPTION:\n" +
-            "\tA description of the program\n\n" +
-            "\t--help\n" +
-            "\t\tPrints this screen and exits.\n" +
-            "\t--version\n" +
-            "\t\tOutputs version information and exits.\n\n" +
-            "Options:\n" + 
-            "\t--boolean\n" +
-            "\t\tA boolean flag.\n" +
-            "\t--flag [string]\n" +
-            "\t\tSet some value to string.\n";
+        String expected = """
+            SYNOPSIS:
+                java TestProgram [test arguments]
+            
+            DESCRIPTION:
+                A description of the program
+            
+                --help
+                    Prints this screen and exits.
+                --version
+                    Outputs version information and exits.
+            
+            Options:
+                --boolean
+                    A boolean flag.
+                --flag [string]
+                    Set some value to string.
+            """.replace("    ", "\t");
+        System.out.println(expected);
         System.out.println(actual);
         assertEquals(expected, actual);
     }

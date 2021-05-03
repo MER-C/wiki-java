@@ -59,14 +59,15 @@ public class GapFillingTextSearchTest
 
         Map<String, String> inputs = new HashMap<>();
         String page = "Wikipedia:Articles for deletion/Dmarket";
-        String text = enWiki.getPageText(page);
+        String text = enWiki.getPageText(List.of(page)).get(0);
         inputs.put(page, text);
         assertTrue(gfs.searchAndExtractSnippets(inputs, "NotASearchTerm", false).isEmpty(), "no results");
         Map<String, String> results = gfs.searchAndExtractSnippets(inputs, "kamikaze", false);
         assertEquals(1, results.size());
-        String expected = "talk:CASSIOPEIA|<b style=\"#0000FF\">talk</b>]])</sup> 14:45, 9 June 2018 (UTC)</small> "
-            + "*'''Delete''' this highly [[WP:PROMO|promotional]] text, created by a [[WP:SPA|kamikaze account]], "
-            + "about a subject lacking notability aside from mentions in a few trade blogs";
+        String expected = """
+            talk:CASSIOPEIA|<b style="#0000FF">talk</b>]])</sup> 14:45, 9 June 2018 (UTC)</small> \
+            *'''Delete''' this highly [[WP:PROMO|promotional]] text, created by a [[WP:SPA|kamikaze account]], \
+            about a subject lacking notability aside from mentions in a few trade blogs""";
         assertEquals(expected, results.get(page), "one result");
         assertTrue(gfs.searchAndExtractSnippets(inputs, "Kamikaze", true).isEmpty(), "check case sensitivity");
         Map<String, String> results2 = gfs.searchAndExtractSnippets(inputs, "kamikaze", true);

@@ -50,9 +50,9 @@ public class CCIAnalyzerTest
         
         // INTEGRATION TEST
         // The disambiguation page edit would be culled by normal means
-        String cci = 
-            "*'''N''' [[:Karpagam (disambiguation)]] (1 edit): [[Special:Diff/902209948|(+269)]]\n" +
-            "*[[:Finding Dory]] (1 edit): [[Special:Diff/858890717|(+354)]]";
+        String cci = """
+            *'''N''' [[:Karpagam (disambiguation)]] (1 edit): [[Special:Diff/902209948|(+269)]]
+            *[[:Finding Dory]] (1 edit): [[Special:Diff/858890717|(+354)]]""";
         CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.loadDiffs(page);
         analyzer.analyzeDiffs(page);
@@ -73,9 +73,9 @@ public class CCIAnalyzerTest
         assertTrue(CCIAnalyzer.removeListPages("Ramanujan (film)"));
         
         // INTEGRATION TEST
-        String cci = 
-            "*[[:List of Tamil films of 2011]] (1 edit): [[Special:Diff/472267771|(+315)]]\n" +
-            "*[[:Ramanujan (film)]] (3 edits): [[Special:Diff/573584256|(+643)]]";
+        String cci = """
+            *[[:List of Tamil films of 2011]] (1 edit): [[Special:Diff/472267771|(+315)]]
+            *[[:Ramanujan (film)]] (3 edits): [[Special:Diff/573584256|(+643)]]""";
         analyzer.setTitleFunction(CCIAnalyzer::removeListPages);
         CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.loadDiffs(page);
@@ -126,9 +126,9 @@ public class CCIAnalyzerTest
     {
         // INTEGRATION TEST
         // from [[Wikipedia:Contributor copyright investigations/Kailash29792 02]] - AFD
-        String cci = 
-            "*[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]" +
-            "*[[:Sabash Thambi]] (1 edit): [[Special:Diff/682049136|(+578)]]";
+        String cci = """
+            *[[:List of science fiction comedy works]] (1 edit): [[Special:Diff/924018716|(+458)]]
+            *[[:Sabash Thambi]] (1 edit): [[Special:Diff/682049136|(+578)]]""";
         CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.setCullingFunction(CCIAnalyzer::whitelistCull);
         analyzer.loadDiffs(page);
@@ -181,9 +181,10 @@ public class CCIAnalyzerTest
     @Test
     public void fileAdditionCull()
     {
-        String filestring = ("[[File:St Lawrence Jewry, City of London, UK - Diliff.jpg"
-            + "|thumb|right|400px|The interior of St Lawrence Jewry, the official church of the Lord Mayor "
-            + "of London, located next to Guildhall in the City of London.]]").toLowerCase();
+        String filestring = """
+            [[File:St Lawrence Jewry, City of London, UK - Diliff.jpg|thumb|right|400px|\
+            The interior of St Lawrence Jewry, the official church of the Lord Mayor \
+            of London, located next to Guildhall in the City of London.]]""".toLowerCase();
         assertFalse(CCIAnalyzer.fileAdditionCull(filestring));
         
         // INTEGRATION TEST
