@@ -448,106 +448,43 @@ public class ContributionSurveyor
     }
 
     /**
-     *  Formats a section in a text contribution survey as wikitext.
-     *  @param username the relevant username (use {@code null} to omit)
-     *  @param survey the survey, in form of page &#8594; edits
-     *  @param offset how many articles have been output via this method for this 
-     *  user so far
-     *  @return the formatted section of the survey in wikitext
+     *  Generates a survey listing for a given article in a CCI.
+     *  @param user_survey a particular user's text contribution survey
+     *  @param article the article to render
+     *  @return the survey listing for that article in wikitext
      *  @see #contributionSurvey(List, int...)
      *  @since 0.04
      */
-    public String outputNextSection(String username, List<Map.Entry<String, List<Wiki.Revision>>> survey, int offset)
+    public String outputNextPage(Map<String, List<Wiki.Revision>> user_survey, String article)
     {
-        // output header
-        int maxarticles = Math.min(offset + articlespersection, survey.size());
-        StringBuilder out = new StringBuilder("=== ");
-        if (username != null)
-        {
-            out.append(username);
-            out.append(": ");
-        }
-        out.append("Pages ");
-        out.append(offset + 1);
-        out.append(" through ");
-        out.append(maxarticles);
-        out.append(" ===\n");
-        
-        // output results
-        for (int i = offset; i < maxarticles; i++)
-        {
-            var entry = survey.get(i);
-            List<Wiki.Revision> edits = entry.getValue();
-            out.append("*");
+        StringBuilder out = new StringBuilder(10000);
+        List<Wiki.Revision> edits = user_survey.get(article);
 
-            StringBuilder temp = new StringBuilder();
-            boolean newpage = false;
-            for (Wiki.Revision edit : edits)
-            {
-                // is this a new page?
-                if (edit.isNew() && !newpage)
-                {
-                    out.append("'''N''' ");
-                    newpage = true;
-                }
-                // generate the diff strings now to avoid a second iteration
-                temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getID(), edit.getSizeDiff()));
-            }
-            int numedits = edits.size();
-            out.append("[[:");
-            out.append(entry.getKey());
-            out.append("]] (");
-            if (numedits == 1)
-                out.append("1 edit): ");
-            else
-            {
-                out.append(numedits);
-                out.append(" edits): ");
-            }
-            out.append(temp);
-            out.append("\n");                
-        }
-        out.append("\n");
-        return out.toString();
-    }
-    
-    /**
-     *  Formats a section in an image contribution survey as wikitext.
-     *  @param username the relevant username (use null to omit)
-     *  @param source the source of the images, typically one of "Local files", 
-     *  "Commons files", or "Transferred files"
-     *  @param survey the survey corresponding to the source of the image
-     *  @param offset how many images have been output via this method for this 
-     *  user and source of images so far
-     *  @return the formatted survey in wikitext
-     *  @see #imageContributionSurvey(Wiki.User)
-     *  @since 0.04
-     */
-    public String outputNextSection(String username, String source, String[] survey, int offset)
-    {
-        // output header
-        int maxfiles = Math.min(offset + articlespersection, survey.length);
-        StringBuilder out = new StringBuilder("=== ");
-        if (username != null)
+        StringBuilder temp = new StringBuilder();
+        boolean newpage = false;
+        for (Wiki.Revision edit : edits)
         {
-            out.append(username);
-            out.append(": ");
+            // is this a new page?
+            if (edit.isNew() && !newpage)
+            {
+                out.append("'''N''' ");
+                newpage = true;
+            }
+            // generate the diff strings now to avoid a second iteration
+            temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getID(), edit.getSizeDiff()));
         }
-        out.append(source);
-        out.append(" ");
-        out.append(offset + 1);
-        out.append(" through ");
-        out.append(maxfiles);
-        out.append(" ===\n");
-        
-        // output results
-        for (int i = offset; i < maxfiles; i++)
-        {            
-            out.append("*[[:");
-            out.append(survey[i]);
-            out.append("]]\n");
+        int numedits = edits.size();
+        out.append("[[:");
+        out.append(article);
+        out.append("]] (");
+        if (numedits == 1)
+            out.append("1 edit): ");
+        else
+        {
+            out.append(numedits);
+            out.append(" edits): ");
         }
-        out.append("\n");
+        out.append(temp);
         return out.toString();
     }
 
@@ -573,34 +510,35 @@ public class ContributionSurveyor
         while (iter.hasNext())
         {
             // fetch text contribution survey for this user
-            // note List so we don't have to iterate over it many times (slow)
             var entry = iter.next();
-            var tempmap = entry.getValue();
-            var survey = new ArrayList<>(tempmap.entrySet());
+            Map<String, List<Wiki.Revision>> user_survey = entry.getValue();
             String username = entry.getKey();
-            // null suppresses output of usernames in headers
-            String username_out = results.size() == 1 ? null : username;
+            String username_hdr = results.size() == 1 ? "" : (username + ":");
             int sizebefore = sections.size();
+
+            // output text results
+            sections.addAll(Pages.toWikitextPaginatedList(user_survey.keySet(), page -> outputNextPage(user_survey, page), 
+                (start, end) -> "===" + username_hdr + " Pages " + start + " to " + end + "===", 
+                articlespersection, false));
 
             // populate image contribution survey for this user
             // userinfo required because there may be IP addresses
             String[][] imagesurvey = new String[3][0];
             if (images && userinfo.get(userindex) != null)
                 imagesurvey = imageContributionSurvey(userinfo.get(userindex));
-
-            // output text results
-            for (int i = 0; i < survey.size(); i += 20)
-                sections.add(outputNextSection(username_out, survey, i));
             
             // output image results
             if (images && userinfo.get(userindex) != null)
             {
-                for (int i = 0; i < imagesurvey[0].length; i += 20)
-                    sections.add(outputNextSection(username_out, "Local files", imagesurvey[0], i));
-                for (int i = 0; i < imagesurvey[1].length; i += 20)
-                    sections.add(outputNextSection(username_out, "Commons files", imagesurvey[1], i));
-                for (int i = 0; i < imagesurvey[2].length; i += 20)
-                    sections.add(outputNextSection(username_out, "Transferred files", imagesurvey[2], i));
+                sections.addAll(Pages.toWikitextPaginatedList(List.of(imagesurvey[0]), Pages.LIST_OF_LINKS, 
+                    (start, end) -> "===" + username_hdr + " Local files " + start + " to " + end + "===", 
+                    articlespersection, false));
+                sections.addAll(Pages.toWikitextPaginatedList(List.of(imagesurvey[1]), Pages.LIST_OF_LINKS, 
+                    (start, end) -> "===" + username_hdr + " Commons files " + start + " to " + end + "===", 
+                    articlespersection, false));
+                sections.addAll(Pages.toWikitextPaginatedList(List.of(imagesurvey[2]), Pages.LIST_OF_LINKS, 
+                    (start, end) -> "===" + username_hdr + " Transferred files " + start + " to " + end + "===", 
+                    articlespersection, false));
             }
             
             // insert header if there were results for this user and at the 

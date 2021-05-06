@@ -176,6 +176,63 @@ public class Pages
     {
         return toWikitextList(pages, page -> "{{" + template + "|1=" + page + "}}", numbered);
     }
+    
+    /**
+     *  Exports a list of pages, say, generated from one of the query methods to
+     *  wikitext. This variant runs a pagination function that inserts text at 
+     *  the start of each segment of <var>pagespersegment</var> pages in order 
+     *  to, for instance, generates a section header every so many entries in the 
+     *  list. Note this method returns a list of wikitext, one entry for each 
+     *  segment.
+     * 
+     *  @param pages a list of page titles
+     *  @param generator a generator of wikitext given a particular title
+     *  @param paginator a function that takes the index of the first and last
+     *  pages and returns a String to be inserted into the wikitext before the 
+     *  first article
+     *  @param pagespersegment how many pages between instances of the paginator
+     *  text
+     *  @param numbered whether this is a numbered list
+     *  @throws IllegalArgumentException if there is less than one page per insertion
+     *  @return the list of pages, broken up into chunks of pagespersection
+     *  @since ContributionSurveyor 0.04
+     */
+    public static List<String> toWikitextPaginatedList(Collection<String> pages, Function<String, String> generator, 
+        BiFunction<Integer, Integer, String> paginator, int pagespersegment, boolean numbered)
+    {
+        if (pagespersegment < 1)
+            throw new IllegalArgumentException("There must be at least one page per section.");
+        if (pages.isEmpty())
+            return Collections.EMPTY_LIST;
+        
+        List<String> ret = new ArrayList<>();
+        StringBuilder out = new StringBuilder(10000);
+        int max = pages.size();
+        int counter = 1;
+        for (String page : pages)
+        {
+            // output page header
+            if (counter % pagespersegment == 1)
+            {
+                if (counter != 1)
+                {
+                    out.append("\n");
+                    ret.add(out.toString());
+                    out.setLength(0);
+                }
+                int sectionmax = Math.min(max, counter + pagespersegment - 1);
+                out.append(paginator.apply(counter, sectionmax));
+                out.append("\n");
+            }
+            out.append(numbered ? "#" : "*");
+            out.append(generator.apply(page));
+            out.append("\n");
+            counter++;
+        }
+        out.append("\n");
+        ret.add(out.toString());
+        return ret;
+    }
 
     /**
      *  Given a list of templates, fetch the only argument of the given template.

@@ -20,6 +20,7 @@
 package org.wikipedia;
 
 import java.util.*;
+import java.util.function.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -115,6 +116,50 @@ public class PagesTest
         List<String> expected = List.of("Test", "Test2", "Test3", "Test5", 
             "Test6", "");
         assertEquals(expected, Pages.parseWikitextTemplateList(list, "la"));
+    }
+    
+    @Test
+    public void toWikitextPaginatedList()
+    {
+        BiFunction<Integer, Integer, String> paginator = (start, end) -> "==Blah " 
+            + start + " to " + end + "==";
+
+        assertThrows(IllegalArgumentException.class,
+            () -> Pages.toWikitextPaginatedList(List.of("x"), Pages.LIST_OF_LINKS, paginator, -1, true));
+        
+        List<String> output = Pages.toWikitextPaginatedList(Collections.EMPTY_LIST, Pages.LIST_OF_LINKS, paginator, 4, true);
+        assertTrue(output.isEmpty());
+                
+        List<String> items = new ArrayList<>();
+        for (int i = 1; i < 11; i++)
+            items.add("" + i);
+        output = Pages.toWikitextPaginatedList(items, Pages.LIST_OF_LINKS, paginator, 4, true);
+        assertEquals(3, output.size());
+        String expected = """
+            ==Blah 1 to 4==
+            #[[:1]]
+            #[[:2]]
+            #[[:3]]
+            #[[:4]]
+
+            """;
+        assertEquals(expected, output.get(0));
+        expected = """
+            ==Blah 5 to 8==
+            #[[:5]]
+            #[[:6]]
+            #[[:7]]
+            #[[:8]]
+
+            """;
+        assertEquals(expected, output.get(1));
+        expected = """
+            ==Blah 9 to 10==
+            #[[:9]]
+            #[[:10]]
+
+            """;
+        assertEquals(expected, output.get(2));
     }
     
     @Test
