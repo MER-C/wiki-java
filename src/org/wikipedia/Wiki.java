@@ -1504,7 +1504,8 @@ public class Wiki implements Comparable<Wiki>
     // PAGE METHODS
 
     /**
-     *  Returns the corresponding talk page to this page.
+     *  Returns the corresponding talk page to this page. Inverse of 
+     *  {@link Wiki#getContentPage}.
      *
      *  @param title the page title
      *  @return the name of the talk page corresponding to <var>title</var>
@@ -1513,6 +1514,7 @@ public class Wiki implements Comparable<Wiki>
      *  or we try to retrieve the talk page of a Special: or Media: page.
      *  @throws UncheckedIOException if the namespace cache has not been
      *  populated, and a network error occurs when populating it
+     *  @see #getContentPage(String)
      *  @since 0.10
      */
     public String getTalkPage(String title)
@@ -1527,6 +1529,34 @@ public class Wiki implements Comparable<Wiki>
         if (namespace != MAIN_NAMESPACE) // remove the namespace
             title = title.substring(title.indexOf(':') + 1);
         return namespaceIdentifier(namespace + 1) + ":" + title;
+    }
+    
+    /**
+     *  Returns the corresponding content page associated with this talk page.
+     *  Inverse of {@link Wiki#getTalkPage}.
+     *
+     *  @param title the page title
+     *  @return the name of the corresponding page corresponding to <var>title</var>
+     *  @throws IllegalArgumentException if given title is in a content namespace
+     *  or we try to retrieve the content page of a Special: or Media: page.
+     *  @throws UncheckedIOException if the namespace cache has not been
+     *  populated, and a network error occurs when populating it
+     *  @see #getTalkPage(String) 
+     *  @since 0.37
+     */
+    public String getContentPage(String title)
+    {
+        // It is convention that talk namespaces are the original namespace + 1
+        // and are odd integers.
+        int namespace = namespace(title);
+        if (namespace % 2 == 0)
+            throw new IllegalArgumentException("Cannot fetch content page of a content page!");
+        if (namespace < 0)
+            throw new IllegalArgumentException("Special: and Media: pages do not have talk pages!");
+        title = title.substring(title.indexOf(':') + 1);
+        if (namespace == TALK_NAMESPACE)
+            return title;
+        return namespaceIdentifier(namespace - 1) + ":" + title;
     }
 
     /**

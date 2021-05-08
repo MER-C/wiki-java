@@ -238,6 +238,21 @@ public class WikiTest
             assertEquals(talkpage, enWiki.getTalkPage(page));
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "Talk:Hello, Hello",
+        "User talk:Hello, User:Hello",
+        "Hello, EXCEPTION",       // content page of a content page
+        "Special:Newpages, EXCEPTION", // special pages don't have content pages
+        "Media:Wiki.png, EXCEPTION"})  // media pages don't have content pages    
+    public void getContentPage(String page, String contentpage) throws Exception
+    {
+        if (contentpage.equals("EXCEPTION"))
+            assertThrows(IllegalArgumentException.class, () -> enWiki.getContentPage(page));
+        else
+            assertEquals(contentpage, enWiki.getContentPage(page));
+    }
+    
     @Test
     public void getRootPage() throws Exception
     {
