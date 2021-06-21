@@ -37,7 +37,8 @@ public class XWikiHistory
     
     /**
      *  Runs this program.
-     *  @param args the command line arguments
+     *  @param args the command line arguments, args[0] = language code e.g. "en",
+     *  args[1] = article name
      */
     public static void main(String[] args) throws Exception
     {
@@ -45,9 +46,7 @@ public class XWikiHistory
         // (1) excerpts from page history - first 5 and last 5 revisions
         // (2) page metadata and usual page links (talk, history, delete, undelete, etc.)
         // (3) page logs
-        // (4) more creator metadata
         
-        // expected: args[0] language, args[1] = article
         WMFWiki firstwiki = WMFWiki.newSession(args[0] + ".wikipedia.org");
         List<Map<String, String>> interwikis = firstwiki.getInterWikiLinks(List.of(args[1]));
         Map<WMFWiki, String> wikiarticles = new LinkedHashMap<>();
@@ -58,6 +57,8 @@ public class XWikiHistory
             wikiarticles.put(new_wiki, entry.getValue());
         }
         
+        Set<String> users = new TreeSet<>();
+        System.out.println("==" + args[1] + "==");
         System.out.println("{| class=\"wikitable sortable\"");
         System.out.println("! Language !! Page !! Creation date !! Creator !! Creator foreign edit count !! Snippet");
         
@@ -71,11 +72,13 @@ public class XWikiHistory
             Wiki.User creator = wikidata.getUsers(List.of(last.getUser())).get(0);
             List<String> cells = List.of(
                 "Wikidata",
-                "[[d:" + wdtitle + "|" + wdtitle + "]]",
+                "[[d:" + wdtitle + "|" + wdtitle + "]] ([[d:Special:PageHistory/" + wdtitle + "|history]])",
                 last.getTimestamp().toString(),
                 Users.generateWikitextSummaryLinksShort(last.getUser()), 
                 creator == null ? "null" : String.valueOf(creator.countEdits()), "-");
             System.out.println(WikitextUtils.addTableRow(cells));
+            if (creator != null)
+                users.add(creator.getUsername());
         }
         
         for (var entry : wikiarticles.entrySet())
@@ -99,16 +102,17 @@ public class XWikiHistory
             Wiki.User creator = null;
             if (username != null)
                 creator = wiki.getUsers(List.of(username)).get(0);
+            if (creator != null)
+                users.add(username);
             Collections.reverse(bottomhistory);
             
             List<String> tablerows = List.of(wiki.getDomain(),
-                "[" + wiki.getPageUrl(page) + " " + page + "]",
+                "[" + wiki.getPageUrl(page) + " " + page + "] ([" + wiki.getPageUrl("Special:PageHistory/" + page) + " history])",
                 bottomhistory.get(0).getTimestamp().toString(),
                 Users.generateWikitextSummaryLinksShort(username) 
                     + "<br>([" + wiki.getPageUrl("User:" + username) + " foreign user] &middot; "
                     + "[" + wiki.getPageUrl("User talk:" + username) + " foreign talk] &middot; "
-                    + "[" + wiki.getPageUrl("Special:Contributions/" + username) + " foreign contribs] &middot; "
-                    + "[[m:Special:CentralAuth/" + username + "|CA]])",
+                    + "[" + wiki.getPageUrl("Special:Contributions/" + username) + " foreign contribs])",
                 creator == null ? "0" : String.valueOf(creator.countEdits()),
                 snippet == null ? "null" : snippet);
             System.out.println(WikitextUtils.addTableRow(tablerows));
@@ -116,7 +120,7 @@ public class XWikiHistory
         System.out.println("|}");
         
         // output deletion logs
-        System.out.println("==Cross-wiki deletion log==");
+        System.out.println("===Cross-wiki deletion log===");
         System.out.println("{| class=\"wikitable sortable\"");
         System.out.println("! Project !! Date !! Admin !! Action !! Title !! Reason");
         deletions.forEach((wiki, entries) ->
@@ -134,6 +138,22 @@ public class XWikiHistory
                 ));
             }
         });
+        System.out.println("|}");
+        
+        // global user information
+        System.out.println("===Creator global user info===");
+        System.out.println("{| class=\"wikitable sortable\"");
+        System.out.println("! Username !! Global edit count !! Home !! Wikis edited");
+        for (String username : users)
+        {
+            Map<String, Object> globaluserinfo = WMFWiki.getGlobalUserInfo(username);
+            System.out.println(WikitextUtils.addTableRow(List.of(
+                username,
+                "" + globaluserinfo.get("editcount"),
+                (String)globaluserinfo.get("home"),
+                "[[m:Special:CentralAuth/" + username + "|" + globaluserinfo.get("wikicount") + "]]"
+                )));
+        }
         System.out.println("|}");
     }
     

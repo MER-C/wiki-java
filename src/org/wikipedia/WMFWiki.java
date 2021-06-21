@@ -208,6 +208,8 @@ public class WMFWiki extends Wiki
      *  <li>rights - (List&lt;String&gt;) this user is explicitly granted the 
      *      ability to perform these actions globally
      *  <li>locked - (Boolean) whether this user account has been locked
+     *  <li>editcount - (int) total global edit count
+     *  <li>wikicount - (int) total number of wikis edited
      *  <li>WIKI IDENTIFIER (e.g. "enwikisource" == "en.wikisource.org") - see below
      *  </ul>
      * 
@@ -248,6 +250,7 @@ public class WMFWiki extends Wiki
         ret.put("registration", OffsetDateTime.parse(registrationdate));
         ret.put("locked", line.contains("locked=\"\""));
         int globaledits = 0;
+        int wikicount = 0;
         
         // global groups/rights
         int mergedindex = line.indexOf("<merged>");
@@ -283,6 +286,7 @@ public class WMFWiki extends Wiki
             userinfo.put("url", wiki.parseAttribute(accounts[i], "url", 0));
             int editcount = Integer.parseInt(wiki.parseAttribute(accounts[i], "editcount", 0));
             globaledits += editcount;
+            wikicount++;
             userinfo.put("editcount", editcount);
             
             registrationdate = wiki.parseAttribute(accounts[i], "registration", 0);
@@ -313,6 +317,7 @@ public class WMFWiki extends Wiki
             ret.put(wiki.parseAttribute(accounts[i], "wiki", 0), userinfo);
         }
         ret.put("editcount", globaledits);
+        ret.put("wikicount", wikicount);
         return ret;
     }
 
