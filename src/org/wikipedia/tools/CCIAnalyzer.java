@@ -592,33 +592,29 @@ public class CCIAnalyzer
     public static String removeReferences(String wikitext)
     {
         // Requires extension Cite, and therefore not in WikitextUtils
-        for (int refbegin = wikitext.indexOf("<ref"); refbegin >= 0; refbegin = wikitext.indexOf("<ref", refbegin))
-        {
-            int refend1 = wikitext.indexOf("/>", refbegin); // length: 2
-            int refend2 = wikitext.indexOf("</ref>", refbegin); // length: 6
-            if (refend1 >= 0 && refend2 >= 0)
-            {
-                int refend = Math.min(refend1 + 2, refend2 + 6);
-                wikitext = wikitext.substring(0, refbegin) + wikitext.substring(refend);
-            }
-            else if (refend1 >= 0)
-                wikitext = wikitext.substring(0, refbegin) + wikitext.substring(refend1 + 2);
-            else if (refend2 >= 0)
-                wikitext = wikitext.substring(0, refbegin) + wikitext.substring(refend2 + 6);
-            else
-                refbegin++;
-        }
-        return wikitext;
+        return wikitext.replaceAll("<ref name=.{0,15}/>", "")
+                       .replaceAll("<ref[ >].+?</ref>", "")
+        // Lists of citation templates
+                       .replaceAll("^\\*\\s*\\{\\{\\s*cite (web|book|news|journal)\\s*\\|.{0,200}\\}\\}\\s*$", "");
     }
     
     /**
-     *  This function removes template arguments that are less than 150 
-     *  characters long. (150 characters is the default length of a major 
-     *  contribution for CCI purposes). This is a fairly safe culling function. 
-     *  The end of the argument is defined by the next instance of "|", "}" or 
-     *  the end of the string and therefore may not be the actual end of the 
-     *  argument for parsing purposes. The list of template arguments is 
-     *  hardcoded.
+     *  This function removes template arguments. Template arguments so removed 
+     *  are:
+     * 
+     *  <ul>
+     *    <li>appear in citation templates and less than 150 characters long. (150 
+     *    characters is the default length of a major contribution for CCI 
+     *    purposes). This is a fairly safe culling function. The end of the 
+     *    argument is defined by the next instance of "|", "}" or the end of
+     *    the string and therefore may not be the actual end of the argument 
+     *    for parsing purposes. The list of template arguments is hardcoded.
+     * 
+     *    <li>any template argument that is the only contents of a single diff 
+     *    line as if it were in an infobox example: <kbd> test = blah</kbd>, the 
+     *    key being up to 30 characters and the value 40 characters.
+     *  </ul>
+     *  
      *  @param wikitext the wikitext to process
      *  @return the processed wikitext
      *  @since 0.05
@@ -630,9 +626,7 @@ public class CCIAnalyzer
             targs_pattern = Pattern.compile("\\|\\s*(" + 
                 // citation templates
                 "archiveurl|archive-url|url|title|date|accessdate|access-date|archivedate|" +
-                "archive-date|last|first|work|author|publisher|" +
-                // infobox officeholder
-                "office\\d?|alma_mater|appointer\\d?|death_date)\\s*=.{0," + MAX_EDIT_SIZE + "}?(\\||$|\\})");
+                "archive-date|last|first|work|author|publisher)\\s*=\\s*.{0," + MAX_EDIT_SIZE + "}?(\\||$|\\})");
         }
         Matcher matcher = targs_pattern.matcher(wikitext);
         while (matcher.find())
@@ -640,6 +634,8 @@ public class CCIAnalyzer
             wikitext = matcher.replaceAll("|");
             matcher.reset(wikitext);
         }
+        // single line template arguments used in infoboxes
+        wikitext = wikitext.replace("^\\s*\\|\\s*[\\w\\s]{1,30}\\s*=\\s*.{,40}$", "");
         return wikitext;
     }
     
@@ -656,7 +652,7 @@ public class CCIAnalyzer
     public static boolean listItemCull(String delta)
     {
         // '* bit matches wikitext formatting for bold or italic formatting
-        return !delta.matches("^[#\\*]\\s?'*\\s?\\[.+");
+        return !(delta.matches("^[#\\*]\\s*'*\\s*\\[.+"));
     }
     
     /**
@@ -688,7 +684,7 @@ public class CCIAnalyzer
             }
             return false;
         }
-        if (delta.matches("^\\[\\[\\scategory:.+"))
+        if (delta.matches("^\\[\\[\\s*category:.+?\\]\\]"))
             return false;
         return true;
     }
@@ -715,7 +711,7 @@ public class CCIAnalyzer
      */
     public static String removeExternalLinks(String delta)
     {
-        return delta.replaceAll("\\[https?://.+\\]", "");
+        return delta.replaceAll("\\[https?://.+?\\]", "");
     }
     
     /**
