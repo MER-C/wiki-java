@@ -1,6 +1,6 @@
 <%--
-    @(#)contributionsurveyor.jsp 0.01 27/01/2018
-    Copyright (C) 2011 - 2018 MER-C
+    @(#)contributionsurveyor.jsp 0.02 05/07/2021
+    Copyright (C) 2011 - 2021 MER-C
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -26,12 +26,14 @@
     boolean nominor = (request.getParameter("nominor") != null);
     boolean noreverts = (request.getParameter("noreverts") != null);
     boolean nodrafts = (request.getParameter("nodrafts") != null);
+    boolean newonly = (request.getParameter("newonly") != null);
+    boolean comingle = (request.getParameter("comingle") != null);
 
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String bytefloor = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("bytefloor"), "150");
     
     Wiki wiki = Wiki.newSession(homewiki);
-    wiki.setQueryLimit(35000); // 70 network requests
+    wiki.setQueryLimit(10000); // 20 network requests, GAE only allows run time of 15s
 
     List<String> users = new ArrayList<>();
     if (user != null)
@@ -54,6 +56,8 @@
     {
         surveyor.setIgnoringMinorEdits(nominor);
         surveyor.setIgnoringReverts(noreverts);
+        surveyor.setNewOnly(newonly);
+        surveyor.setComingled(comingle);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
         
@@ -105,20 +109,25 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <table>
 <tr>
     <td><input type=radio name=mode id="radio_user" checked>
-    <td>User to survey:
+    <td><label for=radio_user>User to survey:</label>
     <td><input type=text name=user id=user value="<%= ServletUtils.sanitizeForAttribute(user) %>" required>
 <tr>
     <td><input type=radio name=mode id="radio_category">
-    <td>Fetch users from category:
+    <td><label for=radio_category>Fetch users from category:</label>
     <td><input type=text name=category id=category value="<%= ServletUtils.sanitizeForAttribute(category) %>" disabled>
 <tr>
     <td colspan=2>Home wiki:
     <td><input type=text name="wiki" value="<%= homewiki %>" required>
 <tr>
     <td colspan=2>Exclude:
-    <td><input type=checkbox name=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>minor edits
-        <input type=checkbox name=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>reverts
-        <input type=checkbox name=nodrafts value=1<%= (user == null || nodrafts) ? " checked" : "" %>>userspace and draft (ns 118) edits
+    <td><input type=checkbox name=nominor id=nominor value=1<%= (user == null || nominor) ? " checked" : "" %>>
+        <label for=nominor>minor edits</label>
+        <input type=checkbox name=noreverts id=noreverts value=1<%= (user == null || noreverts) ? " checked" : "" %>>
+        <label for=noreverts>reverts</label>
+        <input type=checkbox name=nodrafts id=nodrafts value=1<%= (user == null || nodrafts) ? " checked" : "" %>>
+        <label for=nodrafts>userspace and draft (ns 118) edits</label>
+        <input type=checkbox name=newonly id=newonly value=1<%= newonly ? " checked" : "" %>>
+        <label for=newonly>all except new pages</label>
 <tr>
     <td colspan=2>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"> to 
@@ -126,6 +135,10 @@ and other venues. It isolates and ranks major edits by size. A query limit of
 <tr>
     <td colspan=2>Show changes that added at least:
     <td><input type=number name=bytefloor value="<%= bytefloor %>"> bytes
+<tr>
+    <td colspan=2>Output:
+    <td><input type=checkbox name=comingle id=comingle value=1<%= comingle ? " checked" : "" %>>
+    <label for=comingle title="for sockfarms where each user has few edits">comingled</label>
 </table>
 <input type=submit value="Survey user">
 </form>

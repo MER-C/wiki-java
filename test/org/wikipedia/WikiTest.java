@@ -416,7 +416,7 @@ public class WikiTest
         Wiki.RequestHelper rh = enWiki.new RequestHelper()
             .filterBy(Map.of("hidden", Boolean.FALSE));
         actual = enWiki.getCategories(List.of("Category:Wikipedia articles with undisclosed paid content"), rh, false);
-        assertEquals(expected2.subList(1, 2), actual.get(0), "filter hidden categories");
+        assertTrue(actual.get(0).isEmpty(), "filter hidden categories");
     }
 
     @Test

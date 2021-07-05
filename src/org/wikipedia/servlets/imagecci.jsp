@@ -25,7 +25,7 @@
     Wiki wiki = Wiki.newSession(homewiki);
 
     ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-    String[][] survey = null;
+    Map<String, List<String>> survey = null;
     if (user != null)
     {
         Wiki.User wpuser = wiki.getUser(user);
@@ -45,13 +45,16 @@
         response.setHeader("Content-Disposition", "attachment; filename=" 
             + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
         out.print(Users.generateWikitextSummaryLinks(user));
-        out.println();        
-        for (int i = 0; i < survey[0].length; i += 20)
-            out.println(surveyor.outputNextSection(null, "Local files", survey[0], i));
-        for (int i = 0; i < survey[1].length; i += 20)
-            out.println(surveyor.outputNextSection(null, "Commons files", survey[1], i));
-        for (int i = 0; i < survey[2].length; i += 20)
-            out.println(surveyor.outputNextSection(null, "Transferred files", survey[2], i));
+        out.println();
+        List<String> sections = new ArrayList<>();
+        sections.addAll(Pages.toWikitextPaginatedList(survey.get("local"), Pages.LIST_OF_LINKS, 
+            (start, end) -> "===" + user + " Local files " + start + " to " + end + "===", 20, false));
+        sections.addAll(Pages.toWikitextPaginatedList(survey.get("commons"), Pages.LIST_OF_LINKS, 
+            (start, end) -> "===" + user + " Commons files " + start + " to " + end + "===", 20, false));
+        sections.addAll(Pages.toWikitextPaginatedList(survey.get("transferred"), Pages.LIST_OF_LINKS, 
+            (start, end) -> "===" + user + " Transferred files " + start + " to " + end + "===", 20, false));
+        for (String section : sections)
+            out.println(section);
         out.print(surveyor.generateWikitextFooter());
         out.println("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         return;

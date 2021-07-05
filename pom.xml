@@ -45,6 +45,9 @@
                         <includes>
                             <include>**/*.java</include>
                         </includes>
+                        <excludes>
+                            <exclude>**/org/wikipedia/sekrit/*.java</exclude>
+                        </excludes>
                         <encoding>UTF-8</encoding>
                     </configuration>
                 </plugin>
