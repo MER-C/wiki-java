@@ -38,26 +38,31 @@ first in the GUI) apply.
     <td><input type=text name=wiki value="<%= wikiparam %>" required>
 <tr>
     <td><input type=radio name=mode id="radio_cat" value="category"<%= mode.equals("category") ? " checked" : "" %>>
-    <td>Category:
+    <td><label for="radio_cat">Category:</label>
     <td><input type=text id=category name=category <%= mode.equals("category") ? "value=\"" + category + "\" required" : "disabled"%>>
 <tr>
     <td><input type=radio name=mode id="radio_user" value="contribs"<%= mode.equals("contribs") ? " checked" : "" %>>
-    <td>Pages edited by:
+    <td><label for="radio_user">Pages edited by:</label>
     <td><input type=text id=user name=user <%= mode.equals("contribs") ? "value=\"" + user + "\" required" : "disabled"%>>
 <tr>
     <td valign=top><input type=radio name=mode id="radio_pages" value="pages"<%= mode.equals("pages") ? " checked" : "" %>>
-    <td valign=top>Pages:<br>(one per line)
+    <td valign=top><label for="radio_pages">Pages:<br>(one per line)</label>
     <td>
         <textarea id=pages name=pages rows=10 <%= mode.equals("pages") ? "required" : "disabled" %>>
 <%= pages %>
         </textarea>
 <tr>
     <td colspan=2>Exclude: 
-    <td><input type=checkbox name=noadmin value=1<%= (pages.isEmpty() || noadmin) ? " checked" : "" %>>admins
-        <input type=checkbox name=nobot value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>bots
-        <input type=checkbox name=noanon value=1<%= noanon ? " checked" : "" %>>IPs
-        <input type=checkbox name=nominor value=1<%= nominor ? " checked" : "" %>>minor edits
-        <input type=checkbox name=noreverts value=1<%= noreverts ? " checked" : "" %>>reverts
+    <td><input type=checkbox name=noadmin id="noadmin" value=1<%= (pages.isEmpty() || noadmin) ? " checked" : "" %>>
+        <label for="noadmin">admins</label>
+        <input type=checkbox name=nobot id="nobot" value=1<%= (pages.isEmpty() || nobot) ? " checked" : "" %>>
+        <label for="nobot">bots</label>
+        <input type=checkbox name=noanon id="noanon" value=1<%= noanon ? " checked" : "" %>>
+        <label for="noanon">IPs</label>
+        <input type=checkbox name=nominor id="nominor" value=1<%= nominor ? " checked" : "" %>>
+        <label for="nominor">minor edits</label>
+        <input type=checkbox name=noreverts id="noreverts" value=1<%= noreverts ? " checked" : "" %>>
+        <label for="noreverts">reverts</label>
 <tr>
     <td colspan=2>Show changes from:
     <td><input type=date name=earliest value="<%= earliest %>"> to 

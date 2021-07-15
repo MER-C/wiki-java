@@ -38,7 +38,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
 <tr>
     <td><input id="radio_multi" type=radio name=mode value=multi<%= mode.equals("multi") ?
          " checked" : "" %>>
-    <td>Wikis to search:
+    <td><label for="radio_multi">Wikis to search:</label>
     <td><select name=set id=set<%= mode.equals("multi") ? "" : " disabled" %>>
             <option value="top20"<%= set.equals("top20") ? " selected" : ""%>>Top 20 Wikipedias</option>
             <option value="top40"<%= set.equals("top40") ? " selected" : ""%>>Top 40 Wikipedias</option>
@@ -48,7 +48,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
 <tr>
     <td><input id="radio_single" type=radio name=mode value=single<%= mode.equals("single") ?
          " checked" : "" %>>
-    <td>Single wiki:
+    <td><label for="radio_single">Single wiki:</label>
     <td><input type=text id=wiki name=wiki <%= mode.equals("single") ? "required value=" + 
         wikiinput : "disabled" %>>
         
@@ -58,13 +58,15 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         
 <tr>
     <td colspan=2>Additional protocols:
-    <td><input type=checkbox name=https value=1<%= (https || domain.isEmpty()) ?
-        " checked" : "" %>>HTTPS
-        <input type=checkbox name=mailto value=1<%= mailto ? " checked" : "" %>>mailto
+    <td><input type=checkbox name=https id="https" value=1<%= (https || domain.isEmpty()) ?
+        " checked" : "" %>>
+        <label for="https">HTTPS</label>
+        <input type=checkbox name=mailto id="mailto" value=1<%= mailto ? " checked" : "" %>>
+        <label for="mailto">mailto</label>
 
 <tr>
-    <td><input type=checkbox name=ns value=0<%= mainns ? " checked" : "" %>>
-    <td colspan=3>Main namespace only? (May be unreliable.)
+    <td><input type=checkbox name=ns id="main_ns" value=0<%= mainns ? " checked" : "" %>>
+    <td colspan=3><label for="main_ns">Main namespace only? (May be unreliable.)</label>
 
 </table>
 <br>

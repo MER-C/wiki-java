@@ -28,10 +28,14 @@ main space for a given user (or for all users) and page metadata. A query limit 
     <td><input type=text name=username value="<%= username %>">
 <tr>
     <td>Fetch:
-    <td><input type=radio name=mode value="patrols" <%= mode == NPPCheck.Mode.PATROLS ? " checked" : "" %>>New page patrols
-        <input type=radio name=mode value="drafts" <%= mode == NPPCheck.Mode.DRAFTS ? " checked" : "" %>>Moves from Draft to Main
-        <input type=radio name=mode value="userspace" <%= mode == NPPCheck.Mode.USERSPACE ? " checked" : "" %>>Moves from User to Main
-        <input type=radio name=mode value="redirects" <%= mode == NPPCheck.Mode.REDIRECTS ? " checked" : "" %>>Redirects converted to articles
+    <td><input type=radio name=mode id="patrols" value="patrols" <%= mode == NPPCheck.Mode.PATROLS ? " checked" : "" %>>
+        <label for="patrols">New page patrols</label>
+        <input type=radio name=mode id="drafts" value="drafts" <%= mode == NPPCheck.Mode.DRAFTS ? " checked" : "" %>>
+        <label for="drafts">Moves from Draft to Main</label>
+        <input type=radio name=mode id="userspace" value="userspace" <%= mode == NPPCheck.Mode.USERSPACE ? " checked" : "" %>>
+        <label for="userspace">Moves from User to Main</label>
+        <input type=radio name=mode id="redirects" value="redirects" <%= mode == NPPCheck.Mode.REDIRECTS ? " checked" : "" %>>
+        <label for="redirects">Redirects converted to articles</label>
 <tr>
     <td>Show patrols from:
     <td><input type=date name=earliest value="<%= earliest %>"> to 

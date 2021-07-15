@@ -34,9 +34,10 @@
 <%
     // Disallow bad robots
     String useragent = request.getHeader("User-Agent");
-    if (useragent.contains("Tweetmeme") || useragent.contains("bing.com") || useragent.contains("Wget"))
+    if (useragent.contains("Tweetmeme") || useragent.contains("Apache-HttpClient") || 
+        useragent.contains("bing.com")  || useragent.contains("Wget"))
     {
-        response.sendError(403, "robots.txt exists for a reason. Follow it!");
+        response.sendRedirect("https://" + request.getRemoteAddr());
         return;
     }
     

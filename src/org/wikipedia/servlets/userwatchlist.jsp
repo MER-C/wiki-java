@@ -69,8 +69,9 @@ Someone # Spam
     <td><input type=date name=earliest value="<%= earliest %>"> to
         <input type=date name=latest value="<%= latest %>"> (inclusive)
 <tr><td>Show:
-    <td><input type=checkbox name=newonly value=1<%= newonly ? " checked" : 
-        "" %>>New pages only
+    <td><input type=checkbox name=newonly id="newonly" value=1<%= newonly ? " checked" : 
+        "" %>>
+        <label for="newonly">New pages only</label>
 <tr><td>Skip:
     <td><input type=number size=50 name=skip value="<%= skip %>">
 </table>
