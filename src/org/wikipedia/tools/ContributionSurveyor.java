@@ -74,6 +74,7 @@ public class ContributionSurveyor
             .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits).")
             .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the wiki page [[Main Page]].")
             .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
+            .addSingleArgumentFlag("--sourcewiki", "example.com", "Use a different wiki than --wiki as a source of users.")
             .addSingleArgumentFlag("--user", "user", "Survey the given user.")
             .addBooleanFlag("--comingle", "If there are multiple users, combine their edits into the one survey (edits only).")
             .addSection("Survey options:")
@@ -90,6 +91,9 @@ public class ContributionSurveyor
             .parse(args);
 
         Wiki homewiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        Wiki sourcewiki = homewiki;
+        if (parsedargs.containsKey("--sourcewiki"))
+            sourcewiki = Wiki.newSession(parsedargs.get("--sourcewiki"));
         if (parsedargs.containsKey("--login"))
             Users.of(homewiki).cliLogin();
         String infile = parsedargs.get("--infile");
@@ -109,16 +113,16 @@ public class ContributionSurveyor
             users.add(user);
         if (category != null)
         {
-            for (String member : homewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
-                users.add(homewiki.removeNamespace(member));
+            for (String member : sourcewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
+                users.add(sourcewiki.removeNamespace(member));
         }
         if (wikipage != null)
         {
-            String text = homewiki.getPageText(List.of(wikipage)).get(0);
+            String text = sourcewiki.getPageText(List.of(wikipage)).get(0);
             List<String> list = Pages.parseWikitextList(text);
             for (String temp : list)
-                if (homewiki.namespace(temp) == Wiki.USER_NAMESPACE)
-                    users.add(homewiki.removeNamespace(temp));
+                if (sourcewiki.namespace(temp) == Wiki.USER_NAMESPACE)
+                    users.add(sourcewiki.removeNamespace(temp));
         }
         if (users.isEmpty()) // file IO
         {
@@ -139,8 +143,8 @@ public class ContributionSurveyor
             }
             List<String> templist = Files.readAllLines(path);
             for (String line : templist)
-                if (homewiki.namespace(line) == Wiki.USER_NAMESPACE)
-                    users.add(homewiki.removeNamespace(line));
+                if (sourcewiki.namespace(line) == Wiki.USER_NAMESPACE)
+                    users.add(sourcewiki.removeNamespace(line));
         }
 
         // output file
