@@ -67,7 +67,7 @@ public class ContributionSurveyorTest
     {
         // same use case as above: all three users have no surveyable edits
         List<String> users = List.of("HilStev", "OfficialPankajPatidar", "Rt11642");
-        List<String> results = surveyor.outputContributionSurvey(users, false, Wiki.MAIN_NAMESPACE);
+        List<String> results = surveyor.outputContributionSurvey(users, true, false, false, Wiki.MAIN_NAMESPACE);
         assertTrue(results.isEmpty());
     }
     

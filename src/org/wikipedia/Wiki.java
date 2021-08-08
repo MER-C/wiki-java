@@ -3213,6 +3213,7 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "alldeletedrevisions");
         getparams.put("adrprop", "ids|user|flags|size|comment|parsedcomment|timestamp|sha1|tags");
+        getparams.put("adruser", username);
         if (helper != null)
         {
             helper.setRequestType("adr");

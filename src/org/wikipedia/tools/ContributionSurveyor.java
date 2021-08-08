@@ -1,5 +1,5 @@
 /**
- *  @(#)ContributionSurveyor.java 0.07 05/07/2021
+ *  @(#)ContributionSurveyor.java 0.08 07/08/2021
  *  Copyright (C) 2011-2021 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@ import org.wikipedia.*;
  *  contribution surveyor (online version)</a>
  *  @see <a href="https://en.wikipedia.org/wiki/WP:CCI">Contributor Copyright
  *  Investigations</a>
- *  @version 0.07
+ *  @version 0.08
  */
 public class ContributionSurveyor
 {
@@ -49,8 +49,8 @@ public class ContributionSurveyor
     private boolean nominor = true, noreverts = true, newonly = false;
     private boolean comingle;
     private int minsizediff = 150;
-    private int articlesperpage = 1000;
-    private int articlespersection = 20;
+    private final int articlesperpage = 1000;
+    private final int articlespersection = 20;
 
     /**
      *  Runs this program.
@@ -64,14 +64,14 @@ public class ContributionSurveyor
             .synopsis("org.wikipedia.tools.ContributionSurveyor", "[options]")
             .description("Survey the contributions of a large number of wiki editors.")
             .addHelp()
-            .addVersion("ContributionSurveyor v0.06\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addVersion("ContributionSurveyor v0.08\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--infile", "file", "Use file as the list of users. "
                 + "Shows a filechooser if not specified.")
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s). "
                 + "Shows a filechooser if not specified. If multiple files output, use this as a prefix.")
             .addSection("Users to scan:")
             .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
-            .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits)s.")
+            .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits).")
             .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the wiki page [[Main Page]].")
             .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
             .addSingleArgumentFlag("--user", "user", "Survey the given user.")
@@ -82,6 +82,8 @@ public class ContributionSurveyor
             .addBooleanFlag("--includeminor", "Include minor edits.")
             .addBooleanFlag("--includereverts", "Include rollbacks.")
             .addBooleanFlag("--newonly", "Survey only page creations.")
+            .addBooleanFlag("--deleted", "Survey deleted edits (requires admin privileges)")
+            .addBooleanFlag("--skiplive", "Don't survey live edits (for image/deleted only surveys)")
             .addSingleArgumentFlag("--minsize", "size", "Only includes edits that add more than size bytes (default: 150).")
             .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
             .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
@@ -95,8 +97,6 @@ public class ContributionSurveyor
         String wikipage = parsedargs.get("--wikipage");
         String category = parsedargs.get("--category");
         String user = parsedargs.get("--user");
-        boolean images = parsedargs.containsKey("--images");
-        boolean userspace = parsedargs.containsKey("--userspace");
         String earliestdatestring = parsedargs.get("--editsafter");
         String latestdatestring = parsedargs.get("--editsbefore");
 
@@ -157,7 +157,11 @@ public class ContributionSurveyor
             System.exit(0);
         }
 
-        int[] ns = userspace ? (new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE }) : (new int[] { Wiki.MAIN_NAMESPACE });
+        int[] ns;
+        if (parsedargs.containsKey("--userspace"))
+            ns = new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE };
+        else
+            ns = new int[] { Wiki.MAIN_NAMESPACE };
 
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
         surveyor.setDateRange(editsafter, editsbefore);
@@ -166,7 +170,8 @@ public class ContributionSurveyor
         surveyor.setIgnoringReverts(!parsedargs.containsKey("--includereverts"));
         surveyor.setComingled(parsedargs.containsKey("--comingle"));
         surveyor.setNewOnly(parsedargs.containsKey("--newonly"));
-        List<String> output = surveyor.outputContributionSurvey(users, images, ns);
+        List<String> output = surveyor.outputContributionSurvey(users, !parsedargs.containsKey("--skiplive"),
+            parsedargs.containsKey("--deleted"), parsedargs.containsKey("--images"), ns);
         
         Path path = Paths.get(outfile);
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
@@ -428,40 +433,46 @@ public class ContributionSurveyor
     }
 
     /**
-     *  Performs a survey of a user's deleted contributions. Requires
+     *  Performs a survey of some users' deleted contributions. Requires
      *  administrator access to the relevant wiki. (Note: due to MediaWiki
      *  limitations, it is not possible to filter by bytes added or whether an
      *  edit created a new page.)
      *
-     *  @param username the user to survey
+     *  @param users the users to survey
      *  @param ns the namespaces to survey (not specified = all namespaces)
-     *  @return the survey, in the form deleted page &#8594; revisions
+     *  @return the survey, in the form username &#8594; deleted page &#8594; edits
      *  @throws IOException if a network error occurs
      *  @throws CredentialNotFoundException if one cannot view deleted pages
      *  @since 0.03
      */
-    public LinkedHashMap<String, List<Wiki.Revision>> deletedContributionSurvey(String username,
+    public Map<String, Map<String, List<Wiki.Revision>>> deletedContributionSurvey(List<String> users,
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .withinDateRange(earliestdate, latestdate)
             .inNamespaces(ns);
-        List<Wiki.Revision> delcontribs = wiki.deletedContribs(username, rh);
-        if (noreverts)
-            delcontribs.removeIf(edit -> edit.getTags().contains("mw-rollback"));
-            // delcontribs = Revisions.removeReverts(delcontribs);
-        LinkedHashMap<String, List<Wiki.Revision>> ret = new LinkedHashMap<>();
-
-        // group contributions by page
-        for (Wiki.Revision rev : delcontribs)
+        
+        Map<String, Map<String, List<Wiki.Revision>>> ret = new LinkedHashMap<>();
+        for (String username : users)
         {
-            if (nominor && rev.isMinor())
-                continue;
-            String page = rev.getTitle();
-            if (!ret.containsKey(page))
-                ret.put(page, new ArrayList<>());
-            ret.get(page).add(rev);
+            List<Wiki.Revision> delcontribs = wiki.deletedContribs(username, rh);
+            if (noreverts)
+                delcontribs.removeIf(edit -> edit.getTags().contains("mw-rollback"));
+                // delcontribs = Revisions.removeReverts(delcontribs);
+            LinkedHashMap<String, List<Wiki.Revision>> imap = new LinkedHashMap<>();
+
+            // group contributions by page
+            for (Wiki.Revision rev : delcontribs)
+            {
+                if (nominor && rev.isMinor())
+                    continue;
+                String page = rev.getTitle();
+                if (!imap.containsKey(page))
+                    imap.put(page, new ArrayList<>());
+                imap.get(page).add(rev);
+            }
+            ret.put(username, imap);
         }
         return ret;
     }
@@ -553,44 +564,66 @@ public class ContributionSurveyor
      *  Performs a mass contribution survey and returns wikitext output.
      *  @param usernames the users to survey
      *  @param ns the namespaces to survey
+     *  @param contribs include live edits
+     *  @param deleted include deleted edits (requires admin login)
      *  @param images whether to survey images (searches Commons as well)
      *  @return the survey results as wikitext
      *  @throws IOException if a network error occurs
+     *  @throws SecurityException if fetching deleted edits without admin
+     *  privileges 
      *  @since 0.02
      */
-    public List<String> outputContributionSurvey(List<String> usernames, boolean images, int... ns) throws IOException
+    public List<String> outputContributionSurvey(List<String> usernames, boolean contribs, 
+        boolean deleted, boolean images, int... ns) throws IOException, SecurityException
     {
-        // TODO: output image only CCIs via this method
         List<String> sections = new ArrayList<>();
         List<Wiki.User> userinfo = wiki.getUsers(usernames);
         int sectionsperpage = articlesperpage / articlespersection;  
-        var results = contributionSurvey(usernames, ns);
-        var iter = results.entrySet().iterator();
-        int userindex = 0;
-
-        while (iter.hasNext())
+        Map<String, Map<String, List<Wiki.Revision>>> results = null, delresults = null;
+        if (contribs)
+            results = contributionSurvey(usernames, ns);
+        if (deleted)
         {
-            // fetch text contribution survey for this user
-            var entry = iter.next();
-            Map<String, List<Wiki.Revision>> user_survey = entry.getValue();
-            String username = entry.getKey();
-            String username_hdr = results.size() == 1 ? "" : (username + ":");
-            int sizebefore = sections.size();
-
+            try
+            {
+                delresults = deletedContributionSurvey(usernames, ns);
+            }
+            catch (CredentialNotFoundException ex)
+            {
+                throw new SecurityException(ex);
+            }
+        }
+        int count = usernames.size();
+        
+        for (int userindex = 0; userindex < usernames.size(); userindex++)
+        {
             // output text results
-            sections.addAll(Pages.toWikitextPaginatedList(user_survey.keySet(), page -> outputNextPage(user_survey, page), 
-                (start, end) -> "===" + username_hdr + " Pages " + start + " to " + end + "===", 
-                articlespersection, false));
+            int sizebefore = sections.size();
+            String username = usernames.get(userindex);
+            String username_hdr = count == 1 ? "" : (username + ":");
 
-            // populate image contribution survey for this user
-            // userinfo required because there may be IP addresses
-            Map<String, List<String>> imagesurvey = null;
-            if (images && userinfo.get(userindex) != null)
-                imagesurvey = imageContributionSurvey(userinfo.get(userindex));
+            if (results != null)
+            {
+                Map<String, List<Wiki.Revision>> user_survey = results.get(username);
+                sections.addAll(Pages.toWikitextPaginatedList(user_survey.keySet(), page -> outputNextPage(user_survey, page), 
+                    (start, end) -> "===" + username_hdr + " Pages " + start + " to " + end + "===", 
+                    articlespersection, false));
+            }
             
-            // output image results
+            // output deleted results
+            if (delresults != null)
+            {
+                Map<String, List<Wiki.Revision>> user_survey = delresults.get(username);
+                sections.addAll(Pages.toWikitextPaginatedList(user_survey.keySet(), page -> outputNextPage(user_survey, page), 
+                    (start, end) -> "===" + username_hdr + " Deleted pages " + start + " to " + end + "===", 
+                    articlespersection, false));
+            }
+            
+            // output image contribution survey for this user
+            // userinfo required because there may be IP addresses
             if (images && userinfo.get(userindex) != null)
             {
+                Map<String, List<String>> imagesurvey = imageContributionSurvey(userinfo.get(userindex));
                 sections.addAll(Pages.toWikitextPaginatedList(imagesurvey.get("local"), Pages.LIST_OF_LINKS, 
                     (start, end) -> "===" + username_hdr + " Local files " + start + " to " + end + "===", 
                     articlespersection, false));
@@ -616,7 +649,6 @@ public class ContributionSurveyor
                     sections.set(i, header + toreplace);
                 }
             }
-            userindex++;
         }
         
         // segment sections into pages

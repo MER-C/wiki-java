@@ -25,38 +25,25 @@
     Wiki wiki = Wiki.newSession(homewiki);
 
     ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-    Map<String, List<String>> survey = null;
+    List<String> surveydata = null;
     if (user != null)
-    {
-        Wiki.User wpuser = wiki.getUser(user);
-        if (wpuser != null)
-        {
-            // get results
-            request.setAttribute("contenttype", "text");
-            surveyor.setDateRange(earliest_odt, latest_odt);
-            survey = surveyor.imageContributionSurvey(wpuser);
-        }
-    }
+        request.setAttribute("contenttype", "text");
 %>
 <%@ include file="header.jspf" %>
 <%
-    if (survey != null)
+    if (user != null)
     {
+        surveyor.setDateRange(earliest_odt, latest_odt);
+        surveydata = surveyor.outputContributionSurvey(List.of(user), false, false, true);
+
+        String footer = "Survey URL: " + request.getRequestURL() + "?" + request.getQueryString();
+        // TODO: output as ZIP
+        for (int i = 0; i < surveydata.size(); i++)
+            surveydata.set(i, surveydata.get(i) + footer);
+            
         response.setHeader("Content-Disposition", "attachment; filename=" 
             + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
-        out.print(Users.generateWikitextSummaryLinks(user));
-        out.println();
-        List<String> sections = new ArrayList<>();
-        sections.addAll(Pages.toWikitextPaginatedList(survey.get("local"), Pages.LIST_OF_LINKS, 
-            (start, end) -> "===" + user + " Local files " + start + " to " + end + "===", 20, false));
-        sections.addAll(Pages.toWikitextPaginatedList(survey.get("commons"), Pages.LIST_OF_LINKS, 
-            (start, end) -> "===" + user + " Commons files " + start + " to " + end + "===", 20, false));
-        sections.addAll(Pages.toWikitextPaginatedList(survey.get("transferred"), Pages.LIST_OF_LINKS, 
-            (start, end) -> "===" + user + " Transferred files " + start + " to " + end + "===", 20, false));
-        for (String section : sections)
-            out.println(section);
-        out.print(surveyor.generateWikitextFooter());
-        out.println("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+        out.print(String.join("\n", surveydata));
         return;
     }
 %>
@@ -83,7 +70,7 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 </form>
 
 <%
-    if (user != null && survey == null)
+    if (user != null && surveydata.isEmpty())
         request.setAttribute("error", "ERROR: User " + ServletUtils.sanitizeForHTML(user) + " does not exist!");
 %>
 <%@ include file="footer.jspf" %>

@@ -63,7 +63,7 @@
         
         // ns 118 = draft namespace on en.wikipedia
         int[] ns = nodrafts ? new int[] { Wiki.MAIN_NAMESPACE } : new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, 118 };
-        List<String> surveydata = surveyor.outputContributionSurvey(users, false, ns);
+        List<String> surveydata = surveyor.outputContributionSurvey(users, true, false, false, ns);
         if (surveydata.isEmpty())
         {
             request.setAttribute("error", "No edits found!");
@@ -93,7 +93,6 @@
             response.setHeader("Content-Disposition", "attachment; filename=" 
                 + URLEncoder.encode(category, StandardCharsets.UTF_8) + ".txt");
         out.print(survey);
-        
         return;
     }
  %>
