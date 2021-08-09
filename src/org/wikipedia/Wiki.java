@@ -905,7 +905,9 @@ public class Wiki implements Comparable<Wiki>
      *  Enables/disables GZip compression for GET requests. Default: true.
      *  @param zipped whether we use GZip compression
      *  @since 0.23
+     *  @deprecated this is now handled transparently; just delete calls to this method.
      */
+    @Deprecated(forRemoval=true)
     public void setUsingCompressedRequests(boolean zipped)
     {
         this.zipped = zipped;
@@ -916,7 +918,9 @@ public class Wiki implements Comparable<Wiki>
      *  Default: true.
      *  @return (see above)
      *  @since 0.23
+     *  @deprecated this is now handled transparently; just delete calls to this method.
      */
+    @Deprecated(forRemoval=true)
     public boolean isUsingCompressedRequests()
     {
         return zipped;
@@ -8388,6 +8392,7 @@ public class Wiki implements Comparable<Wiki>
                 }
 
                 HttpResponse<InputStream> hr = client.send(connection.build(), HttpResponse.BodyHandlers.ofInputStream());
+                boolean zipped_ = hr.headers().firstValue("Content-Encoding").orElse("").equals("gzip");
                 if (checkLag(hr))
                 {
                     tries++;
@@ -8395,7 +8400,7 @@ public class Wiki implements Comparable<Wiki>
                 }
 
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                    zipped ? new GZIPInputStream(hr.body()) : hr.body(), "UTF-8")))
+                    zipped_ ? new GZIPInputStream(hr.body()) : hr.body(), "UTF-8")))
                 {
                     response = in.lines().collect(Collectors.joining("\n"));
                 }
@@ -8543,12 +8548,10 @@ public class Wiki implements Comparable<Wiki>
      */
     protected HttpRequest.Builder makeConnection(String url) throws IOException
     {
-        var builder = HttpRequest.newBuilder(URI.create(url))
+        return HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofMillis(read_timeout_msec))
-            .header("User-Agent", useragent);
-        if (zipped)
-            builder = builder.header("Accept-encoding", "gzip");
-        return builder;
+            .header("User-Agent", useragent)
+            .header("Accept-encoding", "gzip");
     }
 
     /**

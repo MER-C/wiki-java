@@ -158,7 +158,6 @@ public class WMFWiki extends Wiki
             // https://phabricator.wikimedia.org/T243701
             wikidata.setMaxLag(-1);
             wikidata.requiresExtension("WikibaseRepository");
-            wikidata.setUsingCompressedRequests(false); // huh?
         }
         return wikidata;
     }
