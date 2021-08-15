@@ -576,22 +576,27 @@ public class WikiTest
     {
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
         // see also getLogEntries() below
-        List<Wiki.LogEntry> le = enWiki.getBlockList("Nimimaan", null);
-        assertEquals(-1, le.get(0).getID());
-        assertEquals("2016-06-21T13:14:54Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertEquals("MER-C", le.get(0).getUser());
-        assertEquals(Wiki.BLOCK_LOG, le.get(0).getType());
-        assertEquals("block", le.get(0).getAction());
-        assertEquals("User:Nimimaan", le.get(0).getTitle());
-        assertEquals("spambot", le.get(0).getComment());
+        List<Wiki.LogEntry> le = enWiki.getBlockList(List.of("Nimimaan", "Bodiadub"), null);
+        assertEquals(-1, le.get(1).getID());
+        assertEquals("2016-06-21T13:14:54Z", le.get(1).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertEquals("MER-C", le.get(1).getUser());
+        assertEquals(Wiki.BLOCK_LOG, le.get(1).getType());
+        assertEquals("block", le.get(1).getAction());
+        assertEquals("User:Nimimaan", le.get(1).getTitle());
+        assertEquals("spambot", le.get(1).getComment());
 //        assertEquals(new Object[] {
 //            false, true, // hard block (not anon only), account creation disabled,
 //            false, true, // autoblock enabled, email disabled
 //            true, "indefinite" // talk page access revoked, expiry
 //        }, le[0].getDetails(), "block parameters");
 
+        assertEquals("2019-05-22T03:28:04Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertEquals("TonyBallioni", le.get(0).getUser());
+        assertEquals("User:Bodiadub", le.get(0).getTitle());
+        assertEquals("{{checkuserblock-account}}", le.get(0).getComment());
+
         // This IP address should not be blocked (it is reserved)
-        le = enWiki.getBlockList("0.0.0.0", null);
+        le = enWiki.getBlockList(List.of("0.0.0.0"), null);
         assertTrue(le.isEmpty(), "0.0.0.0 should not be blocked");
     }
 

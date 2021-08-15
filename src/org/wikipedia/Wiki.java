@@ -5831,7 +5831,7 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
      *
-     *  @param user a particular user that might have been blocked. Use null to
+     *  @param users a list of users that might have been blocked. Use null to
      *  not specify one. May be an IP (e.g. "127.0.0.1") or a CIDR range (e.g.
      *  "127.0.0.0/16") but not an autoblock (e.g. "#123456").
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
@@ -5840,7 +5840,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.12
      */
-    public List<LogEntry> getBlockList(String user, Wiki.RequestHelper helper) throws IOException
+    public List<LogEntry> getBlockList(List<String> users, Wiki.RequestHelper helper) throws IOException
     {
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -5854,11 +5854,7 @@ public class Wiki implements Comparable<Wiki>
             getparams.putAll(helper.addShowParameter());
             limit = helper.limit();
         }
-        if (user != null)
-            getparams.put("bkusers", normalize(user));
-
-        // connection
-        List<LogEntry> entries = makeListQuery("bk", getparams, null, "getBlockList", limit, (line, results) ->
+        BiConsumer<String, List<Wiki.LogEntry>> parser = (line, results) ->
         {
             // XML form: <block id="7844197" user="223.205.208.198" by="ProcseeBot"
             // timestamp="2017-09-24T07:17:08Z" expiry="2017-11-23T07:17:08Z"
@@ -5880,8 +5876,18 @@ public class Wiki implements Comparable<Wiki>
                 LogEntry le = parseLogEntry(temp, blocker, BLOCK_LOG, "block", target);
                 results.add(le);
             }
-        });
-
+        };
+        List<LogEntry> entries = new ArrayList<>();
+        if (users == null)
+            entries.addAll(makeListQuery("bk", getparams, null, "getBlockList", limit, parser));
+        else
+        {
+            for (String bkusers : constructTitleString(users))
+            {
+                getparams.put("bkusers", bkusers);
+                entries.addAll(makeListQuery("bk", getparams, null, "getBlockList", limit, parser));
+            }
+        }
         log(Level.INFO, "getBlockList", "Successfully fetched block list " + entries.size() + " entries)");
         return entries;
     }
