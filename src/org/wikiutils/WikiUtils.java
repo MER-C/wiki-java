@@ -1,7 +1,7 @@
 package org.wikiutils;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.*;
 import org.wikipedia.Wiki;
 
 /**
@@ -65,7 +65,9 @@ public class WikiUtils
 		{
 			try
 			{
-				wiki.edit(s, wiki.getPageText(s).replaceAll(find, replacement), summary);
+                            // not vectorized to reduce edit conflicts
+                            String text = wiki.getPageText(List.of(s)).get(0);
+                            wiki.edit(s, text.replaceAll(find, replacement), summary);
 			}
 			catch (Throwable e)
 			{
@@ -86,8 +88,10 @@ public class WikiUtils
 		{
 			try
 			{
-				System.err.println("Attempting null edit on '" + s + "'");
-				wiki.edit(s, wiki.getPageText(s), "");
+                            System.err.println("Attempting null edit on '" + s + "'");
+                            // not vectorized to reduce edit conflicts
+			    String text = wiki.getPageText(List.of(s)).get(0);
+                            wiki.edit(s, text, "");
 				
 			}
 			catch (Throwable e)

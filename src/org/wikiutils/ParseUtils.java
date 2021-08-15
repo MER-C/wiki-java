@@ -39,7 +39,7 @@ public class ParseUtils
 	 */
 	public static String getRedirectTarget(String redirect, Wiki wiki) throws IOException
 	{
-		String text = wiki.getPageText(redirect).trim();
+		String text = wiki.getPageText(List.of(redirect)).get(0).trim();
 
 		if (text.matches("(?si)^#(redirect)\\s*?\\[\\[.+?\\]\\].*?"))
 			return text.substring(text.indexOf("[[") + 2, text.indexOf("]]"));
@@ -100,7 +100,7 @@ public class ParseUtils
 
 	public static void templateReplace(String template, String replacementText, String reason, Wiki wiki) throws IOException
 	{
-		String[] list = wiki.whatTranscludesHere(template);
+		List<String> list = wiki.whatTranscludesHere(List.of(template)).get(0);
 		if (template.startsWith("Template:"))
 			template = wiki.removeNamespace(template);
 
@@ -108,7 +108,9 @@ public class ParseUtils
 		{
 			try
 			{
-				wiki.edit(page, wiki.getPageText(page).replaceAll("(?i)(" + template + ")", replacementText), reason);
+                            // not vectorized to reduce edit conflicts
+                            String text = wiki.getPageText(List.of(page)).get(0);
+                            wiki.edit(page, text.replaceAll("(?i)(" + template + ")", replacementText), reason);
 			}
 			catch (Throwable e)
 			{
@@ -316,21 +318,6 @@ public class ParseUtils
                 }
                 map.remove("ParamWithoutName" + i);
                 return templateFromMap(map);
-        }
-        
-        /**
-         *  Creates a string consisting of the given character repeated len times.
-         *  @param c the character
-         *  @param len the final length
-         *  @return see above
-         *  @deprecated as of Java 11, use {@code String.repeat()}
-         */
-        @Deprecated
-        public static String getString(char c, int len)
-        {
-                char[] temp = new char[len];
-                Arrays.fill(temp, c);
-                return new String(temp);
         }
 
         /**

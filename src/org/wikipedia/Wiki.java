@@ -1648,20 +1648,6 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets miscellaneous page info.
-     *  @param page the page to get info for
-     *  @return see {@link #getPageInfo(List)}
-     *  @throws IOException if a network error occurs
-     *  @since 0.28
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public Map<String, Object> getPageInfo(String page) throws IOException
-    {
-        return getPageInfo(List.of(page)).get(0);
-    }
-
-    /**
      *  Gets miscellaneous page info. Returns:
      *  <ul>
      *  <li><b>inputpagename</b>: (String) the page name supplied to this method
@@ -1926,26 +1912,6 @@ public class Wiki implements Comparable<Wiki>
         for (int i = 0; i < titles.size(); i++)
             ret[i] = (Boolean)info.get(i).get("exists");
         return ret;
-    }
-
-    /**
-     *  Gets the raw wikicode for a page. WARNING: does not support special
-     *  pages. Check [[User talk:MER-C/Wiki.java#Special page equivalents]]
-     *  for fetching the contents of special pages. Use {@link #getImage(String,
-     *  File)} to fetch an image.
-     *
-     *  @param title the title of the page.
-     *  @return the raw wikicode of a page, or {@code null} if the page doesn't exist
-     *  @throws UnsupportedOperationException if you try to retrieve the text of
-     *  a Special: or Media: page
-     *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @see #edit
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String getPageText(String title) throws IOException
-    {
-        return getPageText(List.of(title)).get(0);
     }
 
     /**
@@ -2239,13 +2205,10 @@ public class Wiki implements Comparable<Wiki>
     public synchronized void edit(String title, String text, String summary, boolean minor, boolean bot,
         int section, OffsetDateTime basetime) throws IOException, LoginException
     {
-        // @revised 0.16 to use API edit. No more screenscraping - yay!
-        // @revised 0.17 section editing
-        // @revised 0.25 optional bot flagging
         throttle();
 
         // protection
-        Map<String, Object> info = getPageInfo(title);
+        Map<String, Object> info = getPageInfo(List.of(title)).get(0);
         if (!checkRights(info, "edit") || (Boolean)info.get("exists") && !checkRights(info, "create"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -2364,7 +2327,7 @@ public class Wiki implements Comparable<Wiki>
         throttle();
 
         // edit token
-        Map<String, Object> info = getPageInfo(title);
+        Map<String, Object> info = getPageInfo(List.of(title)).get(0);
         if (Boolean.FALSE.equals(info.get("exists")))
         {
             log(Level.INFO, "delete", "Page \"" + title + "\" does not exist.");
@@ -2460,22 +2423,6 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets the list of images used on a particular page. If there are
-     *  redirected images, both the source and target page are included.
-     *
-     *  @param title a page
-     *  @return the list of images used in the page.
-     *  @throws IOException if a network error occurs
-     *  @since 0.16
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String[] getImagesOnPage(String title) throws IOException
-    {
-        return getImagesOnPage(List.of(title)).get(0).toArray(String[]::new);
-    }
-
-    /**
      *  Gets the list of images used on the given pages. If there are redirected
      *  images, both the source and target page are included. Return order is
      *  the same as the input order.
@@ -2499,22 +2446,6 @@ public class Wiki implements Comparable<Wiki>
         });
         log(Level.INFO, "getImagesOnPage", "Successfully retrieved images used on " + titles.size() + " pages.");
         return ret;
-    }
-
-    /**
-     *  Gets the list of categories a particular page is in. Includes hidden
-     *  categories.
-     *
-     *  @param title a page
-     *  @return the list of categories that page is in
-     *  @throws IOException if a network error occurs
-     *  @since 0.16
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String[] getCategories(String title) throws IOException
-    {
-        return getCategories(List.of(title), null, false).get(0).toArray(String[]::new);
     }
 
     /**
@@ -2565,24 +2496,6 @@ public class Wiki implements Comparable<Wiki>
         });
         log(Level.INFO, "getCategories", "Successfully retrieved categories used on " + titles.size() + " pages.");
         return ret;
-    }
-
-    /**
-     *  Gets the list of templates used on a particular page that are in a
-     *  particular namespace(s).
-     *
-     *  @param title a page
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return the list of templates used on that page in that namespace
-     *  @throws IOException if a network error occurs
-     *  @since 0.16
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String[] getTemplates(String title, int... ns) throws IOException
-    {
-        List<String> temp = getTemplates(List.of(title), ns).get(0);
-        return temp.toArray(String[]::new);
     }
 
     /**
@@ -2654,24 +2567,6 @@ public class Wiki implements Comparable<Wiki>
         return ret;
     }
 
-    /**
-     *  Gets the list of interwiki links a particular page has. The returned
-     *  map has the format { language code : the page on the external wiki
-     *  linked to }.
-     *
-     *  @param title a page
-     *  @return a map of interwiki links that page has (empty if there are no
-     *  links)
-     *  @throws IOException if a network error occurs
-     *  @deprecated this trampoline is going away
-     *  @since 0.18
-     */
-    @Deprecated(forRemoval=true)
-    public Map<String, String> getInterWikiLinks(String title) throws IOException
-    {
-        return getInterWikiLinks(List.of(title)).get(0);
-    }
-    
     /**
      *  Gets the list of interwiki links a particular page has. The returned
      *  map has the format { language code : the page on the external wiki
@@ -2769,22 +2664,6 @@ public class Wiki implements Comparable<Wiki>
         int size = links.size();
         log(Level.INFO, "getLinksOnPage", "Successfully retrieved links used on " + title + " (" + size + " links)");
         return links;
-    }
-
-    /**
-     *  Gets the list of external links used on a particular page.
-     *
-     *  @param title a page
-     *  @return the list of external links used in the page
-     *  @throws IOException if a network error occurs
-     *  @since 0.29
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String[] getExternalLinksOnPage(String title) throws IOException
-    {
-        List<String> temp = getExternalLinksOnPage(List.of(title)).get(0);
-        return temp.toArray(String[]::new);
     }
 
     /**
@@ -2913,21 +2792,6 @@ public class Wiki implements Comparable<Wiki>
         if (a < 0) // page does not exist
             return null;
         return parseRevision(line.substring(a, b), title);
-    }
-
-    /**
-     *  Gets the newest page name or the name of a page where the asked page
-     *  redirects.
-     *  @param title a title
-     *  @return the page redirected to or {@code null} if not a redirect
-     *  @throws IOException if a network error occurs
-     *  @since 0.29
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String resolveRedirect(String title) throws IOException
-    {
-        return resolveRedirects(List.of(title)).get(0);
     }
 
     /**
@@ -3377,7 +3241,7 @@ public class Wiki implements Comparable<Wiki>
         throttle();
 
         // protection and token
-        Map<String, Object> info = getPageInfo(title);
+        Map<String, Object> info = getPageInfo(List.of(title)).get(0);
         // determine whether the page exists
         if (Boolean.FALSE.equals(info.get("exists")))
             throw new IllegalArgumentException("Tried to move a non-existant page!");
@@ -3819,7 +3683,7 @@ public class Wiki implements Comparable<Wiki>
             throw new IllegalArgumentException("Cannot undo - the revisions supplied are not on the same page!");
 
         // protection
-        Map<String, Object> info = getPageInfo(rev.getTitle());
+        Map<String, Object> info = getPageInfo(List.of(rev.getTitle())).get(0);
         if (!checkRights(info, "edit"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -4470,7 +4334,7 @@ public class Wiki implements Comparable<Wiki>
         throttle();
 
         // protection
-        Map<String, Object> info = getPageInfo("File:" + filename);
+        Map<String, Object> info = getPageInfo(List.of("File:" + filename)).get(0);
         if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -4591,7 +4455,7 @@ public class Wiki implements Comparable<Wiki>
         throttle();
 
         // protection
-        Map<String, Object> info = getPageInfo("File:" + filename);
+        Map<String, Object> info = getPageInfo(List.of("File:" + filename)).get(0);
         if (!checkRights(info, "upload"))
         {
             CredentialException ex = new CredentialException("Permission denied: page is protected.");
@@ -4803,21 +4667,6 @@ public class Wiki implements Comparable<Wiki>
         int size = members.size();
         log(Level.INFO, "allUsers", "Successfully retrieved user list (" + size + " users)");
         return members;
-    }
-
-    /**
-     *  Gets the user with the given username. Returns null if it doesn't
-     *  exist.
-     *  @param username a username
-     *  @return the user with that username
-     *  @since 0.05
-     *  @throws IOException if a network error occurs
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public User getUser(String username) throws IOException
-    {
-        return getUsers(List.of(username)).get(0);
     }
 
     /**
@@ -5670,23 +5519,6 @@ public class Wiki implements Comparable<Wiki>
         });
         log(Level.INFO, "whatLinksHere", "Successfully retrieved " + (redirects ? "redirects to " : "links to ") + ret.size() + " pages.");
         return ret;
-    }
-
-    /**
-     *  Returns a list of all pages transcluding to a page within the specified
-     *  namespaces.
-     *
-     *  @param title the title of the page, e.g. "Template:Stub"
-     *  @param ns a list of namespaces to filter by, empty = all namespaces.
-     *  @return the list of pages transcluding the specified page
-     *  @throws IOException or UncheckedIOException if a netwrok error occurs
-     *  @since 0.12
-     *  @deprecated this trampoline is going away
-     */
-    @Deprecated(forRemoval = true)
-    public String[] whatTranscludesHere(String title, int... ns) throws IOException
-    {
-        return whatTranscludesHere(List.of(title), ns).get(0).toArray(String[]::new);
     }
 
     /**
@@ -8574,7 +8406,7 @@ public class Wiki implements Comparable<Wiki>
         if (statuscounter > statusinterval)
         {
             // purge user rights in case of desysop or loss of other priviliges
-            user = getUser(user.getUsername());
+            user = getUsers(List.of(user.getUsername())).get(0);
             if ((assertion & ASSERT_SYSOP) == ASSERT_SYSOP && !user.isA("sysop"))
                 // assert user.isA("sysop") : "Sysop privileges missing or revoked, or session expired";
                 throw new AssertionError("Sysop privileges missing or revoked, or session expired");

@@ -96,7 +96,7 @@ Someone # Spam
     else if (inputpage.matches("^User:.+/.+\\.(cs|j)s$"))
     {
         String us = inputpage.substring(5, inputpage.indexOf('/'));
-        Wiki.User us2 = enWiki.getUser(us);
+        Wiki.User us2 = enWiki.getUsers(List.of(us)).get(0);
         if (us2 == null || !us2.isA("sysop"))
         {
             request.setAttribute("error", "TESTING WOOP WOOP WOOP!");
@@ -104,7 +104,7 @@ Someone # Spam
 <%@ include file="footer.jspf" %>
 <%
         }
-        String text = enWiki.getPageText(inputpage);
+        String text = enWiki.getPageText(List.of(inputpage)).get(0);
         if (text == null)
         {
             request.setAttribute("error", "ERROR: page &quot;" + ServletUtils.sanitizeForHTML(inputpage) + "&quot; does not exist!");
