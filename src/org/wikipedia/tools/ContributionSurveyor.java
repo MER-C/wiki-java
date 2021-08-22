@@ -597,6 +597,8 @@ public class ContributionSurveyor
                 throw new SecurityException(ex);
             }
         }
+        if (comingle)
+            usernames = List.of("");
         int count = usernames.size();
         
         for (int userindex = 0; userindex < usernames.size(); userindex++)
