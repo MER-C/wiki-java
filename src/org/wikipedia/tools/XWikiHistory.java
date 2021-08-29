@@ -34,7 +34,7 @@ import org.wikipedia.*;
  */
 public class XWikiHistory
 {
-    private static WMFWiki wikidata = WMFWiki.sharedWikidataSession();
+    private final static WMFWikiFarm sessions = new WMFWikiFarm();
     
     /**
      *  Runs this program.
@@ -48,7 +48,8 @@ public class XWikiHistory
         // (2) page metadata and usual page links (talk, history, delete, undelete, etc.)
         // (3) page logs
         
-        WMFWiki home = WMFWiki.newSession(args[0] + ".wikipedia.org");
+        WMFWiki home = sessions.sharedSession(args[0] + ".wikipedia.org");
+        WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
         Map<WMFWiki, String> wikiarticles = getArticles(home, args[1]);
         Map<WMFWiki, List<Wiki.Revision>> histories = getHistories(wikiarticles);
         Map<WMFWiki, Wiki.User> creators = getCreators(histories);
@@ -117,7 +118,7 @@ public class XWikiHistory
             if (user == null)
                 continue;
             String username = user.getUsername();
-            Map<String, Object> globaluserinfo = WMFWiki.getGlobalUserInfo(username);
+            Map<String, Object> globaluserinfo = sessions.getGlobalUserInfo(username);
             System.out.println(WikitextUtils.addTableRow(List.of(
                 Users.generateWikitextSummaryLinksShort(username),
                 "" + globaluserinfo.get("editcount"),
@@ -130,13 +131,14 @@ public class XWikiHistory
     
     public static Map<WMFWiki, String> getArticles(WMFWiki home, String article) throws IOException
     {
+        WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
         List<Map<String, String>> interwikis = home.getInterWikiLinks(List.of(article));
         Map<WMFWiki, String> ret = new LinkedHashMap<>();
         ret.put(wikidata, home.getWikidataItems(List.of(article)).get(0));
         ret.put(home, article);
         for (var entry : interwikis.get(0).entrySet())
         {
-            WMFWiki new_wiki = WMFWiki.newSession(entry.getKey() + ".wikipedia.org");
+            WMFWiki new_wiki = sessions.sharedSession(entry.getKey() + ".wikipedia.org");
             ret.put(new_wiki, entry.getValue());
         }
         return ret;
@@ -197,6 +199,7 @@ public class XWikiHistory
         // /* clientsitelink-remove:1||enwiki */ DeletedPageName
         //
         // WikiBase does some substitution before you see it. The API does not.
+        WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
         List<Wiki.Revision> wdhistory = wikidata.getPageHistory(wditem, null);
         Map<WMFWiki, List<Wiki.LogEntry>> ret = new HashMap<>();
         for (Wiki.Revision revision : wdhistory)
@@ -207,7 +210,7 @@ public class XWikiHistory
                 int end = comment.indexOf("*/") - 1;
                 String dbname = comment.substring(comment.indexOf("||") + 2, end);
                 String pagename = comment.substring(end + 3);
-                WMFWiki local = WMFWiki.newSessionFromDBName(dbname);
+                WMFWiki local = sessions.sharedSession(WMFWikiFarm.dbNameToDomainName(dbname));
                 Wiki.RequestHelper rh = local.new RequestHelper().byTitle(pagename);
                 ret.put(local, local.getLogEntries(Wiki.DELETION_LOG, null, rh));
             }

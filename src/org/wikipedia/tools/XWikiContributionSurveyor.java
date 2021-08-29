@@ -42,7 +42,8 @@ public class XWikiContributionSurveyor
      */
     public static void main(String[] args) throws Exception
     {
-        WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
+        WMFWikiFarm sessions = new WMFWikiFarm();
+        WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         // Users.of(enWiki).cliLogin();
         List<String> users = new ArrayList<>();
         users.add(args[0]);
@@ -54,7 +55,7 @@ public class XWikiContributionSurveyor
         wikis.add("en.wikipedia.org");
         for (String luser : users)
         {
-            Map<String, Object> ginfo = WMFWiki.getGlobalUserInfo(luser);
+            Map<String, Object> ginfo = sessions.getGlobalUserInfo(luser);
             for (var entry : ginfo.entrySet())
             {
                 Object value = entry.getValue();
@@ -73,7 +74,7 @@ public class XWikiContributionSurveyor
         {
             for (String wiki : wikis)
             {
-                WMFWiki wikisession = WMFWiki.newSession(wiki);
+                WMFWiki wikisession = sessions.sharedSession(wiki);
                 outwriter.write("==" + wiki + "==\n\n");
                 ContributionSurveyor cs = makeContributionSurveyor(wikisession);
                 for (String page : cs.outputContributionSurvey(users, true, false, false, Wiki.MAIN_NAMESPACE))

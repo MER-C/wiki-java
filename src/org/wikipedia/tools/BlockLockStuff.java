@@ -31,8 +31,9 @@ public class BlockLockStuff
 {
     public static void main(String[] args) throws Exception
     {
+        WMFWikiFarm sessions = new WMFWikiFarm();
         WMFWiki meta = WMFWiki.sharedMetaWikiSession();
-        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+        Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
         List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
         System.out.println("Not locked:");
         System.out.println("*{{MultiLock");
@@ -42,7 +43,7 @@ public class BlockLockStuff
             // is locked - there is an additional API call that is still one user = one call
             // but less data transfer. Also, as usual, the W?F can't be arsed doing this
             // properly: https://phabricator.wikimedia.org/T261752
-            Map<String, Object> ginfo = WMFWiki.getGlobalUserInfo(sock);
+            Map<String, Object> ginfo = sessions.getGlobalUserInfo(sock);
             if (!(Boolean)ginfo.get("locked"))
                 System.out.print("|" + meta.removeNamespace(sock));
         }

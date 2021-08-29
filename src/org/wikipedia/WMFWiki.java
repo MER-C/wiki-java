@@ -1,6 +1,6 @@
 /**
- *  @(#)WMFWiki.java 0.01 29/03/2011
- *  Copyright (C) 2011 - 2018 MER-C and contributors
+ *  @(#)WMFWiki.java 0.02 28/08/2021
+ *  Copyright (C) 2011 - 20xx MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@ import javax.security.auth.login.*;
 /**
  *  Stuff specific to Wikimedia wikis.
  *  @author MER-C
- *  @version 0.01
+ *  @version 0.02
  */
 public class WMFWiki extends Wiki
 {
@@ -39,7 +39,7 @@ public class WMFWiki extends Wiki
     private String localblacklist;
     
     // Shared sessions
-    private static WMFWiki metawiki, wikidata;
+    private static WMFWiki metawiki;
     
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
@@ -92,44 +92,6 @@ public class WMFWiki extends Wiki
     }
     
     /**
-     *  Creates a new MediaWiki API client for the WMF wiki that has the given
-     *  database name (e.g. "enwiki" for the English Wikipedia, "nlwikisource" 
-     *  for the Dutch Wikisource and "wikidatawiki" for Wikidata). Does NOT use
-     *  the shared sessions.
-     *  @param dbname a WMF wiki DB name
-     *  @return the constructed API client object
-     *  @throws IllegalArgumentException if the DB name is not recognized
-     */
-    public static WMFWiki newSessionFromDBName(String dbname)
-    {
-        // special cases
-        switch (dbname)
-        {
-            case "commonswiki":  return newSession("commons.wikimedia.org");
-            case "metawiki":     return newSession("meta.wikimedia.org");
-            case "wikidatawiki": return newSession("www.wikidata.org");
-        }
-        
-        // wiktionary
-        int testindex = dbname.indexOf("wiktionary");
-        if (testindex > 0)
-            return newSession(dbname.substring(0, testindex) + ".wiktionary.org");
-        
-        testindex = dbname.indexOf("wiki");
-        if (testindex > 0)
-        {
-            String langcode = dbname.substring(0, testindex);
-            // most of these are Wikipedia
-            if (dbname.endsWith("wiki"))
-                return newSession(langcode + ".wikipedia.org");
-            // Wikibooks, Wikinews, Wikiquote, Wikisource, Wikiversity, Wikivoyage
-            return newSession(langcode + "." + dbname.substring(testindex) + ".org");
-        }
-        // Fishbowl/special wikis not implemented yet
-        throw new IllegalArgumentException("Unrecognized wiki: " + dbname);
-    }
-    
-    /**
      *  Returns the shared reference to MetaWiki. This instance is modifiable.
      *  @see <a href="https://meta.wikimedia.org">Main Page</a>
      *  @return (see above)
@@ -144,24 +106,6 @@ public class WMFWiki extends Wiki
         return metawiki;
     }
     
-    /**
-     *  Returns the shared reference to Wikidata. This instance is modifiable.
-     *  @see <a href="https://www.wikidata.org">Main Page</a>
-     *  @return (see above)
-     */
-    public static WMFWiki sharedWikidataSession()
-    {
-        if (wikidata == null)
-        {
-            wikidata = newSession("www.wikidata.org");
-            // necessary for interactive tasks until the WMF get their act together
-            // https://phabricator.wikimedia.org/T243701
-            wikidata.setMaxLag(-1);
-            wikidata.requiresExtension("WikibaseRepository");
-        }
-        return wikidata;
-    }
-
     /**
      *  Returns the list of publicly readable and editable wikis operated by the
      *  Wikimedia Foundation.
@@ -196,130 +140,6 @@ public class WMFWiki extends Wiki
         return wikis;
     }
     
-    /**
-     *  Fetches global user info. Returns:
-     *  <ul>
-     *  <li>home - (String) a String identifying the home wiki (e.g. "enwiki" 
-     *      for the English Wikipedia)
-     *  <li>registration - (OffsetDateTime) when the single account login was created
-     *  <li>groups - (List&lt;String&gt;) this user is a member of these global 
-     *      groups
-     *  <li>rights - (List&lt;String&gt;) this user is explicitly granted the 
-     *      ability to perform these actions globally
-     *  <li>locked - (Boolean) whether this user account has been locked
-     *  <li>editcount - (int) total global edit count
-     *  <li>wikicount - (int) total number of wikis edited
-     *  <li>WIKI IDENTIFIER (e.g. "enwikisource" == "en.wikisource.org") - see below
-     *  </ul>
-     * 
-     *  <p>
-     *  For each wiki, a map is returned:
-     *  <ul>
-     *  <li>url - (String) the full URL of the wiki
-     *  <li>groups - (List&lt;String&gt;) the local groups the user is in
-     *  <li>editcount - (Integer) the local edit count
-     *  <li>blocked - (Boolean) whether the user is blocked. Adds keys "blockexpiry"
-     *      (OffsetDateTime) and "blockreason" (String) with obvious values. If the
-     *      block is infinite, expiry is null.
-     *  <li>registration - (OffsetDateTime) the local registration date
-     *  </ul>
-     * 
-     *  @param username the username of the global user. IPs and non-existing users
-     *  are not allowed.
-     *  @return user info as described above
-     *  @throws IOException if a network error occurs
-     */
-    public static Map<String, Object> getGlobalUserInfo(String username) throws IOException
-    {
-        // fixme(?): throws UnknownError ("invaliduser" if user is an IP, doesn't exist
-        // or otherwise is invalid
-        WMFWiki wiki = newSession("en.wikipedia.org");
-        wiki.requiresExtension("CentralAuth");
-        Map<String, String> getparams = new HashMap<>();
-        getparams.put("action", "query");
-        getparams.put("meta", "globaluserinfo");
-        getparams.put("guiprop", "groups|merged|unattached|rights");
-        getparams.put("guiuser", wiki.normalize(username));
-        String line = wiki.makeApiCall(getparams, null, "WMFWiki.getGlobalUserInfo");
-        
-        // misc properties
-        Map<String, Object> ret = new HashMap<>();
-        ret.put("home", wiki.parseAttribute(line, "home", 0));
-        String registrationdate = wiki.parseAttribute(line, "registration", 0);
-        ret.put("registration", OffsetDateTime.parse(registrationdate));
-        ret.put("locked", line.contains("locked=\"\""));
-        int globaledits = 0;
-        int wikicount = 0;
-        
-        // global groups/rights
-        int mergedindex = line.indexOf("<merged>");
-        List<String> globalgroups = new ArrayList<>();        
-        int groupindex = line.indexOf("<groups");
-        if (groupindex > 0 && groupindex < mergedindex)
-        {
-            for (int x = line.indexOf("<g>"); x > 0; x = line.indexOf("<g>", ++x))
-            {
-                int y = line.indexOf("</g>", x);
-                globalgroups.add(line.substring(x + 3, y));
-            }        
-        }
-        ret.put("groups", globalgroups);
-        List<String> globalrights = new ArrayList<>();
-        int rightsindex = line.indexOf("<rights");
-        if (rightsindex > 0 && rightsindex < mergedindex)
-        {
-            for (int x = line.indexOf("<r>"); x > 0; x = line.indexOf("<r>", ++x))
-            {
-                int y = line.indexOf("</r>", x);
-                globalrights.add(line.substring(x + 3, y));
-            }        
-        }
-        ret.put("rights", globalrights);
-        
-        // individual wikis
-        int mergedend = line.indexOf("</merged>");
-        String[] accounts = line.substring(mergedindex, mergedend).split("<account ");
-        for (int i = 1; i < accounts.length; i++)
-        {
-            Map<String, Object> userinfo = new HashMap<>();
-            userinfo.put("url", wiki.parseAttribute(accounts[i], "url", 0));
-            int editcount = Integer.parseInt(wiki.parseAttribute(accounts[i], "editcount", 0));
-            globaledits += editcount;
-            wikicount++;
-            userinfo.put("editcount", editcount);
-            
-            registrationdate = wiki.parseAttribute(accounts[i], "registration", 0);
-            OffsetDateTime registration = null;
-            // TODO remove check when https://phabricator.wikimedia.org/T24097 is resolved
-            if (registrationdate != null && !registrationdate.isEmpty())
-                registration = OffsetDateTime.parse(registrationdate);
-            userinfo.put("registration", registration);
-            
-            // blocked flag
-            boolean blocked = accounts[i].contains("<blocked ");
-            userinfo.put("blocked", blocked);
-            if (blocked)
-            {
-                String expiry = wiki.parseAttribute(accounts[i], "expiry", 0);
-                userinfo.put("blockexpiry", expiry.equals("infinity") ? null : OffsetDateTime.parse(expiry));
-                userinfo.put("blockreason", wiki.parseAttribute(accounts[i], "reason", 0));
-            }
-            
-            // local groups
-            List<String> groups = new ArrayList<>();
-            for (int x = accounts[i].indexOf("<group>"); x > 0; x = accounts[i].indexOf("<group>", ++x))
-            {
-                int y = accounts[i].indexOf("</group>", x);
-                groups.add(accounts[i].substring(x + 7, y));
-            }
-            userinfo.put("groups", groups);
-            ret.put(wiki.parseAttribute(accounts[i], "wiki", 0), userinfo);
-        }
-        ret.put("editcount", globaledits);
-        ret.put("wikicount", wikicount);
-        return ret;
-    }
-
     /**
      *  Require the given extension be installed on this wiki, or throw an 
      *  UnsupportedOperationException if it isn't.
@@ -589,7 +409,7 @@ public class WMFWiki extends Wiki
         while (count < titles_enc.size());
         
         Map<String, String> results = new HashMap<>();
-        WMFWiki wikidata_l = sharedWikidataSession();
+        WMFWiki wikidata_l = WMFWiki.newSession("www.wikidata.org");
         for (String chunk : titles_chunked)
         {
             getparams.put("titles", chunk);
