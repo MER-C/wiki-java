@@ -91,6 +91,17 @@ public class WMFWikiFarm
     }
     
     /**
+     *  Returns all shared sessions stored in this session manager.
+     *  @return (see above)
+     */
+    public Collection<WMFWiki> getAllSharedSessions()
+    {
+        Set<WMFWiki> wikis = new HashSet<>();
+        sessions.keySet().forEach(domain -> wikis.add(sessions.get(domain)));
+        return wikis;
+    }
+    
+    /**
      *  Fetches global user info. Returns:
      *  <ul>
      *  <li>home - (String) a String identifying the home wiki (e.g. "enwiki" 
