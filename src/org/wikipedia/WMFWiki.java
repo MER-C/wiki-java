@@ -116,7 +116,9 @@ public class WMFWiki extends Wiki
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "sitematrix");
-        String line = sharedMetaWikiSession().makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
+        WMFWiki meta = sharedMetaWikiSession();
+        String line = meta.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
+        meta.detectUncheckedErrors(line, null, null);
         List<WMFWiki> wikis = new ArrayList<>(1000);
 
         // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
@@ -414,6 +416,7 @@ public class WMFWiki extends Wiki
         {
             getparams.put("titles", chunk);
             String line = wikidata_l.makeApiCall(getparams, null, "getWikidataItem");
+            wikidata_l.detectUncheckedErrors(line, null, null);
             String[] entities = line.split("<entity ");
             for (int i = 1; i < entities.length; i++)
             {
@@ -502,9 +505,9 @@ public class WMFWiki extends Wiki
         try
         {
             String response = makeApiCall(new HashMap<>(), params, "pageTriageAction");
-            // done
-            if (!response.contains("<pagetriageaction result=\"success\""))
-                checkErrorsAndUpdateStatus(response, "pageTriageAction");
+            checkErrorsAndUpdateStatus(response, "pageTriageAction", Map.of(
+                "bad-pagetriage-enqueue-invalidnamespace", desc -> 
+                    new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.")), null);
             log(Level.INFO, "pageTriageAction", "Successfully (un)patrolled page " + pageid);
         }
         catch (UnknownError e)
@@ -513,8 +516,6 @@ public class WMFWiki extends Wiki
             String message = e.getMessage();
             if (message.contains("<error code=\"bad-pagetriage-page\"") && Boolean.FALSE.equals(patrol))
                 pageTriageAction(pageid, reason, null, false);
-            else if (message.contains("<error code=\"bad-pagetriage-enqueue-invalidnamespace\""))
-                throw new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.");
             else
                 throw e;
         }

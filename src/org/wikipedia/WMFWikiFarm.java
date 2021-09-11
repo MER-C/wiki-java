@@ -147,6 +147,7 @@ public class WMFWikiFarm
         getparams.put("guiprop", "groups|merged|unattached|rights");
         getparams.put("guiuser", wiki.normalize(username));
         String line = wiki.makeApiCall(getparams, null, "WMFWiki.getGlobalUserInfo");
+        wiki.detectUncheckedErrors(line, null, null);
         
         // misc properties
         Map<String, Object> ret = new HashMap<>();
