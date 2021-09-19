@@ -99,23 +99,14 @@ public class ContributionSurveyor
         String infile = parsedargs.get("--infile");
         String outfile = parsedargs.get("--outfile");
         String wikipage = parsedargs.get("--wikipage");
-        String category = parsedargs.get("--category");
-        String user = parsedargs.get("--user");
         String earliestdatestring = parsedargs.get("--editsafter");
         String latestdatestring = parsedargs.get("--editsbefore");
 
-        List<String> users = new ArrayList<>(1500);
         OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
         OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
 
         // fetch user list
-        if (user != null)
-            users.add(user);
-        if (category != null)
-        {
-            for (String member : sourcewiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
-                users.add(sourcewiki.removeNamespace(member));
-        }
+        List<String> users = CommandLineParser.parseUserOptions(parsedargs, sourcewiki);
         if (wikipage != null)
         {
             String text = sourcewiki.getPageText(List.of(wikipage)).get(0);

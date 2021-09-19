@@ -500,24 +500,15 @@ public class WMFWiki extends Wiki
         else
             params.put("enqueue", "1");
         
+        String response = makeApiCall(new HashMap<>(), params, "pageTriageAction");
         // Unfortunately there is no way to tell whether a particular page is
         // in a PageTriage queue, so we are left with this.
-        try
-        {
-            String response = makeApiCall(new HashMap<>(), params, "pageTriageAction");
-            checkErrorsAndUpdateStatus(response, "pageTriageAction", Map.of(
-                "bad-pagetriage-enqueue-invalidnamespace", desc -> 
-                    new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.")), null);
-            log(Level.INFO, "pageTriageAction", "Successfully (un)patrolled page " + pageid);
-        }
-        catch (UnknownError e)
-        {
-            // Enqueue pages that aren't in the queue and unpatrol requested.
-            String message = e.getMessage();
-            if (message.contains("<error code=\"bad-pagetriage-page\"") && Boolean.FALSE.equals(patrol))
-                pageTriageAction(pageid, reason, null, false);
-            else
-                throw e;
-        }
+        // Enqueue pages that aren't in the queue when unpatrol requested.
+        if (response.contains("<error code=\"bad-pagetriage-page\"") && Boolean.FALSE.equals(patrol))
+            pageTriageAction(pageid, reason, null, false);
+        checkErrorsAndUpdateStatus(response, "pageTriageAction", Map.of(
+            "bad-pagetriage-enqueue-invalidnamespace", desc -> 
+                new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.")), null);
+        log(Level.INFO, "pageTriageAction", "Successfully (un)patrolled page " + pageid);
     }
 }

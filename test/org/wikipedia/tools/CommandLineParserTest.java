@@ -19,7 +19,9 @@
  */
 package org.wikipedia.tools;
 
+import java.io.IOException;
 import java.util.*;
+import org.wikipedia.Wiki;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -157,5 +159,30 @@ public class CommandLineParserTest
         assertEquals("default1 default2", entry.getValue(), "default argument");
         
         // cannot test --help and --version because of VM exit
+    }
+    
+    @Test
+    public void parseUserOptions() throws IOException
+    {
+        Map<String, String> args = new HashMap<>();
+        Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+        List<String> users = CommandLineParser.parseUserOptions(args, enWiki);
+        assertTrue(users.isEmpty());
+        
+        args.put("--user", "Bodiadub");
+        users = CommandLineParser.parseUserOptions(args, enWiki);
+        assertTrue(users.contains("Bodiadub"));
+        assertTrue(users.size() == 1);
+        
+        args.put("--category", "Category:Wikipedia sockpuppets of Bodiadub");
+        users = CommandLineParser.parseUserOptions(args, enWiki);
+        assertTrue(users.contains("Bodiadub"));
+        assertTrue(users.size() > 30);
+        assertTrue(users.contains("Sorrow3"));
+        
+        args.remove("--user");
+        users = CommandLineParser.parseUserOptions(args, enWiki);
+        assertFalse(users.contains("Bodiadub"));
+        assertTrue(users.size() > 30);
     }
 }

@@ -45,11 +45,16 @@ public class XWikiContributionSurveyor
         WMFWikiFarm sessions = new WMFWikiFarm();
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         // Users.of(enWiki).cliLogin();
-        List<String> users = new ArrayList<>();
-        users.add(args[0]);
-        if (args.length > 1)
-            users.addAll(enWiki.getCategoryMembers(args[1], true, Wiki.USER_NAMESPACE));
-        users.replaceAll(enWiki::removeNamespace);
+        
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.XWikiContributionSurveyor", "[options]")
+            .description("Survey the contributions of a large number of wiki editors across all wikis.")
+            .addHelp()
+            .addVersion("XWikiContributionSurveyor v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addSingleArgumentFlag("--user", "user", "Survey the given user.")
+            .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
+            .parse(args);
+        List<String> users = CommandLineParser.parseUserOptions(parsedargs, enWiki);
         
         Set<String> wikis = new HashSet<>();
         wikis.add("en.wikipedia.org");

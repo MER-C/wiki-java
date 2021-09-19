@@ -19,8 +19,10 @@
  */
 package org.wikipedia.tools;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
+import org.wikipedia.Wiki;
 
 /**
  *  Helper class that parses command line arguments.
@@ -231,5 +233,27 @@ public class CommandLineParser
         if (defaultargs.length() != 0)
             ret.put("default", defaultargs.toString());
         return ret;
+    }
+    
+    /**
+     *  Fetches a list of users specified on the command line with the options
+     *  <kbd>--user</kbd> (singular) or <kbd>--category</kbd> (an entire category).
+     *  @param parsedargs parsed arguments from {@link #parse}
+     *  @param wiki the wiki to fetch category members from
+     *  @return a list of users
+     *  @throws IOException if a network error occurs
+     */
+    public static List<String> parseUserOptions(Map<String, String> parsedargs, Wiki wiki) throws IOException
+    {
+        List<String> users = new ArrayList<>();
+        String category = parsedargs.get("--category");
+        String user = parsedargs.get("--user");
+        
+        if (category != null)
+            for (String member : wiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
+                users.add(wiki.removeNamespace(member));
+        if (user != null)
+            users.add(user);
+        return users;
     }
 }

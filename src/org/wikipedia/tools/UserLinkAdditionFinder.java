@@ -53,7 +53,8 @@ public class UserLinkAdditionFinder
             .addHelp()
             .addVersion("UserLinkAdditionFinder v0.02\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
-            .addSingleArgumentFlag("--user", "user", "Get links for this user only.")
+            .addSingleArgumentFlag("--user", "user", "Get links for this user.")
+            .addSingleArgumentFlag("--category", "category", "Get links for all users from this category (recursive).")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
@@ -63,7 +64,6 @@ public class UserLinkAdditionFinder
         WMFWiki thiswiki = WMFWiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
-        String user = parsedargs.get("--user");
         String datestring = parsedargs.get("--fetchafter");
         String filename = parsedargs.get("default");
         OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
@@ -73,10 +73,10 @@ public class UserLinkAdditionFinder
         elp.setMaxLinks(threshold);
 
         // read in from file
-        List<String> users;
-        if (user == null)
+        List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
+        if (users.isEmpty())
         {
-            Path fp = null;
+            Path fp;
             if (filename == null)
             {
                 JFileChooser fc = new JFileChooser();
@@ -88,8 +88,6 @@ public class UserLinkAdditionFinder
                 fp = Paths.get(filename);
             users = Files.readAllLines(fp, Charset.forName("UTF-8"));
         }
-        else
-            users = List.of(user);
 
         // Map structure:
         // * results: revid -> links added in that revision
@@ -115,7 +113,7 @@ public class UserLinkAdditionFinder
         }
         
         // remove blacklisted links
-        Collection<String> domains = linkdomains.values();
+        Collection<String> domains = new TreeSet(linkdomains.values());
         if (removeblacklisted)
         {
             Iterator<String> iter = domains.iterator();
