@@ -43,7 +43,7 @@
         earliest = earliest_ldate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 
     if (!latest.equals(""))
-        latest_ldate = LocalDate.parse(earliest);
+        latest_ldate = LocalDate.parse(latest);
     else if (latest_ldate != null)
         latest = latest_ldate.format(DateTimeFormatter.ISO_LOCAL_DATE);
 

@@ -4258,13 +4258,13 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.28
      */
-    public List<LogEntry> getUploads(User user, Wiki.RequestHelper helper) throws IOException
+    public List<LogEntry> getUploads(String user, Wiki.RequestHelper helper) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "allimages");
         getparams.put("aisort", "timestamp");
         getparams.put("aiprop", "timestamp|comment|parsedcomment");
-        getparams.put("aiuser", user.getUsername());
+        getparams.put("aiuser", user);
         int limit = -1;
         if (helper != null)
         {
@@ -4280,12 +4280,12 @@ public class Wiki implements Comparable<Wiki>
             {
                 int b = line.indexOf("/>", i);
                 String temp = line.substring(i, b);
-                LogEntry le = parseLogEntry(temp, user.getUsername(), UPLOAD_LOG, "upload", null);
+                LogEntry le = parseLogEntry(temp, user, UPLOAD_LOG, "upload", null);
                 results.add(le);
             }
         });
 
-        log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user.getUsername() + " (" + uploads.size() + " uploads)");
+        log(Level.INFO, "getUploads", "Successfully retrieved uploads of " + user + " (" + uploads.size() + " uploads)");
         return uploads;
     }
 
@@ -4831,7 +4831,7 @@ public class Wiki implements Comparable<Wiki>
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
         getparams.put("list", "usercontribs");
-        getparams.put("ucprop", "title|timestamp|flags|comment|parsedcomment|ids|size|sizediff|sha1|tags");
+        getparams.put("ucprop", "title|timestamp|flags|comment|parsedcomment|ids|size|sizediff|tags");
         if (helper != null)
         {
             helper.setRequestType("uc");
@@ -6645,7 +6645,7 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Determines whether this user is blocked at the time of construction.
          *  If you want a live check, look  up the user on the {@linkplain
-         *  #getBlockList(String, RequestHelper) list of blocks}.
+         *  #getBlockList list of blocks}.
          *  @return whether this user is blocked
          *  @since 0.12
          */
@@ -6827,7 +6827,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Returns the user or anon who performed this event. You should pass
-         *  this (if not an IP) to {@link #getUser(String)} to obtain a {@link
+         *  this (if not an IP) to {@link #getUser} to obtain a {@link
          *  Wiki.User} object. Returns {@code null} if the user was
          *  RevisionDeleted and you lack the necessary privileges.
          *  @return the user or anon
@@ -6895,7 +6895,7 @@ public class Wiki implements Comparable<Wiki>
          *
          *  <p><b>Warnings:</b>
          *  <ul>
-         *  <li>Not available through {@link #getBlockList(String, RequestHelper)}.
+         *  <li>Not available through {@link #getBlockList}.
          *  </ul>
          *
          *  @return the comment associated with the event, parsed into HTML
@@ -8384,7 +8384,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws RuntimeException if any 
      *  @throws IOException if a network error occurs
      *  @throws UnknownError in the case of a MediaWiki bug
-     *  @returns whether the action was successful
+     *  @return whether the action was successful
      *  @since 0.18
      */
     protected boolean checkErrorsAndUpdateStatus(String line, String caller, 
@@ -8641,7 +8641,7 @@ public class Wiki implements Comparable<Wiki>
      *  Checks whether the currently logged on user has sufficient rights to
      *  edit/move a protected page.
      *
-     *  @param pageinfo the output from {@link #getPageInfo(String)}
+     *  @param pageinfo the output from {@link #getPageInfo} for an article
      *  @param action what we are doing
      *  @return whether the user can perform the specified action
      *  @throws IOException if a network error occurs

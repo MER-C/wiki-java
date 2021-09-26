@@ -984,10 +984,12 @@ public class WikiTest
     @Test
     public void getUploads() throws Exception
     {
-        List<Wiki.User> users = commons.getUsers(List.of(
+        List<String> users = List.of(
             "Stanton00T", // blocked spambot
-            "Charlesjsharp")); // https://commons.wikimedia.org/wiki/Special:ListFiles/Charlesjsharp
+            "Charlesjsharp", // https://commons.wikimedia.org/wiki/Special:ListFiles/Charlesjsharp
+            "127.0.0.1"); // no uploads for IPs on WMF sites
         assertTrue(commons.getUploads(users.get(0), null).isEmpty(), "no uploads");
+        assertTrue(commons.getUploads(users.get(2), null).isEmpty(), "no uploads for IPs");
         
         OffsetDateTime odt = OffsetDateTime.parse("2020-03-13T17:00:00Z");
         Wiki.RequestHelper rh = commons.new RequestHelper().withinDateRange(odt, odt.plusMinutes(10));

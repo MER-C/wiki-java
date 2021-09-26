@@ -76,7 +76,7 @@ public class ContributionSurveyor
             .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
             .addSingleArgumentFlag("--sourcewiki", "example.com", "Use a different wiki than --wiki as a source of users.")
             .addSingleArgumentFlag("--user", "user", "Survey the given user.")
-            .addBooleanFlag("--comingle", "If there are multiple users, combine their edits into the one survey (edits only).")
+            .addBooleanFlag("--comingle", "If there are multiple users, combine their edits into the one survey (edits/uploads only).")
             .addSection("Survey options:")
             .addBooleanFlag("--images", "Survey images both on the home wiki and Commons.")
             .addBooleanFlag("--userspace", "Survey userspace as well.")
@@ -473,45 +473,65 @@ public class ContributionSurveyor
     }
 
     /**
-     *  Performs an image contribution survey on a user. (Date/time limits do
-     *  not apply to, nor do they make sense for transferred images.)
-     *  @param user a user on the wiki
-     *  @return first element = local uploads, second element = uploads on Wikimedia
-     *  Commons by the user, third element = images transferred to Commons (may
-     *  be inaccurate depending on username).
+     *  Performs an image contribution survey on a list of users. (Date/time 
+     *  limits do not apply to, nor do they make sense for transferred images.)
+     *  @param users a list of users on the wiki
+     *  @return for each user: first element = local uploads, second element = 
+     *  uploads on Wikimedia Commons by the user, third element = images 
+     *  transferred to Commons (may be inaccurate depending on username).
      *  @throws IOException if a network error occurs
      */
-    public Map<String, List<String>> imageContributionSurvey(Wiki.User user) throws IOException
+    public Map<String, Map<String, List<String>>> imageContributionSurvey(List<String> users) throws IOException
     {
-        // fetch local uploads
-        Wiki.RequestHelper rh = wiki.new RequestHelper().withinDateRange(earliestdate, latestdate);
-        HashSet<String> localuploads = new HashSet<>(10000);
-        for (Wiki.LogEntry upload : wiki.getUploads(user, rh))
-            localuploads.add(upload.getTitle());
-
-        // fetch commons uploads
         Wiki commons = Wiki.newSession("commons.wikimedia.org");
-        Wiki.User comuser = commons.getUsers(List.of(user.getUsername())).get(0);
-        HashSet<String> comuploads = new HashSet<>(10000);
-        if (comuser != null)
+        Wiki.RequestHelper rh = wiki.new RequestHelper().withinDateRange(earliestdate, latestdate);
+        Map<String, Map<String, List<String>>> ret = new HashMap<>();
+        
+        for (String user : users)
+        {
+            // fetch local uploads
+            HashSet<String> localuploads = new HashSet<>(10000);
+            for (Wiki.LogEntry upload : wiki.getUploads(user, rh))
+                localuploads.add(upload.getTitle());
+
+            // fetch commons uploads
+            HashSet<String> comuploads = new HashSet<>(10000);
             for (Wiki.LogEntry upload : commons.getUploads(user, rh))
                 comuploads.add(upload.getTitle());
 
-        // fetch transferred commons uploads
-        HashSet<String> commonsTransfer = new HashSet<>(10000);
-        List<Map<String, Object>> temp = commons.search("\"" + user.getUsername() + "\"", Wiki.FILE_NAMESPACE);
-        for (Map<String, Object> x : temp)
-            commonsTransfer.add((String)x.get("title"));
+            // fetch transferred commons uploads
+            HashSet<String> commonsTransfer = new HashSet<>(10000);
+            List<Map<String, Object>> temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
+            for (Map<String, Object> x : temp)
+                commonsTransfer.add((String)x.get("title"));
 
-        // remove all files that have been reuploaded to Commons
-        localuploads.removeAll(comuploads);
-        localuploads.removeAll(commonsTransfer);
-        commonsTransfer.removeAll(comuploads);
-
-        return Map.of(
-            "local", new ArrayList<>(localuploads), 
-            "commons", new ArrayList<>(comuploads),
-            "transferred", new ArrayList<>(commonsTransfer));
+            // remove all files that have been reuploaded to Commons
+            localuploads.removeAll(comuploads);
+            localuploads.removeAll(commonsTransfer);
+            commonsTransfer.removeAll(comuploads);
+            
+            if (comingle)
+            {
+                if (ret.isEmpty())
+                    ret.put("", Map.of(
+                        "local", new ArrayList<>(localuploads), 
+                        "commons", new ArrayList<>(comuploads),
+                        "transferred", new ArrayList<>(commonsTransfer)));
+                else
+                {
+                    var comingled = ret.get("");
+                    comingled.get("local").addAll(localuploads);
+                    comingled.get("commons").addAll(comuploads);
+                    comingled.get("transferred").addAll(commonsTransfer);
+                }
+            }
+            else
+                ret.put(user, Map.of(
+                    "local", new ArrayList<>(localuploads), 
+                    "commons", new ArrayList<>(comuploads),
+                    "transferred", new ArrayList<>(commonsTransfer)));
+        }
+        return ret;
     }
 
     /**
@@ -572,9 +592,10 @@ public class ContributionSurveyor
         boolean deleted, boolean images, int... ns) throws IOException, SecurityException
     {
         List<String> sections = new ArrayList<>();
-        List<Wiki.User> userinfo = wiki.getUsers(usernames);
         int sectionsperpage = articlesperpage / articlespersection;  
         Map<String, Map<String, List<Wiki.Revision>>> results = null, delresults = null;
+        Map<String, Map<String, List<String>>> imagesurvey = null;
+        
         if (contribs)
             results = contributionSurvey(usernames, ns);
         if (deleted)
@@ -588,15 +609,17 @@ public class ContributionSurveyor
                 throw new SecurityException(ex);
             }
         }
+        if (images)
+            imagesurvey = imageContributionSurvey(usernames);
+        
         if (comingle)
             usernames = List.of("");
         int count = usernames.size();
         
-        for (int userindex = 0; userindex < usernames.size(); userindex++)
+        for (String username : usernames)
         {
             // output text results
             int sizebefore = sections.size();
-            String username = usernames.get(userindex);
             String username_hdr = count == 1 ? "" : (username + ":");
 
             if (results != null)
@@ -617,17 +640,16 @@ public class ContributionSurveyor
             }
             
             // output image contribution survey for this user
-            // userinfo required because there may be IP addresses
-            if (images && userinfo.get(userindex) != null)
+            if (imagesurvey != null && imagesurvey.containsKey(username))
             {
-                Map<String, List<String>> imagesurvey = imageContributionSurvey(userinfo.get(userindex));
-                sections.addAll(Pages.toWikitextPaginatedList(imagesurvey.get("local"), Pages.LIST_OF_LINKS, 
+                Map<String, List<String>> imagesurvey2 = imagesurvey.get(username);
+                sections.addAll(Pages.toWikitextPaginatedList(imagesurvey2.get("local"), Pages.LIST_OF_LINKS, 
                     (start, end) -> "===" + username_hdr + " Local files " + start + " to " + end + "===", 
                     articlespersection, false));
-                sections.addAll(Pages.toWikitextPaginatedList(imagesurvey.get("commons"), Pages.LIST_OF_LINKS, 
+                sections.addAll(Pages.toWikitextPaginatedList(imagesurvey2.get("commons"), Pages.LIST_OF_LINKS, 
                     (start, end) -> "===" + username_hdr + " Commons files " + start + " to " + end + "===", 
                     articlespersection, false));
-                sections.addAll(Pages.toWikitextPaginatedList(imagesurvey.get("transferred"), Pages.LIST_OF_LINKS, 
+                sections.addAll(Pages.toWikitextPaginatedList(imagesurvey2.get("transferred"), Pages.LIST_OF_LINKS, 
                     (start, end) -> "===" + username_hdr + " Transferred files " + start + " to " + end + "===", 
                     articlespersection, false));
             }
