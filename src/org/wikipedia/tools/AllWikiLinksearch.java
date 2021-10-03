@@ -1,6 +1,6 @@
 /**
  *  @(#)AllWikiLinksearch.java 0.03 26/12/2016
- *  Copyright (C) 2011 - 2017 MER-C
+ *  Copyright (C) 2011 - 20xx MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -30,15 +30,14 @@ import javax.swing.*;
 import org.wikipedia.*;
 
 /**
- *  Searches all Wikimedia wikis for a given external link. Consider:
+ *  Searches Wikimedia wikis for a given external link. Back-end for the 
+ *  <a href="https://wikipediatools.appspot.com">Cross-wiki linksearch tool</a>.
+ *  Consider:
  *  <ul>
- *      <li>Running the <a href="https://wikipediatools.appspot.com">Cross-wiki
- *      linksearch tool</a>
  *      <li>COIBot poking the domain AND
  *      <li>Using Luxo's cross-wiki contributions to undo revisions by spammers
  *  </ul>
- *  before running this program. This also provides the backend for the above
- *  cross-wiki linksearch tool.
+ *  before running this program. 
  * 
  *  @author MER-C
  *  @version 0.03
@@ -46,27 +45,28 @@ import org.wikipedia.*;
 public class AllWikiLinksearch
 {    
     // predefined wiki sets
+    private static final WMFWikiFarm sessions = new WMFWikiFarm();
     
     /**
      *  The top 20 Wikimedia projects, namely { "en", "de", "fr", "nl", "it", 
      *  "pl", "es", "ru", "ja", "pt", "zh", "sv", "vi", "uk", "ca", "no", "fi", 
      *  "cs", "hu", "fa" }.wikipedia.org.
      */
-    public static final List<Wiki> TOP20;
+    public static final List<WMFWiki> TOP20;
     
     /**
      *  The top 40 Wikimedia projects, namely everything in {@link #TOP20}, plus
      *  { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk", "lt", 
      *  "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" }.wikipedia.org.
      */
-    public static final List<Wiki> TOP40;
+    public static final List<WMFWiki> TOP40;
     
     /**
      *  Major Wikimedia projects prone to spam, namely { "en", "de", "fr" }.
      *  { "wikipedia", "wiktionary", "wikibooks", "wikiquote", "wikivoyage" }
      *  .org, plus Wikimedia Commons, Meta, mediawiki.org and WikiData.
      */
-    public static final List<Wiki> MAJOR_WIKIS;
+    public static final List<WMFWiki> MAJOR_WIKIS;
     
     /**
      *  Initializes wiki groups.
@@ -81,9 +81,9 @@ public class AllWikiLinksearch
             "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr",  "kk",
             "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
         
-        List<Wiki> wikilist = new ArrayList<>();
+        List<WMFWiki> wikilist = new ArrayList<>();
         for (String lang : temp)
-            wikilist.add(Wiki.newSession(lang + ".wikipedia.org"));
+            wikilist.add(sessions.sharedSession(lang + ".wikipedia.org"));
         TOP40 = Collections.unmodifiableList(wikilist);
         TOP20 = TOP40.subList(0, 19);
 
@@ -91,16 +91,16 @@ public class AllWikiLinksearch
         wikilist = new ArrayList<>();
         for (String lang : temp)
         {
-            wikilist.add(Wiki.newSession(lang + ".wikipedia.org"));
-            wikilist.add(Wiki.newSession(lang + ".wiktionary.org"));
-            wikilist.add(Wiki.newSession(lang + ".wikibooks.org"));
-            wikilist.add(Wiki.newSession(lang + ".wikiquote.org"));
-            wikilist.add(Wiki.newSession(lang + ".wikivoyage.org"));
+            wikilist.add(sessions.sharedSession(lang + ".wikipedia.org"));
+            wikilist.add(sessions.sharedSession(lang + ".wiktionary.org"));
+            wikilist.add(sessions.sharedSession(lang + ".wikibooks.org"));
+            wikilist.add(sessions.sharedSession(lang + ".wikiquote.org"));
+            wikilist.add(sessions.sharedSession(lang + ".wikivoyage.org"));
         }
-        wikilist.add(Wiki.newSession("meta.wikimedia.org"));
-        wikilist.add(Wiki.newSession("commons.wikimedia.org"));
-        wikilist.add(Wiki.newSession("www.mediawiki.org"));
-        wikilist.add(Wiki.newSession("www.wikidata.org"));
+        wikilist.add(sessions.sharedSession("meta.wikimedia.org"));
+        wikilist.add(sessions.sharedSession("commons.wikimedia.org"));
+        wikilist.add(sessions.sharedSession("www.mediawiki.org"));
+        wikilist.add(sessions.sharedSession("www.wikidata.org"));
         MAJOR_WIKIS = Collections.unmodifiableList(wikilist);
     }
     
@@ -113,53 +113,85 @@ public class AllWikiLinksearch
     {
         // parse command line options
         Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.AllWikiLinksearch", "[options] domain")
+            .synopsis("org.wikipedia.tools.AllWikiLinksearch", "[options] domains")
             .description("Searches Wikimedia projects for links.")
             .addHelp()
             .addVersion("AllWikiLinksearch v0.03\n" + CommandLineParser.GPL_VERSION_STRING)
             .addBooleanFlag("--httponly", "Search for non-secure links only.")
             .addSingleArgumentFlag("--numthreads", "n", "Use n threads.")
+            .addSingleArgumentFlag("--domainlist", "domains.txt", "Search for this list of domains")
+            .addSingleArgumentFlag("--wikiset", "TOP20", "Search this list of wikis, valid sets are TOP20, TOP40, MAJOR, default: ALL")
             .addSection("A dialog box will pop up if domain is not specified.")
             .parse(args);
         
-        String domain = parsedargs.get("default");
         boolean httponly = parsedargs.containsKey("--httponly");
-        int threads = Integer.parseInt(parsedargs.getOrDefault("--numthreads", "3"));
-        Path outfile = Paths.get(domain + ".wiki");
+        int threads = Integer.parseInt(parsedargs.getOrDefault("--numthreads", "1"));
+        Path outfile = Paths.get("linksearch.wiki");
         
-        if (!GraphicsEnvironment.isHeadless() && domain == null)
-            domain = JOptionPane.showInputDialog(null, "Enter domain to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
-        if (domain == null)
+        List<String> domains = new ArrayList<>();
+        String domainlist = parsedargs.get("--domainlist");
+        String domain = parsedargs.get("default");
+        if (domainlist != null)
         {
-            System.out.println("No domain specified!");
+            Path path = Paths.get(domainlist);
+            domains.addAll(Files.readAllLines(path));
+        }
+        if (!GraphicsEnvironment.isHeadless() && domain == null)
+            domain = JOptionPane.showInputDialog(null, "Enter domain(s) to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
+        if (domain != null)
+            domains.addAll(List.of(domain.split(" ")));
+        if (domains.isEmpty())
+        {
+            System.out.println("No domain(s) specified!");
             System.exit(0);
         }
         
-        List<WMFWiki> wikis = WMFWiki.getSiteMatrix();
-        Map<Wiki, List<String[]>> results = crossWikiLinksearch(false, threads, domain, wikis, !httponly, false);
+        // Java 17 TODO: replace with switch expression
+        List<WMFWiki> wikis; 
+        switch (parsedargs.getOrDefault("--wikiset", "x"))
+        {
+            case "TOP20":
+                wikis = TOP20;
+                break;
+            case "TOP40":
+                wikis = TOP40;
+                break;
+            case "MAJOR":
+                wikis = MAJOR_WIKIS;
+                break;
+            default:
+                wikis = WMFWiki.getSiteMatrix();
+                break;
+        }
         
         // output results
         try (BufferedWriter out = Files.newBufferedWriter(outfile))
         {
-            for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
+            for (String domain2 : domains)
             {
-                Wiki wiki = result.getKey();
-                List<String[]> links = result.getValue();
-                StringBuilder temp = new StringBuilder("=== Results for ");
-                temp.append(wiki.getDomain());
-                temp.append(" ===\n");
-                if (links == null)
+                Map<Wiki, List<String[]>> results = crossWikiLinksearch(false, threads, domain2, wikis, !httponly, false);
+                out.write("==" + domain2 + "==\n");
+                for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
                 {
-                    temp.append("<span style=\"color: red\">An error occurred!</span>\n\n");
-                    out.write(temp.toString());
-                    continue;
+                    Wiki wiki = result.getKey();
+                    List<String[]> links = result.getValue();
+                    StringBuilder temp = new StringBuilder("=== Results for ");
+                    temp.append(wiki.getDomain());
+                    temp.append(" ===\n");
+                    if (links == null)
+                    {
+                        temp.append("<span style=\"color: red\">An error occurred!</span>\n\n");
+                        out.write(temp.toString());
+                        continue;
+                    }
+                    int linknumber = links.size();
+                    if (linknumber != 0)
+                    {
+                        temp.append(ExternalLinks.linksearchResultsToWikitext(links, domain));
+                        out.write(temp.toString());
+                    }
                 }
-                int linknumber = links.size();
-                if (linknumber != 0)
-                {
-                    temp.append(ExternalLinks.linksearchResultsToWikitext(links, domain));
-                    out.write(temp.toString());
-                }
+                out.write("\n");
             }
         }
     }
