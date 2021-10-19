@@ -8128,13 +8128,11 @@ public class Wiki implements Comparable<Wiki>
             // now we know how we're sending it, construct the post body
             if (multipart)
             {        
-                byte[] nextpart = ("--" + boundary + "\r\n\"Content-Disposition: form-data; name=\\\"\"")
-                    .getBytes(StandardCharsets.UTF_8);
+                String nextpart = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"";
                 for (Map.Entry<String, ?> entry : postparams.entrySet())
                 {
-                    multipartPostBody.add(nextpart);
                     Object value = entry.getValue();
-                    multipartPostBody.add((entry.getKey() + "\"\r\n").getBytes(StandardCharsets.UTF_8));
+                    multipartPostBody.add((nextpart + entry.getKey() + "\"").getBytes(StandardCharsets.UTF_8));
                     if (value instanceof String)
                         multipartPostBody.add(("Content-Type: text/plain; charset=UTF-8\r\n\r\n" + (String)value + "\r\n")
                             .getBytes(StandardCharsets.UTF_8));
