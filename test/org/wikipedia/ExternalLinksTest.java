@@ -28,6 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ExternalLinksTest
 {
+    private Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+    private ExternalLinks el = ExternalLinks.of(enWiki);
+    
     @Test
     public void extractDomain()
     {
@@ -45,5 +48,12 @@ public class ExternalLinksTest
         assertNull(ExternalLinks.extractDomain("http://example.com,"), "ending comma");
         // documenting this common form of broken wikimarkup 
         assertEquals("http", ExternalLinks.extractDomain("http://http://example.com"), "duplicated http");
+    }
+    
+    @Test
+    public void isSpamBlacklisted() throws Exception
+    {
+        assertFalse(el.isSpamBlacklisted("example.com"));
+        assertTrue(el.isSpamBlacklisted("youtu.be"));
     }
 }

@@ -34,7 +34,7 @@ import org.wikipedia.*;
  */
 public class XWikiHistory
 {
-    private final static WMFWikiFarm sessions = new WMFWikiFarm();
+    private final static WMFWikiFarm sessions = WMFWikiFarm.instance();
     
     /**
      *  Runs this program.

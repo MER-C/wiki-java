@@ -31,8 +31,8 @@ public class BlockLockStuff
 {
     public static void main(String[] args) throws Exception
     {
-        WMFWikiFarm sessions = new WMFWikiFarm();
-        WMFWiki meta = WMFWiki.sharedMetaWikiSession();
+        WMFWikiFarm sessions = WMFWikiFarm.instance();
+        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
         Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
         List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
         System.out.println("Not locked:");

@@ -113,6 +113,18 @@ public class WikiTest
         assertThrows(FailedLoginException.class, () -> 
             enWiki.login("MER-C@Fake", "ObviouslyWrongPassword"), "Failed login must throw exception.");
     }
+    
+    @Test
+    public void requiresExtension()
+    {
+        // https://en.wikipedia.org/wiki/Special:Version
+        enWiki.requiresExtension("SpamBlacklist");
+        enWiki.requiresExtension("CheckUser");
+        enWiki.requiresExtension("Abuse Filter");
+        assertThrows(UnsupportedOperationException.class,
+            () -> enWiki.requiresExtension("This extension does not exist."),
+            "required a non-existing extension");        
+    }
 
     @Test
     @DisplayName("Wiki.setAssertionMode (logged out)")

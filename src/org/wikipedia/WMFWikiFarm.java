@@ -23,6 +23,7 @@ package org.wikipedia;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.logging.*;
 
 /**
  *  Manages shared WMFWiki sessions and contains methods for dealing with WMF
@@ -33,6 +34,7 @@ import java.util.*;
 public class WMFWikiFarm
 {
     private final HashMap<String, WMFWiki> sessions = new HashMap<>();
+    private static final WMFWikiFarm SHARED_INSTANCE = new WMFWikiFarm();
     
     /**
      *  Computes the domain name (to use in {@link WMFWiki#newSession}) the 
@@ -72,6 +74,16 @@ public class WMFWikiFarm
         }
         // Fishbowl/special wikis not implemented yet
         throw new IllegalArgumentException("Unrecognized wiki: " + dbname);
+    }
+    
+    /**
+     *  Returns a shared session manager. Note that multiple instances - i.e.
+     *  multiple groups of sessions - are still permitted.
+     *  @return a shared session manager
+     */        
+    public static WMFWikiFarm instance()
+    {
+        return SHARED_INSTANCE;
     }
     
     /**
@@ -134,6 +146,7 @@ public class WMFWikiFarm
      *  are not allowed.
      *  @return user info as described above
      *  @throws IOException if a network error occurs
+     *  @since WMFWiki 0.01
      */
     public Map<String, Object> getGlobalUserInfo(String username) throws IOException
     {
@@ -225,5 +238,42 @@ public class WMFWikiFarm
         ret.put("editcount", globaledits);
         ret.put("wikicount", wikicount);
         return ret;
+    }
+    
+    /**
+     *  Returns the list of publicly readable and editable wikis operated by the
+     *  Wikimedia Foundation.
+     *  @return (see above)
+     *  @throws IOException if a network error occurs
+     *  @since WMFWiki 0.01
+     */
+    public List<WMFWiki> getSiteMatrix() throws IOException
+    {
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "sitematrix");
+        WMFWiki meta = sharedSession("meta.wikimedia.org");
+        String line = meta.makeApiCall(getparams, null, "WMFWikiFarm.getSiteMatrix");
+        meta.detectUncheckedErrors(line, null, null);
+        List<WMFWiki> wikis = new ArrayList<>(1000);
+
+        // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
+        // <site url="http://ab.wiktionary.org" code="wiktionary" closed="" />
+        for (int x = line.indexOf("url=\""); x >= 0; x = line.indexOf("url=\"", x))
+        {
+            int a = line.indexOf("https://", x) + 8;
+            int b = line.indexOf('\"', a);
+            int c = line.indexOf("/>", b);
+            x = c;
+            
+            // check for closed/fishbowl/private wikis
+            String temp = line.substring(b, c);
+            if (temp.contains("closed=\"\"") || temp.contains("private=\"\"") || temp.contains("fishbowl=\"\""))
+                continue;
+            wikis.add(sharedSession(line.substring(a, b)));
+        }
+        int size = wikis.size();
+        Logger temp = Logger.getLogger("wiki");
+        temp.log(Level.INFO, "WMFWikiFarm.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
+        return wikis;
     }
 }

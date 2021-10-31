@@ -19,8 +19,10 @@
  */
 package org.wikipedia;
 
+import java.io.IOException;
 import java.net.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  *  Utility methods to deal with external links and lists of external links.
@@ -31,6 +33,9 @@ public class ExternalLinks
 {
     private Wiki wiki;
     private Pages pageutils;
+    private static String globalblacklist; // cache
+    private String localblacklist;
+    private WMFWikiFarm sessions = WMFWikiFarm.instance();
 
     private ExternalLinks(Wiki wiki)
     {
@@ -134,5 +139,42 @@ public class ExternalLinks
         });
         buffer.append("</ol>");
         return buffer.toString();
+    }
+    
+    /**
+     *  Determines whether a site is on the spam blacklist, modulo Java/PHP 
+     *  regex differences.
+     *  @param site the site to check
+     *  @return whether a site is on the spam blacklist
+     *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if the SpamBlacklist extension
+     *  is not installed
+     *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
+     */
+    public boolean isSpamBlacklisted(String site) throws IOException
+    {
+        wiki.requiresExtension("SpamBlacklist");
+        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
+        if (globalblacklist == null)
+            globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
+        if (localblacklist == null)
+            localblacklist = wiki.getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
+        
+        // yes, I know about the spam whitelist, but I primarily intend to use
+        // this to check entire domains whereas the spam whitelist tends to 
+        // contain individual pages on websites
+        
+        Stream<String> global = Arrays.stream(globalblacklist.split("\n"));
+        Stream<String> local = Arrays.stream(localblacklist.split("\n"));
+        
+        return Stream.concat(global, local).map(str ->
+        {
+            if (str.contains("#"))
+                return str.substring(0, str.indexOf('#'));
+            else 
+                return str;
+        }).map(String::trim)
+        .filter(str -> !str.isEmpty())
+        .anyMatch(str -> site.matches(str));
     }
 }

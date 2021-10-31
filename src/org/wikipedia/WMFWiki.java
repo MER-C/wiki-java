@@ -23,7 +23,6 @@ package org.wikipedia;
 import java.io.*;
 import java.util.*;
 import java.util.logging.*;
-import java.util.stream.*;
 import java.time.*;
 import javax.security.auth.login.*;
 
@@ -34,13 +33,6 @@ import javax.security.auth.login.*;
  */
 public class WMFWiki extends Wiki
 {
-    // caches
-    private static String globalblacklist;
-    private String localblacklist;
-    
-    // Shared sessions
-    private static WMFWiki metawiki;
-    
     /**
      *  Denotes entries in the [[Special:Abuselog]]. These cannot be accessed
      *  through [[Special:Log]] or getLogEntries.
@@ -92,75 +84,6 @@ public class WMFWiki extends Wiki
     }
     
     /**
-     *  Returns the shared reference to MetaWiki. This instance is modifiable.
-     *  @see <a href="https://meta.wikimedia.org">Main Page</a>
-     *  @return (see above)
-     */
-    public static WMFWiki sharedMetaWikiSession()
-    {
-        if (metawiki == null)
-        {
-            metawiki = newSession("meta.wikimedia.org");
-            metawiki.requiresExtension("SiteMatrix"); // getSiteMatrix
-        }
-        return metawiki;
-    }
-    
-    /**
-     *  Returns the list of publicly readable and editable wikis operated by the
-     *  Wikimedia Foundation.
-     *  @return (see above)
-     *  @throws IOException if a network error occurs
-     */
-    public static List<WMFWiki> getSiteMatrix() throws IOException
-    {
-        Map<String, String> getparams = new HashMap<>();
-        getparams.put("action", "sitematrix");
-        WMFWiki meta = sharedMetaWikiSession();
-        String line = meta.makeApiCall(getparams, null, "WMFWiki.getSiteMatrix");
-        meta.detectUncheckedErrors(line, null, null);
-        List<WMFWiki> wikis = new ArrayList<>(1000);
-
-        // form: <special url="http://wikimania2007.wikimedia.org" code="wikimania2007" fishbowl="" />
-        // <site url="http://ab.wiktionary.org" code="wiktionary" closed="" />
-        for (int x = line.indexOf("url=\""); x >= 0; x = line.indexOf("url=\"", x))
-        {
-            int a = line.indexOf("https://", x) + 8;
-            int b = line.indexOf('\"', a);
-            int c = line.indexOf("/>", b);
-            x = c;
-            
-            // check for closed/fishbowl/private wikis
-            String temp = line.substring(b, c);
-            if (temp.contains("closed=\"\"") || temp.contains("private=\"\"") || temp.contains("fishbowl=\"\""))
-                continue;
-            wikis.add(newSession(line.substring(a, b)));
-        }
-        int size = wikis.size();
-        Logger temp = Logger.getLogger("wiki");
-        temp.log(Level.INFO, "WMFWiki.getSiteMatrix", "Successfully retrieved site matrix (" + size + " + wikis).");
-        return wikis;
-    }
-    
-    /**
-     *  Require the given extension be installed on this wiki, or throw an 
-     *  UnsupportedOperationException if it isn't.
-     *  @param extension the name of the extension to check
-     *  @throws UnsupportedOperationException if that extension is not
-     *  installed on this wiki
-     *  @throws UncheckedIOException if the site info cache is not populated
-     *  and a network error occurs when populating it
-     *  @see Wiki#installedExtensions
-     */
-    public void requiresExtension(String extension)
-    {
-        if (!installedExtensions().contains(extension))
-            throw new UnsupportedOperationException("Extension \"" + extension
-                + "\" is not installed on " + getDomain() + ". "
-                + "Please check the extension name and [[Special:Version]].");
-    }
-    
-    /**
      *  Get the global usage for a file.
      * 
      *  @param title the title of the page (must contain "File:")
@@ -193,43 +116,7 @@ public class WMFWiki extends Wiki
 
     	return usage;
     }
-    
-    /**
-     *  Determines whether a site is on the spam blacklist, modulo Java/PHP 
-     *  regex differences.
-     *  @param site the site to check
-     *  @return whether a site is on the spam blacklist
-     *  @throws IOException if a network error occurs
-     *  @throws UnsupportedOperationException if the SpamBlacklist extension
-     *  is not installed
-     *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
-     */
-    public boolean isSpamBlacklisted(String site) throws IOException
-    {
-        requiresExtension("SpamBlacklist");
-        if (globalblacklist == null)
-            globalblacklist = sharedMetaWikiSession().getPageText(List.of("Spam blacklist")).get(0);
-        if (localblacklist == null)
-            localblacklist = getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
         
-        // yes, I know about the spam whitelist, but I primarily intend to use
-        // this to check entire domains whereas the spam whitelist tends to 
-        // contain individual pages on websites
-        
-        Stream<String> global = Arrays.stream(globalblacklist.split("\n"));
-        Stream<String> local = Arrays.stream(localblacklist.split("\n"));
-        
-        return Stream.concat(global, local).map(str ->
-        {
-            if (str.contains("#"))
-                return str.substring(0, str.indexOf('#'));
-            else 
-                return str;
-        }).map(String::trim)
-        .filter(str -> !str.isEmpty())
-        .anyMatch(str -> site.matches(str));
-    }
-    
     /**
      *  Gets abuse log entries. Requires extension AbuseFilter. An abuse log 
      *  entry will have a set <var>id</var>, <var>target</var> set to the title
@@ -506,9 +393,12 @@ public class WMFWiki extends Wiki
         // Enqueue pages that aren't in the queue when unpatrol requested.
         if (response.contains("<error code=\"bad-pagetriage-page\"") && Boolean.FALSE.equals(patrol))
             pageTriageAction(pageid, reason, null, false);
-        checkErrorsAndUpdateStatus(response, "pageTriageAction", Map.of(
-            "bad-pagetriage-enqueue-invalidnamespace", desc -> 
-                new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.")), null);
-        log(Level.INFO, "pageTriageAction", "Successfully (un)patrolled page " + pageid);
+        else
+        {
+            checkErrorsAndUpdateStatus(response, "pageTriageAction", Map.of(
+                "bad-pagetriage-enqueue-invalidnamespace", desc -> 
+                    new IllegalArgumentException("Cannot (un)patrol page, PageTriage is not enabled for this namespace.")), null);
+            log(Level.INFO, "pageTriageAction", "Successfully (un)patrolled page " + pageid);
+        }
     }
 }

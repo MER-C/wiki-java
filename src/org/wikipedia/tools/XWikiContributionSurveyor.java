@@ -43,7 +43,7 @@ public class XWikiContributionSurveyor
      */
     public static void main(String[] args) throws Exception
     {
-        WMFWikiFarm sessions = new WMFWikiFarm();
+        WMFWikiFarm sessions = WMFWikiFarm.instance();
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         // Users.of(enWiki).cliLogin();
         

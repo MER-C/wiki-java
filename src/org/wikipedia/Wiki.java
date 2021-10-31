@@ -1349,6 +1349,24 @@ public class Wiki implements Comparable<Wiki>
         ret.put("jobs", Integer.parseInt(parseAttribute(text, "jobs", 0))); // job queue length
         return ret;
     }
+    
+    /**
+     *  Require the given extension be installed on this wiki, or throw an 
+     *  UnsupportedOperationException if it isn't.
+     *  @param extension the name of the extension to check
+     *  @throws UnsupportedOperationException if that extension is not
+     *  installed on this wiki
+     *  @throws UncheckedIOException if the site info cache is not populated
+     *  and a network error occurs when populating it
+     *  @since 0.37
+     */
+    public void requiresExtension(String extension)
+    {
+        if (!installedExtensions().contains(extension))
+            throw new UnsupportedOperationException("Extension \"" + extension
+                + "\" is not installed on " + getDomain() + ". "
+                + "Please check the extension name and [[Special:Version]].");
+    }
 
     /**
      *  Renders the specified wiki markup as HTML by passing it to the MediaWiki

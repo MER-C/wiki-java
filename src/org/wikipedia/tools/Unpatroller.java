@@ -31,7 +31,8 @@ import org.wikipedia.*;
  */
 public class Unpatroller
 {
-    static WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
+    static WMFWikiFarm sessions = WMFWikiFarm.instance();
+    static WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
     
     /**
      *  Runs this program.
@@ -40,7 +41,6 @@ public class Unpatroller
      */
     public static void main(String[] args) throws Exception
     {
-        
         org.wikiutils.LoginUtils.guiLogin(enWiki);
         String username = args[0];
         
@@ -99,11 +99,11 @@ public class Unpatroller
         // The newpages API query does not list pages that were moved into the
         // main namespace.
         Wiki.RequestHelper rh2 = rh.inNamespaces(118); // 118 = Draft namespace
-        List<Wiki.LogEntry> logs = enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh2);
+        List<Wiki.LogEntry> logs = enWiki.getLogEntries(Wiki.MOVE_LOG, null, rh2);
         rh2 = rh.inNamespaces(Wiki.USER_NAMESPACE);
-        logs.addAll(enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh2));
+        logs.addAll(enWiki.getLogEntries(Wiki.MOVE_LOG, null, rh2));
         rh2 = rh.inNamespaces(Wiki.PROJECT_NAMESPACE); // Infrequent
-        logs.addAll(enWiki.getLogEntries(Wiki.MOVE_LOG, "move", rh2));
+        logs.addAll(enWiki.getLogEntries(Wiki.MOVE_LOG, null, rh2));
         logs.removeIf(logentry -> 
         {
             // new title must be in the main namespace

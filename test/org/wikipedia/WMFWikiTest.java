@@ -42,13 +42,6 @@ public class WMFWikiTest
         enWiki.setMaxLag(-1);
     }
     
-    @Test
-    public void isSpamBlacklisted() throws Exception
-    {
-        assertFalse(enWiki.isSpamBlacklisted("example.com"));
-        assertTrue(enWiki.isSpamBlacklisted("youtu.be"));
-    }
-    
     /**
      *  Attempts to access a privileged log that isn't available in vanilla
      *  MediaWiki.
@@ -58,18 +51,6 @@ public class WMFWikiTest
     public void getLogEntries() throws Exception
     {
         assertEquals(Collections.emptyList(), enWiki.getLogEntries(WMFWiki.SPAM_BLACKLIST_LOG, null, null));
-    }
-    
-    @Test
-    public void requiresExtension()
-    {
-        // https://en.wikipedia.org/wiki/Special:Version
-        enWiki.requiresExtension("SpamBlacklist");
-        enWiki.requiresExtension("CheckUser");
-        enWiki.requiresExtension("Abuse Filter");
-        assertThrows(UnsupportedOperationException.class,
-            () -> enWiki.requiresExtension("This extension does not exist."),
-            "required a non-existing extension");        
     }
     
     @Test

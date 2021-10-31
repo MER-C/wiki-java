@@ -45,7 +45,7 @@ import org.wikipedia.*;
 public class AllWikiLinksearch
 {    
     // predefined wiki sets
-    private static final WMFWikiFarm sessions = new WMFWikiFarm();
+    private static final WMFWikiFarm sessions = WMFWikiFarm.instance();
     
     /**
      *  The top 20 Wikimedia projects, namely { "en", "de", "fr", "nl", "it", 
@@ -160,7 +160,7 @@ public class AllWikiLinksearch
                 wikis = MAJOR_WIKIS;
                 break;
             default:
-                wikis = WMFWiki.getSiteMatrix();
+                wikis = sessions.getSiteMatrix();
                 break;
         }
         

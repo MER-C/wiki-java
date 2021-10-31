@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.CsvSource;
  */
 public class WMFWikiFarmTest
 {
-    private final WMFWikiFarm sessions = new WMFWikiFarm();
+    private final WMFWikiFarm sessions = WMFWikiFarm.instance();
     
     @ParameterizedTest
     @CsvSource({"enwiki, en.wikipedia.org",  "wikidatawiki, www.wikidata.org",
@@ -96,5 +96,12 @@ public class WMFWikiFarmTest
         WMFWiki wiki1 = sessions.sharedSession("en.wikipedia.org");
         WMFWiki wiki2 = sessions.sharedSession("en.wikipedia.org");
         assertTrue(wiki1 == wiki2); // must be same object
+    }
+    
+    @Test
+    public void instance()
+    {
+        WMFWikiFarm one = WMFWikiFarm.instance();
+        assertEquals(one, sessions);
     }
 }
