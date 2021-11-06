@@ -267,62 +267,6 @@ public class WMFWiki extends Wiki
     }
     
     /**
-     *  Returns the Wikidata items corresponding to the given titles.
-     *  @param titles a list of page names
-     *  @return the corresponding Wikidata items, or null if either the Wikidata
-     *  item or the local article doesn't exist
-     *  @throws IOException if a network error occurs
-     */
-    public List<String> getWikidataItems(List<String> titles) throws IOException
-    {
-        String dbname = (String)getSiteInfo().get("dbname");
-        Map<String, String> getparams = new HashMap<>();
-        getparams.put("action", "wbgetentities");
-        getparams.put("sites", dbname);
-        
-        // WORKAROUND: this module doesn't accept mixed GET/POST requests
-        // often need to slice up titles into smaller chunks than slowmax (here 25)
-        // FIXME: replace with constructTitleString when Wikidata is behaving correctly
-        TreeSet<String> ts = new TreeSet<>();
-        for (String title : titles)
-            ts.add(normalize(title));
-        List<String> titles_enc = new ArrayList<>(ts);
-        ArrayList<String> titles_chunked = new ArrayList<>();
-        int count = 0;
-        do
-        {
-            titles_chunked.add(String.join("|", 
-                titles_enc.subList(count, Math.min(titles_enc.size(), count + 25))));
-            count += 25;
-        }
-        while (count < titles_enc.size());
-        
-        Map<String, String> results = new HashMap<>();
-        WMFWiki wikidata_l = WMFWiki.newSession("www.wikidata.org");
-        for (String chunk : titles_chunked)
-        {
-            getparams.put("titles", chunk);
-            String line = wikidata_l.makeApiCall(getparams, null, "getWikidataItem");
-            wikidata_l.detectUncheckedErrors(line, null, null);
-            String[] entities = line.split("<entity ");
-            for (int i = 1; i < entities.length; i++)
-            {
-                if (entities[i].contains("missing=\"\""))
-                    continue;
-                String wdtitle = parseAttribute(entities[i], " id", 0);
-                int index = entities[i].indexOf("\"" + dbname + "\"");
-                String localtitle = parseAttribute(entities[i], "title", index);
-                results.put(localtitle, wdtitle);
-            }
-        }
-        // reorder
-        List<String> ret = new ArrayList<>();
-        for (String title : titles)
-            ret.add(results.get(normalize(title)));
-        return ret;
-    }
-    
-    /**
      *  Patrols or unpatrols new pages using the PageTriage extension. If a page
      *  is not in the queue, then this method adds the page to the PageTriage
      *  queue, which also unpatrols it.

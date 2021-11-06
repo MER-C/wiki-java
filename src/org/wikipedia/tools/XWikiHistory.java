@@ -134,7 +134,7 @@ public class XWikiHistory
         WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
         List<Map<String, String>> interwikis = home.getInterWikiLinks(List.of(article));
         Map<WMFWiki, String> ret = new LinkedHashMap<>();
-        ret.put(wikidata, home.getWikidataItems(List.of(article)).get(0));
+        ret.put(wikidata, sessions.getWikidataItems(home, List.of(article)).get(0));
         ret.put(home, article);
         for (var entry : interwikis.get(0).entrySet())
         {
