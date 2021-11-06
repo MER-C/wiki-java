@@ -327,7 +327,7 @@ public class UserLinkAdditionFinder
 
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
-        String diffaddedbegin = "<td class=\"diff-addedline\">";
+        String diffaddedbegin = "<td class=\"diff-addedline diff-side-added\">";
         String diffaddedend = "</td>";
         String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
         String deltaend = "</ins>";
