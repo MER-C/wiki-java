@@ -19,6 +19,8 @@
  */
 package org.wikipedia.tools;
 
+import java.nio.file.*;
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.wikipedia.*;
 
@@ -29,12 +31,25 @@ import org.wikipedia.*;
  */
 public class BlockLockStuff
 {
+    private static WMFWikiFarm sessions = WMFWikiFarm.instance();
+    
     public static void main(String[] args) throws Exception
     {
-        WMFWikiFarm sessions = WMFWikiFarm.instance();
-        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
         Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
-        List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
+        // List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
+        List<String> socks = Files.readAllLines(Paths.get("spam2.txt"));
+        
+        lockFinder(socks);
+        staleScreener(socks);
+        
+        // TODO: accept arbitrary input
+        // TODO: determine unblocked accounts
+        // TODO: determine G5 date - first lock or block as per block list
+    }
+    
+    public static void lockFinder(List<String> socks) throws Exception
+    {
+        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
         System.out.println("Not locked:");
         System.out.println("*{{MultiLock");
         for (String sock : socks)
@@ -47,10 +62,52 @@ public class BlockLockStuff
             if (!(Boolean)ginfo.get("locked"))
                 System.out.print("|" + meta.removeNamespace(sock));
         }
-        System.out.println("}}");
+        System.out.println("}}\n\n");
+    }
+    
+    public static void staleScreener(List<String> socks) throws Exception
+    {
+        Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
         
-        // TODO: accept arbitrary input
-        // TODO: determine unblocked accounts
-        // TODO: determine G5 date - first lock or block as per block list
+        // determine whether accounts are stale
+        List<String> notstale = new ArrayList<>();
+        List<String> stale = new ArrayList<>();
+        List<String> unregistered = new ArrayList<>();
+        List<List<Wiki.Revision>> contribs = enWiki.contribs(socks, null, null);
+        OffsetDateTime staledate = OffsetDateTime.now().minusDays(91);
+        for (int i = 0; i < socks.size(); i++)
+        {
+            String sock = socks.get(i);
+            Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser(sock);
+            List<Wiki.LogEntry> socklogs = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
+            if (socklogs.isEmpty())
+            {
+                unregistered.add("*{{checkuser|" + sock + "}}");
+                continue;
+            }
+            
+            List<Wiki.Revision> sockcontribs = contribs.get(i);
+            OffsetDateTime lastlog = socklogs.get(0).getTimestamp();
+            OffsetDateTime lastactive = lastlog;
+            if (sockcontribs.size() > 0)
+            {
+                OffsetDateTime lastedit = sockcontribs.get(0).getTimestamp();
+                if (lastedit.isAfter(lastlog))
+                    lastactive = lastedit;
+            }
+            if (lastactive.isAfter(staledate))
+                notstale.add("*{{checkuser|" + sock + "}}");
+            else
+                stale.add("*{{checkuser|" + sock + "}}");
+        }
+        System.out.println(";Not stale:");
+        for (String s : notstale)
+            System.out.println(s);
+        System.out.println(";Probably stale:");
+        for (String s : stale)
+            System.out.println(s);
+        System.out.println(";Not registered locally");
+        for (String s : unregistered)
+            System.out.println(s);
     }
 }
