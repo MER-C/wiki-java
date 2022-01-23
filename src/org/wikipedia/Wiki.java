@@ -8128,7 +8128,7 @@ public class Wiki implements Comparable<Wiki>
         boolean isPOST = (postparams != null && !postparams.isEmpty());
         StringBuilder stringPostBody = new StringBuilder();
         boolean multipart = false;
-        ArrayList<byte[]> multipartPostBody = new ArrayList<>();
+        ByteArrayOutputStream multipartPostBody = new ByteArrayOutputStream();
         String boundary = "----------NEXT PART----------";        
         if (isPOST)
         {
@@ -8150,18 +8150,18 @@ public class Wiki implements Comparable<Wiki>
                 for (Map.Entry<String, ?> entry : postparams.entrySet())
                 {
                     Object value = entry.getValue();
-                    multipartPostBody.add((nextpart + entry.getKey() + "\"").getBytes(StandardCharsets.UTF_8));
+                    multipartPostBody.write((nextpart + entry.getKey() + "\"").getBytes(StandardCharsets.UTF_8));
                     if (value instanceof String)
-                        multipartPostBody.add(("Content-Type: text/plain; charset=UTF-8\r\n\r\n" + (String)value + "\r\n")
+                        multipartPostBody.write(("Content-Type: text/plain; charset=UTF-8\r\n\r\n" + (String)value + "\r\n")
                             .getBytes(StandardCharsets.UTF_8));
                     else if (value instanceof byte[])
                     {
-                        multipartPostBody.add("Content-Type: application/octet-stream\r\n\r\n".getBytes(StandardCharsets.UTF_8));
-                        multipartPostBody.add((byte[])value);
-                        multipartPostBody.add("\r\n".getBytes(StandardCharsets.UTF_8));
+                        multipartPostBody.write("Content-Type: application/octet-stream\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                        multipartPostBody.write((byte[])value);
+                        multipartPostBody.write("\r\n".getBytes(StandardCharsets.UTF_8));
                     }
                 }
-                multipartPostBody.add((boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+                multipartPostBody.write((boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
             }
             else
             {
@@ -8189,7 +8189,7 @@ public class Wiki implements Comparable<Wiki>
                 if (isPOST)
                 {
                     if (multipart)
-                        connection = connection.POST(HttpRequest.BodyPublishers.ofByteArrays(multipartPostBody))
+                        connection = connection.POST(HttpRequest.BodyPublishers.ofByteArray(multipartPostBody.toByteArray()))
                             .header("Content-Type", "multipart/form-data; boundary=" + boundary);
                     else
                         connection = connection.POST(HttpRequest.BodyPublishers.ofString(stringPostBody.toString()))
