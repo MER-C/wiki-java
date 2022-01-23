@@ -106,6 +106,20 @@ public class WMFWikiFarmTest
     }
     
     @Test
+    public void setInitializer()
+    {
+        WMFWikiFarm local = new WMFWikiFarm();
+        local.setInitializer(wiki ->
+        {
+            wiki.setMaxLag(2);
+            wiki.setQueryLimit(498);
+        });
+        WMFWiki test = local.sharedSession("test.wikipedia.org");
+        assertEquals(2, test.getMaxLag());
+        assertEquals(498, test.getQueryLimit());
+    }
+    
+    @Test
     public void getWikidataItems() throws Exception
     {
         List<String> input = List.of("Blah", "Albert Einstein", "Create a page", "Test", 

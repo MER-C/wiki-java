@@ -23,6 +23,7 @@ package org.wikipedia;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.logging.*;
 
 /**
@@ -35,6 +36,7 @@ public class WMFWikiFarm
 {
     private final HashMap<String, WMFWiki> sessions = new HashMap<>();
     private static final WMFWikiFarm SHARED_INSTANCE = new WMFWikiFarm();
+    private Consumer<WMFWiki> setupfn;
     
     /**
      *  Computes the domain name (to use in {@link WMFWiki#newSession}) the 
@@ -97,6 +99,8 @@ public class WMFWikiFarm
         if (sessions.containsKey(domain))
             return sessions.get(domain);
         WMFWiki wiki = WMFWiki.newSession(domain);
+        if (setupfn != null)
+            setupfn.accept(wiki);
         // if wikidata, wikidata.requiresExtension("WikibaseRepository");
         sessions.put(domain, wiki);
         return wiki;
@@ -111,6 +115,17 @@ public class WMFWikiFarm
         Set<WMFWiki> wikis = new HashSet<>();
         sessions.keySet().forEach(domain -> wikis.add(sessions.get(domain)));
         return wikis;
+    }
+    
+    /**
+     *  Sets a function that is called every time a WMFWiki session is created
+     *  with this manager. The sole parameter is the new session. Use for a
+     *  common setup routine.
+     *  @param fn a function that is to be called on all new WMFWiki objects
+     */
+    public void setInitializer(Consumer<WMFWiki> fn)
+    {
+        setupfn = fn;
     }
     
     /**
