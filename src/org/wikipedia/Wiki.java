@@ -8161,7 +8161,7 @@ public class Wiki implements Comparable<Wiki>
                         multipartPostBody.write("\r\n".getBytes(StandardCharsets.UTF_8));
                     }
                 }
-                multipartPostBody.write((boundary + "--\r\n").getBytes(StandardCharsets.UTF_8));
+                multipartPostBody.write((nextpart + "--\r\n").getBytes(StandardCharsets.UTF_8));
             }
             else
             {
