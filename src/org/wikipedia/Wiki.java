@@ -1728,10 +1728,10 @@ public class Wiki implements Comparable<Wiki>
                 String item = line.substring(j, x);
                 Map<String, Object> tempmap = new HashMap<>(15);
 
-                // either Special: or Media:, skip this page
-                if (item.contains("special=\"\""))
-                	continue;
-
+                // skip Special, Media and invalid titles
+                if (item.contains("special=\"\"") || item.contains("invalid=\"\""))
+                    continue;
+                
                 // does the page exist?
                 String parsedtitle = parseAttribute(item, "title", 0);
                 tempmap.put("pagename", parsedtitle);

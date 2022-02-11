@@ -697,8 +697,9 @@ public class WikiTest
     @Test
     public void getPageInfo() throws Exception
     {
-        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage", "1&nbsp;000");
+        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage", "1&nbsp;000", "[invalid]");
         List<Map<String, Object>> pageinfo = enWiki.getPageInfo(pages);
+        assertEquals(pages.size(), pageinfo.size());
 
         // Main Page
         Map<String, Object> protection = (Map<String, Object>)pageinfo.get(0).get("protection");
@@ -728,6 +729,9 @@ public class WikiTest
         
         // HTML entities in title (special normalization case)
         assertEquals("1 000", pageinfo.get(5).get("pagename"), "normalized HTML entities");
+
+        // invalid title = return null
+        assertNull(pageinfo.get(6));
         
         List<String> userpages = List.of("User:Beispielnutzer", "User:Sicherlich");
         List<Map<String, Object>> userpageinfo = deWiki.getPageInfo(userpages);
@@ -788,7 +792,7 @@ public class WikiTest
         assertEquals("image/svg+xml", signpost.get("mime"));
         assertEquals(46, signpost.get("width"));
         assertEquals(55, signpost.get("height"));
-        assertEquals(3117L, signpost.get("size"));
+        assertEquals(2809L, signpost.get("size"));
         
         // large file that busts Java integer size
         // https://en.wikipedia.org/wiki/File:Mandelbrotzoom_20191023.webm
