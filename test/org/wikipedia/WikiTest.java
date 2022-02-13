@@ -832,7 +832,9 @@ public class WikiTest
     @Test
     public void getDuplicates() throws Exception
     {
-        assertTrue(enWiki.getDuplicates("File:Sdfj&ghsld.jpg").isEmpty(), "non-existent file");
+        List<String> files = List.of("File:Sdfj&ghsld.jpg");
+        List<List<String>> dupes = enWiki.getDuplicates(files);
+        assertTrue(dupes.get(0).isEmpty(), "non-existent file");
     }
 
     @Test

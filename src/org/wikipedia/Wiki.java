@@ -1695,7 +1695,8 @@ public class Wiki implements Comparable<Wiki>
      *  is the number of actions tested. 
      *
      *  @param pages the pages to get info for.
-     *  @return (see above), or {@code null} for Special and Media pages.
+     *  @return (see above), or {@code null} for Special and Media pages or
+     *  invalid titles.
      *  The Maps will come out in the same order as the processed array.
      *  @throws IOException if a network error occurs
      *  @since 0.23
@@ -4121,22 +4122,25 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Gets duplicates of this file. Equivalent to [[Special:FileDuplicateSearch]].
+     *  Gets duplicates of a list of files. Equivalent to [[Special:FileDuplicateSearch]].
      *  Works for, and returns files from external repositories (e.g. Wikimedia
      *  Commons).
      *
-     *  @param file the file for checking duplicates (may contain "File")
-     *  @return the duplicates of that file
+     *  @param files the files for checking duplicates (may contain "File")
+     *  @return the duplicates of those files
      *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws IllegalArgumentException if any of the files has an invalid title
      *  @since 0.18
      */
-    public List<String> getDuplicates(String file) throws IOException
+    public List<List<String>> getDuplicates(List<String> files) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "duplicatefiles");
-        getparams.put("titles", "File:" + removeNamespace(normalize(file), FILE_NAMESPACE));
+        List<String> files2 = new ArrayList<>(files.size());
+        for (String file : files)
+            files2.add("File:" + removeNamespace(normalize(file), FILE_NAMESPACE));
 
-        List<String> duplicates = makeListQuery("df", getparams, null, "getDuplicates", -1, (line, results) ->
+        List<List<String>> duplicates = makeVectorizedQuery("df", getparams, files2, "getDuplicates", -1, (line, results) ->
         {
             if (line.contains("missing=\"\""))
                 return;
@@ -4146,8 +4150,7 @@ public class Wiki implements Comparable<Wiki>
                 results.add("File:" + parseAttribute(line, "name", a));
         });
 
-        int size = duplicates.size();
-        log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of " + file + " (" + size + " files)");
+        log(Level.INFO, "getDuplicates", "Successfully retrieved duplicates of " + files.size() + " files.");
         return duplicates;
     }
 
