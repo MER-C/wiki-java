@@ -1812,6 +1812,65 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
+     * Gets key-value property mappings on a list of pages. Returns:
+     * @param pages the pages to retrieve properties from.
+     * @return a list of properties in key-value format. Special or Media
+     * files and missing or invalid titles are listed as {@code null}.
+     * The Maps will come out in the same order as the processed array.
+     * @throws IOException if a network error occurs
+     * @since 0.38
+     */
+    public List<Map<String, String>> getPageProperties(List<String> pages) throws IOException
+    {
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "query");
+        getparams.put("prop", "pageprops");
+        Map<String, Object> postparams = new HashMap<>();
+        Map<String, Map<String, String>> metamap = new HashMap<>();
+        // copy because normalization and redirect resolvers overwrites
+        List<String> pages2 = new ArrayList<>(pages);
+        for (String temp : constructTitleString(pages))
+        {
+            postparams.put("titles", temp);
+            String line = makeApiCall(getparams, postparams, "getPageProperties");
+            detectUncheckedErrors(line, null, null);
+            resolveNormalizedParser(pages2, line);
+            if (isResolvingRedirects())
+                resolveRedirectParser(pages2, line);
+
+            for (int j = line.indexOf("<page "); j > 0; j = line.indexOf("<page ", ++j))
+            {
+                String item = line.substring(j, line.indexOf(" />", j));
+
+                 // skip Special, Media, missing and invalid titles
+                if (item.contains("special=\"\"") || item.contains("invalid=\"\"") || item.contains("missing=\"\""))
+                    continue;
+
+                String title = parseAttribute(item, "title", 0);
+                Map<String, String> tempmap = new HashMap<>();
+                if (item.contains("<pageprops "))
+                {
+                    item = item.substring(item.indexOf("<pageprops ") + 11);
+                    for (String attr : item.split("=\".*?\" *"))
+                        tempmap.put(attr, parseAttribute(item, attr, 0));
+                }
+
+                metamap.put(title, tempmap);
+            }
+        }
+
+        Map<String, String>[] props = new HashMap[pages.size()];
+        // Reorder
+        for (int i = 0; i < pages2.size(); i++)
+        {
+            String key = pages2.get(i);
+            props[i] = metamap.get(key);
+        }
+        log(Level.INFO, "getPageProperties", "Successfully retrieved page properties for " + pages.size() + " pages.");
+        return Arrays.asList(props);
+    }
+
+    /**
      *  Fills namespace cache.
      *  @throws UncheckedIOException if a network error occurs (unchecked for
      *  lambda friendliness, very rare since this should only be called once
