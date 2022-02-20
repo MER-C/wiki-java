@@ -8024,6 +8024,7 @@ public class Wiki implements Comparable<Wiki>
     {
         if (limit < 0)
             limit = querylimit;
+        getparams = new HashMap<>(getparams); // ensure this map is mutable
         getparams.put("action", "query");
         List<T> results = new ArrayList<>(1333);
         String limitstring = queryPrefix + "limit";
@@ -8117,6 +8118,7 @@ public class Wiki implements Comparable<Wiki>
     {
         // build the URL
         StringBuilder urlbuilder = new StringBuilder(apiUrl + "?");
+        getparams = new HashMap<>(getparams); // ensure this map is mutable
         getparams.putAll(defaultApiParams);
         for (Map.Entry<String, String> entry : getparams.entrySet())
         {
@@ -8135,6 +8137,7 @@ public class Wiki implements Comparable<Wiki>
         String boundary = "----------NEXT PART----------";        
         if (isPOST)
         {
+            postparams = new HashMap<>(postparams); // ensure this map is mutable
             // determine whether this is a multipart post and convert any values
             // to String if necessary
             for (Map.Entry<String, Object> entry : postparams.entrySet())
