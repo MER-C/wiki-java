@@ -1747,7 +1747,7 @@ public class Wiki implements Comparable<Wiki>
                 }
                 else
                 {
-                    tempmap.put("lastedited", null);
+                    tempmap.put("lastpurged", null);
                     tempmap.put("lastrevid", -1L);
                     tempmap.put("size", -1);
                     tempmap.put("pageid", -1);
