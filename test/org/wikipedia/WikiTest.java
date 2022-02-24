@@ -742,6 +742,39 @@ public class WikiTest
     }
 
     @Test
+    public void getPageProperties() throws Exception
+    {
+        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage", "1&nbsp;000", "[invalid]");
+        List<Map<String, String>> pageprops = enWiki.getPageProperties(pages);
+        assertEquals(pages.size(), pageprops.size());
+
+        // Main Page
+        assertEquals("Q5296", pageprops.get(0).get("wikibase_item"), "Main Page wikibase item");
+        assertTrue(pageprops.get(0).containsKey("notoc"), "Main Page has no toc");
+        assertTrue(pageprops.get(0).containsKey("noeditsection"), "Main Page has no edit section");
+
+        // IPod
+        assertEquals("iPod", pageprops.get(1).get("displaytitle"), "iPod display title");
+        assertEquals("Q9479", pageprops.get(1).get("wikibase_item"), "iPod wikibase item");
+        assertTrue(pageprops.get(1).containsKey("wikibase-shortdesc"), "iPod has wikibase description");
+
+        // Main_Page (duplicate, should be identical)
+        assertEquals(pageprops.get(2).hashCode(), pageprops.get(2).hashCode(), "identity");
+        
+        // Special page = return null
+        assertNull(pageprops.get(3), "special page");
+        
+        // redirect, there are no relevant properties here, check for empty map
+        assertTrue(pageprops.get(4).isEmpty(), "page with no properties");
+        
+        // HTML entities in title (special normalization case, we don't expect any props here either)
+        assertTrue(pageprops.get(4).isEmpty(), "normalization");
+
+        // invalid title = return null
+        assertNull(pageprops.get(6), "invalid title");
+    }
+
+    @Test
     public void getCategoryMemberCounts() throws Exception
     {
         // highly volatile content, so not amenable to unit testing
