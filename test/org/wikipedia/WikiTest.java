@@ -790,16 +790,16 @@ public class WikiTest
     public void getFileMetadata() throws Exception
     {
         List<Map<String, Object>> results = enWiki.getFileMetadata(List.of(
-            "File:Tianasquare.jpg", "File:Lweo&pafd.blah", "File:Phra Phuttha Chinnarat (II).jpg", 
+            "File:Tankman_new_longshot_StuartFranklin.jpg", "File:Lweo&pafd.blah", "File:Phra Phuttha Chinnarat (II).jpg", 
             "File:WikipediaSignpostIcon.svg", "File:Mandelbrotzoom 20191023.webm",
             "File:Mandelbrotzoom&nbsp;20191023.webm"));
         
-        // https://en.wikipedia.org/wiki/File:Tianasquare.jpg
+        // https://en.wikipedia.org/wiki/File:Tankman_new_longshot_StuartFranklin.jpg
         Map<String, Object> tankman = results.get(0);
         assertEquals("image/jpeg", tankman.get("mime"));
-        assertEquals(330, tankman.get("width"));
-        assertEquals(218, tankman.get("height"));
-        assertEquals(48481L, tankman.get("size"));
+        assertEquals(261, tankman.get("width"));
+        assertEquals(381, tankman.get("height"));
+        assertEquals(24310L, tankman.get("size"));
         
         assertNull(results.get(1), "non-existent file");
         

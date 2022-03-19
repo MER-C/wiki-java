@@ -134,6 +134,7 @@ public class ContributionSurveyorTest
         // reverts with tag mw-manual-revert
         // https://en.wikipedia.org/w/index.php?title=Special:Contributions&offset=20200808093000&target=SouthAfricanCitizen
         users = List.of("SouthAfricanCitizen");
+        surveyor.setMinimumSizeDiff(0);
         surveyor.setDateRange(OffsetDateTime.parse("2020-08-08T09:00:00Z"), OffsetDateTime.parse("2020-08-08T09:30:00Z"));
         results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertEquals(1, results.get(users.get(0)).size());
