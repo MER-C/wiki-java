@@ -2388,8 +2388,18 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Deletes a page. Does not delete any page with more than 5000 revisions.
      *  {@linkplain #setThrottle(int) throttled}.
+     * 
+     *  <p>
+     *  If <code>deltalk</code> is specified, delete also the associated talk
+     *  page. The 5000 revision limit <a href="https://gerrit.wikimedia.org/r/c/mediawiki/core/+/715954/">applies 
+     *  to both pages in combination, not individually</a>. The reason for 
+     *  deleting the talk page cannot be changed, it is [[MediaWiki:Delete-talk-summary-prefix]], 
+     *  where <code>$1</code> is  <code>reason</code>. This parameter is ignored
+     *  if <code>title</code> is a talk page or the talk page does not exist.
+     *  
      *  @param title the page to delete
      *  @param reason the reason for deletion
+     *  @param deltalk delete the associated talk page
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws SecurityException if the user lacks the privileges to delete
      *  @throws CredentialExpiredException if cookies have expired
@@ -2398,7 +2408,7 @@ public class Wiki implements Comparable<Wiki>
      *  or Media page
      *  @since 0.24
      */
-    public synchronized void delete(String title, String reason) throws IOException, LoginException
+    public synchronized void delete(String title, String reason, boolean deltalk) throws IOException, LoginException
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
@@ -2416,6 +2426,8 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "delete");
         getparams.put("title", normalize(title));
+        if (deltalk)
+            getparams.put("deletetalk", "1");
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("reason", reason);
         postparams.put("token", getToken("csrf"));

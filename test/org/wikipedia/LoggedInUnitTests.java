@@ -103,8 +103,8 @@ public class LoggedInUnitTests
         finally
         {
             // Requires admin rights... otherwise find an admin to delete manually.
-            testWiki.delete("File:Wiki.java test4.jpg", "Test cleanup");
-            testWiki.delete("File:Wiki.java test5.jpg", "Test cleanup");
+            testWiki.delete("File:Wiki.java test4.jpg", "Test cleanup", false);
+            testWiki.delete("File:Wiki.java test5.jpg", "Test cleanup", false);
         }
     }
     

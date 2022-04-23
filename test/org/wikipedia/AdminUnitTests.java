@@ -109,15 +109,32 @@ public class AdminUnitTests
     {
         // try to delete a page that doesn't exist
         // returns silently with log message, which is intended behavior
-        testWiki.delete("FakePage" + (int)(Math.random() * 20000), "Fake reason");
+        testWiki.delete("FakePage" + (int)(Math.random() * 20000), "Fake reason", false);
         
         // try to delete an actual page
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete2
+        // setup
         String pagename = "User:MER-C/UnitTests/Delete2";
+        String talkpagename = testWiki.getTalkPage(pagename);
+        List<String> pages = List.of(pagename, talkpagename);
         testWiki.edit(pagename, "Dummy text", "A dummy edit summary");
-        assertTrue((Boolean)testWiki.getPageInfo(List.of(pagename)).get(0).get("exists"));
-        testWiki.delete(pagename, "Per cabal orders (just testing).");
-        assertFalse((Boolean)testWiki.getPageInfo(List.of(pagename)).get(0).get("exists"));
+        testWiki.edit(talkpagename, "Dummy text", "A dummy edit summary");
+        var info = testWiki.getPageInfo(pages);
+        assertTrue((Boolean)info.get(0).get("exists"));
+        assertTrue((Boolean)info.get(1).get("exists"));
+        
+        // no talk deletion
+        testWiki.delete(pagename, "Per cabal orders (just testing).", false);
+        info = testWiki.getPageInfo(pages);
+        assertFalse((Boolean)info.get(0).get("exists"));
+        assertTrue((Boolean)info.get(1).get("exists"));
+        
+        // talk deletion
+        testWiki.edit(pagename, "Dummy text", "A dummy edit summary");
+        testWiki.delete(pagename, "Per cabal orders (just testing, talk=on).", true);
+        info = testWiki.getPageInfo(pages);
+        assertFalse((Boolean)info.get(0).get("exists"));
+        assertFalse((Boolean)info.get(1).get("exists"));
     }
     
     @Test
@@ -132,7 +149,7 @@ public class AdminUnitTests
         String pagename = "User:MER-C/UnitTests/Delete3";
         testWiki.edit(pagename, "Dummy text", "A dummy edit summary");
         assertTrue((Boolean)testWiki.getPageInfo(List.of(pagename)).get(0).get("exists"));
-        testWiki.delete(pagename, "Per cabal orders (just testing).");
+        testWiki.delete(pagename, "Per cabal orders (just testing).", false);
         assertFalse((Boolean)testWiki.getPageInfo(List.of(pagename)).get(0).get("exists"));
         testWiki.undelete(pagename, "There is no cabal.");
         assertTrue((Boolean)testWiki.getPageInfo(List.of(pagename)).get(0).get("exists"));

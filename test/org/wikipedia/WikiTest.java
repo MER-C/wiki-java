@@ -521,11 +521,11 @@ public class WikiTest
     {
         // No special namespaces
         assertThrows(UnsupportedOperationException.class,
-            () -> enWiki.delete("Special:SpecialPages", "Not a reason"));
+            () -> enWiki.delete("Special:SpecialPages", "Not a reason", false));
         assertThrows(UnsupportedOperationException.class,
-            () -> enWiki.delete("Media:Example.png", "Not a reason"));
+            () -> enWiki.delete("Media:Example.png", "Not a reason", false));
         // Test runs without logging in, therefore expect failure.
-        assertThrows(SecurityException.class, () -> enWiki.delete("User:MER-C", "Not a reason"),
+        assertThrows(SecurityException.class, () -> enWiki.delete("User:MER-C", "Not a reason", false),
             "attempted to delete while logged out");
     }
 

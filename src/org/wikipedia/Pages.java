@@ -382,7 +382,10 @@ public class Pages
      *  @throws LoginException if one does not possess credentials to delete
      *  @return an array containing pages we were unable to delete
      *  @author Fastily
+     *  @deprecated Wiki.java delete can now delete both pages in a single 
+     *  action.
      */
+    @Deprecated(forRemoval=true)
     public List<String> massDelete(Iterable<String> pages, String reason, String talkReason) throws LoginException
     {
         ArrayList<String> cantdelete = new ArrayList<>();
@@ -390,7 +393,7 @@ public class Pages
         {
             try
             {
-                wiki.delete(page, reason);
+                wiki.delete(page, reason, false);
             }
             catch (IOException | UncheckedIOException ex)
             {
@@ -402,7 +405,7 @@ public class Pages
             {
                 try
                 {
-                    wiki.delete(wiki.getTalkPage(page), talkReason);
+                    wiki.delete(wiki.getTalkPage(page), talkReason, false);
                 }
                 catch (IOException | UncheckedIOException ex)
                 {
