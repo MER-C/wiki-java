@@ -534,13 +534,13 @@ public class WikiTest
     {
         // No special namespaces
         assertThrows(UnsupportedOperationException.class,
-            () -> enWiki.undelete("Special:SpecialPages", "Not a reason"),
+            () -> enWiki.undelete("Special:SpecialPages", "Not a reason", false),
             "Attempted to undelete a special page.");
         assertThrows(UnsupportedOperationException.class,
-            () -> enWiki.undelete("Media:Example.png", "Not a reason"),
+            () -> enWiki.undelete("Media:Example.png", "Not a reason", false),
             "Attempted to undelete a special page.");
         // Test runs without logging in, therefore expect failure.
-        assertThrows(SecurityException.class, () -> enWiki.undelete("User:MER-C", "Not a reason"),
+        assertThrows(SecurityException.class, () -> enWiki.undelete("User:MER-C", "Not a reason", false),
             "Attempted to undelete while logged out.");
     }
 
@@ -635,7 +635,7 @@ public class WikiTest
         assertTrue(details.containsKey("nocreate"));
         assertTrue(details.containsKey("noemail"));
         assertTrue(details.containsKey("nousertalk"));
-        assertEquals("indefinite", details.get("expiry"));
+        assertEquals("infinity", details.get("expiry"));
 
         // New user log
         assertEquals("Nimimaan", le.get(1).getUser());

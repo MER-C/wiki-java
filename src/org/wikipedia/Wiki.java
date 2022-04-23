@@ -2394,7 +2394,7 @@ public class Wiki implements Comparable<Wiki>
      *  page. The 5000 revision limit <a href="https://gerrit.wikimedia.org/r/c/mediawiki/core/+/715954/">applies 
      *  to both pages in combination, not individually</a>. The reason for 
      *  deleting the talk page cannot be changed, it is [[MediaWiki:Delete-talk-summary-prefix]], 
-     *  where <code>$1</code> is  <code>reason</code>. This parameter is ignored
+     *  where <code>$1</code> is <code>reason</code>. This parameter is ignored
      *  if <code>title</code> is a talk page or the talk page does not exist.
      *  
      *  @param title the page to delete
@@ -2441,9 +2441,19 @@ public class Wiki implements Comparable<Wiki>
      *  Undeletes a page. Equivalent to [[Special:Undelete]]. Restores ALL deleted
      *  revisions and files by default. This method is {@linkplain
      *  #setThrottle(int) throttled}.
+     * 
+     *  <p>
+     *  If <code>undeltalk</code> is specified, undelete all revisions of the 
+     *  associated talk page. The reason for undeleting the talk page cannot be
+     *  changed, it is [[MediaWiki:Undelete-talk-summary-prefix]], where
+     *  <code>$1</code> is <code>reason</code>. If the talk page exists and has
+     *  deleted revisions, those revisions will be restored. This parameter is 
+     *  ignored if <code>title</code> is a talk page or the talk page has no 
+     *  deleted revisions.
      *
      *  @param title a page to undelete
      *  @param reason the reason for undeletion
+     *  @param undeltalk undelete the associated talk page
      *  @param revisions a list of revisions for selective undeletion
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws SecurityException if the user lacks the privileges to undelete
@@ -2453,7 +2463,8 @@ public class Wiki implements Comparable<Wiki>
      *  or Media page
      *  @since 0.30
      */
-    public synchronized void undelete(String title, String reason, Revision... revisions) throws IOException, LoginException
+    public synchronized void undelete(String title, String reason, boolean undeltalk, Revision... revisions)
+        throws IOException, LoginException
     {
         if (namespace(title) < 0)
             throw new UnsupportedOperationException("Cannot delete Special and Media pages!");
@@ -2463,7 +2474,9 @@ public class Wiki implements Comparable<Wiki>
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "undelete");
         getparams.put("title", normalize(title));
-
+        if (undeltalk)
+            getparams.put("undeletetalk", "1");
+        
         Map<String, Object> postparams = new HashMap<>();
         postparams.put("reason", reason);
         postparams.put("token", getToken("csrf"));

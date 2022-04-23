@@ -466,8 +466,7 @@ public class AdminStats
             lelocal.removeIf(log ->
             {
                 String expiry = log.getDetails().get("expiry");
-                // https://phabricator.wikimedia.org/T241709
-                boolean indefinite = expiry.equals("indefinite") || expiry.equals("infinity") || expiry.equals("infinite") || expiry.equals("never");
+                boolean indefinite = expiry.equals("infinity");
                 if (Boolean.TRUE.equals(indefs) && indefinite)
                     return false;
                 if (Boolean.FALSE.equals(indefs) && !indefinite)
