@@ -36,15 +36,14 @@ public class BlockLockStuff
     public static void main(String[] args) throws Exception
     {
         Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
-        // List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
-        List<String> socks = Files.readAllLines(Paths.get("spam2.txt"));
+        List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
+        // List<String> socks = Files.readAllLines(Paths.get("spam2.txt"));
         
-        lockFinder(socks);
-        staleScreener(socks);
+        // lockFinder(socks);
+        blockFinder(socks);
+        // staleScreener(socks);
         
         // TODO: accept arbitrary input
-        // TODO: determine unblocked accounts
-        // TODO: determine G5 date - first lock or block as per block list
     }
     
     public static void lockFinder(List<String> socks) throws Exception
@@ -89,7 +88,7 @@ public class BlockLockStuff
             List<Wiki.Revision> sockcontribs = contribs.get(i);
             OffsetDateTime lastlog = socklogs.get(0).getTimestamp();
             OffsetDateTime lastactive = lastlog;
-            if (sockcontribs.size() > 0)
+            if (!sockcontribs.isEmpty())
             {
                 OffsetDateTime lastedit = sockcontribs.get(0).getTimestamp();
                 if (lastedit.isAfter(lastlog))
@@ -109,5 +108,31 @@ public class BlockLockStuff
         System.out.println(";Not registered locally");
         for (String s : unregistered)
             System.out.println(s);
+    }
+    
+    public static void blockFinder(List<String> socks) throws Exception
+    {
+        Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
+        List<Wiki.LogEntry> blocklist = enWiki.getBlockList(socks, null);
+        List<String> unblocked = new ArrayList<>(socks);
+        
+        // TODO: add locks - not possible currently due to:
+        // 1. T261752
+        // 2. The API call behind WMFWiki.getGlobalUserInfo doesn't return when the lock occurred
+        // 3. Wiki.getLogEntries("globalauth", null, null) doesn't return the details because it
+        //    is not a native Wiki log type
+        // Any will result in this bug being fixed.
+        Wiki.LogEntry earliest = blocklist.isEmpty() ? null : blocklist.get(0);
+        for (Wiki.LogEntry block : blocklist)
+        {
+            unblocked.remove(block.getTitle());
+            OffsetDateTime ts = block.getTimestamp();
+            if (ts.isBefore(earliest.getTimestamp()))
+                earliest = block;
+        }
+        System.out.println(";Unblocked users:");
+        for (String user : unblocked)
+            System.out.println("*{{user|" + enWiki.removeNamespace(user) + "}}");
+        System.out.println("G5 date: " + earliest.getTimestamp());
     }
 }

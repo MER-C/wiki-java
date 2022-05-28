@@ -586,9 +586,18 @@ public class WikiTest
     @Test
     public void getBlockList() throws Exception
     {
+        // Must specify users in unit tests because otherwise it is a dynamic list.
+        List<String> users = List.of("Nimimaan", "Jimbo Wales", "Bodiadub");
+        List<Wiki.LogEntry> le = enWiki.getBlockList(users, null);
+        assertEquals(2, le.size());
+        
+        assertEquals("2019-05-22T03:28:04Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertEquals("TonyBallioni", le.get(0).getUser());
+        assertEquals("User:Bodiadub", le.get(0).getTitle());
+        assertEquals("{{checkuserblock-account}}", le.get(0).getComment());
+        
         // https://en.wikipedia.org/wiki/Special:Blocklist/Nimimaan
         // see also getLogEntries() below
-        List<Wiki.LogEntry> le = enWiki.getBlockList(List.of("Nimimaan", "Bodiadub"), null);
         assertEquals(-1, le.get(1).getID());
         assertEquals("2016-06-21T13:14:54Z", le.get(1).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         assertEquals("MER-C", le.get(1).getUser());
@@ -602,14 +611,9 @@ public class WikiTest
 //            true, "indefinite" // talk page access revoked, expiry
 //        }, le[0].getDetails(), "block parameters");
 
-        assertEquals("2019-05-22T03:28:04Z", le.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        assertEquals("TonyBallioni", le.get(0).getUser());
-        assertEquals("User:Bodiadub", le.get(0).getTitle());
-        assertEquals("{{checkuserblock-account}}", le.get(0).getComment());
-
-        // This IP address should not be blocked (it is reserved)
-        le = enWiki.getBlockList(List.of("0.0.0.0"), null);
-        assertTrue(le.isEmpty(), "0.0.0.0 should not be blocked");
+        // What happens if there are no blocked users in the list? 
+        le = enWiki.getBlockList(List.of("0.0.0.0"), null); // Reserved IPs should never be blocked. 
+        assertTrue(le.isEmpty());
     }
 
     @Test

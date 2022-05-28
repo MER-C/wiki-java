@@ -5936,6 +5936,9 @@ public class Wiki implements Comparable<Wiki>
             entries.addAll(makeListQuery("bk", getparams, null, "getBlockList", limit, parser));
         else
         {
+            // This would have been a normal vectorized query except that 
+            // this API call is vectorized over bkusers instead of titles
+            // TODO: the return order should be the input order with null interspersed accordingly.
             for (String bkusers : constructTitleString(users))
             {
                 getparams.put("bkusers", bkusers);
@@ -8030,17 +8033,18 @@ public class Wiki implements Comparable<Wiki>
      *  @param limit fetch no more than this many results
      *  @param parser a BiConsumer that parses the XML returned by the MediaWiki
      *  API into things we want, dumping them into the given List
+     *  @param T the return object type (typically String)
      *  @return a list of results, where each element corresponds to the element
      *  at the same index in the input title list
      *  @since 0.36
      *  @throws IOException if a network error occurs
      */
-    protected List<List<String>> makeVectorizedQuery(String queryPrefix, Map<String, String> getparams,
-        List<String> titles, String caller, int limit, BiConsumer<String, List<String>> parser) throws IOException
+    protected <T> List<List<T>> makeVectorizedQuery(String queryPrefix, Map<String, String> getparams,
+        List<String> titles, String caller, int limit, BiConsumer<String, List<T>> parser) throws IOException
     {
         // copy because normalization and redirect resolvers overwrite
         List<String> titles2 = new ArrayList<>(titles);
-        List<Map<String, List<String>>> stuff = new ArrayList<>();
+        List<Map<String, List<T>>> stuff = new ArrayList<>();
         Map<String, Object> postparams = new HashMap<>();
         for (String temp : constructTitleString(titles2))
         {
@@ -8057,10 +8061,10 @@ public class Wiki implements Comparable<Wiki>
                 for (int i = 1; i < x.length; i++)
                 {
                     String parsedtitle = parseAttribute(x[i], "title", 0);
-                    List<String> list = new ArrayList<>();
+                    List<T> list = new ArrayList<>();
                     parser.accept(x[i], list);
 
-                    Map<String, List<String>> intermediate = new HashMap<>();
+                    Map<String, List<T>> intermediate = new HashMap<>();
                     intermediate.put(parsedtitle, list);
                     results.add(intermediate);
                 }
@@ -8068,7 +8072,7 @@ public class Wiki implements Comparable<Wiki>
         }
 
         // prepare the return list
-        List<List<String>> ret = Stream.generate(() -> new ArrayList<String>())
+        List<List<T>> ret = Stream.generate(() -> new ArrayList<T>())
             .limit(titles2.size())
             .collect(Collectors.toCollection(ArrayList::new));
         // then retrieve the results from the intermediate list of maps,
@@ -8076,7 +8080,7 @@ public class Wiki implements Comparable<Wiki>
         stuff.forEach(map ->
         {
             String parsedtitle = map.keySet().iterator().next();
-            List<String> templates = map.get(parsedtitle);
+            List<T> templates = map.get(parsedtitle);
             for (int i = 0; i < titles2.size(); i++)
                 if (titles2.get(i).equals(parsedtitle))
                     ret.get(i).addAll(templates);
