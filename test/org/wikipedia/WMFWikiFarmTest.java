@@ -85,6 +85,9 @@ public class WMFWikiFarmTest
         luserinfo = (Map)guserinfo.get("enwiki");
         assertEquals(List.of("checkuser", "founder", "suppress", "sysop"), luserinfo.get("groups"));
         
+        // Non-existing user
+        assertNull(sessions.getGlobalUserInfo("Jimbo Wal3s"));
+        
         // IP address (throws UnknownError)
         // guserinfo = sessions.getGlobalUserInfo("127.0.0.1");
         // assertNull(guserinfo);

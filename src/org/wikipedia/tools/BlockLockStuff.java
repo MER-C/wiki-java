@@ -39,9 +39,9 @@ public class BlockLockStuff
         List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
         // List<String> socks = Files.readAllLines(Paths.get("spam2.txt"));
         
-        // lockFinder(socks);
+        lockFinder(socks);
         blockFinder(socks);
-        // staleScreener(socks);
+        staleScreener(socks);
         
         // TODO: accept arbitrary input
     }
@@ -58,7 +58,7 @@ public class BlockLockStuff
             // but less data transfer. Also, as usual, the W?F can't be arsed doing this
             // properly: https://phabricator.wikimedia.org/T261752
             Map<String, Object> ginfo = sessions.getGlobalUserInfo(sock);
-            if (!(Boolean)ginfo.get("locked"))
+            if (ginfo != null && !(Boolean)ginfo.get("locked"))
                 System.out.print("|" + meta.removeNamespace(sock));
         }
         System.out.println("}}\n\n");
@@ -77,11 +77,12 @@ public class BlockLockStuff
         for (int i = 0; i < socks.size(); i++)
         {
             String sock = socks.get(i);
+            String sock2 = enWiki.removeNamespace(sock);
             Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser(sock);
             List<Wiki.LogEntry> socklogs = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
             if (socklogs.isEmpty())
             {
-                unregistered.add("*{{checkuser|" + sock + "}}");
+                unregistered.add("*{{checkuser|" + sock2 + "}}");
                 continue;
             }
             
@@ -95,9 +96,9 @@ public class BlockLockStuff
                     lastactive = lastedit;
             }
             if (lastactive.isAfter(staledate))
-                notstale.add("*{{checkuser|" + sock + "}}");
+                notstale.add("*{{checkuser|" + sock2 + "}}");
             else
-                stale.add("*{{checkuser|" + sock + "}}");
+                stale.add("*{{checkuser|" + sock2 + "}}");
         }
         System.out.println(";Not stale:");
         for (String s : notstale)

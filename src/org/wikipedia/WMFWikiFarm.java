@@ -157,16 +157,15 @@ public class WMFWikiFarm
      *  </ul>
      * 
      *  @see #dbNameToDomainName
-     *  @param username the username of the global user. IPs and non-existing users
-     *  are not allowed.
+     *  @param username the username of the global user or null if the user does
+     *  not exist. IPs are not allowed.
      *  @return user info as described above
      *  @throws IOException if a network error occurs
      *  @since WMFWiki 0.01
      */
     public Map<String, Object> getGlobalUserInfo(String username) throws IOException
     {
-        // fixme(?): throws UnknownError ("invaliduser" if user is an IP, doesn't exist
-        // or otherwise is invalid
+        // FIXME: throws UnknownError ("invaliduser" if user is an IP or is otherwise invalid
         WMFWiki wiki = sharedSession("meta.wikimedia.org");
         wiki.requiresExtension("CentralAuth");
         Map<String, String> getparams = new HashMap<>();
@@ -176,6 +175,8 @@ public class WMFWikiFarm
         getparams.put("guiuser", wiki.normalize(username));
         String line = wiki.makeApiCall(getparams, null, "WMFWiki.getGlobalUserInfo");
         wiki.detectUncheckedErrors(line, null, null);
+        if (line.contains("missing=\"\""))
+            return null;
         
         // misc properties
         Map<String, Object> ret = new HashMap<>();
