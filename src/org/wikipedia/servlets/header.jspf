@@ -1,6 +1,6 @@
 <%--
     @(#)header.jsp 0.01 20/01/2017
-    Copyright (C) 2011 - 2017 MER-C
+    Copyright (C) 2011 - 2022 MER-C
   
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -17,8 +17,7 @@
  --%>
 
 <%
-// Content type-specific header material
-
+    // Content type-specific header material
     String contenttype = (String)request.getAttribute("contenttype");
     if (contenttype == "text")
         // create download prompt

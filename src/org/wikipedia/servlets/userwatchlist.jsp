@@ -24,15 +24,13 @@
     int skip = (temp == null) ? 0 : Integer.parseInt(temp);
     skip = Math.max(skip, 0);
     boolean newonly = (request.getParameter("newonly") != null);
-
-    Wiki enWiki = Wiki.newSession("en.wikipedia.org");
-    enWiki.setMaxLag(-1);
+    
+    Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
     enWiki.setQueryLimit(30000); // 60 network requests
     Users userUtils = Users.of(enWiki);
     Revisions revisionUtils = Revisions.of(enWiki);
     Pages pageUtils = Pages.of(enWiki);
 %>
-
 <%@ include file="datevalidate.jspf" %>
 <%@ include file="header.jspf" %>
 

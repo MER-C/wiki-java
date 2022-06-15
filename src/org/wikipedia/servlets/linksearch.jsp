@@ -107,7 +107,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
     }
     else if (mode.equals("single"))
         results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 
-            List.of(Wiki.newSession(wikiinput)), https, mailto, ns);
+            List.of(sessions.sharedSession(wikiinput)), https, mailto, ns);
 
     out.println("<hr>");
     for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())

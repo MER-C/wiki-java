@@ -1199,37 +1199,43 @@ public class WikiTest
     @Test
     public void getUsers() throws Exception
     {
-        List<String> usernames = List.of(
-            "127.0.0.1", // IP address
-            "MER-C",
-            "DKdsf;lksd", // should be non-existent...
-            "ZZRBrenda08", // blocked spambot with 2 edits
-            "127.0.0.0/24"); // IP range
+        // empty/null check
+        assertTrue(enWiki.getUsers(Collections.emptyList()).isEmpty());
+        List<String> usernames = new ArrayList<>();
+        usernames.add("placeholder"); //null);
+        //assertNull(enWiki.getUsers(usernames).get(0));
+        
+        usernames.add("127.0.0.1"); // IP address
+        usernames.add("MER-C");
+        usernames.add("DKdsf;lksd"); // should be non-existent...
+        usernames.add("ZZRBrenda08"); // blocked spambot with 2 edits
+        usernames.add("127.0.0.0/24"); // IP range
         List<Wiki.User> users = enWiki.getUsers(usernames);
-        assertNull(users.get(0), "IP address");
-        assertNull(users.get(2), "non-existent user");
-        assertNull(users.get(4), "IP address range");
+        // assertNull(users.get(0), "null input");
+        assertNull(users.get(1), "IP address");
+        assertNull(users.get(3), "non-existent user");
+        assertNull(users.get(5), "IP address range");
 
-        assertEquals(usernames.get(1), users.get(1).getUsername(), "normalized username");
-        assertFalse(users.get(1).isBlocked());
-        assertEquals(Wiki.Gender.unknown, users.get(1).getGender());
+        assertEquals(usernames.get(2), users.get(2).getUsername(), "normalized username");
+        assertFalse(users.get(2).isBlocked());
+        assertEquals(Wiki.Gender.unknown, users.get(2).getGender());
         assertEquals("2006-07-07T10:52:41Z",
-            users.get(1).getRegistrationDate().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+            users.get(2).getRegistrationDate().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
         // should be privileged information, but isn't?
-        // assertFalse(users[1].canBeEmailed());
+        // assertFalse(users[2].canBeEmailed());
 
-        List<String> groups = users.get(1).getGroups();
+        List<String> groups = users.get(2).getGroups();
         List<String> temp = List.of("*", "autoconfirmed", "user", "sysop");
         assertTrue(groups.containsAll(temp));
 
         // check (subset of) rights
-        List<String> rights = users.get(1).getRights();
+        List<String> rights = users.get(2).getRights();
         temp = List.of("apihighlimits", "delete", "block", "editinterface");
         assertTrue(rights.containsAll(temp));
 
-        assertEquals(usernames.get(3), users.get(3).getUsername());
-        assertEquals(2, users.get(3).countEdits());
-        assertTrue(users.get(3).isBlocked());
+        assertEquals(usernames.get(4), users.get(4).getUsername());
+        assertEquals(2, users.get(4).countEdits());
+        assertTrue(users.get(4).isBlocked());
     }
 
     @Test
@@ -1390,6 +1396,13 @@ public class WikiTest
         expected.add("A99");
         List<String> actual = enWiki.constructTitleString(titles);
         assertEquals(expected, actual);
+        
+        // should behave well with nulls if one gets fed in from a revdel somewhere
+        titles.clear();
+        titles.add(null);
+        assertTrue(enWiki.constructTitleString(titles).isEmpty());
+        titles.add("A");
+        assertEquals(List.of("A"), enWiki.constructTitleString(titles));
     }
 
     // INNER CLASS TESTS

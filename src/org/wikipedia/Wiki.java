@@ -8033,7 +8033,7 @@ public class Wiki implements Comparable<Wiki>
      *  @param limit fetch no more than this many results
      *  @param parser a BiConsumer that parses the XML returned by the MediaWiki
      *  API into things we want, dumping them into the given List
-     *  @param T the return object type (typically String)
+     *  @param <T> the return object type (typically String)
      *  @return a list of results, where each element corresponds to the element
      *  at the same index in the input title list
      *  @since 0.36
@@ -8648,10 +8648,15 @@ public class Wiki implements Comparable<Wiki>
     protected List<String> constructTitleString(List<String> titles)
     {
         // sort and remove duplicates
-        List<String> titles_unique = titles.stream().sorted().distinct().collect(Collectors.toList());
+        List<String> titles_unique = titles.stream()
+        // should behave well with nulls if one gets fed in from a revdel somewhere
+            .filter(t -> t != null) 
+            .sorted().distinct().collect(Collectors.toList());
+        if (titles_unique.isEmpty())
+            return Collections.emptyList();
         
         // actually construct the string
-        ArrayList<String> ret = new ArrayList<>();
+        List<String> ret = new ArrayList<>();
         for (int i = 0; i < titles_unique.size() / slowmax + 1; i++)
         {
             ret.add(String.join("|", 

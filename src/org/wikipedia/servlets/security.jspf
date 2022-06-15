@@ -35,12 +35,16 @@
     // Disallow bad robots
     String useragent = request.getHeader("User-Agent");
     if (useragent.contains("Tweetmeme") || useragent.contains("Apache-HttpClient") || 
-        useragent.contains("bing.com")  || useragent.contains("Wget"))
+        useragent.contains("bing.com")  || useragent.contains("Wget") ||
+        useragent.contains("archive.org"))
     {
-        response.sendRedirect("https://" + request.getRemoteAddr());
+        response.setStatus(403);
         return;
     }
     
+    // stuff here is only here because it gets executed first
+    WMFWikiFarm sessions = WMFWikiFarm.instance();
+    sessions.setInitializer(wiki_ -> wiki_.setMaxLag(-1));
     response.setCharacterEncoding("UTF-8");
 
     // Set security headers
@@ -54,6 +58,4 @@
         "style-src 'self'");         // allow only stylesheets from this domain
     // disable the Referer header
     response.setHeader("Referrer-Policy", "no-referrer");
-
-
 %>

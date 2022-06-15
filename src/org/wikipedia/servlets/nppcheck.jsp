@@ -54,10 +54,9 @@ main space for a given user (or for all users) and page metadata. A query limit 
     }
     out.println("<hr>");
 
-    WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
+    WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
     Users users = Users.of(enWiki);
     Pages pageutils = Pages.of(enWiki);
-    enWiki.setMaxLag(-1);
     enWiki.setQueryLimit(7500);
     NPPCheck check = new NPPCheck(enWiki);
     check.setReviewer(username);

@@ -36,7 +36,7 @@ long-standing reference spam.
 <%
     if (!title.isEmpty())
     {
-        Wiki enWiki = Wiki.newSession(wiki);
+        Wiki enWiki = sessions.sharedSession(wiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(enWiki);
         elp.getExcludeList().addAll(List.of("wmflabs.org", "edwardbetts.com", "archive.org"));
         Map<String, Map<String, List<String>>> results = elp.fetchExternalLinks(List.of(title));

@@ -129,7 +129,8 @@ public class NPPCheck
             .parse(args);
         String user = parsedargs.get("--user");
         
-        WMFWiki enWiki = WMFWiki.newSession("en.wikipedia.org");
+        WMFWikiFarm sessions = WMFWikiFarm.instance();
+        WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         NPPCheck check = new NPPCheck(enWiki);
         
         // NPPBrowser mode (for bulk fetching)

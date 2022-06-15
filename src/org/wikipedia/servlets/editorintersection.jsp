@@ -80,8 +80,7 @@ first in the GUI) apply.
 <%
     }
 
-    Wiki wiki = Wiki.newSession(wikiparam);
-    wiki.setMaxLag(-1);
+    Wiki wiki = sessions.sharedSession(wikiparam);
     wiki.setQueryLimit(1500);
 
     Stream<String> pagestream = null;

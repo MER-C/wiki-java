@@ -1,6 +1,6 @@
 <%--
     @(#)contributionsurveyor.jsp 0.02 05/07/2021
-    Copyright (C) 2011 - 2021 MER-C
+    Copyright (C) 2011 - 2022 MER-C
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -32,7 +32,7 @@
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String bytefloor = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("bytefloor"), "150");
     
-    Wiki wiki = Wiki.newSession(homewiki);
+    Wiki wiki = sessions.sharedSession(homewiki);
     wiki.setQueryLimit(10000); // 20 network requests, GAE only allows run time of 15s
 
     List<String> users = new ArrayList<>();
@@ -48,12 +48,11 @@
                 users.add(wiki.removeNamespace(tempstring));
     }
 
-    ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-    String survey = null;
-
     // get results
+    String survey = null;
     if (request.getAttribute("error") == null && !users.isEmpty())
     {
+        ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setIgnoringMinorEdits(nominor);
         surveyor.setIgnoringReverts(noreverts);
         surveyor.setNewOnly(newonly);

@@ -1,6 +1,6 @@
 <%--
     @(#)imagecci.jsp 0.03 07/02/2018
-    Copyright (C) 2011 - 2018 MER-C
+    Copyright (C) 2011 - 2022 MER-C
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -19,20 +19,18 @@
 <%@ include file="datevalidate.jspf" %>
 <%
     request.setAttribute("toolname", "Image contribution surveyor");
-
-    String user = request.getParameter("user");
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
-    Wiki wiki = Wiki.newSession(homewiki);
-
-    ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
-    List<String> surveydata = null;
+    String user = request.getParameter("user");
     if (user != null)
         request.setAttribute("contenttype", "text");
 %>
 <%@ include file="header.jspf" %>
 <%
+    List<String> surveydata = null;
     if (user != null)
     {
+        WMFWiki wiki = sessions.sharedSession(homewiki);
+        ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveydata = surveyor.outputContributionSurvey(List.of(user), false, false, true);
 
