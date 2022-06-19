@@ -1,6 +1,6 @@
 /**
- *  @(#)WikiTest.java 0.36 08/02/2019
- *  Copyright (C) 2014-2019 MER-C
+ *  @(#)WikiTest.java 0.38 08/02/2019
+ *  Copyright (C) 2014-2022 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -748,34 +748,41 @@ public class WikiTest
     @Test
     public void getPageProperties() throws Exception
     {
-        List<String> pages = List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage", "1&nbsp;000", "[invalid]");
+        List<String> pages = new ArrayList<>();
+        pages.add(null);
+        assertNull(enWiki.getPageProperties(pages).get(0));
+        
+        pages.addAll(List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage", "1&nbsp;000", "[invalid]"));
         List<Map<String, String>> pageprops = enWiki.getPageProperties(pages);
         assertEquals(pages.size(), pageprops.size());
 
+        // null in = null out
+        assertNull(pageprops.get(0));
+        
         // Main Page
-        assertEquals("Q5296", pageprops.get(0).get("wikibase_item"), "Main Page wikibase item");
-        assertTrue(pageprops.get(0).containsKey("notoc"), "Main Page has no toc");
-        assertTrue(pageprops.get(0).containsKey("noeditsection"), "Main Page has no edit section");
-
+        assertEquals("Q5296", pageprops.get(1).get("wikibase_item"), "Main Page wikibase item");
+        assertTrue(pageprops.get(1).containsKey("notoc"), "Main Page has no toc");
+        assertTrue(pageprops.get(1).containsKey("noeditsection"), "Main Page has no edit section");
+        
         // IPod
-        assertEquals("iPod", pageprops.get(1).get("displaytitle"), "iPod display title");
-        assertEquals("Q9479", pageprops.get(1).get("wikibase_item"), "iPod wikibase item");
-        assertTrue(pageprops.get(1).containsKey("wikibase-shortdesc"), "iPod has wikibase description");
-
+        assertEquals("iPod", pageprops.get(2).get("displaytitle"), "iPod display title");
+        assertEquals("Q9479", pageprops.get(2).get("wikibase_item"), "iPod wikibase item");
+        assertTrue(pageprops.get(2).containsKey("wikibase-shortdesc"), "iPod has wikibase description");
+        
         // Main_Page (duplicate, should be identical)
-        assertEquals(pageprops.get(2).hashCode(), pageprops.get(2).hashCode(), "identity");
+        assertEquals(pageprops.get(1).hashCode(), pageprops.get(3).hashCode(), "identity");
         
         // Special page = return null
-        assertNull(pageprops.get(3), "special page");
+        assertNull(pageprops.get(4), "special page");
         
         // redirect, there are no relevant properties here, check for empty map
-        assertTrue(pageprops.get(4).isEmpty(), "page with no properties");
+        assertTrue(pageprops.get(5).isEmpty(), "page with no properties");
         
         // HTML entities in title (special normalization case, we don't expect any props here either)
-        assertTrue(pageprops.get(4).isEmpty(), "normalization");
+        assertTrue(pageprops.get(6).isEmpty(), "normalization");
 
         // invalid title = return null
-        assertNull(pageprops.get(6), "invalid title");
+        assertNull(pageprops.get(7), "invalid title");
     }
 
     @Test
@@ -793,23 +800,29 @@ public class WikiTest
     @Test
     public void getFileMetadata() throws Exception
     {
-        List<Map<String, Object>> results = enWiki.getFileMetadata(List.of(
-            "File:Tankman_new_longshot_StuartFranklin.jpg", "File:Lweo&pafd.blah", "File:Phra Phuttha Chinnarat (II).jpg", 
+        List<String> files = new ArrayList<>();
+        files.add(null);
+        assertNull(enWiki.getFileMetadata(files).get(0));
+        
+        files.addAll(List.of("File:Tankman_new_longshot_StuartFranklin.jpg", 
+            "File:Lweo&pafd.blah", "File:Phra Phuttha Chinnarat (II).jpg", 
             "File:WikipediaSignpostIcon.svg", "File:Mandelbrotzoom 20191023.webm",
             "File:Mandelbrotzoom&nbsp;20191023.webm"));
+        List<Map<String, Object>> results = enWiki.getFileMetadata(files);
+        assertNull(results.get(0));
         
         // https://en.wikipedia.org/wiki/File:Tankman_new_longshot_StuartFranklin.jpg
-        Map<String, Object> tankman = results.get(0);
+        Map<String, Object> tankman = results.get(1);
         assertEquals("image/jpeg", tankman.get("mime"));
         assertEquals(261, tankman.get("width"));
         assertEquals(381, tankman.get("height"));
         assertEquals(24310L, tankman.get("size"));
         
-        assertNull(results.get(1), "non-existent file");
+        assertNull(results.get(2), "non-existent file");
         
         // Commons files return results
         // https://en.wikipedia.org/wiki/File:Phra_Phuttha_Chinnarat_(II).jpg   
-        Map<String, Object> wat = results.get(2);
+        Map<String, Object> wat = results.get(3);
         assertEquals("image/jpeg", wat.get("mime"));
         assertEquals(5395, wat.get("width"));
         assertEquals(3596, wat.get("height"));
@@ -825,7 +838,7 @@ public class WikiTest
         
         // slightly exotic file type: SVG
         // https://en.wikipedia.org/wiki/File:WikipediaSignpostIcon.svg
-        Map<String, Object> signpost = results.get(3);
+        Map<String, Object> signpost = results.get(4);
         assertEquals("image/svg+xml", signpost.get("mime"));
         assertEquals(46, signpost.get("width"));
         assertEquals(55, signpost.get("height"));
@@ -833,12 +846,12 @@ public class WikiTest
         
         // large file that busts Java integer size
         // https://en.wikipedia.org/wiki/File:Mandelbrotzoom_20191023.webm
-        Map<String, Object> fractal = results.get(4);
+        Map<String, Object> fractal = results.get(5);
         assertEquals("video/webm", fractal.get("mime"));
         assertEquals(2703768090L, fractal.get("size"));
         
         // server-side normalization
-        assertEquals(fractal, results.get(5));
+        assertEquals(fractal, results.get(6));
         
         // further tests blocked on MediaWiki API rewrite
         // see https://phabricator.wikimedia.org/T89971
@@ -1202,8 +1215,8 @@ public class WikiTest
         // empty/null check
         assertTrue(enWiki.getUsers(Collections.emptyList()).isEmpty());
         List<String> usernames = new ArrayList<>();
-        usernames.add("placeholder"); //null);
-        //assertNull(enWiki.getUsers(usernames).get(0));
+        usernames.add(null);
+        assertNull(enWiki.getUsers(usernames).get(0));
         
         usernames.add("127.0.0.1"); // IP address
         usernames.add("MER-C");
@@ -1211,7 +1224,7 @@ public class WikiTest
         usernames.add("ZZRBrenda08"); // blocked spambot with 2 edits
         usernames.add("127.0.0.0/24"); // IP range
         List<Wiki.User> users = enWiki.getUsers(usernames);
-        // assertNull(users.get(0), "null input");
+        assertNull(users.get(0), "null input");
         assertNull(users.get(1), "IP address");
         assertNull(users.get(3), "non-existent user");
         assertNull(users.get(5), "IP address range");

@@ -29,7 +29,7 @@
  *
  *  <p>
  *  All methods should work on a vanilla installation of MediaWiki with the 
- *  exception of {@link WMFWiki}. Required extension(s) for any given method 
- *  are denoted in the documentation.
+ *  exception of {@link WMFWiki} and {@link WMFWikiFarm}. Required extension(s) 
+ *  for any given method are denoted in the documentation.
  */
 package org.wikipedia;

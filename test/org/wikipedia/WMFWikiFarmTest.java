@@ -125,15 +125,20 @@ public class WMFWikiFarmTest
     @Test
     public void getWikidataItems() throws Exception
     {
-        List<String> input = List.of("Blah", "Albert Einstein", "Create a page", "Test", 
-            "Albert_Einstein", "User:MER-C");
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
+        List<String> input = new ArrayList<>();
+        input.add(null);
+        assertNull(sessions.getWikidataItems(enWiki, input).get(0));
+        
+        input.addAll(List.of("Blah", "Albert Einstein", "Create a page", "Test", 
+            "Albert_Einstein", "User:MER-C"));
         List<String> actual = sessions.getWikidataItems(enWiki, input);
-        assertEquals("Q527633", actual.get(0));
-        assertEquals("Q937", actual.get(1));
-        assertNull(actual.get(2)); // local page doesn't exist
-        assertEquals("Q224615", actual.get(3));
-        assertEquals("Q937", actual.get(4));
-        assertNull(actual.get(5)); // local page exists, but no corresponding WD item
+        assertNull(actual.get(0));
+        assertEquals("Q527633", actual.get(1));
+        assertEquals("Q937", actual.get(2));
+        assertNull(actual.get(3)); // local page doesn't exist
+        assertEquals("Q224615", actual.get(4));
+        assertEquals("Q937", actual.get(5));
+        assertNull(actual.get(6)); // local page exists, but no corresponding WD item
     }
 }

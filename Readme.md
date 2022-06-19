@@ -13,21 +13,21 @@ https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces.
 Requires JDK >= 11. For those using modules, only the java.base, java.net.http and 
 java.logging modules are required.
 
-Latest stable version: [0.36](https://github.com/MER-C/wiki-java/releases/tag/0.36) -- 
-MediaWiki versions 1.31+
+Latest stable version: [0.37](https://github.com/MER-C/wiki-java/releases/tag/0.37) -- 
+MediaWiki versions 1.39+
 
 ## Dependencies
 
-| Class/Package            | Java          | MediaWiki extensions |
-| ------------------------ |-------------- | -------------------- |
-| org.wikipedia.Wiki       | None          | None                 |
-| org.wikipedia.WMFWiki    | None          | As indicated. Works on WMF sites. |
-| org.wikipedia.*Utils     | None          | None                 |
-| org.wikipedia.tools.*    | None          | See below.           |
-| org.wikipedia.servlets.* | javax.servlet | See below.           |
+| Class/Package               | Java          | MediaWiki extensions |
+| ----------------------------|-------------- | -------------------- |
+| org.wikipedia.Wiki          | None          | None                 |
+| org.wikipedia.WMFWiki(Farm) | None          | As indicated. Works on WMF sites. |
+| org.wikipedia.*Utils        | None          | None                 |
+| org.wikipedia.tools.*       | None          | See below.           |
+| org.wikipedia.servlets.*    | javax.servlet | See below.           |
 
-Note: Some tools and servlets are hardcoded to work on WMF sites only, and in
-some cases for just the English Wikipedia. (Some tools solve en.wp specific
+Note: Some tools and all servlets are hardcoded to work on WMF sites only, and
+in some cases for just the English Wikipedia. (Some tools solve en.wp specific
 problems). They should all work on WMF sites. If you would like tool coverage 
 for your wiki, please file a bug report.
 

@@ -307,46 +307,27 @@ public class WMFWikiFarm
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "wbgetentities");
         getparams.put("sites", dbname);
-        
-        // WORKAROUND: this module doesn't accept mixed GET/POST requests
-        // often need to slice up titles into smaller chunks than slowmax (here 25)
-        // FIXME: replace with constructTitleString when Wikidata is behaving correctly
-        TreeSet<String> ts = new TreeSet<>();
-        for (String title : titles)
-            ts.add(wiki.normalize(title));
-        List<String> titles_enc = new ArrayList<>(ts);
-        ArrayList<String> titles_chunked = new ArrayList<>();
-        int count = 0;
-        do
-        {
-            titles_chunked.add(String.join("|", 
-                titles_enc.subList(count, Math.min(titles_enc.size(), count + 25))));
-            count += 25;
-        }
-        while (count < titles_enc.size());
-        
+                
         Map<String, String> results = new HashMap<>();
         WMFWiki wikidata_l = sharedSession("www.wikidata.org");
-        for (String chunk : titles_chunked)
+        for (String chunk : wikidata_l.constructTitleString(titles))
         {
-            getparams.put("titles", chunk);
-            String line = wikidata_l.makeApiCall(getparams, null, "getWikidataItem");
+            String line = wikidata_l.makeApiCall(getparams, Map.of("titles", chunk), "getWikidataItem");
             wikidata_l.detectUncheckedErrors(line, null, null);
             String[] entities = line.split("<entity ");
             for (int i = 1; i < entities.length; i++)
             {
                 if (entities[i].contains("missing=\"\""))
                     continue;
-                String wdtitle = wiki.parseAttribute(entities[i], " id", 0);
+                String wdtitle = wikidata_l.parseAttribute(entities[i], " id", 0);
                 int index = entities[i].indexOf("\"" + dbname + "\"");
-                String localtitle = wiki.parseAttribute(entities[i], "title", index);
+                String localtitle = wikidata_l.parseAttribute(entities[i], "title", index);
                 results.put(localtitle, wdtitle);
             }
         }
-        // reorder
-        List<String> ret = new ArrayList<>();
-        for (String title : titles)
-            ret.add(results.get(wiki.normalize(title)));
+        List<String> ret = wikidata_l.reorder(titles, results);
+        wikidata_l.log(Level.INFO, "WMFWikiFarm.getWikidataItems", 
+            "Successfully retrieved Wikidata items for " + titles.size() + " pages.");
         return ret;
     }
 }

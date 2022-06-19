@@ -1,6 +1,6 @@
 /**
- *  @(#)Wiki.java 0.36 08/02/2019
- *  Copyright (C) 2007 - 2019 MER-C and contributors
+ *  @(#)Wiki.java 0.38 08/02/2019
+ *  Copyright (C) 2007 - 2022 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -44,7 +44,7 @@ import javax.security.auth.login.*;
  *  Requires JDK 11 or greater. Uses the <a
  *  href="https://mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
- *  of MediaWiki (1.31), otherwise some functions may not work. This framework
+ *  of MediaWiki (1.39), otherwise some functions may not work. This framework
  *  requires no dependencies outside the core JDK and does not implement any
  *  functionality added by MediaWiki extensions.
  *  <p>
@@ -77,7 +77,7 @@ import javax.security.auth.login.*;
  * .</ul>
  *
  *  @author MER-C and contributors
- *  @version 0.36
+ *  @version 0.38
  */
 public class Wiki implements Comparable<Wiki>
 {
@@ -405,7 +405,7 @@ public class Wiki implements Comparable<Wiki>
         unknown;
     }
 
-    private static final String version = "0.36";
+    private static final String version = "0.38";
 
     // fundamental URL strings
     private final String protocol, domain, scriptPath;
@@ -1812,7 +1812,7 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     * Gets key-value property mappings on a list of pages. Returns:
+     * Gets key-value property mappings on a list of pages.
      * @param pages the pages to retrieve properties from.
      * @return a list of properties in key-value format. Special or Media
      * files and missing or invalid titles are listed as {@code null}.
@@ -1858,7 +1858,6 @@ public class Wiki implements Comparable<Wiki>
                 metamap.put(title, tempmap);
             }
         }
-
         Map<String, String>[] props = new HashMap[pages.size()];
         // Reorder
         for (int i = 0; i < pages2.size(); i++)
@@ -2966,7 +2965,7 @@ public class Wiki implements Comparable<Wiki>
         {
             String parsedtitle = parseAttribute(xml, "from", j);
             for (int i = 0; i < inputpages.size(); i++)
-                if (inputpages.get(i).equals(parsedtitle))
+                if (parsedtitle.equals(inputpages.get(i)))
                     inputpages.set(i, parseAttribute(xml, "to", j));
         }
     }
@@ -4197,11 +4196,8 @@ public class Wiki implements Comparable<Wiki>
                 intermediate.put(parsedtitle, metadata);
             }
         }
-        
-        // reorder results
-        List<Map<String, Object>> ret = new ArrayList<>();
-        for (String normalizedtitle : files2)
-            ret.add(intermediate.get(normalizedtitle));
+        List<Map<String, Object>> ret = reorder(files2, intermediate);
+        log(Level.INFO, "getFileMetadata", "Successfully retrieved file metadata for " + files.size() + " files.");
         return ret;
     }
 
@@ -4791,12 +4787,7 @@ public class Wiki implements Comparable<Wiki>
                 metamap.put(parsedname, user);
             }
         }
-
-        // reorder
-        List<User> ret = new ArrayList<>();
-        for (String username : usernames)
-            ret.add(metamap.get(normalize(username)));
-        
+        List<Wiki.User> ret = reorder(usernames, metamap);
         log(Level.INFO, "getUsers", "Successfully retrieved user info for " + usernames.size() + " users.");
         return ret;
     }
@@ -5665,11 +5656,7 @@ public class Wiki implements Comparable<Wiki>
                 metamap.put(parsedtitle, values);
             }
         }
-
-        // reorder
-        List<int[]> ret = new ArrayList<>();
-        for (String category : norm_cats)
-            ret.add(metamap.get(category));
+        List<int[]> ret = reorder(norm_cats, metamap);
         log(Level.INFO, "getCategoryMemberCounts", "Successfully retrieved category member counts for " + categories.size() + " categories.");
         return ret;
     }
@@ -8143,6 +8130,24 @@ public class Wiki implements Comparable<Wiki>
         while (getparams.containsKey("continue") && results.size() < limit);
         return results;
     }
+    
+    /**
+     *  Reorders outputs such that the order of a query's results is the same
+     *  order of the input titles. 
+     *  @param <T> output type
+     *  @param inputs input list of titles
+     *  @param results unordered query results in Map format with key =
+     *  title (doesn't have to be normalised)
+     *  @return output list whose order corresponds to the inputs
+     *  @since 0.38
+     */
+    protected <T> List<T> reorder(List<String> inputs, Map<String, T> results)
+    {
+        List<T> ret = new ArrayList<>();
+        for (String input : inputs)
+            ret.add(input == null ? null : results.get(normalize(input)));
+        return ret;
+    }
 
     // miscellany
     
@@ -8660,7 +8665,7 @@ public class Wiki implements Comparable<Wiki>
         for (int i = 0; i < titles_unique.size() / slowmax + 1; i++)
         {
             ret.add(String.join("|", 
-            		titles_unique.subList(i * slowmax, Math.min(titles_unique.size(), (i + 1) * slowmax))));     
+                titles_unique.subList(i * slowmax, Math.min(titles_unique.size(), (i + 1) * slowmax))));     
         }
         return ret;
     }
