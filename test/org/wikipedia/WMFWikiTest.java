@@ -95,7 +95,7 @@ public class WMFWikiTest
     @Test
     public void getLedeAsPlainText() throws Exception
     {
-        List<String> pages = List.of("Java", "Create a page", "Albert Einstein");
+        List<String> pages = List.of("Java (programming language)", "Create a page", "Albert Einstein");
         List<String> text = enWiki.getLedeAsPlainText(pages);
         // Cannot assert more than the first two words because the result is
         // non-deterministic. Test is potentially fragile.

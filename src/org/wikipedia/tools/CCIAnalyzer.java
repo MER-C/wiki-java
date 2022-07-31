@@ -481,6 +481,7 @@ public class CCIAnalyzer
         StringBuilder cleaned = new StringBuilder();
         int removedarticles = 0;
         Pattern pattern = Pattern.compile(".*edits?\\):\\s+");
+        Pattern pattern2 = Pattern.compile("\\(\\d+ edits?\\)");
         for (String article : articles)
         {
             // remove articles where all diffs are trivial
@@ -489,6 +490,11 @@ public class CCIAnalyzer
                 removedarticles++;
                 continue;
             }
+            // recount diffs
+            int count = 0;
+            for (int pos = article.indexOf("[[Special:Diff"); pos >= 0; pos = article.indexOf("[[Special:Diff", pos + 1))
+                count++;
+            article = pattern2.matcher(article).replaceAll("(" + count + (count == 1 ? " edit)" : " edits)"));
             cleaned.append(article);
             cleaned.append("\n");
         }
