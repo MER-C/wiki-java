@@ -2087,7 +2087,7 @@ public class Wiki implements Comparable<Wiki>
                 String key = parseAttribute(results[i], isrevisions ? "revid" : "title", 0);
                 if (!results[i].contains("missing=\"\"") && !results[i].contains("texthidden=\"\""))
                 {
-                    int x = results[i].indexOf("<rev ", i);
+                    int x = results[i].indexOf("<rev ");
                     int y = results[i].indexOf('>', x) + 1;
                     // this </rev> tag is not present for empty pages/revisions
                     int z = results[i].indexOf("</rev>", y);
