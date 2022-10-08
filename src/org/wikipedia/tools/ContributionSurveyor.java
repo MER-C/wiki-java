@@ -169,9 +169,16 @@ public class ContributionSurveyor
             parsedargs.containsKey("--deleted"), parsedargs.containsKey("--images"), ns);
         
         Path path = Paths.get(outfile);
+        StringBuilder temp = new StringBuilder("Command line: <kbd>java org.wikipedia.tools.ContributionSurveyor");
+        for (String arg : args)
+        {
+            temp.append(" ");
+            temp.append(arg);
+        }
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
         {
             outwriter.write(output.get(0));
+            outwriter.write(temp.toString() + "</kbd>");
         }
         for (int i = 1; i < output.size(); i++)
         {
@@ -179,6 +186,7 @@ public class ContributionSurveyor
             try (BufferedWriter outwriter = Files.newBufferedWriter(path))
             {
                 outwriter.write(output.get(i));
+                outwriter.write(temp.toString() + "</kbd>");
             }
         }
     }

@@ -478,12 +478,34 @@ public class CCIAnalyzer
         
         // clean up output CCI listing
         String[] articles = ccib.toString().split("\\n");
-        StringBuilder cleaned = new StringBuilder();
+        String header = null, footer = null;
         int removedarticles = 0;
         Pattern pattern = Pattern.compile(".*edits?\\):\\s+");
         Pattern pattern2 = Pattern.compile("\\(\\d+ edits?\\)");
+        List<String> cleaned_temp = new ArrayList<>();
         for (String article : articles)
         {
+            // remove headers
+            if (article.startsWith("=== Pages"))
+            {
+                if (header == null)
+                    header = article;
+                continue;
+            }
+            if (header == null)
+            {
+                out.append(article);
+                out.append("\n");
+                continue;
+            }
+            if (article.trim().isEmpty())
+                continue;
+            if (article.startsWith("This report generated "))
+            {
+                footer = article;
+                continue;
+            }
+            
             // remove articles where all diffs are trivial
             if (pattern.matcher(article).matches())
             {
@@ -495,10 +517,19 @@ public class CCIAnalyzer
             for (int pos = article.indexOf("[[Special:Diff"); pos >= 0; pos = article.indexOf("[[Special:Diff", pos + 1))
                 count++;
             article = pattern2.matcher(article).replaceAll("(" + count + (count == 1 ? " edit)" : " edits)"));
-            cleaned.append(article);
-            cleaned.append("\n");
+            cleaned_temp.add(article);
         }
-        out.append(cleaned);
+        // redistribute headers
+        Pattern pattern3 = Pattern.compile("\\d{3,}");
+        Matcher m = pattern3.matcher(header);
+        m.find();
+        final int start = Integer.parseInt(m.group()) - 1;
+        String header2 = header.replaceAll("\\d{3,}", "%d");
+        List<String> outlist = Pages.toWikitextPaginatedList(cleaned_temp, s -> s.substring(1), 
+            (s, e) -> String.format(header2, s + start, e + start), 20, false);
+        for (String section : outlist)
+            out.append(section);
+        out.append(footer);
         out.append("\n");
         System.err.printf("%d of %d diffs and %d articles removed.%n", page.baseremoveddiffs + page.minoredits.size(), 
             page.diffcount, page.baseremovedarticles + removedarticles);
