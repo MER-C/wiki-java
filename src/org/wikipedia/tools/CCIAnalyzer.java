@@ -482,11 +482,12 @@ public class CCIAnalyzer
         int removedarticles = 0;
         Pattern pattern = Pattern.compile(".*edits?\\):\\s+");
         Pattern pattern2 = Pattern.compile("\\(\\d+ edits?\\)");
+        Pattern headerptn = Pattern.compile(".+Pages (\\d+) to (\\d+).+");
         List<String> cleaned_temp = new ArrayList<>();
         for (String article : articles)
         {
             // remove headers
-            if (article.startsWith("=== Pages"))
+            if (headerptn.matcher(article).matches())
             {
                 if (header == null)
                     header = article;
@@ -498,11 +499,34 @@ public class CCIAnalyzer
                 out.append("\n");
                 continue;
             }
-            if (article.trim().isEmpty())
+            if (article.trim().isEmpty() || article.contains("Special:Contributions"))
                 continue;
             if (article.startsWith("This report generated "))
             {
                 footer = article;
+                continue;
+            }
+            if (article.matches("^==[^=].+")) // new user
+            {
+                // redistribute headers for the previous user
+                Matcher m = headerptn.matcher(header);
+                m.find();
+                final int start = Integer.parseInt(m.group(1)) - 1;
+                String header2 = new StringBuilder(header).replace(m.start(2), m.end(2), "%d").replace(m.start(1), m.end(1), "%d").toString();
+                List<String> outlist = Pages.toWikitextPaginatedList(cleaned_temp, s -> s.substring(1), 
+                    (s, e) -> String.format(header2, s + start, e + start), 20, false);
+                for (String section : outlist)
+                    out.append(section);
+                if (footer != null)
+                {
+                    out.append(footer);
+                    out.append("\n");
+                    footer = null;
+                }
+                out.append(article);
+                out.append("\n");
+                header = null;
+                cleaned_temp.clear();
                 continue;
             }
             
@@ -519,17 +543,29 @@ public class CCIAnalyzer
             article = pattern2.matcher(article).replaceAll("(" + count + (count == 1 ? " edit)" : " edits)"));
             cleaned_temp.add(article);
         }
-        // redistribute headers
-        Pattern pattern3 = Pattern.compile("\\d{3,}");
-        Matcher m = pattern3.matcher(header);
-        m.find();
-        final int start = Integer.parseInt(m.group()) - 1;
-        String header2 = header.replaceAll("\\d{3,}", "%d");
-        List<String> outlist = Pages.toWikitextPaginatedList(cleaned_temp, s -> s.substring(1), 
-            (s, e) -> String.format(header2, s + start, e + start), 20, false);
-        for (String section : outlist)
-            out.append(section);
-        out.append(footer);
+        if (header != null)
+        {
+            // redistribute headers for the last user
+            Matcher m = headerptn.matcher(header);
+            m.find();
+            final int start = Integer.parseInt(m.group(1)) - 1;
+            String header2 = new StringBuilder(header).replace(m.start(2), m.end(2), "%d").replace(m.start(1), m.end(1), "%d").toString();
+            List<String> outlist = Pages.toWikitextPaginatedList(cleaned_temp, s -> s.substring(1), 
+                (s, e) -> String.format(header2, s + start, e + start), 20, false);
+            for (String section : outlist)
+                out.append(section);
+        }
+        else
+        {
+            for (String article : cleaned_temp)
+            {
+                out.append(article);
+                out.append("\n");
+            }
+        }
+        
+        if (footer != null)
+            out.append(footer);
         out.append("\n");
         System.err.printf("%d of %d diffs and %d articles removed.%n", page.baseremoveddiffs + page.minoredits.size(), 
             page.diffcount, page.baseremovedarticles + removedarticles);

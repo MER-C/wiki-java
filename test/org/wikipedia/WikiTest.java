@@ -752,7 +752,7 @@ public class WikiTest
         pages.add(null);
         assertNull(enWiki.getPageProperties(pages).get(0));
         
-        pages.addAll(List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "HomePage", "1&nbsp;000", "[invalid]"));
+        pages.addAll(List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "Talk:HomePage", "1&nbsp;000", "[invalid]"));
         List<Map<String, String>> pageprops = enWiki.getPageProperties(pages);
         assertEquals(pages.size(), pageprops.size());
 
