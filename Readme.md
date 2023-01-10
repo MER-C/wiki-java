@@ -1,7 +1,6 @@
 # Wiki.java
 
 [ ![Codeship Status for MER-C/wiki-java](https://codeship.com/projects/46dd6420-bb60-0132-1d73-5ea58638974e/status?branch=master)](https://codeship.com/projects/72144)
-[![Build Status](https://travis-ci.org/MER-C/wiki-java.svg?branch=master)](https://travis-ci.org/MER-C/wiki-java?branch=master)
 [![codecov.io](http://codecov.io/github/MER-C/wiki-java/coverage.svg?branch=master)](http://codecov.io/github/MER-C/wiki-java?branch=master)
 
 

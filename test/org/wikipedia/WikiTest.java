@@ -752,7 +752,7 @@ public class WikiTest
         pages.add(null);
         assertNull(enWiki.getPageProperties(pages).get(0));
         
-        pages.addAll(List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "Talk:HomePage", "1&nbsp;000", "[invalid]"));
+        pages.addAll(List.of("Main Page", "IPod", "Main_Page", "Special:Specialpages", "Talk:Main Page", "1&nbsp;000", "[invalid]"));
         List<Map<String, String>> pageprops = enWiki.getPageProperties(pages);
         assertEquals(pages.size(), pageprops.size());
 
@@ -775,7 +775,7 @@ public class WikiTest
         // Special page = return null
         assertNull(pageprops.get(4), "special page");
         
-        // redirect, there are no relevant properties here, check for empty map
+        // page with no properties
         assertTrue(pageprops.get(5).isEmpty(), "page with no properties");
         
         // HTML entities in title (special normalization case, we don't expect any props here either)

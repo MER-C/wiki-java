@@ -1,5 +1,5 @@
-runtime: java11
-entrypoint: 'java -jar start.jar'
+runtime: java17
+entrypoint: 'java -jar jetty/start.jar'
 
 error_handlers:
   - file: timeout.html
