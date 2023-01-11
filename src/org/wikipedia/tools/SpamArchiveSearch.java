@@ -42,23 +42,21 @@ public class SpamArchiveSearch
             System.exit(0);
         StringBuilder buffer = new StringBuilder(10000);
         ArrayList<Map<String, Object>> results = archiveSearch(query);
-        buffer.append("<h2>Searching for \"");
-        buffer.append(query);
-        buffer.append("\".</h2>\n<ul>\n");
+        buffer.append("""
+            <h2>Results for "%s"</h2>
+            <ul>
+            """.formatted(query));
         results.forEach(result ->
         {
             String page = (String)result.get("title");
-            buffer.append("<li><a href=\"//");
-            buffer.append(page.contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia");
-            buffer.append(".org/wiki/");
-            buffer.append(page);
-            buffer.append("\">");
-            buffer.append(page);
-            buffer.append("</a>\n");
+            buffer.append("""
+                <li><a href="//%s.org/wiki/%s">%s</a>
+                """.formatted(page.contains("Talk:Spam blacklist") ? "meta.wikimedia" : "en.wikipedia", page, page));
         });
-        buffer.append("</ul>\n<p>");
-        buffer.append(results.size());
-        buffer.append(" results.\n");
+        buffer.append("""
+            </ul>
+            <p>%d results.
+            """.formatted(results.size()));
         System.out.println(buffer.toString());
     }
 

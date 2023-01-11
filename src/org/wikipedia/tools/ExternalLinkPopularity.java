@@ -242,9 +242,9 @@ public class ExternalLinkPopularity
         {
             if (pagedomaintourls.isEmpty())
                 return;
-            sb.append("== [[:");
-            sb.append(page);
-            sb.append("]]==\n");
+            sb.append("""
+                == [[:%s]]==
+                """.formatted(page));
             DoubleStream.Builder scores = DoubleStream.builder();
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
             pagedomaintourls.forEach((domain, listoflinks) ->
@@ -258,14 +258,12 @@ public class ExternalLinkPopularity
                     sb.append(" (");
                 sb.append(numlinks);
                 if (numlinks == 1)
-                    sb.append(" link; Linksearch: ");
+                    sb.append(" link");
                 else
-                    sb.append(" links; Linksearch: ");
-                sb.append("[[Special:Linksearch/*.");
-                sb.append(domain);
-                sb.append("|http]] [[Special:Linksearch/https://*.");
-                sb.append(domain);
-                sb.append("|https]])\n");
+                    sb.append(" links");
+                sb.append("""
+                    ; Linksearch: [[Special:Linksearch/*.%s|http]] [[Special:Linksearch/https://*.%s|https]])
+                    """.formatted(domain, domain));
                 scores.accept(numlinks);
                 dss.accept(numlinks);
                 for (String url : listoflinks)
@@ -280,15 +278,16 @@ public class ExternalLinkPopularity
             if (pagedomaintourls.size() > 1)
             {
                 double[] temp = scores.build().toArray();
-                sb.append(";Summary statistics\n");
-                sb.append("*COUNT: ");
-                sb.append(temp.length);
-                sb.append(String.format("\n*MEAN: %.1f\n", dss.getAverage()));
                 Arrays.sort(temp);
                 double[] quartiles = MathsAndStats.quartiles(temp);
-                sb.append(String.format("*Q1: %.1f\n", quartiles[0]));
-                sb.append(String.format("*MEDIAN: %.1f\n", MathsAndStats.median(temp)));
-                sb.append(String.format("*Q3: %.1f\n\n", quartiles[1]));
+                sb.append("""
+                    ;Summary statistics
+                    *COUNT: %d
+                    *MEAN: %.1f
+                    *Q1: %.1f
+                    *MEDIAN: %.1f
+                    *Q3: %.1f
+                """.formatted(temp.length, dss.getAverage(), quartiles[0], MathsAndStats.median(temp), quartiles[1]));
             }
         });
         return sb.toString();
@@ -302,11 +301,11 @@ public class ExternalLinkPopularity
         {
             if (pagedomaintourls.isEmpty())
                 return;
-            sb.append("<h2>");
-            sb.append(pageUtils.generatePageLink(page));
-            sb.append("</h2>\n");
-            sb.append(pageUtils.generateSummaryLinks(page));
-            sb.append("\n<ul>\n");
+            sb.append("""
+                <h2>%s</h2>
+                %s
+                <ul>
+                """.formatted(pageUtils.generatePageLink(page), pageUtils.generateSummaryLinks(page)));
             DoubleStream.Builder scores = DoubleStream.builder();
             DoubleSummaryStatistics dss = new DoubleSummaryStatistics();
             pagedomaintourls.forEach((domain, listoflinks) ->
@@ -331,11 +330,9 @@ public class ExternalLinkPopularity
                 sb.append("<ul>");
                 for (String url : listoflinks)
                 {
-                    sb.append("<li><a href=\"");
-                    sb.append(url);
-                    sb.append("\">");
-                    sb.append(url);
-                    sb.append("</a>\n");
+                    sb.append("""
+                        <li><a href="%s">%s</a>"
+                        """.formatted(url, url));
                 }
                 sb.append("</ul>\n");
             });
@@ -344,15 +341,18 @@ public class ExternalLinkPopularity
             if (pagedomaintourls.size() > 1)
             {
                 double[] temp = scores.build().toArray();
-                sb.append("<b>Summary statistics</b>\n<ul>\n");
-                sb.append("<li>COUNT: ");
-                sb.append(temp.length);
-                sb.append(String.format("\n<li>MEAN: %.1f\n", dss.getAverage()));
                 Arrays.sort(temp);
                 double[] quartiles = MathsAndStats.quartiles(temp);
-                sb.append(String.format("<li>Q1: %.1f\n", quartiles[0]));
-                sb.append(String.format("<li>MEDIAN: %.1f\n", MathsAndStats.median(temp)));
-                sb.append(String.format("<li>Q3: %.1f\n</ul>\n", quartiles[1]));
+                sb.append("""
+                    <b>Summary statistics</b>
+                    <ul>
+                    <li>COUNT: %d
+                    <li>MEAN: %.1f
+                    <li>Q1: %.1f
+                    <li>MEDIAN: %.1f
+                    <li>Q3: %.1f
+                    </ul>
+                    """.formatted(temp.length, dss.getAverage(), quartiles[0], MathsAndStats.median(temp), quartiles[1]));
             }
         });
         return sb.toString();

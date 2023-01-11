@@ -177,72 +177,30 @@ public class Revisions
         Pages pageutils = Pages.of(wiki);
         buffer.append("<table class=\"wikitable revisions\">\n");
         for (Wiki.Revision rev : revisions)
-        {         
-            buffer.append("<tr class=\"revision\">\n");
-            
-            // diff link
-            buffer.append("<td class=\"difflink\">");
-            String revurl = "<a href=\"" + rev.permanentUrl();
-            buffer.append(revurl);
-            buffer.append("&diff=prev\">prev</a>\n");
-            
-            // date
-            buffer.append("<td class=\"date\">");
-            buffer.append(revurl);
-            buffer.append("\">");
-            buffer.append(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()));
-            buffer.append("</a>\n");
-            
-            buffer.append("<td class=\"flag\">");
-            if (rev.isNew())
-                buffer.append("<b>N</b>");
-            else
-                buffer.append(".");
-            buffer.append("<td class=\"flag\">");
-            if (rev.isMinor())
-                buffer.append("<b>m</b>");
-            else
-                buffer.append(".");
-            buffer.append("<td class=\"flag\">");
-            if (rev.isBot())
-                buffer.append("<b>b</b> ");
-            else
-                buffer.append(".");            
-            buffer.append("\n");
-            
-            // page name
+        {
+            String revurl = rev.permanentUrl();
             String page = rev.getTitle();
-            buffer.append("<td class=\"title\">");
-            buffer.append(pageutils.generatePageLink(page, true));
-            
-            // user links
-            buffer.append("<td class=\"user\">");
-            String temp = rev.getUser();
-            if (temp != null)
-                buffer.append(userutils.generateHTMLSummaryLinksShort(temp));
-            else
-                buffer.append(Events.DELETED_EVENT_HTML);
-            
-            // size
-            buffer.append("<td class=\"revsize\">");
-            buffer.append(rev.getSize());
-            buffer.append(" bytes");
+            String user = rev.getUser();
             int sizediff = rev.getSizeDiff();
-            buffer.append("<td class=\"revsizediff\">");
-            if (sizediff > 0)
-                buffer.append("<span class=\"sizeincreased\">");
-            else
-                buffer.append("<span class=\"sizedecreased\">");
-            buffer.append(rev.getSizeDiff());
-            buffer.append("</span>");
-            
-            // edit summary
-            buffer.append("<td>");
-            if (rev.getParsedComment() != null)
-                buffer.append(rev.getParsedComment());
-            else
-                buffer.append(Events.DELETED_EVENT_HTML);
-            buffer.append("\n");
+
+            buffer.append("""
+                <tr class="revision">
+                <td class="difflink"><a href="%s&diff=prev">prev</a>
+                <td class="date"><a href="%s">%s</a>
+                <td class="flag">%s
+                <td class="flag">%s
+                <td class="flag">%s
+                <td class="title">%s
+                <td class="user">%s
+                <td class="revsize">%d bytes
+                <td class="revsizediff"><span class="%s">%d</span>
+                <td>%s
+                """.formatted(revurl, revurl, DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()),
+                rev.isNew() ? "<b>N</b>" : ".", rev.isMinor() ? "<b>m</b>" : ".", rev.isBot() ? "<b>b</b>" : ".",
+                pageutils.generatePageLink(page, true), 
+                user == null ? Events.DELETED_EVENT_HTML : userutils.generateHTMLSummaryLinksShort(user),
+                rev.getSize(), sizediff > 0 ? "sizeincreased" : "sizedecreased", sizediff,
+                rev.getParsedComment() == null ? Events.DELETED_EVENT_HTML : rev.getParsedComment()));
         }
         buffer.append("</table>\n");
         return buffer.toString();

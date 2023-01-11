@@ -38,7 +38,7 @@ public class WMFWikiFarmTest
     @ParameterizedTest
     @CsvSource({"enwiki, en.wikipedia.org",  "wikidatawiki, www.wikidata.org",
             "zhwikiquote, zh.wikiquote.org", "commonswiki, commons.wikimedia.org",
-            "metawiki, meta.wikimedia.org"})
+            "metawiki, meta.wikimedia.org", "enwiktionary, en.wiktionary.org"})
     public void newSessionFromDBName(String dbname, String domain)
     {
         assertEquals(domain, WMFWikiFarm.dbNameToDomainName(dbname));

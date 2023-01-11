@@ -117,6 +117,8 @@ public class NPPCheck
     public static void main(String[] args) throws IOException
     {
         Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.NPPCheck", "[options]")
+            .description("Tool for reviewing the work of new page patrollers")
             .addBooleanFlag("--unpatrolled", "Output results for unpatrolled new articles (REQUIRES NPP RIGHTS)")
             .addBooleanFlag("--patrols", "Output results from new pages patrol")
             .addBooleanFlag("--userspace", "Output results for moves from user to main")
@@ -594,22 +596,13 @@ public class NPPCheck
      */
     public String outputTableHeader()
     {
-        StringBuilder header = new StringBuilder("{| class=\"wikitable sortable\"\n! ");
-        if (mode.requiresDrafts())
-            header.append("Draft !! ");
-        header.append("Title !! Create timestamp !! ");
-        if (mode.requiresReviews())
-        {
-            header.append("Review timestamp !! Age at review !! ");
-            if (reviewer != null)
-                header.append("Time between reviews !! ");
-        }
-        header.append("Size !! Author !! Author registration timestamp !! ");
-        header.append("Author edit count !! Author age at creation !! Author blocked !! ");
-        if (mode.requiresReviews() && reviewer == null)
-            header.append("Reviewer !! Reviewer edit count !! ");
-        header.append("Snippet");
-        header.append("\n");
-        return header.toString();
+        return """
+            {| class="wikitable sortable"
+            ! %sTitle !! Create timestamp !! %s%sSize !! Author !! Author registration timestamp !! \
+            Author edit count !! Author age at creation !! Author blocked !! %sSnippet
+            """.formatted(mode.requiresDrafts() ? "Draft !! " : "", 
+            mode.requiresReviews() ? "Review timestamp !! Age at review !! " : "",
+            mode.requiresReviews() && reviewer != null ? "Time between reviews !! " : "",
+            mode.requiresReviews() && reviewer == null ? "Reviewer !! Reviewer edit count !! " : "");
     }
 }

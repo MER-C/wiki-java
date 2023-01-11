@@ -450,7 +450,7 @@ public class WikiTest
         byte[] imageData = Files.readAllBytes(tempfile.toPath());
         byte[] hash = sha256.digest(imageData);
         assertEquals("c0538b43b2a84b0b0caee667b17aa8d311300efd56252d972b6ce20bde6dd758",
-            String.format("%064x", new BigInteger(1, hash)));
+            "%064x".formatted(new BigInteger(1, hash)));
         Files.delete(tempfile.toPath());
     }
 

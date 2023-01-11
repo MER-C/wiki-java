@@ -1,6 +1,6 @@
 /**
  *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2017 MER-C
+ *  Copyright (C) 2011 - 2023 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -100,24 +100,14 @@ public class ServletUtils
      */
     public static String beginCollapsibleSection(String title, boolean collapsed)
     {
-        StringBuilder sb = new StringBuilder();
-        // create a container to house a border for the collapsed element and a
-        // title for the collapsed section
-        sb.append("<div class=\"collapsecontainer\">\n");
-        sb.append("<span class=\"collapseboxtop\">\n");
-        sb.append("<span class=\"collapseheader\">");
-        sb.append(title);
-        sb.append("</span>\n");
-        // show/hide link
-        sb.append("<span class=\"showhidespan\">[<a href=\"#fasfd\" class=\"showhidelink\">");
-        sb.append(collapsed ? "show" : "hide");
-        sb.append("</a>]</span>\n");
-        sb.append("</span>\n");
-        // the actual collapsible 
-        sb.append("<div class=\"");
-        sb.append(collapsed ? "tocollapse" : "notcollapsed");
-        sb.append("\">\n");
-        return sb.toString();
+        return """
+            <div class="collapsecontainer">
+            <span class="collapseboxto">
+            <span class="collapseheader">%s</span>
+            <span class="showhidespan">[<a href="#fasfd" class="showhidelink">%s</a>]</span>
+            </span>
+            <div class="%s">
+            """.formatted(title, collapsed ? "show" : "hide", collapsed ? "tocollapse" : "notcollapsed");
     }
     
     /**
@@ -151,10 +141,8 @@ public class ServletUtils
         StringBuilder sb = new StringBuilder("<p>");
         if (current > 0)
         {
-            sb.append("<a href=\"");
-            sb.append(urlbase);
-            sb.append(Math.max(0, current - amount));
-            sb.append("\">");
+            sb.append("""
+                <a href="%s%d">""".formatted(urlbase, Math.max(0, current - amount)));
         }
         sb.append("Previous ");
         sb.append(amount);
@@ -164,10 +152,8 @@ public class ServletUtils
 
         if (max - current > amount)
         {
-            sb.append("<a href=\"");
-            sb.append(urlbase);
-            sb.append(current + amount);
-            sb.append("\">");
+            sb.append("""
+                <a href="%s%d">""".formatted(urlbase, current + amount));
         }
         sb.append("Next ");
         sb.append(amount);

@@ -4838,12 +4838,12 @@ public class Wiki implements Comparable<Wiki>
                 .asShortBuffer().get(shorts);
             for (int i = 0; i < shorts.length; i++)
             {
-                contribuser.append(String.format("%X", shorts[i]));
+                contribuser.append("%X".formatted(shorts[i]));
                 if (i != 8)
                     contribuser.append(":");
             }
             if (numbytes % 2 == 1)
-                contribuser.append(String.format("%X", bytes[numbytes - 1]));
+                contribuser.append("%X".formatted(bytes[numbytes - 1]));
         }
         else // IPv4
         {

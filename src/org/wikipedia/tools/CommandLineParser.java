@@ -35,11 +35,12 @@ public class CommandLineParser
      *  @see <a href="https://www.gnu.org/licenses/gpl.html">Text of the GNU
      *  General Public License, v3.</a>
      */
-    public static final String GPL_VERSION_STRING = 
-        "Copyright (C) 2007 - " + OffsetDateTime.now().getYear() + " MER-C and contributors.\n" +
-        "This is free software: you are free to change and redistribute it under the GNU\n" +
-        "GPL version 3 or later, see <https://www.gnu.org/licenses/gpl.html> for details.\n" +
-        "There is NO WARRANTY, to the extent permitted by law.\n";
+    public static final String GPL_VERSION_STRING = """
+        Copyright (C) 2007 - %d MER-C and contributors.
+        This is free software: you are free to change and redistribute it under the GNU
+        GPL version 3 or later, see <https://www.gnu.org/licenses/gpl.html> for details.
+        There is NO WARRANTY, to the extent permitted by law.
+        """.formatted(OffsetDateTime.now().getYear());
         
     private final HashSet<String> params;
     private final HashSet<String> boolean_params;

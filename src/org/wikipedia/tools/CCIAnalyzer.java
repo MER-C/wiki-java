@@ -163,7 +163,7 @@ public class CCIAnalyzer
             analyzer.loadDiffs(page);
             analyzer.analyzeDiffs(page);
             Files.writeString(path, analyzer.createOutput(page));
-            path = Paths.get(outfile + String.format(".%03d", ++counter));
+            path = Paths.get("%s.%03d".formatted(outfile, ++counter));
         }
     }
     
@@ -514,7 +514,7 @@ public class CCIAnalyzer
                 final int start = Integer.parseInt(m.group(1)) - 1;
                 String header2 = new StringBuilder(header).replace(m.start(2), m.end(2), "%d").replace(m.start(1), m.end(1), "%d").toString();
                 List<String> outlist = Pages.toWikitextPaginatedList(cleaned_temp, s -> s.substring(1), 
-                    (s, e) -> String.format(header2, s + start, e + start), 20, false);
+                    (s, e) -> header2.formatted(s + start, e + start), 20, false);
                 for (String section : outlist)
                     out.append(section);
                 if (footer != null)
@@ -551,7 +551,7 @@ public class CCIAnalyzer
             final int start = Integer.parseInt(m.group(1)) - 1;
             String header2 = new StringBuilder(header).replace(m.start(2), m.end(2), "%d").replace(m.start(1), m.end(1), "%d").toString();
             List<String> outlist = Pages.toWikitextPaginatedList(cleaned_temp, s -> s.substring(1), 
-                (s, e) -> String.format(header2, s + start, e + start), 20, false);
+                (s, e) -> header2.formatted(s + start, e + start), 20, false);
             for (String section : outlist)
                 out.append(section);
         }

@@ -64,18 +64,21 @@ public class UserspaceAnalyzer
         List<String> usernames = new ArrayList<>(users);
         List<Wiki.User> userinfo = wiki.getUsers(usernames);
         
-        System.out.println("==Results for " + args[0] + "==");
-        System.out.println("{| class=\"wikitable sortable\"");
-        System.out.println("|-");
-        System.out.println("! Username !! Last edit !! Editcount !! Mainspace edits");
+        System.out.printf("""
+            == Results for %s ==
+            {| class="wikitable sortable"
+            |-
+            ! Username !! Last edit !! Editcount !! Mainspace edits
+            """, args[0]);
         
         for (Wiki.User user : userinfo)
         {
             if (user == null)
             {
-                System.out.println("|-");
-                System.out.printf("| [[User:%s]] ([[Special:Contributions/%s|contribs]]) || NA || NA || NA \n",
-                    user, user);
+                System.out.printf("""
+                    |-
+                    | [[User:%s]] ([[Special:Contributions/%s|contribs]]) || NA || NA || NA
+                    """, user, user);
                 continue;
             }
             if (user.countEdits() > 50)
@@ -99,10 +102,10 @@ public class UserspaceAnalyzer
                 continue;
             
             String lastedit = contribs.get(0).getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-            
-            System.out.println("|-");
-            System.out.printf("| [[User:%s]] ([[Special:Contributions/%s|contribs]]) || %s || %d || %d \n", 
-                username, username, lastedit, contribs.size(), mainspace);
+            System.out.printf("""
+                |-
+                | [[User:%s]] ([[Special:Contributions/%s|contribs]]) || %s || %d || %d
+                """, username, username, lastedit, contribs.size(), mainspace);
         }
         System.out.println("|}");
     }

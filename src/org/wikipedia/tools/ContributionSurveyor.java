@@ -182,7 +182,7 @@ public class ContributionSurveyor
         }
         for (int i = 1; i < output.size(); i++)
         {
-            path = Paths.get(outfile + String.format(".%03d", i));
+            path = Paths.get("%s.%03d".formatted(outfile, i));
             try (BufferedWriter outwriter = Files.newBufferedWriter(path))
             {
                 outwriter.write(output.get(i));
@@ -566,7 +566,7 @@ public class ContributionSurveyor
                 newpage = true;
             }
             // generate the diff strings now to avoid a second iteration
-            temp.append(String.format("[[Special:Diff/%d|(%+d)]]", edit.getID(), edit.getSizeDiff()));
+            temp.append("[[Special:Diff/%d|(%+d)]]".formatted(edit.getID(), edit.getSizeDiff()));
         }
         int numedits = edits.size();
         out.append("[[:");
