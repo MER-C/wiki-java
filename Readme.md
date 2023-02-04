@@ -1,6 +1,5 @@
 # Wiki.java
 
-[ ![Codeship Status for MER-C/wiki-java](https://codeship.com/projects/46dd6420-bb60-0132-1d73-5ea58638974e/status?branch=master)](https://codeship.com/projects/72144)
 [![codecov.io](http://codecov.io/github/MER-C/wiki-java/coverage.svg?branch=master)](http://codecov.io/github/MER-C/wiki-java?branch=master)
 
 
@@ -9,7 +8,7 @@ Some functionality provided by MediaWiki extensions deployed on Wikimedia sites
 is available in [org/wikipedia/WMFWiki.java](src/org/wikipedia/WMFWiki.java). 
 This project also contains the source code to the tools hosted at 
 https://wikipediatools.appspot.com and other Wikipedia-related bits and pieces. 
-Requires JDK >= 11. For those using modules, only the java.base, java.net.http and 
+Requires JDK >= 17. For those using modules, only the java.base, java.net.http and 
 java.logging modules are required.
 
 Latest stable version: [0.37](https://github.com/MER-C/wiki-java/releases/tag/0.37) -- 
