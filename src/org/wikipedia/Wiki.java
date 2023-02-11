@@ -4730,6 +4730,14 @@ public class Wiki implements Comparable<Wiki>
      *  Gets the users with the given usernames and fills all {@linkplain Wiki.User 
      *  available metadata and properties}. If a user doesn't exist, the result
      *  is {@code null}. Output array is in the same order as the input array.
+     * 
+     *  <p><b>Warnings:</b>
+     *  <ul>
+     *  <li>The <var>id</var> and <var>parsedcomment</var> properties are not 
+     *      available from block log entries returned by this method due to MediaWiki 
+     *      shortcomings.
+     *  <li>Details of the block are incomplete, see <a href="https://phabricator.wikimedia.org/T329426">Phabricator</a>
+     *  </ul>
      *  @param usernames a list of usernames
      *  @return the users with those usernames
      *  @since 0.33
@@ -4781,9 +4789,29 @@ public class Wiki implements Comparable<Wiki>
                 int editcount = Integer.parseInt(parseAttribute(result, "editcount", 0));
                 boolean emailable = result.contains("emailable=\"");
                 Gender gender = Gender.valueOf(parseAttribute(result, "gender", 0));
-                boolean blocked = result.contains("blockedby=\"");
+                
+                // parse block information
+                LogEntry block = null;
+                if (result.contains("blockedby=\""))
+                {
+                    Map<String, String> details = new HashMap<>();
+                    if (result.contains("blockanononly")) // anon-only
+                        details.put("anononly", "true");
+                    if (result.contains("blocknocreate")) // account creation blocked
+                        details.put("nocreate", "true");
+                    if (result.contains("blocknoautoblock")) // autoblock disabled
+                        details.put("noautoblock", "true");
+                    if (result.contains("blocknoemail")) // email disabled
+                        details.put("noemail", "true");
+                    if (result.contains("blocknousertalk")) // cannot edit talk page
+                        details.put("nousertalk", "true");
+                    details.put("expiry", parseAttribute(result, "blockexpiry", 0));
+                    block = new LogEntry(-1, OffsetDateTime.parse(parseAttribute(result, "blockedtimestamp", 0)), 
+                            parseAttribute(result, "blockedby", 0), parseAttribute(result, "blockreason", 0), null, 
+                            BLOCK_LOG, "block", namespaceIdentifier(USER_NAMESPACE) + ":" + parsedname, details);
+                }
 
-                User user = new User(parsedname, registration, rights, groups, gender, emailable, blocked, editcount);
+                User user = new User(parsedname, registration, rights, groups, gender, emailable, block, editcount);
                 metamap.put(parsedname, user);
             }
         }
@@ -5871,6 +5899,13 @@ public class Wiki implements Comparable<Wiki>
      *  <li>{@link Wiki.RequestHelper#reverse(boolean) reverse}
      *  <li>{@link Wiki.RequestHelper#limitedTo(int) local query limit}
      *  </ul>
+     * 
+     *  <p><b>Warnings:</b>
+     *  <ul>
+     *  <li>The <var>id</var> and <var>parsedcomment</var> properties are not 
+     *      available from log entries returned by this method due to MediaWiki 
+     *      shortcomings.
+     *  </ul>
      *
      *  @param users a list of users that might have been blocked. Use null to
      *  not specify one. May be an IP (e.g. "127.0.0.1") or a CIDR range (e.g.
@@ -6607,7 +6642,7 @@ public class Wiki implements Comparable<Wiki>
         // user privileges (volatile, changes rarely)
         private List<String> rights;
         private List<String> groups;
-        private boolean blocked;
+        private LogEntry blockinfo;
         // user preferences (volatile, changes rarely)
         private Gender gender;
         private boolean emailable;
@@ -6625,12 +6660,13 @@ public class Wiki implements Comparable<Wiki>
          *  @param groups the groups this user belongs to
          *  @param gender the self-declared {@link Wiki.Gender Gender} of this user.
          *  @param emailable whether the user can be emailed through [[Special:Emailuser]]
-         *  @param blocked whether this user is blocked
+         *  @param blockinfo a block log entry containing the details of this user's
+         *  block if they are blocked, otherwise null
          *  @param editcount the internal edit count of this user
          *  @since 0.05
          */
         protected User(String username, OffsetDateTime registration, List<String> rights, List<String> groups,
-            Gender gender, boolean emailable, boolean blocked,int editcount)
+            Gender gender, boolean emailable, LogEntry blockinfo, int editcount)
         {
             this.username = Objects.requireNonNull(username);
             // can be null per https://phabricator.wikimedia.org/T24097
@@ -6639,7 +6675,7 @@ public class Wiki implements Comparable<Wiki>
             this.groups = Objects.requireNonNull(groups);
             this.gender = gender;
             this.emailable = emailable;
-            this.blocked = blocked;
+            this.blockinfo = blockinfo;
             this.editcount = editcount;
         }
 
@@ -6743,10 +6779,32 @@ public class Wiki implements Comparable<Wiki>
          *  #getBlockList list of blocks}.
          *  @return whether this user is blocked
          *  @since 0.12
+         *  @deprecated use getBlockDetails instead
          */
+        @Deprecated(forRemoval=true)
         public boolean isBlocked()
         {
-            return blocked;
+            return blockinfo != null;
+        }
+        
+        /**
+         *  If the user is blocked at the time of construction, then return a
+         *  LogEntry containing the details of the block. Otherwise, return
+         *  null.
+         * 
+         *  <p><b>Warnings:</b>
+         *  <ul>
+         *  <li>The <var>id</var> and <var>parsedcomment</var> properties are not 
+         *      available from log entries returned by this method due to MediaWiki 
+         *      shortcomings.
+         *  <li>Details of the block are incomplete, see <a href="https://phabricator.wikimedia.org/T329426">Phabricator</a>
+         *  </ul>
+         *  @return (see above)
+         *  @since 0.38
+         */
+        public LogEntry getBlockDetails()
+        {
+            return blockinfo;
         }
 
         /**

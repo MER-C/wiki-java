@@ -533,7 +533,7 @@ public class NPPCheck
                     registrationdate = creator.getRegistrationDate();
                     if (registrationdate != null)
                         dt_account = Duration.between(registrationdate, createdate);
-                    blocked = creator.isBlocked();
+                    blocked = creator.getBlockDetails() != null;
                 }
             }
             

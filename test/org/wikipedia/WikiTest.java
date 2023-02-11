@@ -1230,7 +1230,7 @@ public class WikiTest
         assertNull(users.get(5), "IP address range");
 
         assertEquals(usernames.get(2), users.get(2).getUsername(), "normalized username");
-        assertFalse(users.get(2).isBlocked());
+        assertNull(users.get(2).getBlockDetails());
         assertEquals(Wiki.Gender.unknown, users.get(2).getGender());
         assertEquals("2006-07-07T10:52:41Z",
             users.get(2).getRegistrationDate().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
@@ -1248,7 +1248,18 @@ public class WikiTest
 
         assertEquals(usernames.get(4), users.get(4).getUsername());
         assertEquals(2, users.get(4).countEdits());
-        assertTrue(users.get(4).isBlocked());
+        Wiki.LogEntry entry = users.get(4).getBlockDetails();
+        assertNotNull(entry);
+        assertEquals("MER-C", entry.getUser());
+        assertEquals("2018-04-18T18:46:05Z", entry.getTimestamp().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        assertEquals("spammer", entry.getComment());
+        Map<String, String> details = entry.getDetails();
+        assertEquals("infinite", details.get("expiry"));
+        assertFalse(details.containsKey("noautoblock"));
+        assertTrue(details.containsKey("nocreate"));
+        // https://phabricator.wikimedia.org/T329426
+        // assertTrue(details.containsKey("noemail"));
+        // assertTrue(details.containsKey("notalk"));
     }
 
     @Test
