@@ -355,8 +355,8 @@ public class WikiTest
     public void exists() throws Exception
     {
         List<String> titles = List.of("Main Page", "Tdkfgjsldf", "User:MER-C", 
-            "Wikipedia:Skfjdl", "Main Page", "Fish & chips");
-        boolean[] expected = new boolean[] { true, false, true, false, true, true };
+            "Wikipedia:Skfjdl", "Main Page", "Fish & chips", "[[illegal title]]");
+        boolean[] expected = new boolean[] { true, false, true, false, true, true, false };
         assertArrayEquals(expected, enWiki.exists(titles));
     }
 
