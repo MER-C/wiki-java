@@ -166,6 +166,7 @@ public class WMFWikiFarm
     public Map<String, Object> getGlobalUserInfo(String username) throws IOException
     {
         // FIXME: throws UnknownError ("invaliduser" if user is an IP or is otherwise invalid
+        // note: lock reason is not available, see https://phabricator.wikimedia.org/T331237
         WMFWiki wiki = sharedSession("meta.wikimedia.org");
         wiki.requiresExtension("CentralAuth");
         Map<String, String> getparams = new HashMap<>();

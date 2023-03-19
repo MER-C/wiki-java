@@ -8720,7 +8720,9 @@ public class Wiki implements Comparable<Wiki>
         
         // actually construct the string
         List<String> ret = new ArrayList<>();
-        for (int i = 0; i < titles_unique.size() / slowmax + 1; i++)
+        int size = titles_unique.size();
+        int count = size / slowmax + (size % slowmax == 0 ? 0 : 1);
+        for (int i = 0; i < count; i++)
         {
             ret.add(String.join("|", 
                 titles_unique.subList(i * slowmax, Math.min(titles_unique.size(), (i + 1) * slowmax))));     

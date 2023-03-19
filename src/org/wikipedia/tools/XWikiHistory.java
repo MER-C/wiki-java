@@ -38,8 +38,7 @@ public class XWikiHistory
     
     /**
      *  Runs this program.
-     *  @param args the command line arguments, args[0] = language code e.g. "en",
-     *  args[1] = article name
+     *  @param args the command line arguments
      */
     public static void main(String[] args) throws Exception
     {
@@ -47,15 +46,26 @@ public class XWikiHistory
         // (1) excerpts from page history - first 5 and last 5 revisions
         // (2) page metadata and usual page links (talk, history, delete, undelete, etc.)
         // (3) page logs
+        // (4) Wikidata item input
         
-        WMFWiki home = sessions.sharedSession(args[0] + ".wikipedia.org");
+        Map<String, String> parsedargs = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.XWikiHistory", "[options]")
+            .description("Fetches information about other language versions of an article")
+            .addVersion("0.01")
+            .addHelp()
+            .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "The wiki that hosts the article to get history for")
+            .addSingleArgumentFlag("--article", "Main Page", "The article on the wiki to get history for.")
+            .parse(args);
+        String article = parsedargs.get("--article");
+        
+        WMFWiki home = sessions.sharedSession(parsedargs.get("--wiki"));
         WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
-        Map<WMFWiki, String> wikiarticles = getArticles(home, args[1]);
+        Map<WMFWiki, String> wikiarticles = getArticles(home, article);
         Map<WMFWiki, List<Wiki.Revision>> histories = getHistories(wikiarticles);
         Map<WMFWiki, Wiki.User> creators = getCreators(histories);
         Map<WMFWiki, String> snippets = getSnippets(wikiarticles);
         
-        System.out.println("==" + args[1] + "==");
+        System.out.println("==" + article + "==");
         System.out.println("{| class=\"wikitable sortable\"");
         System.out.println("! Language !! Page !! Creation date !! Creator !! Creator foreign edit count !! Snippet");
         
@@ -110,20 +120,23 @@ public class XWikiHistory
         // global user information
         System.out.println("===Creator global user info===");
         System.out.println("{| class=\"wikitable sortable\"");
-        System.out.println("! Username !! Global edit count !! Home !! Wikis edited");
+        System.out.println("! Username !! Global edit count !! Home !! Wikis edited !! Locked?");
+        Set<String> users = new TreeSet<>();
         for (WMFWiki wiki : wikiarticles.keySet())
         {
-            // What if a user creates more than one article? They appear twice?
             Wiki.User user = creators.get(wiki);
-            if (user == null)
-                continue;
-            String username = user.getUsername();
+            if (user != null)
+                users.add(user.getUsername());
+        }
+        for (String username : users)
+        {
             Map<String, Object> globaluserinfo = sessions.getGlobalUserInfo(username);
             System.out.println(WikitextUtils.addTableRow(List.of(
                 Users.generateWikitextSummaryLinksShort(username),
                 "" + globaluserinfo.get("editcount"),
                 (String)globaluserinfo.get("home"),
-                "[[m:Special:CentralAuth/" + username + "|" + globaluserinfo.get("wikicount") + "]]"
+                "[[m:Special:CentralAuth/" + username + "|" + globaluserinfo.get("wikicount") + "]]",
+                globaluserinfo.get("locked").toString()
                 )));
         }
         System.out.println("|}");

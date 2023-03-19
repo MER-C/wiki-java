@@ -1421,6 +1421,13 @@ public class WikiTest
         List<String> actual = enWiki.constructTitleString(titles);
         assertEquals(expected, actual);
         
+        // Determine whether the correct number of items is returned.
+        titles.clear();
+        for (int i = 0; i < 50; i++)
+            titles.add("A" + i);
+        actual = enWiki.constructTitleString(titles);
+        assertEquals(1, actual.size());
+        
         // should behave well with nulls if one gets fed in from a revdel somewhere
         titles.clear();
         titles.add(null);
@@ -1428,7 +1435,7 @@ public class WikiTest
         titles.add("A");
         assertEquals(List.of("A"), enWiki.constructTitleString(titles));
     }
-
+    
     // INNER CLASS TESTS
 
     @Test
