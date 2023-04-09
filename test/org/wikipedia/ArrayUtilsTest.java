@@ -60,10 +60,10 @@ public class ArrayUtilsTest
         {
             switch (count++)
             {
-                case 0: assertEquals(Map.entry("BBB", "Entry4"), entry); break;
-                case 1: assertEquals(Map.entry("DDD", "Entry3"), entry); break;
-                case 2: assertEquals(Map.entry("AAA", "Entry2"), entry); break;
-                case 3: assertEquals(Map.entry("CCC", "Entry1"), entry); break;
+                case 0 -> assertEquals(Map.entry("BBB", "Entry4"), entry);
+                case 1 -> assertEquals(Map.entry("DDD", "Entry3"), entry);
+                case 2 -> assertEquals(Map.entry("AAA", "Entry2"), entry);
+                case 3 -> assertEquals(Map.entry("CCC", "Entry1"), entry);
             }
         }
     }

@@ -79,15 +79,15 @@ public class NPPCheck
         {
             if (s == null)
                 return null;
-            switch (s)
+            return switch (s)
             {
-                case "patrols": return PATROLS;
-                case "drafts": return DRAFTS;
-                case "userspace": return USERSPACE;
-                case "unpatrolled": return UNPATROLLED;
-                case "redirects": return REDIRECTS;
-                default: return null;
-            }
+                case "patrols" -> PATROLS;
+                case "drafts" -> DRAFTS;
+                case "userspace" -> USERSPACE;
+                case "unpatrolled" -> UNPATROLLED;
+                case "redirects" -> REDIRECTS;
+                default -> null;
+            };
         }
         
         /**

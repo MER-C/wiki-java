@@ -84,26 +84,22 @@ reasons, results are limited to between 500 and 1000 links per wiki.
     Map<Wiki, List<String[]>> results = null;
     if (mode.equals("multi"))
     {
-        switch (set)
+        results = switch (set)
         {
-            case "top20":
-                results = AllWikiLinksearch.crossWikiLinksearch(true, 1, 
-                    domain, AllWikiLinksearch.TOP20, https, mailto, ns);
-                break;
-            case "top40":
-                results = AllWikiLinksearch.crossWikiLinksearch(true, 1, 
-                    domain, AllWikiLinksearch.TOP40, https, mailto, ns);
-                break;
-            case "major":
-                results = AllWikiLinksearch.crossWikiLinksearch(true, 1, 
-                    domain, AllWikiLinksearch.MAJOR_WIKIS, https, mailto, ns);
-                break;
-            default:
+            case "top20" -> AllWikiLinksearch.crossWikiLinksearch(true, 1, 
+                domain, AllWikiLinksearch.TOP20, https, mailto, ns);
+            case "top40" -> AllWikiLinksearch.crossWikiLinksearch(true, 1, 
+                domain, AllWikiLinksearch.TOP40, https, mailto, ns);
+            case "major" -> AllWikiLinksearch.crossWikiLinksearch(true, 1, 
+                domain, AllWikiLinksearch.MAJOR_WIKIS, https, mailto, ns);
+            default -> 
+            {
                 request.setAttribute("error", "Invalid wiki set selected!");
 %>
 <%@ include file="footer.jspf" %>
 <%
-        }
+            }
+        };
     }
     else if (mode.equals("single"))
         results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 

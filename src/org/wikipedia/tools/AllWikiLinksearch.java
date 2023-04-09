@@ -146,23 +146,13 @@ public class AllWikiLinksearch
             System.exit(0);
         }
         
-        // Java 17 TODO: replace with switch expression
-        List<WMFWiki> wikis; 
-        switch (parsedargs.getOrDefault("--wikiset", "x"))
+        List<WMFWiki> wikis = switch (parsedargs.getOrDefault("--wikiset", "x"))
         {
-            case "TOP20":
-                wikis = TOP20;
-                break;
-            case "TOP40":
-                wikis = TOP40;
-                break;
-            case "MAJOR":
-                wikis = MAJOR_WIKIS;
-                break;
-            default:
-                wikis = sessions.getSiteMatrix();
-                break;
-        }
+            case "TOP20" -> TOP20;
+            case "TOP40" -> TOP40;
+            case "MAJOR" -> MAJOR_WIKIS;
+            default -> sessions.getSiteMatrix();
+        };
         
         // output results
         try (BufferedWriter out = Files.newBufferedWriter(outfile))

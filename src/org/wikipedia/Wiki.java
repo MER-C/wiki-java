@@ -1434,20 +1434,11 @@ public class Wiki implements Comparable<Wiki>
         Object value = entry.getValue();
         switch (entry.getKey())
         {
-            case "title":
-                getparams.put("page", normalize((String)value));
-                break;
-            case "revid":
-                getparams.put("oldid", value.toString());
-                break;
-            case "revision":
-                getparams.put("oldid", String.valueOf(((Revision)value).getID()));
-                break;
-            case "text":
-                postparams.put("text", value);
-                break;
-            default:
-                throw new IllegalArgumentException("No content was specified to parse!");
+            case "title" -> getparams.put("page", normalize((String)value));
+            case "revid" -> getparams.put("oldid", value.toString());
+            case "revision" -> getparams.put("oldid", String.valueOf(((Revision)value).getID()));
+            case "text" -> postparams.put("text", value);
+            default -> throw new IllegalArgumentException("No content was specified to parse!");
         }
         if (section >= 0)
             getparams.put("section", String.valueOf(section));
@@ -3864,31 +3855,25 @@ public class Wiki implements Comparable<Wiki>
         Object value = entry.getValue();
         switch (entry.getKey())
         {
-            case "title":
-                getparams.put("fromtitle", normalize((String)value));
-                break;
-            case "revid":
-                getparams.put("fromrev", value.toString());
-                break;
-            case "revision":
-                getparams.put("fromrev", String.valueOf(((Revision)value).getID()));
-                break;
-            case "text":
+            case "title" -> getparams.put("fromtitle", normalize((String)value));
+            case "revid" -> getparams.put("fromrev", value.toString());
+            case "revision" -> getparams.put("fromrev", String.valueOf(((Revision)value).getID()));
+            case "text" ->
+            {
                 getparams.put("fromslots", "main");
                 getparams.put("fromcontentmodel-main", "wikitext");
                 postparams.put("fromtext-main", value);
-            default:
-                throw new IllegalArgumentException("From content not specified!");
+            }
+            default -> throw new IllegalArgumentException("From content not specified!");
         }
 
         entry = to.entrySet().iterator().next();
         value = entry.getValue();
         switch (entry.getKey())
         {
-            case "title":
-                getparams.put("totitle", normalize((String)value));
-                break;
-            case "revid":
+            case "title" -> getparams.put("totitle", normalize((String)value));
+            case "revid" ->
+            {
                 if (value.equals(PREVIOUS_REVISION))
                     getparams.put("torelative", "prev");
                 else if (value.equals(CURRENT_REVISION))
@@ -3897,17 +3882,15 @@ public class Wiki implements Comparable<Wiki>
                     getparams.put("torelative", "next");
                 else
                     getparams.put("torev", value.toString());
-                break;
-            case "revision":
-                getparams.put("torev", String.valueOf(((Revision)value).getID()));
-                break;
-            case "text":
+            }
+            case "revision" -> getparams.put("torev", String.valueOf(((Revision)value).getID()));
+            case "text" ->
+            {
                 getparams.put("toslots", "main");
                 getparams.put("tocontentmodel-main", "wikitext");
                 postparams.put("totext-main", value);
-                break;
-            default:
-                throw new IllegalArgumentException("To content not specified!");
+            }
+            default -> throw new IllegalArgumentException("To content not specified!");
         }
 
         String line = makeApiCall(getparams, postparams, "diff");
@@ -8525,16 +8508,12 @@ public class Wiki implements Comparable<Wiki>
             }
             switch (error)
             {
-                case "assertbotfailed":
-                case "assertuserfailed":
-                    throw new AssertionError(description);
-                case "permissiondenied":
-                    throw new SecurityException(description);
+                case "assertbotfailed", "assertuserfailed" -> throw new AssertionError(description);
+                case "permissiondenied" -> throw new SecurityException(description);
                 // Something *really* bad happened. Most of these are self-explanatory
                 // and are indicative of bugs (not necessarily in this framework) or
                 // can be avoided entirely. Others are kicked to the caller to handle.
-                default:
-                    throw new UnknownError("MW API error. Server response was: " + response);
+                default -> throw new UnknownError("MW API error. Server response was: " + response);
             }
         }
         return true;
@@ -8588,27 +8567,17 @@ public class Wiki implements Comparable<Wiki>
         switch (error)
         {
             // protected pages
-            case "protectedpage":
-            case "protectedtitle":
-            case "protectednamespace":
-            case "protectednamespace-interface":
-            case "immobilenamespace":
-            case "customcssprotected":
-            case "customjsprotected":
-            case "customcssjsprotected":
-            case "cascadeprotected":
-            case "fileexists-shared-forbidden":
+            case "protectedpage", "protectedtitle", "protectednamespace",
+                 "protectednamespace-interface", "immobilenamespace",
+                 "customcssprotected", "customjsprotected", "customcssjsprotected",
+                 "cascadeprotected", "fileexists-shared-forbidden" ->
                 throw new CredentialException(description);
             // banned accounts
-            case "blocked":
-            case "blockedfrommail":
-            case "autoblocked":
+            case "blocked", "blockedfrommail", "autoblocked" ->
                 throw new AccountLockedException(description);
             // upload errors
-            case "copyuploadbaddomain":
-                throw new AccessDeniedException(description);
-            case "http-bad-status":
-                throw new IOException("Server-side network error when fetching image: " + line);
+            case "copyuploadbaddomain" -> throw new AccessDeniedException(description);
+            case "http-bad-status" -> throw new IOException("Server-side network error when fetching image: " + line);
         }
         return detectUncheckedErrors(line, uncheckederrors, info);
     }
@@ -8778,16 +8747,10 @@ public class Wiki implements Comparable<Wiki>
 
         for (int i = 0; i < temp.length; i++)
         {
+            // illegal characters
             switch (temp[i])
             {
-                // illegal characters
-                case '{':
-                case '}':
-                case '<':
-                case '>':
-                case '[':
-                case ']':
-                case '|':
+                case '{', '}', '<', '>', '[', ']', '|' ->
                     throw new IllegalArgumentException(s + " is an illegal title");
             }
         }
