@@ -65,13 +65,7 @@ public class AdminStats
             .addBooleanFlag("--globalblocks", "Fetch statistics for global blocks")
             .addBooleanFlag("--login", "Adds a login prompt to access high limits")
             .parse(args);
-        if (!options.containsKey("--start") || !options.containsKey("--end"))
-        {
-            System.err.println("ERROR: You must specify a start and end date.");
-            System.exit(1);
-        }
-        OffsetDateTime start = OffsetDateTime.parse(options.get("--start"));
-        OffsetDateTime end = OffsetDateTime.parse(options.get("--end"));
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(options, "--start", "--end");
         boolean printfull = options.containsKey("--printfull");
 
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
@@ -79,7 +73,7 @@ public class AdminStats
             Users.of(enWiki).cliLogin();
         
         AdminStats stats = new AdminStats(enWiki);
-        stats.setDateRange(start, end);
+        stats.setDateRange(daterange.get(0), daterange.get(1));
 
         if (options.containsKey("--locks"))
         {
@@ -88,7 +82,7 @@ public class AdminStats
             if (!printfull)
                 lockhist = stats.groupLockReasons(lockhist);
             System.out.println("==Lock stats==");
-            System.out.println("" + total + " locks between " + start + " and " + end);
+            System.out.println("" + total + " locks between " + daterange.get(0) + " and " + daterange.get(1));
             export(lockhist, "locks.csv");
         }
 
@@ -104,7 +98,7 @@ public class AdminStats
             if (!printfull)
                 blockhist = stats.groupBlockReasons(blockhist);
             System.out.println("==Block stats==");
-            System.out.println("" + total + " blocks between " + start + " and " + end);
+            System.out.println("" + total + " blocks between " + daterange.get(0) + " and " + daterange.get(1));
             export(blockhist, "blocks.csv");
         }
 
@@ -115,7 +109,7 @@ public class AdminStats
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("==Deletion stats==");
-            System.out.println("" + total + " deletions between " + start + " and " + end);
+            System.out.println("" + total + " deletions between " + daterange.get(0) + " and " + daterange.get(1));
             export(deletehist, "deletions-all.csv");
 
             deletehist = stats.deleteStats(Wiki.MAIN_NAMESPACE);
@@ -123,7 +117,7 @@ public class AdminStats
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("===Main namespace===");
-            System.out.println("" + total + " deletions between " + start + " and " + end);
+            System.out.println("" + total + " deletions between " + daterange.get(0) + " and " + daterange.get(1));
             export(deletehist, "deletions-main.csv");
 
             deletehist = stats.deleteStats(Wiki.USER_NAMESPACE);
@@ -131,7 +125,7 @@ public class AdminStats
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("===User namespace===");
-            System.out.println("" + total + " deletions between " + start + " and " + end);
+            System.out.println("" + total + " deletions between " + daterange.get(0) + " and " + daterange.get(1));
             export(deletehist, "deletions-user.csv");
 
             deletehist = stats.deleteStats(118); // draft namespace
@@ -139,7 +133,7 @@ public class AdminStats
             if (!printfull)
                 deletehist = stats.groupDeleteReasons(deletehist);
             System.out.println("===Draft namespace===");
-            System.out.println("" + total + " deletions between " + start + " and " + end);
+            System.out.println("" + total + " deletions between " + daterange.get(0) + " and " + daterange.get(1));
             export(deletehist, "deletions-draft.csv");
         }
         
@@ -150,7 +144,7 @@ public class AdminStats
             if (!printfull)
                 prothist = stats.groupProtectionReasons(prothist);
             System.out.println("==Protection stats==");
-            System.out.println("" + total + " protections between " + start + " and " + end);
+            System.out.println("" + total + " protections between " + daterange.get(0) + " and " + daterange.get(1));
             export(prothist, "protections-all.csv");
             
             prothist.clear();
@@ -159,7 +153,7 @@ public class AdminStats
             if (!printfull)
                 prothist = stats.groupProtectionReasons(prothist);
             System.out.println("===Main namespace===");
-            System.out.println("" + total + " protections between " + start + " and " + end);
+            System.out.println("" + total + " protections between " + daterange.get(0) + " and " + daterange.get(1));
             export(prothist, "protections-main.csv");
         }
         
@@ -170,7 +164,7 @@ public class AdminStats
             if (!printfull)
                 blockhist = stats.groupGlobalBlockReasons(blockhist);
             System.out.println("==Global block stats==");
-            System.out.println("" + total + " global blocks between " + start + " and " + end);
+            System.out.println("" + total + " global blocks between " + daterange.get(0) + " and " + daterange.get(1));
             export(blockhist, "gblocks.csv");
         }
     }

@@ -25,7 +25,6 @@ import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.*;
-import javax.security.auth.login.*;
 import org.wikipedia.*;
 
 /**
@@ -95,12 +94,9 @@ public class ArticleEditorIntersector
         boolean noadmin = parsedargs.containsKey("--noadmin");
         boolean noanon = parsedargs.containsKey("--noanon");
         String defaultstring = parsedargs.get("default");
-        String earliestdatestring = parsedargs.get("--editsafter");
-        String latestdatestring = parsedargs.get("--editsbefore");
         String filename = parsedargs.get("--file");
         
-        OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
-        OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsbefore", "--editsafter");
         List<String> articles = null;
         if (defaultstring != null)
             articles = List.of(defaultstring.split("\\s"));
@@ -109,7 +105,7 @@ public class ArticleEditorIntersector
         
         ArticleEditorIntersector aei = new ArticleEditorIntersector(wiki);
         aei.setIgnoringMinorEdits(nominor);
-        aei.setDateRange(editsafter, editsbefore);
+        aei.setDateRange(daterange.get(0), daterange.get(1));
         aei.setIgnoringReverts(noreverts);
         if (adminmode)
         {
@@ -121,7 +117,7 @@ public class ArticleEditorIntersector
         if (user != null)
         {
             Wiki.RequestHelper rh = wiki.new RequestHelper()
-                .withinDateRange(editsafter, editsbefore);
+                .withinDateRange(daterange.get(0), daterange.get(1));
             Stream<Wiki.Revision> stuff = wiki.contribs(user, rh).stream();
             if (adminmode)
             {

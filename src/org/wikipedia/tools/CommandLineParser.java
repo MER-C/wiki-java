@@ -1,6 +1,6 @@
 /**
- *  @(#)CommandLineParser.java 0.01 19/02/2018
- *  Copyright (C) 2018 MER-C
+ *  @(#)CommandLineParser.java 0.02 19/03/2023
+ *  Copyright (C) 2018-2023 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -27,6 +27,7 @@ import org.wikipedia.Wiki;
 /**
  *  Helper class that parses command line arguments.
  *  @author MER-C
+ *  @version 0.02
  */
 public class CommandLineParser
 {
@@ -256,5 +257,34 @@ public class CommandLineParser
         if (user != null)
             users.add(user);
         return users;
+    }
+    
+    /**
+     *  Parses and validates an interval between two dates specified on the 
+     *  command line. Exits if the start of the interval is after the end of 
+     *  the interval.
+     *  @param parsedargs parsed arguments from {@link #parse}
+     *  @param startflag the flag for the start date
+     *  @param endflag the flag for the end date
+     *  @return a list: position 0 is the start date, position 1 is the end date
+     *  (either or both may be null)
+     *  @since 0.02
+     */
+    public static List<OffsetDateTime> parseDateRange(Map<String, String> parsedargs, String startflag, String endflag)
+    {
+        String startstring = parsedargs.get(startflag);
+        String endstring = parsedargs.get(endflag);
+        OffsetDateTime startdate = (startstring == null) ? null : OffsetDateTime.parse(startstring);
+        OffsetDateTime enddate = (endstring == null) ? null : OffsetDateTime.parse(endstring);
+        if (enddate != null && startdate != null && enddate.isBefore(startdate))
+        {
+            System.err.println("End date " + endstring + " specified in " + endflag + " is before the start date " +
+                startstring + " specified in " + startflag + ".");
+            System.exit(2);
+        }
+        List<OffsetDateTime> ret = new ArrayList<>();
+        ret.add(startdate);
+        ret.add(enddate);
+        return ret;
     }
 }

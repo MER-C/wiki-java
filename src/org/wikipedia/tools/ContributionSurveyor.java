@@ -101,12 +101,9 @@ public class ContributionSurveyor
         String infile = parsedargs.get("--infile");
         String outfile = parsedargs.get("--outfile");
         String wikipage = parsedargs.get("--wikipage");
-        String earliestdatestring = parsedargs.get("--editsafter");
-        String latestdatestring = parsedargs.get("--editsbefore");
         String blockedafterstring = parsedargs.get("--blockedafter");
 
-        OffsetDateTime editsafter = (earliestdatestring == null) ? null : OffsetDateTime.parse(earliestdatestring);
-        OffsetDateTime editsbefore = (latestdatestring == null) ? null : OffsetDateTime.parse(latestdatestring);
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsbefore", "--editsafter");
         OffsetDateTime blockedafter = (blockedafterstring == null) ? null : OffsetDateTime.parse(blockedafterstring);
 
         // fetch user list
@@ -177,7 +174,7 @@ public class ContributionSurveyor
             ns = new int[] { Wiki.MAIN_NAMESPACE };
         
         ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
-        surveyor.setDateRange(editsafter, editsbefore);
+        surveyor.setDateRange(daterange.get(0), daterange.get(1));
         surveyor.setMinimumSizeDiff(Integer.parseInt(parsedargs.getOrDefault("--minsize", "150")));
         surveyor.setIgnoringMinorEdits(!parsedargs.containsKey("--includeminor"));
         surveyor.setIgnoringReverts(!parsedargs.containsKey("--includereverts"));

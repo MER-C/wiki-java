@@ -21,6 +21,7 @@ package org.wikipedia.tools;
 
 import java.io.IOException;
 import java.util.*;
+import java.time.OffsetDateTime;
 import org.wikipedia.Wiki;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -184,5 +185,36 @@ public class CommandLineParserTest
         users = CommandLineParser.parseUserOptions(args, enWiki);
         assertFalse(users.contains("Bodiadub"));
         assertTrue(users.size() > 30);
+    }
+    
+    @Test
+    public void parseDateRange()
+    {
+        String sstr = "2018-11-17T17:30:54.101Z";
+        String estr = "2021-01-24T09:55:10.023Z";
+        OffsetDateTime sdate = OffsetDateTime.parse(sstr);
+        OffsetDateTime edate = OffsetDateTime.parse(estr);
+        Map<String, String> args = new HashMap<>();
+        
+        List<OffsetDateTime> dates = CommandLineParser.parseDateRange(args, "--start", "--end");
+        assertNull(dates.get(0));
+        assertNull(dates.get(1));
+        
+        args.put("--start", sstr);
+        dates = CommandLineParser.parseDateRange(args, "--start", "--end");
+        assertEquals(sdate, dates.get(0));
+        assertNull(dates.get(1));
+        
+        args.put("--end", estr);
+        dates = CommandLineParser.parseDateRange(args, "--start", "--end");
+        assertEquals(sdate, dates.get(0));
+        assertEquals(edate, dates.get(1));
+        
+        args.remove("--start");
+        dates = CommandLineParser.parseDateRange(args, "--start", "--end");
+        assertNull(dates.get(0));
+        assertEquals(edate, dates.get(1));
+        
+        // can't test for wrong way round because it will exit
     }
 }
