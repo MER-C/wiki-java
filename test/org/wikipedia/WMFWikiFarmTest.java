@@ -83,7 +83,7 @@ public class WMFWikiFarmTest
         guserinfo = sessions.getGlobalUserInfo("Jimbo Wales");
         assertEquals(List.of("founder"), guserinfo.get("groups"));
         luserinfo = (Map)guserinfo.get("enwiki");
-        assertEquals(List.of("checkuser", "founder", "suppress", "sysop"), luserinfo.get("groups"));
+        assertEquals(List.of("extendedconfirmed", "founder"), luserinfo.get("groups"));
         
         // Non-existing user
         assertNull(sessions.getGlobalUserInfo("Jimbo Wal3s"));

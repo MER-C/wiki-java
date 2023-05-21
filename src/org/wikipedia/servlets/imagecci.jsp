@@ -32,13 +32,10 @@
         WMFWiki wiki = sessions.sharedSession(homewiki);
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setDateRange(earliest_odt, latest_odt);
+        surveyor.setFooter("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         surveydata = surveyor.outputContributionSurvey(List.of(user), false, false, true);
 
-        String footer = "Survey URL: " + request.getRequestURL() + "?" + request.getQueryString();
         // TODO: output as ZIP
-        for (int i = 0; i < surveydata.size(); i++)
-            surveydata.set(i, surveydata.get(i) + footer);
-            
         response.setHeader("Content-Disposition", "attachment; filename=" 
             + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
         out.print(String.join("\n", surveydata));

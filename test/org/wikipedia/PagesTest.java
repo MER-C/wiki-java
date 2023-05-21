@@ -200,7 +200,7 @@ public class PagesTest
     {
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Linkfinder
         String page = "User:MER-C/UnitTests/Linkfinder";
-        List<String> links = List.of("http://spam.example.com", "http://absent.example.com");
+        List<String> links = List.of("http://spam.example.com/", "http://absent.example.com/");
         Map<String, List<String>> inputs = new HashMap<>();
         inputs.put(page, links);
         Map<String, Map<String, Boolean>> actual = testWikiPages.containExternalLinks(inputs);

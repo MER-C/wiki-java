@@ -163,4 +163,13 @@ public class ContributionSurveyorTest
         results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertEquals(1, results.get(users.get(0)).size());
     }
+    
+    @Test
+    public void setFooter()
+    {
+        String f = "Test123";
+        surveyor.setFooter(f);
+        assertTrue(surveyor.generateHTMLFooter().endsWith(f));
+        assertTrue(surveyor.generateWikitextFooter().endsWith(f));
+    }
 }

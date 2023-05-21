@@ -59,6 +59,7 @@
         surveyor.setComingled(comingle);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
+        surveyor.setFooter("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
         
         // ns 118 = draft namespace on en.wikipedia
         int[] ns = nodrafts ? new int[] { Wiki.MAIN_NAMESPACE } : new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, 118 };
@@ -72,9 +73,6 @@
         {
             request.setAttribute("contenttype", "text");
             // TODO: output as ZIP
-            String footer = "Survey URL: " + request.getRequestURL() + "?" + request.getQueryString();
-            for (int i = 0; i < surveydata.size(); i++)
-                surveydata.set(i, surveydata.get(i) + footer);
             survey = String.join("\n", surveydata);
         }
     }

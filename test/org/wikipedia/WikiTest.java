@@ -912,7 +912,7 @@ public class WikiTest
 
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Linkfinder
         links = testWiki.getExternalLinksOnPage(List.of("User:MER-C/UnitTests/Linkfinder"));
-        List<String> expected = List.of("http://spam.example.com", "http://www.example.net", "https://en.wikipedia.org");
+        List<String> expected = List.of("http://spam.example.com/", "http://www.example.net/", "https://en.wikipedia.org/");
         assertEquals(expected, links.get(0));
     }
 
