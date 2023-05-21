@@ -8291,13 +8291,13 @@ public class Wiki implements Comparable<Wiki>
                 {
                     Object value = entry.getValue();
                     multipartPostBody.write((nextpart + entry.getKey() + "\"").getBytes(StandardCharsets.UTF_8));
-                    if (value instanceof String)
-                        multipartPostBody.write(("Content-Type: text/plain; charset=UTF-8\r\n\r\n" + (String)value + "\r\n")
+                    if (value instanceof String svalue)
+                        multipartPostBody.write(("Content-Type: text/plain; charset=UTF-8\r\n\r\n" + svalue + "\r\n")
                             .getBytes(StandardCharsets.UTF_8));
-                    else if (value instanceof byte[])
+                    else if (value instanceof byte[] barr)
                     {
                         multipartPostBody.write("Content-Type: application/octet-stream\r\n\r\n".getBytes(StandardCharsets.UTF_8));
-                        multipartPostBody.write((byte[])value);
+                        multipartPostBody.write(barr);
                         multipartPostBody.write("\r\n".getBytes(StandardCharsets.UTF_8));
                     }
                 }
@@ -8398,29 +8398,23 @@ public class Wiki implements Comparable<Wiki>
      */
     private String convertToString(Object param)
     {
-        // TODO: Replace with type switch in JDK 11/12
-        if (param instanceof String)
-            return (String)param;
+        // TODO: Replace with type switch in JDK 18+
+        if (param instanceof String s)
+            return s;
         else if (param instanceof StringBuilder || param instanceof Number)
             return param.toString();
-        else if (param instanceof String[])
-            return String.join("|", (String[])param);
-        else if (param instanceof OffsetDateTime)
-        {
-            OffsetDateTime date = (OffsetDateTime)param;
+        else if (param instanceof String[] sa)
+            return String.join("|", sa);
+        else if (param instanceof OffsetDateTime date)
             // https://www.mediawiki.org/wiki/Timestamp
             // https://github.com/MER-C/wiki-java/issues/170
             return date.atZoneSameInstant(ZoneOffset.UTC)
                 .truncatedTo(ChronoUnit.MICROS)
                 .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        }
-        else if (param instanceof Collection)
-        {
-            Collection<?> coll = (Collection)param;
+        else if (param instanceof Collection<?> coll)
             return coll.stream()
                 .map(item -> convertToString(item))
                 .collect(Collectors.joining("|"));
-        }
         else
             throw new UnsupportedOperationException("Unrecognized data type");
     }

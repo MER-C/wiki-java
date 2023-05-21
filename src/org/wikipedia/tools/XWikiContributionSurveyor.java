@@ -46,6 +46,7 @@ public class XWikiContributionSurveyor
         WMFWikiFarm sessions = WMFWikiFarm.instance();
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         // Users.of(enWiki).cliLogin();
+        // TODO: add locked after command line options
         
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.XWikiContributionSurveyor", "[options]")
@@ -67,9 +68,8 @@ public class XWikiContributionSurveyor
             for (var entry : ginfo.entrySet())
             {
                 Object value = entry.getValue();
-                if (value instanceof Map)
+                if (value instanceof Map m)
                 {
-                    Map m = (Map)value;
                     String url = ((String)m.get("url")).replace("https://", "");
                     int edits = (Integer)m.get("editcount");
                     if (edits > 0)

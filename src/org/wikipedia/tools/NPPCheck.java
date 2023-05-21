@@ -390,11 +390,8 @@ public class NPPCheck
         for (Wiki.Event event : events)
         {
             String title;
-            if (event instanceof Wiki.LogEntry)
-            {
-                Wiki.LogEntry log = (Wiki.LogEntry)event;
+            if (event instanceof Wiki.LogEntry log)
                 title = log.getType().equals(Wiki.MOVE_LOG) ? log.getDetails().get("target_title") : event.getTitle();
-            }
             else
                 title = event.getTitle();
             pages.add(title);
@@ -423,11 +420,8 @@ public class NPPCheck
         for (Wiki.Event event : events)
         {
             String title;
-            if (event instanceof Wiki.LogEntry)
-            {
-                Wiki.LogEntry log = (Wiki.LogEntry)event;
+            if (event instanceof Wiki.LogEntry log)
                 title = log.getType().equals(Wiki.MOVE_LOG) ? log.getDetails().get("target_title") : event.getTitle();
-            }
             else
                 title = event.getTitle();
             pages.add(title);

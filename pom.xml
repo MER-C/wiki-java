@@ -55,8 +55,8 @@
                     <groupId>org.eclipse.jetty</groupId>
                     <artifactId>jetty-jspc-maven-plugin</artifactId>
                     <configuration>
-                        <sourceVersion>11</sourceVersion>
-                        <targetVersion>11</targetVersion>
+                        <sourceVersion>17</sourceVersion>
+                        <targetVersion>17</targetVersion>
                         <webAppSourceDirectory>src/org/wikipedia/servlets</webAppSourceDirectory>
                         <webXml>web/WEB-INF/web.xml</webXml>
                     </configuration>
