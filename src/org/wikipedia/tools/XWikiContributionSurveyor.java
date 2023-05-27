@@ -22,6 +22,7 @@ package org.wikipedia.tools;
 
 import java.io.BufferedWriter;
 import java.nio.file.*;
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.wikipedia.*;
 
@@ -37,17 +38,15 @@ public class XWikiContributionSurveyor
 {
     /**
      *  Runs this program.
-     *  @param args the command line arguments, args[0] = individual user,
-     *  args[1] = optional additional category
+     *  @param args the command line arguments
      *  @throws Exception if a network error occurs
      */
     public static void main(String[] args) throws Exception
     {
         WMFWikiFarm sessions = WMFWikiFarm.instance();
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
-        // Users.of(enWiki).cliLogin();
-        // TODO: add locked after command line options
-        
+        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
+
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.XWikiContributionSurveyor", "[options]")
             .description("Survey the contributions of a large number of wiki editors across all wikis.")
@@ -56,15 +55,48 @@ public class XWikiContributionSurveyor
             .addSingleArgumentFlag("--user", "user", "Survey the given user.")
             .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
             .addBooleanFlag("--newonly", "Survey only page creations.")
+            .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
+            .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
+            .addSingleArgumentFlag("--lockedafter", "date", "Only survey unlocked users or those locked after a certain date.")
             .parse(args);
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, enWiki);
         boolean newonly = parsedargs.containsKey("--newonly");
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsafter", "--editsbefore");
+        String lockedafterstring = parsedargs.get("--lockedafter");
+        OffsetDateTime lockedafter = (lockedafterstring == null) ? null : OffsetDateTime.parse(lockedafterstring);
+        
+        StringBuilder temp = new StringBuilder("Command line: <kbd>java org.wikipedia.tools.XWikiContributionSurveyor");
+        for (String arg : args)
+        {
+            temp.append(" ");
+            temp.append(arg);
+        }
+        temp.append("</kbd>");
         
         Set<String> wikis = new HashSet<>();
         wikis.add("en.wikipedia.org");
+        List<String> toremove = new ArrayList<>();
+        Wiki.RequestHelper rhlocked = meta.new RequestHelper()
+            .limitedTo(1);
         for (String user : users)
         {
             Map<String, Object> ginfo = sessions.getGlobalUserInfo(user);
+            if (ginfo == null)
+            {
+                toremove.add(user);
+                continue;
+            }
+            if (lockedafter != null && (Boolean)ginfo.get("locked"))
+            {
+                // not guaranteed but should work in nearly all cases
+                rhlocked = rhlocked.byTitle(meta.namespaceIdentifier(Wiki.USER_NAMESPACE) + ":" + user + "@global");
+                List<Wiki.LogEntry> le = meta.getLogEntries("globalauth", null, rhlocked);
+                if (!le.isEmpty() && le.get(0).getTimestamp().isBefore(lockedafter))
+                {
+                    toremove.add(user);
+                    continue;
+                }
+            }
             for (var entry : ginfo.entrySet())
             {
                 Object value = entry.getValue();
@@ -77,6 +109,7 @@ public class XWikiContributionSurveyor
                 }
             }
         }
+        users.removeAll(toremove);
         Path path = Paths.get("spam.txt");
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
         {
@@ -84,16 +117,25 @@ public class XWikiContributionSurveyor
             {
                 WMFWiki wikisession = sessions.sharedSession(wiki);
                 outwriter.write("==" + wiki + "==\n\n");
-                ContributionSurveyor cs = makeContributionSurveyor(wikisession, newonly);
+                ContributionSurveyor cs = makeContributionSurveyor(wikisession, newonly, temp.toString(), daterange);
                 
                 String prefix = wiki.substring(0, wiki.indexOf("."));
-                if (wiki.equals("www.wikidata.org"))
-                    prefix = "d";
                 List<String> pages;
-                if (wiki.equals("commons.wikimedia.org"))
-                    pages = cs.outputContributionSurvey(users, true, false, true, Wiki.MAIN_NAMESPACE);
-                else
-                    pages = cs.outputContributionSurvey(users, true, false, false, Wiki.MAIN_NAMESPACE);
+                switch (wiki)
+                {
+                    case "commons.wikimedia.org":
+                    {
+                        pages = cs.outputContributionSurvey(users, true, false, true, Wiki.MAIN_NAMESPACE);
+                        prefix = "c";
+                        break;
+                    }
+                    case "www.wikidata.org":
+                        prefix = "d";
+                        // fall through
+                    default:
+                        pages = cs.outputContributionSurvey(users, true, false, false, Wiki.MAIN_NAMESPACE);
+                        break;
+                }
                 
                 for (String page : pages)
                 {    
@@ -106,11 +148,14 @@ public class XWikiContributionSurveyor
         }
     }
     
-    private static ContributionSurveyor makeContributionSurveyor(Wiki wiki, boolean newonly)
+    private static ContributionSurveyor makeContributionSurveyor(Wiki wiki, boolean newonly, String argstring, 
+        List<OffsetDateTime> daterange)
     {
         ContributionSurveyor cs = new ContributionSurveyor(wiki);
         cs.setComingled(true);
         cs.setNewOnly(newonly);
+        cs.setFooter(argstring);
+        cs.setDateRange(daterange.get(0), daterange.get(1));
         return cs;
     }
 }

@@ -103,7 +103,7 @@ public class ContributionSurveyor
         String wikipage = parsedargs.get("--wikipage");
         String blockedafterstring = parsedargs.get("--blockedafter");
 
-        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsbefore", "--editsafter");
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsafter", "--editsbefore");
         OffsetDateTime blockedafter = (blockedafterstring == null) ? null : OffsetDateTime.parse(blockedafterstring);
 
         // fetch user list

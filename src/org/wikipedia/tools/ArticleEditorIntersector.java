@@ -96,7 +96,7 @@ public class ArticleEditorIntersector
         String defaultstring = parsedargs.get("default");
         String filename = parsedargs.get("--file");
         
-        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsbefore", "--editsafter");
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsafter", "--editsbefore");
         List<String> articles = null;
         if (defaultstring != null)
             articles = List.of(defaultstring.split("\\s"));
