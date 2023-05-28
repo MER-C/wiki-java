@@ -21,11 +21,11 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.zip.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 import javax.security.auth.login.*;
-import javax.swing.JFileChooser;
 
 import org.wikipedia.*;
 
@@ -70,6 +70,7 @@ public class ContributionSurveyor
                 + "Shows a filechooser if not specified.")
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s). "
                 + "Shows a filechooser if not specified. If multiple files output, use this as a prefix.")
+            .addBooleanFlag("--zip", "Write a zip file instead of individual file(s).")
             .addSection("Users to scan:")
             .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
             .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits).")
@@ -98,8 +99,6 @@ public class ContributionSurveyor
             sourcewiki = Wiki.newSession(parsedargs.get("--sourcewiki"));
         if (parsedargs.containsKey("--login"))
             Users.of(homewiki).cliLogin();
-        String infile = parsedargs.get("--infile");
-        String outfile = parsedargs.get("--outfile");
         String wikipage = parsedargs.get("--wikipage");
         String blockedafterstring = parsedargs.get("--blockedafter");
 
@@ -118,21 +117,8 @@ public class ContributionSurveyor
         }
         if (users.isEmpty()) // file IO
         {
-            Path path = null;
-            if (infile == null)
-            {
-                JFileChooser fc = new JFileChooser();
-                fc.setDialogTitle("Select user list");
-                if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION)
-                    path = fc.getSelectedFile().toPath();
-            }
-            else
-                path = Paths.get(infile);
-            if (path == null)
-            {
-                System.out.println("Error: No input file selected.");
-                System.exit(0);
-            }
+            Path path = CommandLineParser.parseFileOption(parsedargs, "--infile", "Select user list", 
+                "Error: No input file selected.", false);
             List<String> templist = Files.readAllLines(path);
             for (String line : templist)
                 if (sourcewiki.namespace(line) == Wiki.USER_NAMESPACE)
@@ -151,20 +137,6 @@ public class ContributionSurveyor
                     newusers.add(user.getUsername());
             }
             users = new ArrayList<>(newusers);
-        }
-
-        // output file
-        if (outfile == null)
-        {
-            JFileChooser fc = new JFileChooser();
-            fc.setDialogTitle("Select output file");
-            if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
-                outfile = fc.getSelectedFile().getPath();
-        }
-        if (outfile == null)
-        {
-            System.out.println("Error: No output file selected.");
-            System.exit(0);
         }
 
         int[] ns;
@@ -192,19 +164,34 @@ public class ContributionSurveyor
        
         List<String> output = surveyor.outputContributionSurvey(users, !parsedargs.containsKey("--skiplive"),
             parsedargs.containsKey("--deleted"), parsedargs.containsKey("--images"), ns);
-        
-        Path path = Paths.get(outfile);
-        
-        try (BufferedWriter outwriter = Files.newBufferedWriter(path))
+
+        String outfile = parsedargs.get("--outfile");
+        Path path = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Select output file", 
+            "Error: No output file selected.", true);
+        if (parsedargs.containsKey("--zip"))
         {
-            outwriter.write(output.get(0));
+            String fname = outfile.replace(".zip", ".txt");
+            Map<String, byte[]> zip = new LinkedHashMap<>();
+            for (int i = 0; i < output.size(); i++)
+                zip.put(fname + (i == 0 ? "" : ".%03d".formatted(i)), output.get(i).getBytes());
+            try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(path.toFile())))
+            {
+                ContributionSurveyor.outputZipFile(zout, zip);
+            }
         }
-        for (int i = 1; i < output.size(); i++)
+        else
         {
-            path = Paths.get("%s.%03d".formatted(outfile, i));
             try (BufferedWriter outwriter = Files.newBufferedWriter(path))
             {
-                outwriter.write(output.get(i));
+                outwriter.write(output.get(0));
+            }
+            for (int i = 1; i < output.size(); i++)
+            {
+                path = path.resolveSibling("%s.%03d".formatted(outfile, i));
+                try (BufferedWriter outwriter = Files.newBufferedWriter(path))
+                {
+                    outwriter.write(output.get(i));
+                }
             }
         }
     }
@@ -722,6 +709,25 @@ public class ContributionSurveyor
             }
         }
         return ret;
+    }
+    
+    /**
+     *  Writes a set of text files to a zip archive.
+     *  @param zipper a zip output stream
+     *  @param output a map, filename to contents
+     *  @throws IOException if a I/O error occurs
+     *  @since 0.08
+     */
+    public static void outputZipFile(ZipOutputStream zipper, Map<String, byte[]> output) throws IOException
+    {
+        for (Map.Entry<String, byte[]> e : output.entrySet())
+        {
+            ZipEntry ze = new ZipEntry(e.getKey());
+            zipper.putNextEntry(ze);
+            byte[] b = e.getValue();
+            zipper.write(b, 0, b.length);
+            zipper.closeEntry();
+        }
     }
 
     /**

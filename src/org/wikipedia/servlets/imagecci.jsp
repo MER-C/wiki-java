@@ -26,19 +26,19 @@
 %>
 <%@ include file="header.jspf" %>
 <%
-    List<String> surveydata = null;
+    List<String> survey = null;
     if (user != null)
     {
         WMFWiki wiki = sessions.sharedSession(homewiki);
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveyor.setFooter("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
-        surveydata = surveyor.outputContributionSurvey(List.of(user), false, false, true);
+        survey = surveyor.outputContributionSurvey(List.of(user), false, false, true);
 
-        // TODO: output as ZIP
+        // TODO: output as ZIP (not straightforward: requires rewrite as Java Servlet)
         response.setHeader("Content-Disposition", "attachment; filename=" 
             + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
-        out.print(String.join("\n", surveydata));
+        out.print(String.join("\n", survey));
         return;
     }
 %>
@@ -65,7 +65,7 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 </form>
 
 <%
-    if (user != null && surveydata.isEmpty())
+    if (user != null && survey.isEmpty())
         request.setAttribute("error", "ERROR: User " + ServletUtils.sanitizeForHTML(user) + " does not exist!");
 %>
 <%@ include file="footer.jspf" %>

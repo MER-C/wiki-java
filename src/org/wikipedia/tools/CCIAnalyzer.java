@@ -25,7 +25,6 @@ import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
 import java.util.regex.*;
-import javax.swing.JFileChooser;
 import org.wikipedia.*;
 
 /**
@@ -76,6 +75,7 @@ public class CCIAnalyzer
             .addBooleanFlag("--listpages", "Removes all list pages (aggressive)")
             .addBooleanFlag("--single", "Only cull the supplied page")
             .addSingleArgumentFlag("--numwords", "int", "Strings with more than this number of consecutive words are major edits.")
+            .addSingleArgumentFlag("--infile", "example.txt", "Read in the CCI from a file.")
             .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt, example.txt.001, example.txt.002, ...")
             .addVersion("CCIAnalyzer v0.06\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
@@ -83,21 +83,6 @@ public class CCIAnalyzer
         
         CCIAnalyzer analyzer = new CCIAnalyzer();
         int wordcount = Integer.parseInt(parsedargs.getOrDefault("--numwords", "10"));
-
-        // output file(s)
-        String outfile = parsedargs.get("--outfile");
-        if (outfile == null)
-        {
-            JFileChooser fc = new JFileChooser();
-            fc.setDialogTitle("Select output file");
-            if (fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
-                outfile = fc.getSelectedFile().getPath();
-        }
-        if (outfile == null)
-        {
-            System.out.println("Error: No output file selected.");
-            System.exit(0);
-        }
 
         // load CCIs
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
@@ -116,11 +101,9 @@ public class CCIAnalyzer
         }
         else
         {
-            // read in from file
-            JFileChooser fc = new JFileChooser();
-            if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-                System.exit(0);      
-            List<String> lines = Files.readAllLines(fc.getSelectedFile().toPath());
+            Path p = CommandLineParser.parseFileOption(parsedargs, "--infile", "Select CCI text file input", 
+                "Error: no input file specified", false);
+            List<String> lines = Files.readAllLines(p);
             StringBuilder temp = new StringBuilder(1000000);
             for (String line : lines)
             {
@@ -156,14 +139,16 @@ public class CCIAnalyzer
         analyzer.setTitleFunction(titlefn);
         
         // do the stuff
-        Path path = Paths.get(outfile);
-        int counter = 0;
-        for (CCIPage page : pages)
+        String outfile = parsedargs.get("--outfile");
+        Path path = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Select output file", 
+            "Error: No output file selected.", true);
+        for (int i = 0; i < pages.size(); i++)
         {
+            CCIPage page = pages.get(i);
             analyzer.loadDiffs(page);
             analyzer.analyzeDiffs(page);
             Files.writeString(path, analyzer.createOutput(page));
-            path = Paths.get("%s.%03d".formatted(outfile, ++counter));
+            path = path.resolveSibling("%s.%03d".formatted(outfile, i));
         }
     }
     

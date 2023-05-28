@@ -49,7 +49,7 @@
     }
 
     // get results
-    String survey = null;
+    List<String> survey = Collections.emptyList();
     if (request.getAttribute("error") == null && !users.isEmpty())
     {
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
@@ -63,33 +63,22 @@
         
         // ns 118 = draft namespace on en.wikipedia
         int[] ns = nodrafts ? new int[] { Wiki.MAIN_NAMESPACE } : new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, 118 };
-        List<String> surveydata = surveyor.outputContributionSurvey(users, true, false, false, ns);
-        if (surveydata.isEmpty())
-        {
+        survey = surveyor.outputContributionSurvey(users, true, false, false, ns);
+        if (survey.isEmpty())
             request.setAttribute("error", "No edits found!");
-            survey = null;
-        }
         else
-        {
             request.setAttribute("contenttype", "text");
-            // TODO: output as ZIP
-            survey = String.join("\n", surveydata);
-        }
     }
 %>
 <%@ include file="header.jspf" %>
 <%  
-    if (survey != null)
+    if (!survey.isEmpty())
     {
-        if (user != null)
-        {
-            response.setHeader("Content-Disposition", "attachment; filename=" 
-                + URLEncoder.encode(user, StandardCharsets.UTF_8) + ".txt");
-        }
-        else // category != null
-            response.setHeader("Content-Disposition", "attachment; filename=" 
-                + URLEncoder.encode(category, StandardCharsets.UTF_8) + ".txt");
-        out.print(survey);
+        String fname = user == null ? category : user;
+        response.setHeader("Content-Disposition", "attachment; filename="
+            + URLEncoder.encode(fname, StandardCharsets.UTF_8) + ".txt");
+        // TODO: output as ZIP (not straightforward: requires rewrite as Java Servlet)
+        out.print(String.join("\n", survey));
         return;
     }
  %>

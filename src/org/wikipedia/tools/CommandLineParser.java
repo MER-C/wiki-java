@@ -20,8 +20,10 @@
 package org.wikipedia.tools;
 
 import java.io.IOException;
+import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.*;
+import javax.swing.JFileChooser;
 import org.wikipedia.Wiki;
 
 /**
@@ -286,5 +288,35 @@ public class CommandLineParser
         ret.add(startdate);
         ret.add(enddate);
         return ret;
+    }
+    
+    /**
+     *  Parses a single argument into a path. If that argument is missing, show
+     *  a single select filechooser. If the filechooser is cancelled, exit.
+     *  @param parsedargs parsed command line arguments
+     *  @param fileoption the argument to look for
+     *  @param prompt the title of the filechooser
+     *  @param error the error to print if nothing was selected in the 
+     *  filechooser
+     *  @param save controls the type of filechooser, true = save, false = open
+     *  @return the path selected by the user
+     *  @throws IOException if a I/O error occurs
+     *  @since 0.02
+     */
+    public static Path parseFileOption(Map<String, String> parsedargs, String fileoption, String prompt, 
+        String error, boolean save) throws IOException
+    {
+        String fpath = parsedargs.get(fileoption);
+        if (fpath == null)
+        {
+            JFileChooser fc = new JFileChooser();
+            fc.setDialogTitle(prompt);
+            int fcresult = save ? fc.showSaveDialog(null) : fc.showOpenDialog(null);
+            if (fcresult == JFileChooser.APPROVE_OPTION)
+                return fc.getSelectedFile().toPath();
+            System.err.println(error);
+            System.exit(3);
+        }
+        return Paths.get(fpath);
     }
 }
