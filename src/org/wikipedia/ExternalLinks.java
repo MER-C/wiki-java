@@ -108,9 +108,13 @@ public class ExternalLinks
         StringBuilder builder = new StringBuilder(100);
         for (String[] result : results)
         {
-            builder.append("# [[");
+            builder.append("# [[:");
             builder.append(result[0]);
-            builder.append("]] uses link [");
+            builder.append("]] ([[Special:Edit/");
+            builder.append(result[0]);
+            builder.append("|edit]] | [[Special:PageHistory/");
+            builder.append(result[0]);
+            builder.append("|history]]) uses link [");
             builder.append(result[1]);
             builder.append("]\n");
         }
@@ -127,16 +131,20 @@ public class ExternalLinks
     {
         StringBuilder buffer = new StringBuilder(1000);
         buffer.append("<p>\n<ol>\n");
-        results.forEach((String[] result) ->
+        for (String[] result : results)
         {
             buffer.append("\t<li>");
             buffer.append(pageutils.generatePageLink(result[0]));
-            buffer.append(" uses link <a href=\"");
+            buffer.append(" (");
+            buffer.append(pageutils.generatePageLink("Special:Edit/" + result[0], "edit"));
+            buffer.append(" | ");
+            buffer.append(pageutils.generatePageLink("Special:PageHistory/" + result[0], "history"));
+            buffer.append(") uses link <a href=\"");
             buffer.append(result[1]);
             buffer.append("\">");
             buffer.append(result[1]);
             buffer.append("</a>\n");
-        });
+        }
         buffer.append("</ol>");
         return buffer.toString();
     }

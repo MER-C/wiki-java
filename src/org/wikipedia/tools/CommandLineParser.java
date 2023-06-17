@@ -19,6 +19,7 @@
  */
 package org.wikipedia.tools;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.nio.file.*;
 import java.time.OffsetDateTime;
@@ -292,7 +293,10 @@ public class CommandLineParser
     
     /**
      *  Parses a single argument into a path. If that argument is missing, show
-     *  a single select filechooser. If the filechooser is cancelled, exit.
+     *  a single select filechooser. If the filechooser is cancelled, exit. If
+     *  this is an open prompt, then a non-existing file will trigger the 
+     *  filechooser.
+     * 
      *  @param parsedargs parsed command line arguments
      *  @param fileoption the argument to look for
      *  @param prompt the title of the filechooser
@@ -307,16 +311,22 @@ public class CommandLineParser
         String error, boolean save) throws IOException
     {
         String fpath = parsedargs.get(fileoption);
-        if (fpath == null)
+        if (fpath != null)
+        {
+            Path p = Paths.get(fpath);
+            if (Files.exists(p) || save)
+                return p;
+        }
+        if (!GraphicsEnvironment.isHeadless())
         {
             JFileChooser fc = new JFileChooser();
             fc.setDialogTitle(prompt);
             int fcresult = save ? fc.showSaveDialog(null) : fc.showOpenDialog(null);
             if (fcresult == JFileChooser.APPROVE_OPTION)
                 return fc.getSelectedFile().toPath();
-            System.err.println(error);
-            System.exit(3);
         }
-        return Paths.get(fpath);
+        System.err.println(error);
+        System.exit(3);
+        return null; // javac is too dumb to know this isn't necessary
     }
 }

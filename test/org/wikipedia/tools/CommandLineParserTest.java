@@ -19,7 +19,8 @@
  */
 package org.wikipedia.tools;
 
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
 import java.time.OffsetDateTime;
 import org.wikipedia.Wiki;
@@ -216,5 +217,17 @@ public class CommandLineParserTest
         assertEquals(edate, dates.get(1));
         
         // can't test for wrong way round because it will exit
+    }
+    
+    @Test
+    public void parseFileOption() throws IOException
+    {
+        File temp = File.createTempFile("test-parseFileOption", null);
+        temp.deleteOnExit();
+        Path p = temp.toPath();
+        Map<String, String> options = Map.of("--test", p.toString());
+        assertEquals(p, CommandLineParser.parseFileOption(options, "--test", "", "", true));
+        
+        // cannot test null or file not found - triggers a filechooser and may exit
     }
 }

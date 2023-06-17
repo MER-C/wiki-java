@@ -121,12 +121,13 @@ public class AllWikiLinksearch
             .addSingleArgumentFlag("--numthreads", "n", "Use n threads.")
             .addSingleArgumentFlag("--domainlist", "domains.txt", "Search for this list of domains")
             .addSingleArgumentFlag("--wikiset", "TOP20", "Search this list of wikis, valid sets are TOP20, TOP40, MAJOR, default: ALL")
+            .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt")
             .addSection("A dialog box will pop up if domain is not specified.")
             .parse(args);
         
         boolean httponly = parsedargs.containsKey("--httponly");
         int threads = Integer.parseInt(parsedargs.getOrDefault("--numthreads", "1"));
-        Path outfile = Paths.get("linksearch.wiki");
+        Path outfile = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Enter output file", "Error: Output file not specified", true);
         
         List<String> domains = new ArrayList<>();
         String domainlist = parsedargs.get("--domainlist");
@@ -136,7 +137,7 @@ public class AllWikiLinksearch
             Path path = Paths.get(domainlist);
             domains.addAll(Files.readAllLines(path));
         }
-        if (!GraphicsEnvironment.isHeadless() && domain == null)
+        else if (!GraphicsEnvironment.isHeadless())
             domain = JOptionPane.showInputDialog(null, "Enter domain(s) to search", "All wiki linksearch", JOptionPane.QUESTION_MESSAGE);
         if (domain != null)
             domains.addAll(List.of(domain.split(" ")));
@@ -177,7 +178,7 @@ public class AllWikiLinksearch
                     int linknumber = links.size();
                     if (linknumber != 0)
                     {
-                        temp.append(ExternalLinks.linksearchResultsToWikitext(links, domain));
+                        temp.append(ExternalLinks.of(wiki).linksearchResultsToHTML(links, domain));
                         out.write(temp.toString());
                     }
                 }
