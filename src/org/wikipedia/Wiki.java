@@ -1803,13 +1803,15 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     * Gets key-value property mappings on a list of pages.
-     * @param pages the pages to retrieve properties from.
-     * @return a list of properties in key-value format. Special or Media
-     * files and missing or invalid titles are listed as {@code null}.
-     * The Maps will come out in the same order as the processed array.
-     * @throws IOException if a network error occurs
-     * @since 0.38
+     *  Gets key-value property mappings on a list of pages. Special or Media
+     *  files and missing or invalid titles are listed as {@code null}. Pages
+     *  with no properties will return the empty set.
+     * 
+     *  @param pages the pages to retrieve properties from.
+     *  @return a list of properties in key-value format
+     *  The Maps will come out in the same order as the processed array.
+     *  @throws IOException if a network error occurs
+     *  @since 0.38
      */
     public List<Map<String, String>> getPageProperties(List<String> pages) throws IOException
     {
@@ -5808,7 +5810,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public List<String[]> linksearch(String pattern) throws IOException
     {
-        return linksearch(pattern, "http");
+        return linksearch(pattern, null);
     }
 
     /**
@@ -5828,7 +5830,7 @@ public class Wiki implements Comparable<Wiki>
      *  *.example.com)
      *  @param ns a list of namespaces to filter by, empty = all namespaces.
      *  @param protocol one of the protocols listed in the API documentation or
-     *  "" (equivalent to http)
+     *  null (equivalent to http and https)
      *  @throws IOException if a network error occurs
      *  @return a list of results where each entry is { page, URL }
      *  @since 0.24
@@ -5847,7 +5849,8 @@ public class Wiki implements Comparable<Wiki>
         getparams.put("list", "exturlusage");
         getparams.put("euprop", "title|url");
         getparams.put("euquery", pattern);
-        getparams.put("euprotocol", protocol);
+        if (protocol != null)
+            getparams.put("euprotocol", protocol);
         if (ns.length > 0)
             getparams.put("eunamespace", constructNamespaceString(ns));
 
@@ -5858,10 +5861,7 @@ public class Wiki implements Comparable<Wiki>
             {
                 String link = parseAttribute(line, "url", x);
                 String pagename = parseAttribute(line, "title", x);
-                if (link.charAt(0) == '/') // protocol relative url
-                    results.add(new String[] { pagename, protocol + ":" + link });
-                else
-                    results.add(new String[] { pagename, link });
+                results.add(new String[] { pagename, link });
             }
         });
 

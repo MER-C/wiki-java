@@ -1,6 +1,6 @@
 <!--
-    @(#)masslinksearch.jsp 0.01 20/01/2017
-    Copyright (C) 2016 - 2017 MER-C
+    @(#)masslinksearch.jsp 0.02 06/07/2023
+    Copyright (C) 2016 - 2023 MER-C
   
     This is free software: you are free to change and redistribute it under the 
     Affero GNU GPL version 3 or later, see <https://www.gnu.org/licenses/agpl.html> 
@@ -8,9 +8,8 @@
 -->
 <%@ include file="security.jspf" %>
 <%
+    int limit = 500;
     request.setAttribute("toolname", "Mass linksearch");
-
-    boolean https = (request.getParameter("https") != null);
     String wiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     
     // parse inputdomains to pure list of domains
@@ -33,7 +32,8 @@
 This tool searches a single project for a large collection of links. Enter 
 domain names (example.com, *{{LinkSummary|example.com}} and \\bexample\\.com\\b
 are all acceptable) below, one per line. A timeout is more likely when searching
-for more domains.
+for more domains. For performance reasons, results are limited to <%= limit %> 
+links per domain.
 
 <p>
 <form action="./masslinksearch.jsp" method=POST>
@@ -47,10 +47,6 @@ for more domains.
         <textarea name=domains rows=10 required>
 <%= inputdomains %>
         </textarea>
-<tr>
-    <td>Additional protocols:
-    <td><input type=checkbox name=https value=1<%= (inputdomains.isEmpty() ||
-         https) ? " checked" : "" %>>HTTPS
 </table>
 <br>
 <input type=submit value=Search>
@@ -62,7 +58,7 @@ for more domains.
         out.println("<hr>");
         String[] domains = inputdomains.split("\r\n");
         Wiki w = sessions.sharedSession(wiki);
-        w.setQueryLimit(500);
+        w.setQueryLimit(limit);
 
         StringBuilder regex = new StringBuilder();
         StringBuilder linksummary = new StringBuilder();
@@ -71,14 +67,7 @@ for more domains.
         for (String domain : domains)
         {
             domain = domain.trim();
-            
-            // compute results
-            List<String[]> temp = w.linksearch("*." + domain, "http");
-            if (https)
-            {
-                List<String[]> temp2 = w.linksearch("*." + domain, "https");
-                temp.addAll(temp2);
-            }
+            List<String[]> temp = w.linksearch("*." + domain);
 
             // reformat domain list to regex and linksummary
             regex.append("\\b");

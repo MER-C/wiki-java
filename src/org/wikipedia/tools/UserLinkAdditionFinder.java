@@ -259,9 +259,7 @@ public class UserLinkAdditionFinder
                     builder.append(linkcounts.get(domain));
                     builder.append(" links: [[Special:Linksearch/*.");
                     builder.append(domain);
-                    builder.append("|http]], [[Special:Linksearch/https://*.");
-                    builder.append(domain);
-                    builder.append("|https]])");
+                    builder.append("|Linksearch]])");
                 }
                 else
                     builder.append(")");

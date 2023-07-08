@@ -1,6 +1,6 @@
 /**
- *  @(#)AllWikiLinksearch.java 0.03 26/12/2016
- *  Copyright (C) 2011 - 20xx MER-C
+ *  @(#)AllWikiLinksearch.java 0.04 06/07/2023
+ *  Copyright (C) 2011 - 2023 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -40,7 +40,7 @@ import org.wikipedia.*;
  *  before running this program. 
  * 
  *  @author MER-C
- *  @version 0.03
+ *  @version 0.04
  */
 public class AllWikiLinksearch
 {    
@@ -48,23 +48,24 @@ public class AllWikiLinksearch
     private static final WMFWikiFarm sessions = WMFWikiFarm.instance();
     
     /**
-     *  The top 20 Wikimedia projects, namely { "en", "de", "fr", "nl", "it", 
-     *  "pl", "es", "ru", "ja", "pt", "zh", "sv", "vi", "uk", "ca", "no", "fi", 
-     *  "cs", "hu", "fa" }.wikipedia.org.
+     *  The top 25 Wikipedias (by number of admins), namely { "en", "de", "fr", 
+     *  "it", "pl", "ru", "sv", "zh", "es", "pt", "uk", "id", "no", "ja", "fa", 
+     *  "ta", "nl", "et", "fi", "he", "cs", "ca", "ko", "hu", "da" }.wikipedia.org.
      */
-    public static final List<WMFWiki> TOP20;
+    public static final List<WMFWiki> TOP25;
     
     /**
-     *  The top 40 Wikimedia projects, namely everything in {@link #TOP20}, plus
-     *  { "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr", "kk", "lt", 
-     *  "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" }.wikipedia.org.
+     *  The top 50 Wikipedias (by number of admins), namely everything in 
+     *  {@link #TOP25}, plus { "bg", "ar", "el", "sl", "tr", "th", "is", "vi", 
+     *  "simple", "sw", "sr", "ro", "uz", "la", "eo", "cy", "ms", "az", "ml", 
+     *  "kk", "nn", "bn", "lv", "hr", "af" }.wikipedia.org.
      */
-    public static final List<WMFWiki> TOP40;
+    public static final List<WMFWiki> TOP50;
     
     /**
-     *  Major Wikimedia projects prone to spam, namely { "en", "de", "fr" }.
-     *  { "wikipedia", "wiktionary", "wikibooks", "wikiquote", "wikivoyage" }
-     *  .org, plus Wikimedia Commons, Meta, mediawiki.org and WikiData.
+     *  Major Wikimedia projects prone to spam, namely { "en", "de", "fr", "it" }.
+     *  { "wikipedia", "wiktionary", "wikibooks", "wikiquote", "wikivoyage" } .org, 
+     *  plus Wikimedia Commons, Meta, mediawiki.org and WikiData.
      */
     public static final List<WMFWiki> MAJOR_WIKIS;
     
@@ -73,23 +74,24 @@ public class AllWikiLinksearch
      */
     static
     {
-        String[] temp = { 
-            // top 20 Wikipedias
-            "en", "de", "fr", "nl", "it", "pl", "es", "ru", "ja",  "pt",
-            "zh", "sv", "vi", "uk", "ca", "no", "fi", "cs", "hu",  "fa",
-            // 20-40
-            "ro", "ko", "ar", "tr", "id", "sk", "eo", "da", "sr",  "kk",
-            "lt", "ms", "he", "bg", "eu", "sl", "vo", "hr", "war", "hi" };
+        List<String> temp = List.of(
+            // top 25 Wikipedias (by number of admins, see 
+            "en", "de", "fr", "it", "pl", "ru", "sv", "zh", "es", "pt", "uk", 
+            "id", "no", "ja", "fa", "ta", "nl", "et", "fi", "he", "cs", "ca", 
+            "ko", "hu", "da",
+            // 25-50
+            "bg", "ar", "el", "sl", "tr", "th", "is", "vi", "simple", "sw", "sr", 
+            "ro", "uz", "la", "eo", "cy", "ms", "az", "ml", "kk", "nn", "bn", 
+            "lv", "hr", "af");
         
         List<WMFWiki> wikilist = new ArrayList<>();
         for (String lang : temp)
             wikilist.add(sessions.sharedSession(lang + ".wikipedia.org"));
-        TOP40 = Collections.unmodifiableList(wikilist);
-        TOP20 = TOP40.subList(0, 19);
+        TOP50 = Collections.unmodifiableList(wikilist);
+        TOP25 = TOP50.subList(0, 25);
 
-        temp = new String[] { "en", "de", "fr" };
         wikilist = new ArrayList<>();
-        for (String lang : temp)
+        for (String lang : temp.subList(0, 4))
         {
             wikilist.add(sessions.sharedSession(lang + ".wikipedia.org"));
             wikilist.add(sessions.sharedSession(lang + ".wiktionary.org"));
@@ -116,16 +118,14 @@ public class AllWikiLinksearch
             .synopsis("org.wikipedia.tools.AllWikiLinksearch", "[options] domains")
             .description("Searches Wikimedia projects for links.")
             .addHelp()
-            .addVersion("AllWikiLinksearch v0.03\n" + CommandLineParser.GPL_VERSION_STRING)
-            .addBooleanFlag("--httponly", "Search for non-secure links only.")
+            .addVersion("AllWikiLinksearch v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--numthreads", "n", "Use n threads.")
             .addSingleArgumentFlag("--domainlist", "domains.txt", "Search for this list of domains")
-            .addSingleArgumentFlag("--wikiset", "TOP20", "Search this list of wikis, valid sets are TOP20, TOP40, MAJOR, default: ALL")
+            .addSingleArgumentFlag("--wikiset", "TOP25", "Search this list of wikis, valid sets are TOP20, TOP40, MAJOR, default: ALL")
             .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt")
             .addSection("A dialog box will pop up if domain is not specified.")
             .parse(args);
         
-        boolean httponly = parsedargs.containsKey("--httponly");
         int threads = Integer.parseInt(parsedargs.getOrDefault("--numthreads", "1"));
         Path outfile = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Enter output file", "Error: Output file not specified", true);
         
@@ -149,8 +149,8 @@ public class AllWikiLinksearch
         
         List<WMFWiki> wikis = switch (parsedargs.getOrDefault("--wikiset", "x"))
         {
-            case "TOP20" -> TOP20;
-            case "TOP40" -> TOP40;
+            case "TOP25" -> TOP25;
+            case "TOP50" -> TOP50;
             case "MAJOR" -> MAJOR_WIKIS;
             default -> sessions.getSiteMatrix();
         };
@@ -160,7 +160,7 @@ public class AllWikiLinksearch
         {
             for (String domain2 : domains)
             {
-                Map<Wiki, List<String[]>> results = crossWikiLinksearch(false, threads, domain2, wikis, !httponly, false);
+                Map<Wiki, List<String[]>> results = crossWikiLinksearch(Integer.MAX_VALUE, threads, domain2, wikis, false);
                 out.write("==" + domain2 + "==\n");
                 for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
                 {
@@ -190,25 +190,24 @@ public class AllWikiLinksearch
     /**
      *  Performs a cross-wiki linksearch.
      * 
-     *  @param querylimit sets a query limit (500) for servlets
+     *  @param querylimit sets a query limit, passed to {@link Wiki#setQueryLimit(int)}
      *  @param threads use this many threads. If <var>querylimit</var> is 
-     *  supplied this is forced to 1. If greater than 1, this overwrites the system
-     *  property <var>java.util.concurrent.ForkJoinPool.common.parallelism</var>.
+     *  not Integer.MAX_VALUE this is forced to 1. If greater than 1, this overwrites 
+     *  the system property <var>java.util.concurrent.ForkJoinPool.common.parallelism</var>.
      *  @param domain the domain to search
      *  @param wikis the wikis to search
-     *  @param https include HTTPS links?
      *  @param mailto include mailto links?
      *  @param ns restrict to the given namespaces
      *  @return the linksearch results, as in wiki &#8594; results, or null if an
      *  IOException occurred
      */
-    public static Map<Wiki, List<String[]>> crossWikiLinksearch(boolean querylimit, 
-        int threads, String domain, Collection<? extends Wiki> wikis, boolean https, boolean mailto, 
+    public static Map<Wiki, List<String[]>> crossWikiLinksearch(int querylimit, 
+        int threads, String domain, Collection<? extends Wiki> wikis, boolean mailto, 
         int... ns)
     {
         Stream<? extends Wiki> stream = wikis.stream();
         // set concurrency if desired
-        if (!querylimit && threads > 1)
+        if (querylimit == Integer.MAX_VALUE && threads > 1)
         {
             System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "" + threads);
             stream = stream.parallel();
@@ -216,16 +215,10 @@ public class AllWikiLinksearch
         Map<Wiki, List<String[]>> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
         {
             wiki.setMaxLag(-1);
-            if (querylimit)
-                wiki.setQueryLimit(500);
+            wiki.setQueryLimit(querylimit);
             try
             {
-                List<String[]> temp = wiki.linksearch("*." + domain, "http", ns);
-                if (https)
-                {
-                    List<String[]> temp2 = wiki.linksearch("*." + domain, "https", ns);
-                    temp.addAll(temp2);
-                }
+                List<String[]> temp = wiki.linksearch("*." + domain, null, ns);
                 if (mailto)
                 {
                     List<String[]> temp2 = wiki.linksearch("*." + domain, "mailto", ns);

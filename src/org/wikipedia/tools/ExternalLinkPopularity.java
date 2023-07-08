@@ -38,7 +38,7 @@ import org.wikipedia.*;
 public class ExternalLinkPopularity
 {
     private final Wiki wiki;
-    private int maxlinks = 500;
+    private int maxlinks = 1000;
     private List<String> exclude;
     
     /**
@@ -115,7 +115,7 @@ public class ExternalLinkPopularity
      *  getting bogged down with large queries. Some domains are used very 
      *  frequently (10000+ links), often because they are reliable sources. This 
      *  quantity is passed directly to {@link Wiki#setQueryLimit(int)}. The 
-     *  default is 500.
+     *  default is 1000.
      * 
      *  @param limit the query limit used
      *  @throws IllegalArgumentException if {@code limit < 1}
@@ -223,12 +223,9 @@ public class ExternalLinkPopularity
         Map<String, Integer> lsresults = new HashMap<>();
         for (String domain : domains)
         {
-            int count = wiki.linksearch("*." + domain, "http").size();
+            int count = wiki.linksearch("*." + domain).size();
             // can't set namespace here due to $wgMiserMode and domains with
             // lots of links
-            if (count < maxlinks)
-                count += wiki.linksearch("*." + domain, "https").size();
-            
             lsresults.put(domain, Math.min(count, maxlinks));
         }
         wiki.setQueryLimit(Integer.MAX_VALUE);
@@ -262,7 +259,7 @@ public class ExternalLinkPopularity
                 else
                     sb.append(" links");
                 sb.append("""
-                    ; Linksearch: [[Special:Linksearch/*.%s|http]] [[Special:Linksearch/https://*.%s|https]])
+                    ; [[Special:Linksearch/*.%s|Linksearch]])
                     """.formatted(domain, domain));
                 scores.accept(numlinks);
                 dss.accept(numlinks);
@@ -319,11 +316,10 @@ public class ExternalLinkPopularity
                     sb.append(" (");
                 sb.append(numlinks);
                 if (numlinks == 1)
-                    sb.append(" link; Linksearch: ");
+                    sb.append(" link; ");
                 else
-                    sb.append(" links; Linksearch: ");
-                sb.append(pageUtils.generatePageLink("Special:Linksearch/*." + domain, "http"));
-                sb.append(pageUtils.generatePageLink("Special:Linksearch/https://*." + domain, "https"));
+                    sb.append(" links; ");
+                sb.append(pageUtils.generatePageLink("Special:Linksearch/*." + domain, "Linksearch"));
                 sb.append(")\n");
                 scores.accept(numlinks);
                 dss.accept(numlinks);

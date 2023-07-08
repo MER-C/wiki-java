@@ -99,8 +99,8 @@ public class ExternalLinkPopularityTest
             switch (count++)
             {
                 case 0 -> assertEquals(Map.entry("obviously.invalid", 0), entry);
-                case 1 -> assertEquals(Map.entry("wikimedia.org", 500), entry);
-                case 2 -> assertEquals(Map.entry("wikipedia.org", 500), entry);
+                case 1 -> assertEquals(Map.entry("wikimedia.org", 1000), entry);
+                case 2 -> assertEquals(Map.entry("wikipedia.org", 1000), entry);
             }
         }
     }

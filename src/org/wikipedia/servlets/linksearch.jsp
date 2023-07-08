@@ -1,6 +1,6 @@
 <!--
-    @(#)xwikilinksearch.jsp 0.02 27/01/2017
-    Copyright (C) 2011 - 2017 MER-C
+    @(#)xwikilinksearch.jsp 0.03 06/07/2023
+    Copyright (C) 2011 - 2023 MER-C
   
     This is free software: you are free to change and redistribute it under the 
     Affero GNU GPL version 3 or later, see <https://www.gnu.org/licenses/agpl.html> 
@@ -10,15 +10,14 @@
 <%
     request.setAttribute("toolname", "Cross-wiki linksearch");
     request.setAttribute("scripts", new String[] { "common.js", "XWikiLinksearch.js" });
+    int limit = 500;
 
     String mode = Objects.requireNonNullElse(request.getParameter("mode"), "multi");
     String domain = ServletUtils.sanitizeForAttribute(request.getParameter("link"));
-    String set = Objects.requireNonNullElse(request.getParameter("set"), "top20");
+    String set = Objects.requireNonNullElse(request.getParameter("set"), "top25");
     String wikiinput = request.getParameter("wiki");
     if (wikiinput != null)
         wikiinput = ServletUtils.sanitizeForAttribute(wikiinput);
-
-    boolean https = (request.getParameter("https") != null);
     boolean mailto = (request.getParameter("mailto") != null);
 
     String temp = request.getParameter("ns");
@@ -31,7 +30,7 @@
 This tool searches various Wikimedia projects for a specific link. Enter a 
 domain name (example.com, not *.example.com or http://example.com) below. A 
 timeout is more likely when searching for more wikis or protocols. For performance
-reasons, results are limited to between 500 and 1000 links per wiki.
+reasons, results are limited to <%= limit %> links per wiki.
 
 <form name="spamform" action="./linksearch.jsp" method=GET>
 <table>
@@ -40,8 +39,8 @@ reasons, results are limited to between 500 and 1000 links per wiki.
          " checked" : "" %>>
     <td><label for="radio_multi">Wikis to search:</label>
     <td><select name=set id=set<%= mode.equals("multi") ? "" : " disabled" %>>
-            <option value="top20"<%= set.equals("top20") ? " selected" : ""%>>Top 20 Wikipedias</option>
-            <option value="top40"<%= set.equals("top40") ? " selected" : ""%>>Top 40 Wikipedias</option>
+            <option value="top25"<%= set.equals("top25") ? " selected" : ""%>>Top 25 Wikipedias</option>
+            <option value="top50"<%= set.equals("top50") ? " selected" : ""%>>Top 50 Wikipedias</option>
             <option value="major"<%= set.equals("major") ? " selected" : ""%>>Major Wikimedia projects</option>
         </select>
         
@@ -58,10 +57,7 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         
 <tr>
     <td colspan=2>Additional protocols:
-    <td><input type=checkbox name=https id="https" value=1<%= (https || domain.isEmpty()) ?
-        " checked" : "" %>>
-        <label for="https">HTTPS</label>
-        <input type=checkbox name=mailto id="mailto" value=1<%= mailto ? " checked" : "" %>>
+    <td><input type=checkbox name=mailto id="mailto" value=1<%= mailto ? " checked" : "" %>>
         <label for="mailto">mailto</label>
 
 <tr>
@@ -86,12 +82,12 @@ reasons, results are limited to between 500 and 1000 links per wiki.
     {
         results = switch (set)
         {
-            case "top20" -> AllWikiLinksearch.crossWikiLinksearch(true, 1, 
-                domain, AllWikiLinksearch.TOP20, https, mailto, ns);
-            case "top40" -> AllWikiLinksearch.crossWikiLinksearch(true, 1, 
-                domain, AllWikiLinksearch.TOP40, https, mailto, ns);
-            case "major" -> AllWikiLinksearch.crossWikiLinksearch(true, 1, 
-                domain, AllWikiLinksearch.MAJOR_WIKIS, https, mailto, ns);
+            case "top25" -> AllWikiLinksearch.crossWikiLinksearch(limit, 1, 
+                domain, AllWikiLinksearch.TOP25, mailto, ns);
+            case "top50" -> AllWikiLinksearch.crossWikiLinksearch(limit, 1, 
+                domain, AllWikiLinksearch.TOP50, mailto, ns);
+            case "major" -> AllWikiLinksearch.crossWikiLinksearch(limit, 1, 
+                domain, AllWikiLinksearch.MAJOR_WIKIS, mailto, ns);
             default -> 
             {
                 request.setAttribute("error", "Invalid wiki set selected!");
@@ -102,8 +98,8 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         };
     }
     else if (mode.equals("single"))
-        results = AllWikiLinksearch.crossWikiLinksearch(true, 1, domain, 
-            List.of(sessions.sharedSession(wikiinput)), https, mailto, ns);
+        results = AllWikiLinksearch.crossWikiLinksearch(limit, 1, domain, 
+            List.of(sessions.sharedSession(wikiinput)), mailto, ns);
 
     out.println("<hr>");
     for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
@@ -114,12 +110,11 @@ reasons, results are limited to between 500 and 1000 links per wiki.
         out.println("<h3>" + wiki.getDomain() + "</h3>");
         out.println(ExternalLinks.of(wiki).linksearchResultsToHTML(value, domain));
         out.println("<p>");
-        if (value.size() > 500)
+        if (value.size() == limit)
             out.print("At least ");
         out.print(value.size());
         out.print(" links found (");
-        out.print(pageutils.generatePageLink("Special:Linksearch/*." + domain, "HTTP linksearch") + " | ");
-        out.println(pageutils.generatePageLink("Special:Linksearch/https://*." + domain, "HTTPS linksearch") + ").");
+        out.print(pageutils.generatePageLink("Special:Linksearch/*." + domain, "linksearch") + ").");
     }
 %>
 <%@ include file="footer.jspf" %>
