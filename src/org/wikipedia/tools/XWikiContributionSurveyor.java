@@ -58,6 +58,7 @@ public class XWikiContributionSurveyor
             .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
             .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
             .addSingleArgumentFlag("--lockedafter", "date", "Only survey unlocked users or those locked after a certain date.")
+            .addSingleArgumentFlag("--outfile", "file", "Save results to file(s).")
             .parse(args);
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, enWiki);
         boolean newonly = parsedargs.containsKey("--newonly");
@@ -97,20 +98,19 @@ public class XWikiContributionSurveyor
                     continue;
                 }
             }
-            for (var entry : ginfo.entrySet())
+            Map<?, ?> m = (Map)ginfo.get("wikis");
+            for (var entry : m.entrySet())
             {
-                Object value = entry.getValue();
-                if (value instanceof Map m)
-                {
-                    String url = ((String)m.get("url")).replace("https://", "");
-                    int edits = (Integer)m.get("editcount");
-                    if (edits > 0)
-                        wikis.add(url);
-                }
+                Map wikimap = (Map)entry.getValue();
+                String url = ((String)wikimap.get("url")).replace("https://", "");
+                int edits = (Integer)wikimap.get("editcount");
+                if (edits > 0)
+                    wikis.add(url);
             }
         }
         users.removeAll(toremove);
-        Path path = Paths.get("spam.txt");
+        Path path = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Select output file", 
+            "Error: No output file selected.", true);
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
         {
             for (String wiki : wikis)

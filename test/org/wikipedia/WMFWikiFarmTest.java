@@ -58,7 +58,7 @@ public class WMFWikiFarmTest
         assertEquals("enwiki", guserinfo.get("home"));
         
         // enwiki
-        Map luserinfo = (Map)guserinfo.get("enwiki");
+        Map luserinfo = (Map)((Map)guserinfo.get("wikis")).get("enwiki");
         assertEquals("https://en.wikipedia.org", luserinfo.get("url"));
         assertEquals(23, luserinfo.get("editcount"));
         assertEquals(OffsetDateTime.parse("2016-09-21T13:59:29Z"), luserinfo.get("registration"));
@@ -69,7 +69,7 @@ public class WMFWikiFarmTest
             + "[[w:en:Wikipedia:Sockpuppet investigations/Japanelemu]]", luserinfo.get("blockreason"));
         
         // meta
-        luserinfo = (Map)guserinfo.get("metawiki");
+        luserinfo = (Map)((Map)guserinfo.get("wikis")).get("metawiki");
         assertEquals("https://meta.wikimedia.org", luserinfo.get("url"));
         assertEquals(0, luserinfo.get("editcount"));
         assertEquals(OffsetDateTime.parse("2016-09-21T13:59:37Z"), luserinfo.get("registration"));
@@ -82,7 +82,7 @@ public class WMFWikiFarmTest
         // https://meta.wikimedia.org/wiki/Special:CentralAuth?target=Jimbo+Wales
         guserinfo = sessions.getGlobalUserInfo("Jimbo Wales");
         assertEquals(List.of("founder"), guserinfo.get("groups"));
-        luserinfo = (Map)guserinfo.get("enwiki");
+        luserinfo = (Map)((Map)guserinfo.get("wikis")).get("enwiki");
         assertEquals(List.of("extendedconfirmed", "founder"), luserinfo.get("groups"));
         
         // Non-existing user

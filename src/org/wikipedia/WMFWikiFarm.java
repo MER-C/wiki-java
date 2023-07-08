@@ -141,7 +141,8 @@ public class WMFWikiFarm
      *  <li>locked - (Boolean) whether this user account has been locked
      *  <li>editcount - (int) total global edit count
      *  <li>wikicount - (int) total number of wikis edited
-     *  <li>DBNAME (e.g. "enwikisource" == "en.wikisource.org") - see below
+     *  <li>wikis (Map&lt;String, Map&lt;String, Object&gt;&gt;) a map of dbname 
+     *      (e.g. "enwikisource" == "en.wikisource.org") to the below
      *  </ul>
      * 
      *  <p>
@@ -215,6 +216,7 @@ public class WMFWikiFarm
         
         // individual wikis
         int mergedend = line.indexOf("</merged>");
+        Map<String, Map<String, Object>> wikis = new HashMap<>();
         String[] accounts = line.substring(mergedindex, mergedend).split("<account ");
         for (int i = 1; i < accounts.length; i++)
         {
@@ -250,8 +252,9 @@ public class WMFWikiFarm
                 groups.add(accounts[i].substring(x + 7, y));
             }
             userinfo.put("groups", groups);
-            ret.put(wiki.parseAttribute(accounts[i], "wiki", 0), userinfo);
+            wikis.put(wiki.parseAttribute(accounts[i], "wiki", 0), userinfo);
         }
+        ret.put("wikis", wikis);
         ret.put("editcount", globaledits);
         ret.put("wikicount", wikicount);
         return ret;
