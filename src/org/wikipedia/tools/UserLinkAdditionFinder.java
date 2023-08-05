@@ -26,7 +26,6 @@ import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.stream.Collectors;
-import javax.swing.JFileChooser;
 import org.wikipedia.*;
 
 /**
@@ -56,6 +55,7 @@ public class UserLinkAdditionFinder
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--user", "user", "Get links for this user.")
             .addSingleArgumentFlag("--category", "category", "Get links for all users from this category (recursive).")
+            .addSingleArgumentFlag("--infile", "users.txt", "Get links for all users in this file")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
@@ -66,7 +66,6 @@ public class UserLinkAdditionFinder
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         String datestring = parsedargs.get("--fetchafter");
-        String filename = parsedargs.get("default");
         OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
         
         UserLinkAdditionFinder finder = new UserLinkAdditionFinder(thiswiki);
@@ -77,16 +76,7 @@ public class UserLinkAdditionFinder
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
         if (users.isEmpty())
         {
-            Path fp;
-            if (filename == null)
-            {
-                JFileChooser fc = new JFileChooser();
-                if (fc.showOpenDialog(null) != JFileChooser.APPROVE_OPTION)
-                    System.exit(0);
-                fp = fc.getSelectedFile().toPath();
-            }
-            else
-                fp = Paths.get(filename);
+            Path fp = CommandLineParser.parseFileOption(parsedargs, "--infile", "Open user list", "No users specified", false);
             users = Files.readAllLines(fp, Charset.forName("UTF-8"));
         }
 

@@ -33,17 +33,32 @@ public class BlockLockStuff
 {
     private static WMFWikiFarm sessions = WMFWikiFarm.instance();
     
+    /**
+     *  Runs this program.
+     *  @param args the command line arguments
+     *  @throws Exception if a network error occurs
+     */
     public static void main(String[] args) throws Exception
     {
-        Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
-        List<String> socks = enWiki.getCategoryMembers("Category:Wikipedia sockpuppets of Bodiadub", true, Wiki.USER_NAMESPACE);
-        // List<String> socks = Files.readAllLines(Paths.get("spam2.txt"));
+        Map<String, String> parsedargs = new CommandLineParser()
+            .addSingleArgumentFlag("--sockcat", "Category:Socks of user", "Fetch block/lock status of socks in this category (recursive)")
+            .addSingleArgumentFlag("--infile", "spam.txt", "List of spammers to be read in from a file")
+            .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "")
+            .addHelp()
+            .parse(args);
+        String wikistring = parsedargs.getOrDefault("--wiki", "en.wikipedia.org");
+        Wiki wiki = sessions.sharedSession(wikistring);
+        
+        List<String> socks = new ArrayList<>();
+        if (parsedargs.containsKey("--sockcat"))
+            socks.addAll(wiki.getCategoryMembers(parsedargs.get("--sockcat"), true, Wiki.USER_NAMESPACE));
+        else
+            socks.addAll(Files.readAllLines(CommandLineParser.parseFileOption(parsedargs, "--infile", "Open account list", 
+                "Error: accounts not specified", false)));
         
         lockFinder(socks);
-        blockFinder(socks);
-        staleScreener(socks);
-        
-        // TODO: accept arbitrary input
+        blockFinder(wiki, socks);
+        staleScreener(wiki, socks);
     }
     
     public static void lockFinder(List<String> socks) throws Exception
@@ -64,22 +79,20 @@ public class BlockLockStuff
         System.out.println("}}\n\n");
     }
     
-    public static void staleScreener(List<String> socks) throws Exception
+    public static void staleScreener(Wiki wiki, List<String> socks) throws Exception
     {
-        Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
-        
         // determine whether accounts are stale
         List<String> notstale = new ArrayList<>();
         List<String> stale = new ArrayList<>();
         List<String> unregistered = new ArrayList<>();
-        List<List<Wiki.Revision>> contribs = enWiki.contribs(socks, null, null);
+        List<List<Wiki.Revision>> contribs = wiki.contribs(socks, null, null);
         OffsetDateTime staledate = OffsetDateTime.now().minusDays(91);
         for (int i = 0; i < socks.size(); i++)
         {
             String sock = socks.get(i);
-            String sock2 = enWiki.removeNamespace(sock);
-            Wiki.RequestHelper rh = enWiki.new RequestHelper().byUser(sock);
-            List<Wiki.LogEntry> socklogs = enWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
+            String sock2 = wiki.removeNamespace(sock);
+            Wiki.RequestHelper rh = wiki.new RequestHelper().byUser(sock);
+            List<Wiki.LogEntry> socklogs = wiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
             if (socklogs.isEmpty())
             {
                 unregistered.add("*{{checkuser|" + sock2 + "}}");
@@ -111,10 +124,9 @@ public class BlockLockStuff
             System.out.println(s);
     }
     
-    public static void blockFinder(List<String> socks) throws Exception
+    public static void blockFinder(Wiki wiki, List<String> socks) throws Exception
     {
-        Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
-        List<Wiki.LogEntry> blocklist = enWiki.getBlockList(socks, null);
+        List<Wiki.LogEntry> blocklist = wiki.getBlockList(socks, null);
         List<String> unblocked = new ArrayList<>(socks);
         
         // TODO: add locks - not possible currently due to:
@@ -133,7 +145,7 @@ public class BlockLockStuff
         }
         System.out.println(";Unblocked users:");
         for (String user : unblocked)
-            System.out.println("*{{user|" + enWiki.removeNamespace(user) + "}}");
+            System.out.println("*{{user|" + wiki.removeNamespace(user) + "}}");
         System.out.println("G5 date: " + earliest.getTimestamp());
     }
 }

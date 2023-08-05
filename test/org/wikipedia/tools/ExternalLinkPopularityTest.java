@@ -84,7 +84,7 @@ public class ExternalLinkPopularityTest
         assertTrue(keyset.containsAll(List.of("example.net", "wikipedia.org", "example.com")));
         assertEquals(List.of("http://www.example.net/"), urlsbydomain.get("example.net"));
         assertEquals(List.of("https://en.wikipedia.org/"), urlsbydomain.get("wikipedia.org"));
-        assertEquals(List.of("http://spam.example.com/"), urlsbydomain.get("example.com"));
+        assertEquals(List.of("http://spam.example.com/", "https://example.com/protocol_relative"), urlsbydomain.get("example.com"));
     }
     
     @Test

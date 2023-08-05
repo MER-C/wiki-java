@@ -49,6 +49,7 @@ public class CommandLineParser
     private final HashSet<String> params;
     private final HashSet<String> boolean_params;
     private final List<String> descriptions;
+    private final List<String> required_params;
     private String synopsis, description, version;
 
     /**
@@ -59,6 +60,7 @@ public class CommandLineParser
         params = new HashSet<>();
         boolean_params = new HashSet<>();
         descriptions = new ArrayList<>();
+        required_params = new ArrayList<>();
         synopsis = "";
         description = "";
         version = "";
@@ -164,6 +166,21 @@ public class CommandLineParser
     }
     
     /**
+     *  Sets a list of required arguments. If any of these are not found, then
+     *  the program will exit when {@link #parse(java.lang.String[])} is called.
+     *  @param arg a required argument
+     *  @param args any further required arguments
+     *  @return this CommandLineParser
+     *  @since 0.02
+     */
+    public CommandLineParser requireAll(String arg, String... args)
+    {
+        required_params.add(arg);
+        required_params.addAll(Arrays.asList(args));
+        return this;
+    }
+    
+    /**
      *  Constructs and returns the string that is printed to standard output 
      *  when the user specifies <kbd>--help</kbd> on the command line.
      *  @return (see above)
@@ -207,7 +224,7 @@ public class CommandLineParser
      *  corresponding text and exit. Any non-matching arguments are concatenated
      *  (with spaces in between) with key "default" (if there are none, there is 
      *  no key). Keys and default arguments are in the order specified by the 
-     *  user.
+     *  user. Exits with code 1 if a required argument is not found.
      * 
      *  @param args the command line arguments to parse
      *  @return a LinkedHashMap containing the parsed arguments
@@ -234,6 +251,14 @@ public class CommandLineParser
                 ret.put(args[i], "true");
             else
                 defaultargs.add(args[i]);
+        }
+        // check all mandatory arguments are present
+        List<String> arglist = Arrays.asList(args);
+        if (!arglist.containsAll(required_params))
+        {
+            required_params.removeAll(arglist);
+            System.err.println("Required arguments " + required_params + " not found.");
+            System.exit(1);
         }
         if (defaultargs.length() != 0)
             ret.put("default", defaultargs.toString());

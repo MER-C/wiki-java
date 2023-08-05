@@ -121,7 +121,7 @@ public class AllWikiLinksearch
             .addVersion("AllWikiLinksearch v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--numthreads", "n", "Use n threads.")
             .addSingleArgumentFlag("--domainlist", "domains.txt", "Search for this list of domains")
-            .addSingleArgumentFlag("--wikiset", "TOP25", "Search this list of wikis, valid sets are TOP20, TOP40, MAJOR, default: ALL")
+            .addSingleArgumentFlag("--wikiset", "TOP25", "Search this list of wikis, valid sets are TOP25, TOP50, MAJOR, default: ALL")
             .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt")
             .addSection("A dialog box will pop up if domain is not specified.")
             .parse(args);

@@ -53,8 +53,8 @@ public class AdminStats
     public static void main(String[] args) throws Exception
     {
         Map<String, String> options = new CommandLineParser()
-            .addSingleArgumentFlag("--start", "2019-04-01T00:00:00Z", "Start date")
-            .addSingleArgumentFlag("--end", "2019-07-01T00:00:00Z", "End date")
+            .addSingleArgumentFlag("--start", "2019-04-01T00:00:00Z", "Start date (ISO 8601) (required)")
+            .addSingleArgumentFlag("--end", "2019-07-01T00:00:00Z", "End date (ISO 8601) (required)")
             .addBooleanFlag("--printfull", "Dump histograms without grouping reasons")
             .addBooleanFlag("--locks", "Fetch statistics for global locks")
             .addBooleanFlag("--blocks", "Fetch statistics for blocks")
@@ -64,6 +64,7 @@ public class AdminStats
             .addBooleanFlag("--protections", "Fetch statistics for protections")
             .addBooleanFlag("--globalblocks", "Fetch statistics for global blocks")
             .addBooleanFlag("--login", "Adds a login prompt to access high limits")
+            .requireAll("--start", "--end")
             .parse(args);
         List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(options, "--start", "--end");
         boolean printfull = options.containsKey("--printfull");
@@ -461,9 +462,9 @@ public class AdminStats
             {
                 String expiry = log.getDetails().get("expiry");
                 boolean indefinite = expiry.equals("infinity");
-                if (Boolean.TRUE.equals(indefs) && indefinite)
+                if (indefs && indefinite)
                     return false;
-                if (Boolean.FALSE.equals(indefs) && !indefinite)
+                if (!indefs && !indefinite)
                     return false;
                 return true;
             });
@@ -479,9 +480,9 @@ public class AdminStats
                 boolean ip = user.matches("User:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}")
                     || user.matches("User:([0-9a-f]{0,4}:){1,}[0-9a-f]{0,4}")
                     || user.contains("/"); // rangeblocks, forbidden character in usernames
-                if (Boolean.TRUE.equals(accounts) && !ip)
+                if (accounts && !ip)
                     return false;
-                if (Boolean.FALSE.equals(accounts) && ip)
+                if (!accounts && ip)
                     return false;
                 return true;
             });
