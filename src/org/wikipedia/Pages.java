@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.*;
 import java.util.regex.*;
-import javax.security.auth.login.*;
 
 /**
  *  Utility methods for lists of wiki pages.
@@ -369,50 +368,5 @@ public class Pages
             + generatePageLink(wiki.getTalkPage(page), "talk") + " | "
             + "<a href=\"" + indexPHPURL + "?title=" + pageenc + "&action=history\">history</a> | "
             + "<a href=\"" + indexPHPURL + "?title=Special:Log&page=" + pageenc + "\">logs</a>)";
-    }
-    
-    /**
-     *  Deletes all supplied <var>pages</var> and their associated talk pages.
-     *  Requires admin privileges.
-     * 
-     *  @param pages a list of pages to delete
-     *  @param reason the reason for deletion
-     *  @param talkReason the reason to use when deleting the relevant talk pages
-     *  Does not delete talk pages if {@code null}.
-     *  @throws LoginException if one does not possess credentials to delete
-     *  @return an array containing pages we were unable to delete
-     *  @author Fastily
-     *  @deprecated Wiki.java delete can now delete both pages in a single 
-     *  action.
-     */
-    @Deprecated(forRemoval=true)
-    public List<String> massDelete(Iterable<String> pages, String reason, String talkReason) throws LoginException
-    {
-        ArrayList<String> cantdelete = new ArrayList<>();
-        for (String page : pages)
-        {
-            try
-            {
-                wiki.delete(page, reason, false);
-            }
-            catch (IOException | UncheckedIOException ex)
-            {
-                cantdelete.add(page);
-                continue;
-            }
-
-            if (talkReason != null)
-            {
-                try
-                {
-                    wiki.delete(wiki.getTalkPage(page), talkReason, false);
-                }
-                catch (IOException | UncheckedIOException ex)
-                {
-                    cantdelete.add(page);
-                }
-            }
-        }
-        return cantdelete;
     }
 }

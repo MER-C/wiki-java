@@ -460,7 +460,6 @@ public class Wiki implements Comparable<Wiki>
     private int statusinterval = 100; // status check
     private int querylimit = Integer.MAX_VALUE;
     private String useragent = "Wiki.java/" + version + " (https://github.com/MER-C/wiki-java/)";
-    private boolean zipped = true;
     private boolean markminor = false, markbot = false;
     private boolean resolveredirect = false;
     private Level loglevel = Level.ALL;
@@ -901,32 +900,7 @@ public class Wiki implements Comparable<Wiki>
     {
         return useragent;
     }
-
-    /**
-     *  Enables/disables GZip compression for GET requests. Default: true.
-     *  @param zipped whether we use GZip compression
-     *  @since 0.23
-     *  @deprecated this is now handled transparently; just delete calls to this method.
-     */
-    @Deprecated(forRemoval=true)
-    public void setUsingCompressedRequests(boolean zipped)
-    {
-        this.zipped = zipped;
-    }
-
-    /**
-     *  Checks whether we are using GZip compression for GET requests.
-     *  Default: true.
-     *  @return (see above)
-     *  @since 0.23
-     *  @deprecated this is now handled transparently; just delete calls to this method.
-     */
-    @Deprecated(forRemoval=true)
-    public boolean isUsingCompressedRequests()
-    {
-        return zipped;
-    }
-
+    
     /**
      *  Checks whether API action=query dependencies automatically resolve
      *  redirects (default = false).
@@ -6774,20 +6748,6 @@ public class Wiki implements Comparable<Wiki>
         {
             return gender;
         }
-
-        /**
-         *  Determines whether this user is blocked at the time of construction.
-         *  If you want a live check, look  up the user on the {@linkplain
-         *  #getBlockList list of blocks}.
-         *  @return whether this user is blocked
-         *  @since 0.12
-         *  @deprecated use getBlockDetails instead
-         */
-        @Deprecated(forRemoval=true)
-        public boolean isBlocked()
-        {
-            return blockinfo != null;
-        }
         
         /**
          *  If the user is blocked at the time of construction, then return a
@@ -8383,7 +8343,7 @@ public class Wiki implements Comparable<Wiki>
                 }
 
                 HttpResponse<InputStream> hr = client.send(connection.build(), HttpResponse.BodyHandlers.ofInputStream());
-                boolean zipped_ = hr.headers().firstValue("Content-Encoding").orElse("").equals("gzip");
+                boolean zipped = hr.headers().firstValue("Content-Encoding").orElse("").equals("gzip");
                 if (checkLag(hr))
                 {
                     tries++;
@@ -8391,7 +8351,7 @@ public class Wiki implements Comparable<Wiki>
                 }
 
                 try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                    zipped_ ? new GZIPInputStream(hr.body()) : hr.body(), "UTF-8")))
+                    zipped ? new GZIPInputStream(hr.body()) : hr.body(), "UTF-8")))
                 {
                     response = in.lines().collect(Collectors.joining("\n"));
                 }
