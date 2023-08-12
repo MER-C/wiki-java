@@ -3952,16 +3952,25 @@ public class Wiki implements Comparable<Wiki>
 
         // summary
         String summary = null, parsedsummary = null;
+        boolean commentdeleted = xml.contains("commenthidden=\"");
         if (xml.contains("comment=\""))
         {
             summary = parseAttribute(xml, "comment", 0);
             parsedsummary = parseAttribute(xml, "parsedcomment", 0);
         }
+        else if (commentdeleted)
+        {
+            summary = Event.COMMENT_DELETED;
+            parsedsummary = Event.COMMENT_DELETED;
+        }
 
         // user
         String user2 = null;
+        boolean userdeleted = xml.contains("userhidden=\"");
         if (xml.contains("user=\""))
             user2 = parseAttribute(xml, "user", 0);
+        else if (userdeleted)
+            user2 = Event.USER_DELETED;
 
         // flags: minor, bot, new
         boolean minor = xml.contains("minor=\"\"");
@@ -3977,10 +3986,18 @@ public class Wiki implements Comparable<Wiki>
         else if (xml.contains("len=\"")) // deletedrevs
             size = Integer.parseInt(parseAttribute(xml, "len", 0));
 
-        // sha1
+        // sha1/content
+        // Silly workaround: prop=revisions, prop=deletedrevisions,
+        // list=recentchanges and list=alldeletedrevisions all don't tell you
+        // whether content has been revision deleted until you fetch the content.
+        // Instead, fetch the SHA-1 of the content to minimize data transfer.
+        // list=usercontribs does tell you
         String sha1 = null;
+        boolean contentdeleted = xml.contains("sha1hidden=\"") || xml.contains("texthidden=\"");
         if (xml.contains("sha1=\""))
             sha1 = parseAttribute(xml, "sha1", 0);
+        else if (contentdeleted)
+            sha1 = Wiki.Event.CONTENT_DELETED;
 
         Revision revision = new Revision(oldid, timestamp, user2, summary, parsedsummary, title, sha1, minor, bot, rvnew, size);
         // set rcid
@@ -4009,16 +4026,9 @@ public class Wiki implements Comparable<Wiki>
         revision.setTags(tags);
 
         // revisiondelete
-        revision.setCommentDeleted(xml.contains("commenthidden=\""));
-        revision.setUserDeleted(xml.contains("userhidden=\""));
-        // Silly workaround: prop=revisions, prop=deletedrevisions,
-        // list=recentchanges and list=alldeletedrevisions all don't tell you
-        // whether content has been revision deleted until you fetch the content.
-        // Instead, fetch the SHA-1 of the content to minimize data transfer.
-        revision.setContentDeleted(xml.contains("sha1hidden=\""));
-        // list=usercontribs does tell you
-        if (xml.contains("texthidden=\""))
-            revision.setContentDeleted(true);
+        revision.setCommentDeleted(commentdeleted);
+        revision.setUserDeleted(userdeleted);
+        revision.setContentDeleted(contentdeleted);
         return revision;
     }
 
@@ -6070,6 +6080,11 @@ public class Wiki implements Comparable<Wiki>
             reason = parseAttribute(xml, "reason", 0);
             parsedreason = null; // not available in list=blocks / getBlockList!
         }
+        else if (reasonhidden)
+        {
+            reason = Wiki.Event.COMMENT_DELETED;
+            parsedreason = Wiki.Event.COMMENT_DELETED;
+        }
         else
         {
             reason = parseAttribute(xml, "comment", 0);
@@ -6080,11 +6095,15 @@ public class Wiki implements Comparable<Wiki>
         boolean userhidden = xml.contains("userhidden=\"\"");
         if (user == null && xml.contains("user=\""))
             user = parseAttribute(xml, "user", 0);
+        else if (userhidden)
+            user = Wiki.Event.USER_DELETED;
 
         // generic target name
         // space is important -- commons.getImageHistory("File:Chief1.gif");
         if (target == null && xml.contains(" title=\""))
             target = parseAttribute(xml, "title", 0);
+        else if (actionhidden)
+            target = Wiki.Event.CONTENT_DELETED;
 
         OffsetDateTime timestamp = OffsetDateTime.parse(parseAttribute(xml, "timestamp", 0));
 
@@ -6912,6 +6931,33 @@ public class Wiki implements Comparable<Wiki>
         private List<String> tags;
         private boolean commentDeleted = false, userDeleted = false,
             contentDeleted = false;
+        
+        /**
+         *  Placeholder string for the event reason when it is RevisionDeleted 
+         *  without access. Currently null, but proposed to be changed to an
+         *  illegal value in a future version to distinguish between different
+         *  types of "comment not available".
+         *  @since 0.38
+         */
+        protected static final String COMMENT_DELETED = null;
+        
+        /**
+         *  Placeholder string for the event user when it is RevisionDeleted 
+         *  without access. Currently null, but proposed to be changed to an
+         *  illegal value in a future version to distinguish between different
+         *  types of "user not available".
+         *  @since 0.38
+         */
+        protected static final String USER_DELETED = null;
+        
+        /**
+         *  Placeholder string for event content when it is RevisionDeleted 
+         *  without access. Currently null, but proposed to be changed to an
+         *  illegal value in a future version to distinguish between different
+         *  types of "content not available".
+         *  @since 0.38
+         */
+        protected static final String CONTENT_DELETED = null;
 
         /**
          *  Creates a new Event record.

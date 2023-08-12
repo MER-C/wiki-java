@@ -22,7 +22,7 @@ package org.wikipedia;
 
 import java.time.OffsetDateTime;
 import java.util.*;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -109,6 +109,30 @@ public class WMFWikiFarmTest
     }
     
     @Test
+    public void getAllSharedSessions()
+    {
+        WMFWiki wiki1 = sessions.sharedSession("en.wikipedia.org");
+        WMFWiki wiki2 = sessions.sharedSession("de.wikipedia.org");
+        WMFWiki wiki3 = sessions.sharedSession("fr.wikipedia.org");
+        Collection<WMFWiki> stuff = sessions.getAllSharedSessions();
+        assertEquals(3, stuff.size());
+        assertTrue(stuff.contains(wiki1));
+        assertTrue(stuff.contains(wiki2));
+        assertTrue(stuff.contains(wiki3));
+    }
+    
+    @Test
+    public void clear()
+    {
+        WMFWiki wiki = sessions.sharedSession("en.wikipedia.org");
+        Collection<WMFWiki> stuff = sessions.getAllSharedSessions();
+        assertEquals(1, stuff.size());
+        sessions.clear();
+        stuff = sessions.getAllSharedSessions();
+        assertTrue(stuff.isEmpty());
+    }
+    
+    @Test
     public void setInitializer()
     {
         WMFWikiFarm local = new WMFWikiFarm();
@@ -140,5 +164,11 @@ public class WMFWikiFarmTest
         assertEquals("Q224615", actual.get(4));
         assertEquals("Q937", actual.get(5));
         assertNull(actual.get(6)); // local page exists, but no corresponding WD item
+    }
+    
+    @AfterEach
+    public void cleanup()
+    {
+        sessions.clear();
     }
 }

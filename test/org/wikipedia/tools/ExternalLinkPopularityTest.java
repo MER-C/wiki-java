@@ -54,6 +54,7 @@ public class ExternalLinkPopularityTest
     @Test
     public void setMaxLinks() throws Exception
     {
+        assertThrows(IllegalArgumentException.class, () -> elp.setMaxLinks(0));
         int limit = 250;
         elp.setMaxLinks(limit);
         assertEquals(limit, elp.getMaxLinks());

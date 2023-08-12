@@ -65,7 +65,7 @@ public class AllWikiLinksearch
     /**
      *  Major Wikimedia projects prone to spam, namely { "en", "de", "fr", "it" }.
      *  { "wikipedia", "wiktionary", "wikibooks", "wikiquote", "wikivoyage" } .org, 
-     *  plus Wikimedia Commons, Meta, mediawiki.org and WikiData.
+     *  plus Wikimedia Commons, Meta, mediawiki.org, WikiData, and Wikifunctions.
      */
     public static final List<WMFWiki> MAJOR_WIKIS;
     
@@ -103,6 +103,7 @@ public class AllWikiLinksearch
         wikilist.add(sessions.sharedSession("commons.wikimedia.org"));
         wikilist.add(sessions.sharedSession("www.mediawiki.org"));
         wikilist.add(sessions.sharedSession("www.wikidata.org"));
+        wikilist.add(sessions.sharedSession("www.wikifunctions.org"));
         MAJOR_WIKIS = Collections.unmodifiableList(wikilist);
     }
     

@@ -118,6 +118,14 @@ public class WMFWikiFarm
     }
     
     /**
+     *  Removes all shared sessions from this object.
+     */
+    public void clear()
+    {
+        sessions.clear();
+    }
+    
+    /**
      *  Sets a function that is called every time a WMFWiki session is created
      *  with this manager. The sole parameter is the new session. Use for a
      *  common setup routine.

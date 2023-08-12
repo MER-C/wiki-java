@@ -681,21 +681,24 @@ public class WikiTest
         // https://test.wikipedia.org/w/api.php?action=query&list=logevents&letitle=User%3AMER-C%2FTest
         rh = testWiki.new RequestHelper().byTitle("User:MER-C/Test");
         le = testWiki.getLogEntries(Wiki.ALL_LOGS, null, rh);
-        assertNull(le.get(0).getComment(), "reason hidden");
-        assertNull(le.get(0).getParsedComment(), "reason hidden");
+        assertEquals(Wiki.Event.COMMENT_DELETED, le.get(0).getComment(), "reason hidden");
+        assertEquals(Wiki.Event.COMMENT_DELETED, le.get(0).getParsedComment(), "reason hidden");
         assertTrue(le.get(0).isCommentDeleted(), "reason hidden");
-        assertNull(le.get(0).getUser(), "user hidden");
+        assertEquals(Wiki.Event.USER_DELETED, le.get(0).getUser(), "user hidden");
         assertTrue(le.get(0).isUserDeleted(), "user hidden");
+
         // tags (not related to the LogEntry being RevisionDeleted)
         assertEquals(List.of("HotCat", "MyStupidTestTag"), le.get(0).getTags());
+        
+        // back to RevisionDeleted log entries, no access
         // https://test.wikipedia.org/w/api.php?action=query&list=logevents&leuser=MER-C
         //     &lestart=20161002050030&leend=20161002050000&letype=delete
         rh = testWiki.new RequestHelper()
             .byUser("MER-C")
             .withinDateRange(OffsetDateTime.parse("2016-10-02T05:00:00Z"), OffsetDateTime.parse("2016-10-02T05:30:00Z"));
         le = testWiki.getLogEntries(Wiki.DELETION_LOG, null, rh);
-        assertNull(le.get(1).getTitle(), "action hidden");
-        assertTrue(le.get(1).isContentDeleted(), "action hidden");
+        assertEquals(Wiki.Event.CONTENT_DELETED, le.get(1).getTitle(), "target hidden");
+        assertTrue(le.get(1).isContentDeleted(), "target hidden");
     }
 
     @Test
@@ -1106,10 +1109,10 @@ public class WikiTest
         assertTrue(rev.isUserDeleted(), "user revdeled flag");
         assertTrue(rev.isCommentDeleted(), "summary revdeled flag");
         assertTrue(rev.isContentDeleted(), "content revdeled flag");
-        assertNull(rev.getComment(), "summary revdeled");
-        assertNull(rev.getParsedComment(), "summary revdeled");
-        assertNull(rev.getUser(), "user revdeled");
-        assertNull(rev.getSha1(), "sha1/content revdeled");
+        assertEquals(Wiki.Event.COMMENT_DELETED, rev.getComment(), "summary revdeled");
+        assertEquals(Wiki.Event.COMMENT_DELETED, rev.getParsedComment(), "summary revdeled");
+        assertEquals(Wiki.Event.USER_DELETED, rev.getUser(), "user revdeled");
+        assertEquals(Wiki.Event.CONTENT_DELETED, rev.getSha1(), "sha1/content revdeled");
         
         // Revision has been deleted (not RevisionDeleted)
         // https://test.wikipedia.org/wiki/User:MER-C/UnitTests/Delete
