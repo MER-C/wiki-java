@@ -1,6 +1,6 @@
 /**
- *  @(#)WikiTest.java 0.38 08/02/2019
- *  Copyright (C) 2014-2022 MER-C
+ *  @(#)WikiTest.java 0.39 12/08/2023
+ *  Copyright (C) 2014-2023 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  *  Unit tests for Wiki.java
  *  @author MER-C
+ *  @version 0.39
  */
 public class WikiTest
 {

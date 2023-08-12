@@ -1,7 +1,7 @@
 <project>
     <groupId>org.wikipedia</groupId>
     <artifactId>wiki-java</artifactId>
-    <version>0.38-SNAPSHOT</version>
+    <version>0.39-SNAPSHOT</version>
     <modelVersion>4.0.0</modelVersion>
 
     <build>
