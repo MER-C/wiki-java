@@ -56,10 +56,24 @@ public class ContributionSurveyorTest
         // https://en.wikipedia.org/wiki/Special:Contributions/OfficialPankajPatidar - no mainspace edits
         // https://en.wikipedia.org/wiki/Special:Contributions/Rt11642               - mainspace edits all revisiondeleted
         List<String> users = List.of("HilStev", "OfficialPankajPatidar", "Rt11642");
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue(results.get(users.get(0)).isEmpty(), "User with no edits");
         assertTrue(results.get(users.get(1)).isEmpty(), "Check namespace filter");
         assertTrue(results.get(users.get(2)).isEmpty(), "Check revision deletion");
+    }
+    
+    @Test
+    public void imageContributionSurvey() throws Exception
+    {
+        // https://meta.wikimedia.org/wiki/Special:CentralAuth/Helga_The_Great_Kyiv - one deleted upload
+        // https://meta.wikimedia.org/wiki/Special:CentralAuth/Lozouhg - one image, PD text (so probably not going away)
+        // note search for transferred uploads is not stable enough for testing
+        List<String> users = List.of("Helga The Great Kyiv", "Lozouhg");
+        var results = surveyor.imageContributionSurvey(users);
+        assertTrue(results.get(users.get(0)).get("local").isEmpty(), "User with no uploads (local)");
+        assertTrue(results.get(users.get(0)).get("commons").isEmpty(), "User with no uploads (commons)");
+        assertTrue(results.get(users.get(1)).get("local").isEmpty(), "User with only commons uploads");
+        assertEquals(List.of("File:Infinum logo.jpg"), results.get(users.get(1)).get("commons"));
     }
     
     @Test
@@ -77,6 +91,8 @@ public class ContributionSurveyorTest
         // verify get/set works
         assertThrows(IllegalArgumentException.class,
             () -> surveyor.setDateRange(OffsetDateTime.now(), OffsetDateTime.MIN));
+        assertThrows(IllegalArgumentException.class,
+            () -> surveyor.setDateRange(OffsetDateTime.MAX, OffsetDateTime.now()));
         OffsetDateTime earliest = OffsetDateTime.parse("2017-12-07T00:00:00Z");
         OffsetDateTime latest = OffsetDateTime.parse("2018-01-23T00:00:00Z");
         surveyor.setDateRange(earliest, latest);
@@ -85,8 +101,14 @@ public class ContributionSurveyorTest
         
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-01&end=2018-01-24
         // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&contribs=user&target=Jimbo+Wales&namespace=0&start=2017-12-07&end=2018-01-17
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(List.of("Jimbo Wales"), Wiki.MAIN_NAMESPACE);
-        assertTrue(results.get("Jimbo Wales").isEmpty(), "check date range functionality");
+        List<String> users = List.of("Jimbo Wales");
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertTrue(results.get(users.get(0)).isEmpty(), "Check date range functionality (text)");
+        
+        // images
+        users = List.of("Lozouhg");
+        var results2 = surveyor.imageContributionSurvey(users);
+        assertTrue(results2.get(users.get(0)).get("commons").isEmpty(), "Check date range functionality (images)");
     }
     
     @Test
@@ -97,7 +119,7 @@ public class ContributionSurveyorTest
 
         // https://en.wikipedia.org/wiki/Special:Contributions/Jjdevine2
         List<String> users = List.of("Jjdevine2");
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue(results.get(users.get(0)).isEmpty());
         
         // verify get/set works
@@ -120,7 +142,7 @@ public class ContributionSurveyorTest
         List<String> users = List.of("Dl2000");
         surveyor.setIgnoringMinorEdits(false);
         surveyor.setDateRange(OffsetDateTime.parse("2019-11-09T16:00:00Z"), OffsetDateTime.parse("2019-11-09T16:21:00Z"));
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue(results.get(users.get(0)).isEmpty());
         
         // verify get/set works
@@ -152,7 +174,7 @@ public class ContributionSurveyorTest
         // https://en.wikipedia.org/wiki/Special:Contributions/Cyprumande
         List<String> users = List.of("Cyprumande");
         surveyor.setDateRange(OffsetDateTime.parse("2019-01-01T00:00:00Z"), null);
-        Map<String, Map<String, List<Wiki.Revision>>> results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertTrue(results.get(users.get(0)).isEmpty());
         
         // verify get/set works
@@ -162,6 +184,64 @@ public class ContributionSurveyorTest
         // check functionality
         results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
         assertEquals(1, results.get(users.get(0)).size());
+    }
+    
+    @Test
+    public void setNewOnly() throws Exception
+    {
+        // default is false
+        assertFalse(surveyor.newOnly());
+        
+        // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&target=GarciaB&start=2005-03-14&end=2005-03-15
+        List<String> users = List.of("GarciaB");
+        surveyor.setDateRange(OffsetDateTime.parse("2005-03-14T00:00:00Z"), OffsetDateTime.parse("2005-03-15T00:00:00Z"));
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        Map<String, List<Wiki.Revision>> results2 = results.get(users.get(0));
+        assertEquals(2, results2.size());
+        assertTrue(results2.keySet().containsAll(List.of("Akan people", "Lists of volcanoes")));
+        
+        // verify get/set works
+        surveyor.setNewOnly(true);
+        assertTrue(surveyor.newOnly());
+        
+        // check functionality
+        results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        results2 = results.get(users.get(0));
+        assertEquals(1, results2.size());
+        assertTrue(results2.containsKey("Akan people"));
+    }
+    
+    @Test
+    public void setComingled() throws Exception
+    {
+        // default is false
+        assertFalse(surveyor.isComingled());
+        
+        // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&target=Dhouston45&start=2022-07-06&end=2022-07-07
+        // https://en.wikipedia.org/w/index.php?title=Special%3AContributions&target=Dhouston17&start=2022-07-06&end=2022-07-07
+        List<String> users = List.of("Dhouston17", "Dhouston45");
+        surveyor.setDateRange(OffsetDateTime.parse("2022-07-06T00:00:00Z"), OffsetDateTime.parse("2022-07-07T00:00:00Z"));
+        var results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertEquals(2, results.size());
+        assertTrue(results.keySet().containsAll(users));
+        Map<String, List<Wiki.Revision>> results2 = results.get(users.get(0));
+        assertEquals(1, results2.size());
+        assertTrue(results2.containsKey("NHL on ESPN2"));
+        results2 = results.get(users.get(1));
+        assertTrue(results2.containsKey("NHL on ESPN"));
+        assertTrue(results2.containsKey("NHL on ESPN2"));
+        
+        // verify get/set works
+        surveyor.setComingled(true);
+        assertTrue(surveyor.isComingled());
+        
+        // check functionality
+        results = surveyor.contributionSurvey(users, Wiki.MAIN_NAMESPACE);
+        assertEquals(1, results.size());
+        results2 = results.get("");
+        assertEquals(2, results2.size());
+        assertTrue(results2.containsKey("NHL on ESPN"));
+        assertTrue(results2.containsKey("NHL on ESPN2"));
     }
     
     @Test

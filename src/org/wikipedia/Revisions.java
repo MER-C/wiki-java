@@ -128,7 +128,7 @@ public class Revisions
             
             // user
             String user2 = rev.getUser();
-            if (user2 != null)
+            if (user2 != null) // TODO: disambiguate
             {
                 buffer.append("[[User:");
                 buffer.append(user2);
@@ -152,7 +152,7 @@ public class Revisions
             // edit summary
             buffer.append(") .. (");
             String summary = rev.getComment();
-            if (summary == null)
+            if (summary == null) // TODO: disambiguate
                 buffer.append(Events.DELETED_EVENT_HTML);
             // kill wikimarkup
             buffer.append("<nowiki>");
@@ -181,8 +181,12 @@ public class Revisions
             String revurl = rev.permanentUrl();
             String page = rev.getTitle();
             String user = rev.getUser();
+            String comment = rev.getParsedComment();
             int sizediff = rev.getSizeDiff();
-
+            // TODO: disambiguate
+            String userhtml = user == null ? Events.DELETED_EVENT_HTML : userutils.generateHTMLSummaryLinksShort(user);
+            String commenthtml = comment == null ? Events.DELETED_EVENT_HTML : comment;
+            
             buffer.append("""
                 <tr class="revision">
                 <td class="difflink"><a href="%s&diff=prev">prev</a>
@@ -197,10 +201,8 @@ public class Revisions
                 <td>%s
                 """.formatted(revurl, revurl, DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(rev.getTimestamp()),
                 rev.isNew() ? "<b>N</b>" : ".", rev.isMinor() ? "<b>m</b>" : ".", rev.isBot() ? "<b>b</b>" : ".",
-                pageutils.generatePageLink(page, true), 
-                user == null ? Events.DELETED_EVENT_HTML : userutils.generateHTMLSummaryLinksShort(user),
-                rev.getSize(), sizediff > 0 ? "sizeincreased" : "sizedecreased", sizediff,
-                rev.getParsedComment() == null ? Events.DELETED_EVENT_HTML : rev.getParsedComment()));
+                pageutils.generatePageLink(page, true), userhtml, rev.getSize(), 
+                sizediff > 0 ? "sizeincreased" : "sizedecreased", sizediff, commenthtml));
         }
         buffer.append("</table>\n");
         return buffer.toString();

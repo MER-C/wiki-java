@@ -76,13 +76,21 @@ public class UsersTest
     }
     
     @Test
+    public void generateWikitextSummaryLinksShort() throws Exception
+    {
+        String expected = "[[User:MER-C|MER-C]] ([[User talk:MER-C|talk]] &middot; "
+            + "[[Special:Contributions/MER-C|contribs]])";
+        assertEquals(expected, Users.generateWikitextSummaryLinksShort("MER-C"));
+    }
+    
+    @Test
     public void generateUserLinksShort() throws Exception
     {
         String expected = 
               "<a href=\"" + testWiki.getPageUrl("User:MER-C") + "\">MER-C</a> ("
             + "<a href=\"" + testWiki.getPageUrl("User talk:MER-C") + "\">talk</a> &middot; "
             + "<a href=\"" + testWiki.getPageUrl("Special:Contributions/MER-C") + "\">contribs</a>)";
-            assertEquals(expected, testWikiUsers.generateHTMLSummaryLinksShort("MER-C"));
+        assertEquals(expected, testWikiUsers.generateHTMLSummaryLinksShort("MER-C"));
     }
     
     @Test

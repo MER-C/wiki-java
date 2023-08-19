@@ -110,6 +110,8 @@ public class ArticleEditorIntersectorTest
         // first, verify get/set works
         assertThrows(IllegalArgumentException.class,
             () -> intersector_enWiki.setDateRange(OffsetDateTime.now(), OffsetDateTime.MIN));
+        assertThrows(IllegalArgumentException.class,
+            () -> intersector_enWiki.setDateRange(OffsetDateTime.MAX, OffsetDateTime.now()));
         OffsetDateTime earliest = OffsetDateTime.parse("2010-01-01T00:00:00Z");
         OffsetDateTime latest = OffsetDateTime.parse("2013-03-01T00:00:00Z");
         intersector_enWiki.setDateRange(earliest, latest);
