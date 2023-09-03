@@ -2052,7 +2052,9 @@ public class Wiki implements Comparable<Wiki>
             {
                 // determine existance, then locate and extract content
                 String key = parseAttribute(results[i], isrevisions ? "revid" : "title", 0);
-                if (!results[i].contains("missing=\"\"") && !results[i].contains("texthidden=\"\""))
+                if (results[i].contains("texthidden=\"\""))
+                    pageTexts.put(key, Wiki.Event.CONTENT_DELETED);
+                else if (!results[i].contains("missing=\"\""))
                 {
                     int x = results[i].indexOf("<rev ");
                     int y = results[i].indexOf('>', x) + 1;
@@ -5365,12 +5367,12 @@ public class Wiki implements Comparable<Wiki>
         if (helper != null)
         {
             helper.setRequestType("wl");
-            helper.addDateRangeParameters();
-            helper.addNamespaceParameter();
-            helper.addUserParameter();
-            helper.addExcludeUserParameter();
-            helper.addReverseParameter();
-            helper.addShowParameter();
+            getparams.putAll(helper.addDateRangeParameters());
+            getparams.putAll(helper.addNamespaceParameter());
+            getparams.putAll(helper.addUserParameter());
+            getparams.putAll(helper.addExcludeUserParameter());
+            getparams.putAll(helper.addReverseParameter());
+            getparams.putAll(helper.addShowParameter());
             limit = helper.limit();
         }
 

@@ -69,7 +69,7 @@ public class Revisions
             while (iter.hasNext())
             {
                 String sha1 = iter.next().getSha1();
-                if (sha1 == null)
+                if (sha1 == null || sha1.equals(Wiki.Event.CONTENT_DELETED))
                     continue;
                 if (hashes.contains(sha1))
                     iter.remove();
@@ -107,7 +107,7 @@ public class Revisions
             // diff link
             buffer.append("([[Special:Diff/");
             buffer.append(rev.getID());
-            buffer.append("|diff]]) ");
+            buffer.append("|prev]]) ");
             
             if (rev.isNew())
                 buffer.append("'''N''' ");
@@ -128,20 +128,10 @@ public class Revisions
             
             // user
             String user2 = rev.getUser();
-            if (user2 != null) // TODO: disambiguate
-            {
-                buffer.append("[[User:");
-                buffer.append(user2);
-                buffer.append("|");
-                buffer.append(user2);
-                buffer.append("]] ([[User talk:");
-                buffer.append(user2);
-                buffer.append("|talk]] | [[Special:Contributions/");
-                buffer.append(user2);
-                buffer.append("|contribs]])");
-            }
-            else
+            if (user2 == null || user2.equals(Wiki.Event.USER_DELETED))
                 buffer.append(Events.DELETED_EVENT_HTML);
+            else
+                buffer.append(Users.generateWikitextSummaryLinksShort(user2));
             
             // size
             buffer.append(" .. (");
@@ -152,12 +142,16 @@ public class Revisions
             // edit summary
             buffer.append(") .. (");
             String summary = rev.getComment();
-            if (summary == null) // TODO: disambiguate
+            if (summary == null || summary.equals(Wiki.Event.COMMENT_DELETED))
                 buffer.append(Events.DELETED_EVENT_HTML);
-            // kill wikimarkup
-            buffer.append("<nowiki>");
-            buffer.append(summary);
-            buffer.append("</nowiki>)\n");
+            else
+            {
+                // kill wikimarkup
+                buffer.append("<nowiki>");
+                buffer.append(summary);
+                buffer.append("</nowiki>");
+            }
+            buffer.append(")\n");
         }
         buffer.append("</div>");
         return buffer.toString();
@@ -183,9 +177,10 @@ public class Revisions
             String user = rev.getUser();
             String comment = rev.getParsedComment();
             int sizediff = rev.getSizeDiff();
-            // TODO: disambiguate
-            String userhtml = user == null ? Events.DELETED_EVENT_HTML : userutils.generateHTMLSummaryLinksShort(user);
-            String commenthtml = comment == null ? Events.DELETED_EVENT_HTML : comment;
+            String userhtml = user == null || user.equals(Wiki.Event.USER_DELETED)
+                ? Events.DELETED_EVENT_HTML : userutils.generateHTMLSummaryLinksShort(user);
+            String commenthtml = comment == null || comment.equals(Wiki.Event.COMMENT_DELETED)
+                ? Events.DELETED_EVENT_HTML : comment;
             
             buffer.append("""
                 <tr class="revision">

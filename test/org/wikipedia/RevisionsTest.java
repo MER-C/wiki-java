@@ -91,4 +91,53 @@ public class RevisionsTest
         revisions = enWiki.getRevisions(oldids);
         assertEquals(revisions, Revisions.removeReverts(revisions), "different pages, same content");
     }
+    
+    @Test
+    public void toWikitext() throws Exception
+    {
+        // note for this means of getting revisions the new page flag and sizediffs aren't available
+        // https://en.wikipedia.org/w/index.php?title=Phoenician_sanctuary_of_Kharayeb&oldid=1165014330
+        // https://en.wikipedia.org/w/index.php?title=Hun_Manet&oldid=1171939466
+        // https://en.wikipedia.org/w/index.php?title=Hun_Manet&oldid=1171939631
+        List<Wiki.Revision> revisions = enWiki.getRevisions(new long[] { 1165014330L, 1171939631L, 1171939466L });
+        String begin = "<div style=\"font-family: monospace; font-size: 120%\">\n";
+        String end = "</div>";
+        
+        // Test each for functionality
+        String actual_0 = Revisions.toWikitext(revisions.subList(0, 1));
+        String expected_0 = """
+            *[[Special:Permanentlink/1165014330|2023-07-12T13:04:44Z]] ([[Special:Diff/1165014330|prev]]) \
+            . . . [[Phoenician sanctuary of Kharayeb]] .. [[User:Elias Ziade|Elias Ziade]] \
+            ([[User talk:Elias Ziade|talk]] &middot; [[Special:Contributions/Elias Ziade|contribs]]) \
+            .. (27768 bytes) (0) .. (<nowiki>[[WP:AES|←]]Created page with '{{Infobox historic site \
+            | name = Phoenician sanctuary of Kharayeb | native_name = معبد الخرايب الفينيقي \
+            | native_language = ar | image =  | caption =  \
+            | built_for = Unidentified Phoenician deity, presumably a healing god/godess \
+            | architecture = [[Phoenicia]]n, [[Achaemenid Empire|Achaemenid]], [[Hellenistic period|Hellenistic]] \
+            | governing_body =  | designation1 =  | designation1_date =  | designation1_parent =  \
+            | designation1_number =  |...'</nowiki>)
+            """;
+        assertEquals(begin + expected_0 + end, actual_0);
+        // revision deleted edit summary + minor edit
+        String actual_1 = Revisions.toWikitext(revisions.subList(1, 2));
+        String expected_1 = """
+            *[[Special:Permanentlink/1171939631|2023-08-24T01:56:14Z]] ([[Special:Diff/1171939631|prev]]) \
+            . '''m''' . [[Hun Manet]] .. [[User:Gobonobo|Gobonobo]] \
+            ([[User talk:Gobonobo|talk]] &middot; [[Special:Contributions/Gobonobo|contribs]]) \
+            .. (19234 bytes) (0) .. (<span class="history-deleted">deleted</span>)              
+            """;
+        assertEquals(begin + expected_1 + end, actual_1);
+        // revision deleted user + minor edit
+        String actual_2 = Revisions.toWikitext(revisions.subList(2, 3));
+        String expected_2 = """
+            *[[Special:Permanentlink/1171939466|2023-08-24T01:55:09Z]] ([[Special:Diff/1171939466|prev]]) \
+            . '''m''' . [[Hun Manet]] .. <span class="history-deleted">deleted</span> \
+            .. (107696 bytes) (0) .. (<nowiki>becuase i feel like it</nowiki>)              
+            """;
+        assertEquals(begin + expected_2 + end, actual_2);
+        
+        // Combined
+        String actual = Revisions.toWikitext(revisions);
+        assertEquals(begin + expected_0 + expected_1 + expected_2 + end, actual);
+    }
 }

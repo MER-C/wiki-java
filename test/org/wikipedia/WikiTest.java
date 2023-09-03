@@ -1313,7 +1313,7 @@ public class WikiTest
         assertEquals("&#039;&#039;italic&#039;&#039;\n'''&amp;'''\n&&\n&lt;&gt;\n<>\n&quot;",
             text.get(0), "decoding");
         assertEquals("", text.get(1), "empty revision");
-        assertNull(text.get(2), "content deleted");
+        assertEquals(Wiki.Event.CONTENT_DELETED, text.get(2), "Content RevisionDeleted");
         assertEquals("Testing 0.2786153173518522", text.get(3), "same page");
         assertEquals("Testing 0.28713760508426645", text.get(4), "same page");
     }
