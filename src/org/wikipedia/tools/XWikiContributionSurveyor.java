@@ -47,22 +47,14 @@ public class XWikiContributionSurveyor
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
 
-        Map<String, String> parsedargs = new CommandLineParser()
+        CommandLineParser clp = new CommandLineParser()
             .synopsis("org.wikipedia.tools.XWikiContributionSurveyor", "[options]")
             .description("Survey the contributions of a large number of wiki editors across all wikis.")
-            .addHelp()
             .addVersion("XWikiContributionSurveyor v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
-            .addSingleArgumentFlag("--user", "user", "Survey the given user.")
-            .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
-            .addBooleanFlag("--newonly", "Survey only page creations.")
-            .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
-            .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
-            .addSingleArgumentFlag("--lockedafter", "date", "Only survey unlocked users or those locked after a certain date.")
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s).")
-            .parse(args);
+            .addSingleArgumentFlag("--lockedafter", "date", "Only survey unlocked users or those locked after a certain date.");
+        Map<String, String> parsedargs = ContributionSurveyor.addSharedOptions(clp).parse(args);
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, enWiki);
-        boolean newonly = parsedargs.containsKey("--newonly");
-        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsafter", "--editsbefore");
         String lockedafterstring = parsedargs.get("--lockedafter");
         OffsetDateTime lockedafter = (lockedafterstring == null) ? null : OffsetDateTime.parse(lockedafterstring);
         
@@ -109,6 +101,12 @@ public class XWikiContributionSurveyor
             }
         }
         users.removeAll(toremove);
+        int[] ns;
+        if (parsedargs.containsKey("--userspace"))
+            ns = new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE };
+        else
+            ns = new int[] { Wiki.MAIN_NAMESPACE };
+        
         Path path = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Select output file", 
             "Error: No output file selected.", true);
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
@@ -117,7 +115,8 @@ public class XWikiContributionSurveyor
             {
                 WMFWiki wikisession = sessions.sharedSession(wiki);
                 outwriter.write("==" + wiki + "==\n\n");
-                ContributionSurveyor cs = makeContributionSurveyor(wikisession, newonly, temp.toString(), daterange);
+                ContributionSurveyor cs = ContributionSurveyor.makeContributionSurveyor(wikisession, parsedargs);
+                cs.setFooter(temp.toString());
                 
                 String prefix = wiki.substring(0, wiki.indexOf("."));
                 List<String> pages;
@@ -125,7 +124,7 @@ public class XWikiContributionSurveyor
                 {
                     case "commons.wikimedia.org":
                     {
-                        pages = cs.outputContributionSurvey(users, true, false, true, Wiki.MAIN_NAMESPACE);
+                        pages = cs.outputContributionSurvey(users, true, false, true, ns);
                         prefix = "c";
                         break;
                     }
@@ -133,7 +132,7 @@ public class XWikiContributionSurveyor
                         prefix = "d";
                         // fall through
                     default:
-                        pages = cs.outputContributionSurvey(users, true, false, false, Wiki.MAIN_NAMESPACE);
+                        pages = cs.outputContributionSurvey(users, true, false, false, ns);
                         break;
                 }
                 
@@ -146,16 +145,5 @@ public class XWikiContributionSurveyor
                 }
             }
         }
-    }
-    
-    private static ContributionSurveyor makeContributionSurveyor(Wiki wiki, boolean newonly, String argstring, 
-        List<OffsetDateTime> daterange)
-    {
-        ContributionSurveyor cs = new ContributionSurveyor(wiki);
-        cs.setComingled(true);
-        cs.setNewOnly(newonly);
-        cs.setFooter(argstring);
-        cs.setDateRange(daterange.get(0), daterange.get(1));
-        return cs;
     }
 }

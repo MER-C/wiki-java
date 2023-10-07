@@ -42,6 +42,29 @@ public class ContributionSurveyorTest
         enWiki.setMaxLag(-1);
         surveyor = new ContributionSurveyor(enWiki);
     }
+    
+    @Test
+    public void makeContributionSurveyor()
+    {
+        Map<String, String> args = new HashMap<>();
+        args.put("--editsafter", "1970-01-01T00:00:03Z");
+        args.put("--editsbefore", "2020-01-01T00:00:04Z");
+        args.put("--newonly", "x");
+        args.put("--minsize", "159");
+        args.put("--includeminor", "x");
+        args.put("--includereverts", "x");
+        args.put("--comingle", "x");
+        
+        ContributionSurveyor cs = ContributionSurveyor.makeContributionSurveyor(enWiki, args);
+        assertEquals(enWiki.getDomain(), cs.getWiki().getDomain());
+        assertEquals(OffsetDateTime.parse("1970-01-01T00:00:03Z"), cs.getEarliestDateTime());
+        assertEquals(OffsetDateTime.parse("2020-01-01T00:00:04Z"), cs.getLatestDateTime());
+        assertTrue(cs.newOnly());
+        assertEquals(159, cs.getMinimumSizeDiff());
+        assertFalse(cs.isIgnoringMinorEdits());
+        assertFalse(cs.isIgnoringReverts());
+        assertTrue(cs.isComingled());
+    }
 
     @Test
     public void getWiki()

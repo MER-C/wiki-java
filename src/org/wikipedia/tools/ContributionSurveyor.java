@@ -61,10 +61,9 @@ public class ContributionSurveyor
     public static void main(String[] args) throws IOException
     {
         // parse arguments
-        Map<String, String> parsedargs = new CommandLineParser()
+        CommandLineParser clp = new CommandLineParser()
             .synopsis("org.wikipedia.tools.ContributionSurveyor", "[options]")
             .description("Survey the contributions of a large number of wiki editors.")
-            .addHelp()
             .addVersion("ContributionSurveyor v0.08\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--infile", "file", "Use file as the list of users. "
                 + "Shows a filechooser if not specified.")
@@ -75,22 +74,13 @@ public class ContributionSurveyor
             .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
             .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits).")
             .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the wiki page [[Main Page]].")
-            .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
             .addSingleArgumentFlag("--sourcewiki", "example.com", "Use a different wiki than --wiki as a source of users.")
-            .addSingleArgumentFlag("--user", "user", "Survey the given user.")
-            .addSingleArgumentFlag("--blockedafter", "date", "Only survey unblocked users or those blocked on the target wiki after a certain date.")
-            .addBooleanFlag("--comingle", "If there are multiple users, combine their edits into the one survey (edits/uploads only).")
-            .addSection("Survey options:")
+            .addSingleArgumentFlag("--blockedafter", "date", "Only survey unblocked users or those blocked on the target wiki after a certain date.");
+        clp = addSharedOptions(clp);
+        Map<String, String> parsedargs = clp
             .addBooleanFlag("--images", "Survey images both on the home wiki and Commons.")
-            .addBooleanFlag("--userspace", "Survey userspace as well.")
-            .addBooleanFlag("--includeminor", "Include minor edits.")
-            .addBooleanFlag("--includereverts", "Include rollbacks.")
-            .addBooleanFlag("--newonly", "Survey only page creations.")
             .addBooleanFlag("--deleted", "Survey deleted edits (requires admin privileges)")
             .addBooleanFlag("--skiplive", "Don't survey live edits (for image/deleted only surveys)")
-            .addSingleArgumentFlag("--minsize", "size", "Only includes edits that add more than size bytes (default: 150).")
-            .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
-            .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
             .parse(args);
 
         Wiki homewiki = Wiki.newSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
@@ -101,8 +91,6 @@ public class ContributionSurveyor
             Users.of(homewiki).cliLogin();
         String wikipage = parsedargs.get("--wikipage");
         String blockedafterstring = parsedargs.get("--blockedafter");
-
-        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsafter", "--editsbefore");
         OffsetDateTime blockedafter = (blockedafterstring == null) ? null : OffsetDateTime.parse(blockedafterstring);
 
         // fetch user list
@@ -145,14 +133,7 @@ public class ContributionSurveyor
         else
             ns = new int[] { Wiki.MAIN_NAMESPACE };
         
-        ContributionSurveyor surveyor = new ContributionSurveyor(homewiki);
-        surveyor.setDateRange(daterange.get(0), daterange.get(1));
-        surveyor.setMinimumSizeDiff(Integer.parseInt(parsedargs.getOrDefault("--minsize", "150")));
-        surveyor.setIgnoringMinorEdits(!parsedargs.containsKey("--includeminor"));
-        surveyor.setIgnoringReverts(!parsedargs.containsKey("--includereverts"));
-        surveyor.setComingled(parsedargs.containsKey("--comingle"));
-        surveyor.setNewOnly(parsedargs.containsKey("--newonly"));
-        
+        ContributionSurveyor surveyor = makeContributionSurveyor(homewiki, parsedargs);
         StringBuilder temp = new StringBuilder("Command line: <kbd>java org.wikipedia.tools.ContributionSurveyor");
         for (String arg : args)
         {
@@ -194,6 +175,54 @@ public class ContributionSurveyor
                 }
             }
         }
+    }
+    
+    /**
+     *  Returns command line arguments that can be shared with other tools.
+     *  @param parser a CommandLineParser
+     *  @return the CommandLineParser with options added
+     *  @since 0.08
+     *  @see org.wikipedia.tools.CommandLineParser
+     *  @see #makeContributionSurveyor(org.wikipedia.Wiki, java.util.Map)
+     */
+    static CommandLineParser addSharedOptions(CommandLineParser parser)
+    {
+        return parser.addHelp()
+            .addSingleArgumentFlag("--user", "user", "Survey the given user.")
+            .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
+            .addBooleanFlag("--comingle", "If there are multiple users, combine their edits into the one survey (edits/uploads only).")
+            .addSection("Survey options:")
+            .addBooleanFlag("--includeminor", "Include minor edits.")
+            .addBooleanFlag("--includereverts", "Include rollbacks.")
+            .addBooleanFlag("--newonly", "Survey only page creations.")
+            .addSingleArgumentFlag("--minsize", "size", "Only includes edits that add more than size bytes (default: 150).")
+            .addSingleArgumentFlag("--editsafter", "date", "Include edits made after this date (ISO format).")
+            .addSingleArgumentFlag("--editsbefore", "date", "Include edits made before this date (ISO format).")
+            .addBooleanFlag("--userspace", "Survey userspace as well.");
+    }
+    
+    /**
+     *  Makes a new ContributionSurveyor for the given wiki based on parsed 
+     *  command line arguments. Currently supports date, minsize, includeminor, 
+     *  includereverts, and newonly.
+     *  @param wiki a wiki
+     *  @param parsedargs parsed command line arguments
+     *  @return a ContributionSurveyor object
+     *  @see org.wikipedia.tools.CommandLineParser
+     *  @see #addSharedOptions(org.wikipedia.tools.CommandLineParser) 
+     *  @since 0.08
+     */
+    static ContributionSurveyor makeContributionSurveyor(Wiki wiki, Map<String, String> parsedargs)
+    {
+        List<OffsetDateTime> daterange = CommandLineParser.parseDateRange(parsedargs, "--editsafter", "--editsbefore");
+        ContributionSurveyor cs = new ContributionSurveyor(wiki);
+        cs.setNewOnly(parsedargs.containsKey("--newonly"));
+        cs.setDateRange(daterange.get(0), daterange.get(1));
+        cs.setMinimumSizeDiff(Integer.parseInt(parsedargs.getOrDefault("--minsize", "150")));
+        cs.setIgnoringMinorEdits(!parsedargs.containsKey("--includeminor"));
+        cs.setIgnoringReverts(!parsedargs.containsKey("--includereverts"));
+        cs.setComingled(parsedargs.containsKey("--comingle"));
+        return cs;
     }
 
     /**
