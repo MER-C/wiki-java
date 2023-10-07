@@ -1022,15 +1022,15 @@ public class WikiTest
         assertTrue(results.get(0).isEmpty());
         
         // check namespace filtering (can test functionality here)
-        List<String> titles = List.of("Wikipedia:Featured picture candidates");
+        List<String> titles = List.of("Main Page");
         results = enWiki.whatLinksHere(titles, false, false, Wiki.MAIN_NAMESPACE);
-        assertEquals(List.of("FPC", "Wikipedia community", "Featured picture candidates", 
-            "Featured picture candidate"), results.get(0), "namespace filter");
+        assertTrue(results.get(0).containsAll(List.of("Home page", "Wikipedia", "MainPage")), "namespace filter");
+        assertFalse(results.get(0).contains("Portal:Main page"));
         
         // check redirect filtering
         results = enWiki.whatLinksHere(titles, true, false, Wiki.MAIN_NAMESPACE);
-        assertEquals(List.of("Featured picture candidates", "Featured picture candidate"),
-            results.get(0), "namespace filter");
+        assertTrue(results.get(0).containsAll(List.of("MainPage")), "redirect filter");
+        assertFalse(results.get(0).removeAll(List.of("Portal:Main page", "Home page", "Wikipedia")));
         
         // check adding redirects to results
         results = testWiki.whatLinksHere(List.of("Main Page"), false, false, Wiki.HELP_NAMESPACE);

@@ -310,7 +310,10 @@ public class CommandLineParser
                 startstring + " specified in " + startflag + ".");
             System.exit(2);
         }
-        return List.of(startdate, enddate);
+        List<OffsetDateTime> ret = new ArrayList<>(); // needed because List.of doesn't like null
+        ret.add(startdate);
+        ret.add(enddate);
+        return ret;
     }
     
     /**
