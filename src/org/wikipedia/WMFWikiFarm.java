@@ -23,8 +23,9 @@ package org.wikipedia;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.*;
 import java.util.logging.*;
+import java.util.stream.*;
 
 /**
  *  Manages shared WMFWiki sessions and contains methods for dealing with WMF
@@ -340,6 +341,32 @@ public class WMFWikiFarm
         List<String> ret = wikidata_l.reorder(titles, results);
         wikidata_l.log(Level.INFO, "WMFWikiFarm.getWikidataItems", 
             "Successfully retrieved Wikidata items for " + titles.size() + " pages.");
+        return ret;
+    }
+
+    /**
+     *  Runs the given function on a set of wikis with specified concurrency 
+     *  and query limit.
+     *  @param <W> a Wiki type
+     *  @param <R> the type of the function output
+     *  @param wikis the collection of wikis to apply the function to
+     *  @param fn a function to apply to each wiki, returning some results
+     *  @param threads number of threads to use
+     *  @return a sorted map: wiki &#8594; function output for that wiki
+     */
+    public <W extends Wiki, R> Map<W, R> forAllWikis(Collection<W> wikis, Function<W, R> fn, int threads)
+    {
+        Stream<W> stream = wikis.stream();
+        // set concurrency if desired (FIXME: the thread count is ignored)
+        if (threads > 1)
+        {
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "" + threads);
+            stream = stream.parallel();
+        }
+        Map<W, R> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
+        {
+            return fn.apply(wiki);
+        }, (wiki1, wiki2) -> { throw new RuntimeException("Duplicate wikis!"); }, TreeMap::new));
         return ret;
     }
 }

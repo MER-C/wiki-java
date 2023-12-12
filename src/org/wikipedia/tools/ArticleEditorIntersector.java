@@ -331,25 +331,19 @@ public class ArticleEditorIntersector
             throw new IllegalArgumentException("At least two articles are needed to derive a meaningful intersection.");
         
         // fetch histories and group by user
+        // If a network error occurs when fetching the live history, that page 
+        // will be skipped. If a network or privilege error occurs when fetching 
+        // deleted history, that will be skipped with the live history returned.
+        ThrowingFunction<String, Stream<Wiki.Revision>> tf = article ->
+        {
+            Stream<Wiki.Revision> str = wiki.getPageHistory(article, rh).stream();
+            if (adminmode)
+                str = Stream.concat(str, wiki.getDeletedHistory(article, rh).stream());
+            return str;
+        };
         Stream<Wiki.Revision> revstream = pageset.stream()
-            .flatMap(article ->  
-            {
-                Stream<Wiki.Revision> str = Stream.empty();
-                try
-                {
-                    str = wiki.getPageHistory(article, rh).stream();
-                    if (adminmode)
-                        str = Stream.concat(str, wiki.getDeletedHistory(article, rh).stream());
-                }
-                catch (IOException | SecurityException ignored)
-                {
-                    // If a network error occurs when fetching the live history,
-                    // that page will be skipped. If a network or privilege error 
-                    // occurs when fetching deleted history, that will be skipped
-                    // with the live history returned.
-                }
-                return str;
-            }).filter(rev -> rev.getUser() != null); // remove deleted/suppressed usernames
+            .flatMap(tf)
+            .filter(rev -> rev.getUser() != null); // remove deleted/suppressed usernames
         if (nominor)
             revstream = revstream.filter(rev -> !rev.isMinor());
         if (noreverts)
@@ -439,20 +433,10 @@ public class ArticleEditorIntersector
         
         if (adminmode)
         {
-            Stream<Wiki.Revision> revstream2 = users.stream().flatMap(user -> 
-            {
-                try
-                {
-                    return wiki.deletedContribs(user, rh).stream();
-                }
-                catch (IOException | SecurityException ex)
-                {
-                    // If a network or privilege error occurs when fetching 
-                    // deleted contributions, that will be skipped with live 
-                    // edits returned.
-                    return Stream.empty();
-                }
-            });
+            // If a network or privilege error occurs when fetching deleted 
+            // contributions, that will be skipped with live edits returned.
+            ThrowingFunction<String, Stream<Wiki.Revision>> tf = user -> wiki.deletedContribs(user, rh).stream();
+            Stream<Wiki.Revision> revstream2 = users.stream().flatMap(tf);
             revstream = Stream.concat(revstream, revstream2);
         }
         // we cannot filter by sizediff here, the MediaWiki API does not return

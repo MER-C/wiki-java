@@ -22,6 +22,7 @@ package org.wikipedia;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.function.Function;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -164,6 +165,41 @@ public class WMFWikiFarmTest
         assertEquals("Q224615", actual.get(4));
         assertEquals("Q937", actual.get(5));
         assertNull(actual.get(6)); // local page exists, but no corresponding WD item
+    }
+    
+    @Test
+    public void forAllWikisTest()
+    {
+        List<String> wd = List.of("en.wikipedia.org", "test.wikipedia.org",
+            "de.wikipedia.org", "fr.wikipedia.org", "ar.wikipedia.org", "zh.wikipedia.org");
+        List<WMFWiki> wl = new ArrayList<>();
+        Map<WMFWiki, String> expected = new TreeMap<>();
+        for (String w : wd)
+        {
+            WMFWiki wiki = sessions.sharedSession(w);
+            wl.add(wiki);
+            expected.put(wiki, w);
+        }
+        Function<WMFWiki, String> fn = wiki ->
+        { 
+            try
+            {
+                Thread.sleep(301); // to test parallelism
+            }
+            catch (InterruptedException ex)
+            {
+            } 
+            return wiki.getDomain(); 
+        };
+        long time = System.currentTimeMillis();
+        assertEquals(expected, sessions.forAllWikis(wl, fn, 1));
+        long td = System.currentTimeMillis() - time;
+        assertTrue(td > 300 * wd.size());
+        time = System.currentTimeMillis();
+        assertEquals(expected, sessions.forAllWikis(wl, fn, 2));
+        td = System.currentTimeMillis() - time;
+        // parallelism is not configurable...
+        assertTrue(/*td >= 150 * wd.size() && */ td < 300 * wd.size());
     }
     
     @AfterEach

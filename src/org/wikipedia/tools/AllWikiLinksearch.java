@@ -24,8 +24,6 @@ import java.awt.GraphicsEnvironment;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.*;
 import javax.swing.*;
 import org.wikipedia.*;
 
@@ -161,9 +159,9 @@ public class AllWikiLinksearch
         {
             for (String domain2 : domains)
             {
-                Map<Wiki, List<String[]>> results = crossWikiLinksearch(Integer.MAX_VALUE, threads, domain2, wikis, false);
+                Map<WMFWiki, List<String[]>> results = crossWikiLinksearch(Integer.MAX_VALUE, threads, domain2, wikis, false);
                 out.write("==" + domain2 + "==\n");
-                for (Map.Entry<Wiki, List<String[]>> result : results.entrySet())
+                for (Map.Entry<WMFWiki, List<String[]>> result : results.entrySet())
                 {
                     Wiki wiki = result.getKey();
                     List<String[]> links = result.getValue();
@@ -191,6 +189,7 @@ public class AllWikiLinksearch
     /**
      *  Performs a cross-wiki linksearch.
      * 
+     *  @param <W> a Wiki (sub)class
      *  @param querylimit sets a query limit, passed to {@link Wiki#setQueryLimit(int)}
      *  @param threads use this many threads. If <var>querylimit</var> is 
      *  not Integer.MAX_VALUE this is forced to 1. If greater than 1, this overwrites 
@@ -202,38 +201,18 @@ public class AllWikiLinksearch
      *  @return the linksearch results, as in wiki &#8594; results, or null if an
      *  IOException occurred
      */
-    public static Map<Wiki, List<String[]>> crossWikiLinksearch(int querylimit, 
-        int threads, String domain, Collection<? extends Wiki> wikis, boolean mailto, 
-        int... ns)
+    public static <W extends Wiki> Map<W, List<String[]>> crossWikiLinksearch(int querylimit, 
+        int threads, String domain, Collection<W> wikis, boolean mailto, int... ns)
     {
-        Stream<? extends Wiki> stream = wikis.stream();
-        // set concurrency if desired
-        if (querylimit == Integer.MAX_VALUE && threads > 1)
-        {
-            System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "" + threads);
-            stream = stream.parallel();
-        }
-        Map<Wiki, List<String[]>> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
+        ThrowingFunction<W, List<String[]>> tf = wiki -> 
         {
             wiki.setMaxLag(-1);
             wiki.setQueryLimit(querylimit);
-            try
-            {
-                List<String[]> temp = wiki.linksearch("*." + domain, null, ns);
-                if (mailto)
-                {
-                    List<String[]> temp2 = wiki.linksearch("*." + domain, "mailto", ns);
-                    temp.addAll(temp2);
-                }
-                return temp;
-            }
-            catch (IOException ex)
-            {
-                ex.printStackTrace();
-                return null;
-            }
-        }, (wiki1, wiki2) -> { throw new RuntimeException("Duplicate wikis!"); }, TreeMap::new));
-
-        return ret;
+            List<String[]> temp = wiki.linksearch("*." + domain, null, ns);
+            if (mailto)
+                temp.addAll(wiki.linksearch("*." + domain, "mailto", ns));
+            return temp;
+        };
+        return sessions.forAllWikis(wikis, tf, threads);
     }
 }

@@ -19,10 +19,8 @@
  */
 package org.wikipedia.tools;
 
-import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
 import org.wikipedia.*;
 
 /**
@@ -43,10 +41,9 @@ public class XWikiHistory
     public static void main(String[] args) throws Exception
     {
         // TODO: 
-        // (1) excerpts from page history - first 5 and last 5 revisions
-        // (2) page metadata and usual page links (talk, history, delete, undelete, etc.)
+        // (1) multi-article
         // (3) page logs
-        // (4) Wikidata item input
+        // (4) Wikidata item input - this is harder than it seems, it is not obvious what to do with the item number
         
         Map<String, String> parsedargs = new CommandLineParser()
             .synopsis("org.wikipedia.tools.XWikiHistory", "[options]")
@@ -55,19 +52,32 @@ public class XWikiHistory
             .addHelp()
             .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "The wiki that hosts the article to get history for")
             .addSingleArgumentFlag("--article", "Main Page", "The article on the wiki to get history for.")
+            //.addSingleArgumentFlag("--item", "Q123456", "Fetch cross-wiki history for this Wikidata item.")
+            .addSingleArgumentFlag("--user", "Example", "Fetch cross-wiki history for all articles created by this user")
             .parse(args);
         String article = parsedargs.get("--article");
         
-        WMFWiki home = sessions.sharedSession(parsedargs.get("--wiki"));
         WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
-        Map<WMFWiki, String> wikiarticles = getArticles(home, article);
+        Map<WMFWiki, String> wikiarticles = new LinkedHashMap<>();
+        //if (item != null)
+        //{
+            WMFWiki home = sessions.sharedSession(parsedargs.get("--wiki"));
+            List<Map<String, String>> interwikis = home.getInterWikiLinks(List.of(article));
+            wikiarticles.put(wikidata, sessions.getWikidataItems(home, List.of(article)).get(0));
+            wikiarticles.put(home, article);
+            for (var entry : interwikis.get(0).entrySet())
+            {
+                WMFWiki new_wiki = sessions.sharedSession(entry.getKey() + ".wikipedia.org");
+                wikiarticles.put(new_wiki, entry.getValue());
+            }
+        //}
         Map<WMFWiki, List<Wiki.Revision>> histories = getHistories(wikiarticles);
         Map<WMFWiki, Wiki.User> creators = getCreators(histories);
         Map<WMFWiki, String> snippets = getSnippets(wikiarticles);
         
         System.out.println("==" + article + "==");
         System.out.println("{| class=\"wikitable sortable\"");
-        System.out.println("! Language !! Page !! Creation date !! Creator !! Creator foreign edit count !! Snippet");
+        System.out.println("! Wiki !! Page !! Creation date !! Creator !! Creator foreign edit count !! Snippet");
         
         for (var entry : wikiarticles.entrySet())
         {
@@ -80,7 +90,9 @@ public class XWikiHistory
             String snippet = snippets.get(wiki);
             
             List<String> tablerows = List.of(wiki.getDomain(),
-                "[" + wiki.getPageUrl(page) + " " + page + "] ([" + wiki.getPageUrl("Special:PageHistory/" + page) + " history])",
+                "[" + wiki.getPageUrl(page) + " " + page + "] ("
+                    + "[" + wiki.getPageUrl(wiki.getTalkPage(page)) + " talk] &middot; "
+                    + "[" + wiki.getPageUrl("Special:PageHistory/" + page) + " history])",
                 bottomhistory.get(0).getTimestamp().toString(),
                 "[" + wiki.getPageUrl("User:" + username) + " " + username + "] ("
                     + "[" + wiki.getPageUrl("User talk:" + username) + " talk] &middot; "
@@ -142,57 +154,36 @@ public class XWikiHistory
         System.out.println("|}");
     }
     
-    public static Map<WMFWiki, String> getArticles(WMFWiki home, String article) throws IOException
+    public static Map<WMFWiki, List<Wiki.Revision>> getHistories(Map<WMFWiki, String> articles)
     {
-        WMFWiki wikidata = sessions.sharedSession("www.wikidata.org");
-        List<Map<String, String>> interwikis = home.getInterWikiLinks(List.of(article));
-        Map<WMFWiki, String> ret = new LinkedHashMap<>();
-        ret.put(wikidata, sessions.getWikidataItems(home, List.of(article)).get(0));
-        ret.put(home, article);
-        for (var entry : interwikis.get(0).entrySet())
+        ThrowingFunction<WMFWiki, List<Wiki.Revision>> tf = wiki ->
         {
-            WMFWiki new_wiki = sessions.sharedSession(entry.getKey() + ".wikipedia.org");
-            ret.put(new_wiki, entry.getValue());
-        }
-        return ret;
-    }
-    
-    public static Map<WMFWiki, List<Wiki.Revision>> getHistories(Map<WMFWiki, String> articles) throws IOException
-    {
-        Map<WMFWiki, List<Wiki.Revision>> ret = new LinkedHashMap<>();
-        for (var entry : articles.entrySet())
-        {
-            WMFWiki wiki = entry.getKey();
             Wiki.RequestHelper rh = wiki.new RequestHelper()
                 .limitedTo(10)
                 .reverse(true);
-            ret.put(wiki, wiki.getPageHistory(entry.getValue(), rh));
-        }
-        return ret;
+            return wiki.getPageHistory(articles.get(wiki), rh);
+        };
+        return sessions.forAllWikis(articles.keySet(), tf, 1);
     }
     
-    public static Map<WMFWiki, Wiki.User> getCreators(Map<WMFWiki, List<Wiki.Revision>> histories) throws IOException
+    public static Map<WMFWiki, Wiki.User> getCreators(Map<WMFWiki, List<Wiki.Revision>> histories)
     {
-        Map<WMFWiki, Wiki.User> ret = new LinkedHashMap<>();
-        for (var entry : histories.entrySet())
+        ThrowingFunction<WMFWiki, Wiki.User> tf = wiki ->
         {
-            WMFWiki wiki = entry.getKey();
-            String creator = entry.getValue().get(0).getUser();
-            ret.put(wiki, wiki.getUsers(List.of(creator)).get(0));
-        }
-        return ret;
+            String creator = histories.get(wiki).get(0).getUser();
+            return wiki.getUsers(List.of(creator)).get(0);
+        };
+        return sessions.forAllWikis(histories.keySet(), tf, 1);
     }
     
-    public static Map<WMFWiki, String> getSnippets(Map<WMFWiki, String> articles) throws IOException
+    public static Map<WMFWiki, String> getSnippets(Map<WMFWiki, String> articles)
     {
-        Map<WMFWiki, String> ret = new LinkedHashMap<>();
-        for (var entry : articles.entrySet())
+        ThrowingFunction<WMFWiki, String> tf = wiki -> 
         {
-            WMFWiki wiki = entry.getKey();
-            String article = entry.getValue();
-            ret.put(wiki, wiki.getLedeAsPlainText(List.of(article)).get(0));
-        }
-        return ret;
+            String article = articles.get(wiki);
+            return wiki.getLedeAsPlainText(List.of(article)).get(0);
+        };
+        return sessions.forAllWikis(articles.keySet(), tf, 1);
     }
     
     /**
