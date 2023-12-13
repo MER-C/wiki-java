@@ -77,8 +77,6 @@ public class NPPCheck
          */
         public static Mode fromString(String s)
         {
-            if (s == null)
-                return null;
             return switch (s)
             {
                 case "patrols" -> PATROLS;
@@ -86,7 +84,7 @@ public class NPPCheck
                 case "userspace" -> USERSPACE;
                 case "unpatrolled" -> UNPATROLLED;
                 case "redirects" -> REDIRECTS;
-                default -> null;
+                case null, default -> null;
             };
         }
         
@@ -389,12 +387,11 @@ public class NPPCheck
         List<String> pages = new ArrayList<>();
         for (Wiki.Event event : events)
         {
-            String title;
-            if (event instanceof Wiki.LogEntry log)
-                title = log.getType().equals(Wiki.MOVE_LOG) ? log.getDetails().get("target_title") : event.getTitle();
-            else
-                title = event.getTitle();
-            pages.add(title);
+            pages.add(switch(event)
+            {
+                case Wiki.LogEntry log when log.getType().equals(Wiki.MOVE_LOG) -> log.getDetails().get("target_title");
+                default -> event.getTitle();
+            });
         }
         
         // account for pages subsequently moved in namespace
@@ -419,12 +416,11 @@ public class NPPCheck
         List<String> pages = new ArrayList<>();
         for (Wiki.Event event : events)
         {
-            String title;
-            if (event instanceof Wiki.LogEntry log)
-                title = log.getType().equals(Wiki.MOVE_LOG) ? log.getDetails().get("target_title") : event.getTitle();
-            else
-                title = event.getTitle();
-            pages.add(title);
+            pages.add(switch(event)
+            {
+                case Wiki.LogEntry log when log.getType().equals(Wiki.MOVE_LOG) -> log.getDetails().get("target_title");
+                default -> event.getTitle();
+            });
         }
         
         // account for pages subsequently moved in namespace

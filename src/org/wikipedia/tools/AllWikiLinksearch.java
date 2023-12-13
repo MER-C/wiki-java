@@ -146,12 +146,12 @@ public class AllWikiLinksearch
             System.exit(0);
         }
         
-        List<WMFWiki> wikis = switch (parsedargs.getOrDefault("--wikiset", "x"))
+        List<WMFWiki> wikis = switch (parsedargs.get("--wikiset"))
         {
             case "TOP25" -> TOP25;
             case "TOP50" -> TOP50;
             case "MAJOR" -> MAJOR_WIKIS;
-            default -> sessions.getSiteMatrix();
+            case null, default -> sessions.getSiteMatrix();
         };
         
         // output results

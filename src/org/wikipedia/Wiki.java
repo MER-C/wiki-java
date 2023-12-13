@@ -41,7 +41,7 @@ import javax.security.auth.login.*;
 
 /**
  *  This is a somewhat sketchy bot framework for editing MediaWiki wikis.
- *  Requires JDK 17 or greater. Uses the <a
+ *  Requires JDK 21 or greater. Uses the <a
  *  href="https://mediawiki.org/wiki/API:Main_page">MediaWiki API</a> for most
  *  operations. It is recommended that the server runs the latest version
  *  of MediaWiki (1.39), otherwise some functions may not work. This framework
@@ -1314,13 +1314,13 @@ public class Wiki implements Comparable<Wiki>
         String text = makeApiCall(getparams, null, "getSiteStatistics");
         detectUncheckedErrors(text, null, null);
         Map<String, Integer> ret = new HashMap<>(20);
-        ret.put("pages", Integer.parseInt(parseAttribute(text, "pages", 0)));
-        ret.put("articles", Integer.parseInt(parseAttribute(text, "articles", 0)));
-        ret.put("files", Integer.parseInt(parseAttribute(text, "images", 0)));
-        ret.put("users", Integer.parseInt(parseAttribute(text, "users", 0)));
-        ret.put("activeusers", Integer.parseInt(parseAttribute(text, "activeusers", 0)));
-        ret.put("admins", Integer.parseInt(parseAttribute(text, "admins", 0)));
-        ret.put("jobs", Integer.parseInt(parseAttribute(text, "jobs", 0))); // job queue length
+        ret.put("pages", Integer.valueOf(parseAttribute(text, "pages", 0)));
+        ret.put("articles", Integer.valueOf(parseAttribute(text, "articles", 0)));
+        ret.put("files", Integer.valueOf(parseAttribute(text, "images", 0)));
+        ret.put("users", Integer.valueOf(parseAttribute(text, "users", 0)));
+        ret.put("activeusers", Integer.valueOf(parseAttribute(text, "activeusers", 0)));
+        ret.put("admins", Integer.valueOf(parseAttribute(text, "admins", 0)));
+        ret.put("jobs", Integer.valueOf(parseAttribute(text, "jobs", 0))); // job queue length
         return ret;
     }
     
@@ -1706,9 +1706,9 @@ public class Wiki implements Comparable<Wiki>
                 if (exists)
                 {
                     tempmap.put("lastpurged", OffsetDateTime.parse(parseAttribute(item, "touched", 0)));
-                    tempmap.put("lastrevid", Long.parseLong(parseAttribute(item, "lastrevid", 0)));
-                    tempmap.put("size", Integer.parseInt(parseAttribute(item, "length", 0)));
-                    tempmap.put("pageid", Long.parseLong(parseAttribute(item, "pageid", 0)));
+                    tempmap.put("lastrevid", Long.valueOf(parseAttribute(item, "lastrevid", 0)));
+                    tempmap.put("size", Integer.valueOf(parseAttribute(item, "length", 0)));
+                    tempmap.put("pageid", Long.valueOf(parseAttribute(item, "pageid", 0)));
                 }
                 else
                 {
@@ -1754,7 +1754,7 @@ public class Wiki implements Comparable<Wiki>
 
                 // number of watchers
                 if (item.contains("watchers=\""))
-                    tempmap.put("watchers", Integer.parseInt(parseAttribute(item, "watchers", 0)));
+                    tempmap.put("watchers", Integer.valueOf(parseAttribute(item, "watchers", 0)));
 
                 metamap.put(parsedtitle, tempmap);
             }
@@ -1787,7 +1787,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.38
      */
-    public List<Map<String, String>> getPageProperties(List<String> pages) throws IOException
+    public List<Map<String, String>> getPageProperties(SequencedCollection<String> pages) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
@@ -1976,7 +1976,7 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.32
      *  @see #edit
      */
-    public List<String> getPageText(List<String> titles) throws IOException
+    public List<String> getPageText(SequencedCollection<String> titles) throws IOException
     {
         return getText(titles, null, -1);
     }
@@ -1996,7 +1996,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.35
      */
-    public List<String> getText(List<String> titles, long[] revids, int section) throws IOException
+    public List<String> getText(SequencedCollection<String> titles, long[] revids, int section) throws IOException
     {
         // determine what type of request we have. Cannot mix the two.
         // FIXME: XML bleeding to return results for lists of pages
@@ -2594,7 +2594,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    public boolean[] pageHasTemplate(List<String> pages, String template) throws IOException
+    public boolean[] pageHasTemplate(SequencedCollection<String> pages, String template) throws IOException
     {
         boolean[] ret = new boolean[pages.size()];
         List<List<String>> result = getTemplates(pages, template);
@@ -2616,7 +2616,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.32
      */
-    protected List<List<String>> getTemplates(List<String> titles, String template, int... ns) throws IOException
+    protected List<List<String>> getTemplates(SequencedCollection<String> titles, String template, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "templates");
@@ -2647,7 +2647,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.36
      */
-    public List<Map<String, String>> getInterWikiLinks(List<String> titles) throws IOException
+    public List<Map<String, String>> getInterWikiLinks(SequencedCollection<String> titles) throws IOException
     {
         List<String> titles2 = new ArrayList<>(titles);
         Map<String, String> getparams = new HashMap<>();
@@ -2876,7 +2876,7 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.29
      *  @author Nirvanchik/MER-C
      */
-    public List<String> resolveRedirects(List<String> titles) throws IOException
+    public List<String> resolveRedirects(Collection<String> titles) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
@@ -4115,7 +4115,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.37
      */
-    public List<Map<String, Object>> getFileMetadata(List<String> files) throws IOException
+    public List<Map<String, Object>> getFileMetadata(SequencedCollection<String> files) throws IOException
     {
         // Support for videos is blocked on https://phabricator.wikimedia.org/T89971
         Map<String, String> getparams = new HashMap<>();
@@ -4714,7 +4714,7 @@ public class Wiki implements Comparable<Wiki>
      *  @since 0.33
      *  @throws IOException if a network error occurs
      */
-    public List<User> getUsers(List<String> usernames) throws IOException
+    public List<User> getUsers(SequencedCollection<String> usernames) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "query");
@@ -4921,7 +4921,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      *  @since 0.34
      */
-    public List<List<Revision>> contribs(List<String> users, String prefix, Wiki.RequestHelper helper) throws IOException
+    public List<List<Revision>> contribs(SequencedCollection<String> users, String prefix, Wiki.RequestHelper helper) throws IOException
     {
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -5239,7 +5239,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see #unwatch
      *  @since 0.18
      */
-    protected void watchInternal(List<String> titles, boolean unwatch) throws IOException
+    protected void watchInternal(SequencedCollection<String> titles, boolean unwatch) throws IOException
     {
         // create the watchlist cache
         if (watchlist == null)
@@ -5437,8 +5437,8 @@ public class Wiki implements Comparable<Wiki>
                 Map<String, Object> result = new HashMap<>();
                 result.put("title", parseAttribute(line, "title", x));
                 result.put("snippet", parseAttribute(line, "snippet", x));
-                result.put("wordcount", Integer.parseInt(parseAttribute(line, "wordcount", x)));
-                result.put("size", Integer.parseInt(parseAttribute(line, "size", x)));
+                result.put("wordcount", Integer.valueOf(parseAttribute(line, "wordcount", x)));
+                result.put("size", Integer.valueOf(parseAttribute(line, "size", x)));
                 result.put("lastedittime", OffsetDateTime.parse(parseAttribute(line, "timestamp", x)));
 
                 // section title (if available). Stupid API documentation is misleading.
@@ -5519,7 +5519,8 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.10
      */
-    public List<List<String>> whatLinksHere(List<String> titles, boolean redirects, boolean addredirects, int... ns) throws IOException
+    public List<List<String>> whatLinksHere(SequencedCollection<String> titles, boolean redirects, 
+        boolean addredirects, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         if (addredirects)
@@ -5574,7 +5575,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.36
      */
-    public List<List<String>> whatTranscludesHere(List<String> titles, int... ns) throws IOException
+    public List<List<String>> whatTranscludesHere(SequencedCollection<String> titles, int... ns) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("prop", "transcludedin");
@@ -5607,7 +5608,7 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="https://mediawiki.org/wiki/API:Categoryinfo">MediaWiki
      *  documentation</a>
      */
-    public List<int[]> getCategoryMemberCounts(List<String> categories) throws IOException
+    public List<int[]> getCategoryMemberCounts(SequencedCollection<String> categories) throws IOException
     {
         // force all titles to have namespace(title) == CATEGORY_NAMESPACE because
         // the API requires it
@@ -5885,7 +5886,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.12
      */
-    public List<LogEntry> getBlockList(List<String> users, Wiki.RequestHelper helper) throws IOException
+    public List<LogEntry> getBlockList(SequencedCollection<String> users, Wiki.RequestHelper helper) throws IOException
     {
         int limit = -1;
         Map<String, String> getparams = new HashMap<>();
@@ -7113,12 +7114,12 @@ public class Wiki implements Comparable<Wiki>
         /**
          *  Sets the list of tags attached to this event. Modifying the supplied
          *  list does not affect this Revision object or change on-wiki state.
-         *  @param tags a list of change tags
+         *  @param tags a bunch of change tags
          *  @see <a href="https://www.mediawiki.org/wiki/Help:Tags">MediaWiki
          *  documentation</a>
          *  @since 0.37
          */
-        protected void setTags(List<String> tags)
+        protected void setTags(Collection<String> tags)
         {
             this.tags = new ArrayList<>(tags);
         }
@@ -8076,7 +8077,7 @@ public class Wiki implements Comparable<Wiki>
      *  @throws IOException if a network error occurs
      */
     protected <T> List<List<T>> makeVectorizedQuery(String queryPrefix, Map<String, String> getparams,
-        List<String> titles, String caller, int limit, BiConsumer<String, List<T>> parser) throws IOException
+        SequencedCollection<String> titles, String caller, int limit, BiConsumer<String, List<T>> parser) throws IOException
     {
         // copy because normalization and redirect resolvers overwrite
         List<String> titles2 = new ArrayList<>(titles);
@@ -8184,13 +8185,13 @@ public class Wiki implements Comparable<Wiki>
      *  Reorders outputs such that the order of a query's results is the same
      *  order of the input titles. 
      *  @param <T> output type
-     *  @param inputs input list of titles
+     *  @param inputs a bunch of titles
      *  @param results unordered query results in Map format with key =
      *  title (doesn't have to be normalised)
      *  @return output list whose order corresponds to the inputs
      *  @since 0.38
      */
-    protected <T> List<T> reorder(List<String> inputs, Map<String, T> results)
+    protected <T> List<T> reorder(Iterable<String> inputs, Map<String, T> results)
     {
         List<T> ret = new ArrayList<>();
         for (String input : inputs)
@@ -8202,7 +8203,8 @@ public class Wiki implements Comparable<Wiki>
     
     /**
      *  Convenience method for checking user permissions.
-     *  @param right a user rights
+     *  @param action a string describing what was attempted
+     *  @param right a user right
      *  @param morerights additional user rights
      *  @throws SecurityException if the permission check fails
      *  @since 0.37
@@ -8406,25 +8408,22 @@ public class Wiki implements Comparable<Wiki>
      */
     private String convertToString(Object param)
     {
-        // TODO: Replace with type switch in JDK 18+
-        if (param instanceof String s)
-            return s;
-        else if (param instanceof StringBuilder || param instanceof Number)
-            return param.toString();
-        else if (param instanceof String[] sa)
-            return String.join("|", sa);
-        else if (param instanceof OffsetDateTime date)
+        return switch(param)
+        {
+            case String s -> s;
+            case StringBuilder sb -> sb.toString();
+            case Number num -> num.toString();
+            case String[] sa -> String.join("|", sa);
             // https://www.mediawiki.org/wiki/Timestamp
-            // https://github.com/MER-C/wiki-java/issues/170
-            return date.atZoneSameInstant(ZoneOffset.UTC)
+            // https://github.com/MER-C/wiki-java/issues/170    
+            case OffsetDateTime date -> date.atZoneSameInstant(ZoneOffset.UTC)
                 .truncatedTo(ChronoUnit.MICROS)
-                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        else if (param instanceof Collection<?> coll)
-            return coll.stream()
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME); 
+            case Collection<?> coll -> coll.stream()
                 .map(item -> convertToString(item))
                 .collect(Collectors.joining("|"));
-        else
-            throw new UnsupportedOperationException("Unrecognized data type");
+            default -> throw new UnsupportedOperationException("Unrecognized data type");
+        };
     }
 
     /**
@@ -8679,7 +8678,7 @@ public class Wiki implements Comparable<Wiki>
      *  @return the titles ready for insertion into a URL
      *  @since 0.29
      */
-    protected List<String> constructTitleString(List<String> titles)
+    protected List<String> constructTitleString(Collection<String> titles)
     {
         // sort and remove duplicates
         List<String> titles_unique = titles.stream()

@@ -93,20 +93,20 @@ public class DataTable
             sb.append("\"");
             sb.append(entry.getKey().toString().replace("\"", "\"\""));
             var value = entry.getValue();
-            if (value == null)
+            switch(value)
             {
-                sb.append("\",");
-            }
-            else if (value instanceof Number)
-            {
-                sb.append("\",");
-                sb.append(value);
-            }
-            else
-            {
-                sb.append("\",\"");
-                sb.append(value.toString().replace("\"", "\"\""));
-                sb.append("\"");
+                case null:
+                    sb.append("\",");
+                    break;
+                case Number num:
+                    sb.append("\",");
+                    sb.append(num);
+                    break;
+                default:
+                    sb.append("\",\"");
+                    sb.append(value.toString().replace("\"", "\"\""));
+                    sb.append("\"");
+                    break;
             }
             sb.append("\n");
         }

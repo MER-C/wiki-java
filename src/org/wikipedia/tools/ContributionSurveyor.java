@@ -117,14 +117,13 @@ public class ContributionSurveyor
         if (blockedafter != null)
         {
             List<Wiki.User> userobjs = homewiki.getUsers(users);
-            List<String> newusers = new ArrayList<>();
+            users.clear();
             for (Wiki.User user : userobjs)
             {
                 Wiki.LogEntry block = user.getBlockDetails();
                 if (block == null || block.getTimestamp().isAfter(blockedafter))
-                    newusers.add(user.getUsername());
+                    users.add(user.getUsername());
             }
-            users = new ArrayList<>(newusers);
         }
 
         int[] ns;
@@ -494,7 +493,7 @@ public class ContributionSurveyor
      *  @throws CredentialNotFoundException if one cannot view deleted pages
      *  @since 0.03
      */
-    public Map<String, Map<String, List<Wiki.Revision>>> deletedContributionSurvey(List<String> users,
+    public Map<String, Map<String, List<Wiki.Revision>>> deletedContributionSurvey(Iterable<String> users,
         int... ns) throws IOException, CredentialNotFoundException
     {
         // this looks a lot like ArticleEditorIntersector.intersectEditors()...
@@ -535,7 +534,7 @@ public class ContributionSurveyor
      *  transferred to Commons (may be inaccurate depending on username).
      *  @throws IOException if a network error occurs
      */
-    public Map<String, Map<String, List<String>>> imageContributionSurvey(List<String> users) throws IOException
+    public Map<String, Map<String, List<String>>> imageContributionSurvey(Iterable<String> users) throws IOException
     {
         Wiki commons = Wiki.newSession("commons.wikimedia.org");
         Wiki.RequestHelper rh = wiki.new RequestHelper().withinDateRange(earliestdate, latestdate);

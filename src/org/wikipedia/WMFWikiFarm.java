@@ -314,7 +314,7 @@ public class WMFWikiFarm
      *  item or the local article doesn't exist
      *  @throws IOException if a network error occurs
      */
-    public List<String> getWikidataItems(WMFWiki wiki, List<String> titles) throws IOException
+    public List<String> getWikidataItems(WMFWiki wiki, SequencedCollection<String> titles) throws IOException
     {
         String dbname = (String)wiki.getSiteInfo().get("dbname");
         Map<String, String> getparams = new HashMap<>();

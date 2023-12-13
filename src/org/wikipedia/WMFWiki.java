@@ -208,7 +208,7 @@ public class WMFWiki extends Wiki
      *  @throws IOException if a network error occurs
      *  @see #getPlainText(List) 
      */
-    public List<String> getLedeAsPlainText(List<String> titles) throws IOException
+    public List<String> getLedeAsPlainText(SequencedCollection<String> titles) throws IOException
     {
         requiresExtension("CirrusSearch");
         Map<String, String> getparams = new HashMap<>();
@@ -247,7 +247,7 @@ public class WMFWiki extends Wiki
      *  @throws IOException if a network error occurs
      *  @see #getLedeAsPlainText(List)
      */
-    public List<String> getPlainText(List<String> titles) throws IOException
+    public List<String> getPlainText(SequencedCollection<String> titles) throws IOException
     {
         requiresExtension("CirrusSearch");
         Map<String, String> getparams = new HashMap<>();

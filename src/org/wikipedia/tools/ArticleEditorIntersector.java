@@ -418,7 +418,7 @@ public class ArticleEditorIntersector
      *  @return a map with page &#8594; list of revisions made
      *  @throws IOException if a network error occurs
      */
-    public Map<String, List<Wiki.Revision>> intersectEditors(List<String> users) throws IOException
+    public Map<String, List<Wiki.Revision>> intersectEditors(SequencedCollection<String> users) throws IOException
     {
         Map<String, Boolean> options = new HashMap<>();
         if (nominor)
