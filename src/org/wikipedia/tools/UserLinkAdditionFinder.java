@@ -306,53 +306,32 @@ public class UserLinkAdditionFinder
      */
     public List<String> parseDiff(Wiki.Revision revision) throws IOException
     {
-        // fetch the diff
-        String diff = revision.isNew() ? revision.getText() : revision.diff(Wiki.PREVIOUS_REVISION);
-        // filter dummy edits
-        if (diff == null || diff.isEmpty())
+        String diff = revision.isNew() ? revision.getText() : revision.diff(Wiki.PREVIOUS_REVISION, "inline");
+        if (diff == null || diff.isEmpty()) // filter dummy edits
             return Collections.emptyList();
-        List<String> links = new ArrayList<>();
+        Pattern linkregex = Pattern.compile("https?://.+?\\..{2,}?(?:\\s|]|<|$|&lt;)");
 
-        // some HTML strings we are looking for
-        // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
-        String diffaddedbegin = "<td class=\"diff-addedline diff-side-added\">";
-        String diffaddedend = "</td>";
-        String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
-        String deltaend = "</ins>";
-        // link regex
-        Pattern pattern = Pattern.compile("https?://.+?\\..{2,}?(?:\\s|]|<|$)");
-
-        // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
-        diff = diff.toLowerCase(wiki.locale());
-        diff = diff.replace(deltaend + " " + deltabegin, " ");
-        diff = diff.replace("&lt;", "<");
-        for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))
+        // See https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev&difftype=inline
+        // for example HTML
+        List<String> dellinks = new ArrayList<>();
+        Matcher matcher = Pattern.compile("<del .+?>(.+?)</del>").matcher(diff);
+        while (matcher.find())
         {
-            int y2 = diff.indexOf(diffaddedend, j);
-            String addedline = diff.substring(j + diffaddedbegin.length(), y2);
-            addedline = addedline.replaceFirst("^<div>", "");
-            addedline = addedline.replace("</div>", "");
-            if (addedline.contains(deltabegin))
-            {
-                for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
-                {
-                    int y3 = addedline.indexOf(deltaend, k);
-                    String delta = addedline.substring(k + deltabegin.length(), y3);
-                    // extract links
-                    Matcher matcher = pattern.matcher(delta);
-                    while (matcher.find())
-                        links.add(matcher.group().split("[\\|<\\]\\s\\}]")[0]);
-                    k = y3;
-                }
-            }
-            else
-            {
-                Matcher matcher = pattern.matcher(addedline);
-                while (matcher.find())
-                    links.add(matcher.group().split("[\\|<\\]\\s\\}]")[0]);
-            }
-            j = y2;
+            Matcher inner = linkregex.matcher(matcher.group(0));
+            while (inner.find())
+                dellinks.add(inner.group().split("(\\||<|\\]|\\s|\\}|&lt;)")[0]);
         }
+        
+        List<String> links = new ArrayList<>();
+        matcher = Pattern.compile("<ins .+?>(.+?)</ins>").matcher(diff);
+        while (matcher.find())
+        {
+            Matcher inner = linkregex.matcher(matcher.group(0));
+            while (inner.find())
+                links.add(inner.group().split("(\\||<|\\]|\\s|\\}|&lt;)")[0]);
+        }
+        
+        links.removeAll(dellinks);
         return links;
     }
 }

@@ -301,11 +301,6 @@ public class CCIAnalyzer
         if (cci == null)
             throw new IllegalArgumentException("CCI not loaded: [[" + ccipage.title + "]]");
         System.err.println("Loading [[" + ccipage.title + "]]:");
-        
-        // some HTML strings we are looking for
-        // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
-        String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
-        String deltaend = "</ins>";
         ccipage.diffs.clear();
         ccipage.diffshort.clear();
         
@@ -322,18 +317,15 @@ public class CCIAnalyzer
             long oldid = Long.parseLong(cci.substring(xx + 1, yy));
 
             // Fetch diff. No plain text diffs for performance reasons, see
-            // https://phabricator.wikimedia.org/T15209
+            // https://phabricator.wikimedia.org/T15209. 
             try 
             {
-                String diff = wiki.diff(Map.of("revid", oldid), Map.of("revid", Wiki.PREVIOUS_REVISION));
+                String diff = wiki.diff(Map.of("revid", oldid), Map.of("revid", Wiki.PREVIOUS_REVISION), "inline");
                 parsed++;
-                if (diff == null) // RevisionDeleted revision
+                if (diff == null || diff.isEmpty()) // RevisionDeleted revisions and dummy edits
                     continue;
-                // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
-                diff = diff.toLowerCase(wiki.locale());
-                diff = diff.replace(deltaend + " " + deltabegin, " ");
                 ccipage.diffshort.add(edit);
-                ccipage.diffs.add(diff);
+                ccipage.diffs.add(diff.toLowerCase(wiki.locale()));
                 exception = false;
             }
             catch (IOException ex)
@@ -381,49 +373,42 @@ public class CCIAnalyzer
     public void analyzeDiffs(CCIPage page)
     {
         page.minoredits.clear();
-        
         // some HTML strings we are looking for
         // see https://en.wikipedia.org/w/api.php?action=compare&fromrev=77350972&torelative=prev
-        String diffaddedbegin = "<td class=\"diff-addedline diff-side-added\">";
-        String diffaddedend = "</td>";
-        String deltabegin = "<ins class=\"diffchange diffchange-inline\">";
-        String deltaend = "</ins>";
-        
+        Pattern ins = Pattern.compile("<ins .+?>(.+?)</ins>");
+
         for (int i = 0; i < page.diffs.size(); i++)
         {
-            String diff = page.diffs.get(i);
-            // If the diff is empty (see https://en.wikipedia.org/w/index.php?diff=343490272)
-            // it will not contain diffaddedbegin -> default major to true.
-            boolean major = true;
-            // It is easy to strip the HTML.
-            for (int j = diff.indexOf(diffaddedbegin); j >= 0; j = diff.indexOf(diffaddedbegin, j))
+            String[] lines = page.diffs.get(i).split("\\n");
+            boolean major = false;
+            for (String line : lines)
             {
-                int y2 = diff.indexOf(diffaddedend, j);
-                String addedline = diff.substring(j + diffaddedbegin.length(), y2);
-                addedline = addedline.replaceFirst("^<div>", "");
-                addedline = addedline.replaceAll("</div>.?$", "");
-                if (addedline.contains(deltabegin))
+                // extract the wikitext additions from the diff HTML
+                String change;
+                if (line.contains("mw-diff-inline-added") && !line.contains("mw-diff-empty-line"))
                 {
-                    for (int k = addedline.indexOf(deltabegin); k >= 0; k = addedline.indexOf(deltabegin, k))
+                    Matcher m = ins.matcher(line);
+                    m.find();
+                    change = m.group(1);
+                }
+                else if (line.contains("mw-diff-inline-moved") || line.contains("mw-diff-inline-changed"))
+                {
+                    // Condense deltas to avoid problems like https://en.wikipedia.org/w/index.php?title=&diff=prev&oldid=486611734
+                    StringBuilder sb = new StringBuilder();
+                    Matcher m = ins.matcher(line);
+                    while (m.find())
                     {
-                        // TODO: should strip all wikilinks here instead of in word count culling
-                        int y3 = addedline.indexOf(deltaend, k);
-                        String delta = addedline.substring(k + deltabegin.length(), y3);
-                        delta = delta.replace("&lt;", "<").replace("&gt;", ">");
-                        major = cullingfn.test(filterfn.apply(delta));
-                        if (major)
-                            break;
-                        k = y3;
+                        sb.append(m.group(1));
+                        sb.append(" ");
                     }
+                    change = sb.toString();
                 }
                 else
-                {
-                    addedline = addedline.replace("&lt;", "<").replace("&gt;", ">");                
-                    major = cullingfn.test(filterfn.apply(addedline));
-                }
+                    continue;
+                change = change.replace("&lt;", "<").replace("&gt;", ">");
+                major = cullingfn.test(filterfn.apply(change));
                 if (major)
                     break;
-                j = y2;
             }
             if (!major)
                 page.minoredits.add(page.diffshort.get(i));
@@ -433,6 +418,7 @@ public class CCIAnalyzer
     /**
      *  Generates output for the given CCI page.
      *  @param page the CCI page to generate output for
+     *  @return the new CCI output
      *  @since 0.02
      */
     public String createOutput(CCIPage page)
@@ -742,9 +728,7 @@ public class CCIAnalyzer
             }
             return false;
         }
-        if (delta.matches("^\\[\\[\\s*category:.+?\\]\\]"))
-            return false;
-        return true;
+        return !delta.matches("^\\[\\[\\s*category:.+?\\]\\]");
     }
     
     /**

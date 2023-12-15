@@ -3813,6 +3813,8 @@ public class Wiki implements Comparable<Wiki>
      *
      *  @param from the content on the left hand side of the diff
      *  @param to the content on the right hand side of the diff
+     *  @param difftype how the diff is rendered, one of "table", "inline", or 
+     *  "unified"
      *  @return a HTML difference table between the two texts, "" for dummy
      *  edits or null as described above
      *  @throws NoSuchElementException or IllegalArgumentException if no from or
@@ -3823,10 +3825,11 @@ public class Wiki implements Comparable<Wiki>
      *  @see <a href="https://mediawiki.org/wiki/API:Compare">MediaWiki documentation</a>
      *  @since 0.35
      */
-    public String diff(Map<String, Object> from, Map<String, Object> to) throws IOException
+    public String diff(Map<String, Object> from, Map<String, Object> to, String difftype) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
         getparams.put("action", "compare");
+        getparams.put("difftype", difftype);
         HashMap<String, Object> postparams = new HashMap<>();
 
         Map.Entry<String, Object> entry = from.entrySet().iterator().next();
@@ -7467,15 +7470,17 @@ public class Wiki implements Comparable<Wiki>
          *  See {@link #diff(Map, Map)} for full documentation.
          *
          *  @param other another revision on the same page.
+         *  @param difftype how the diff is rendered, one of "table", "inline", or 
+         *  "unified"
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @throws SecurityException if this or the other revision is
          *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.21
          */
-        public String diff(Revision other) throws IOException
+        public String diff(Revision other, String difftype) throws IOException
         {
-            return Wiki.this.diff(Map.of("revision", this), Map.of("revision", other));
+            return Wiki.this.diff(Map.of("revision", this), Map.of("revision", other), difftype);
         }
 
         /**
@@ -7485,15 +7490,17 @@ public class Wiki implements Comparable<Wiki>
          *  href="https://en.wikipedia.org/w/index.php?diff=343490272">example</a>.
          *
          *  @param text some wikitext
+         *  @param difftype how the diff is rendered, one of "table", "inline", or 
+         *  "unified"
          *  @return the difference between this and the the text provided
          *  @throws IOException if a network error occurs
          *  @throws SecurityException if this or the other revision is
          *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.21
          */
-        public String diff(String text) throws IOException
+        public String diff(String text, String difftype) throws IOException
         {
-            return Wiki.this.diff(Map.of("revision", this), Map.of("text", text));
+            return Wiki.this.diff(Map.of("revision", this), Map.of("text", text), difftype);
         }
 
         /**
@@ -7503,19 +7510,21 @@ public class Wiki implements Comparable<Wiki>
          *  @param oldid the oldid of a revision on the same page. {@link
          *  Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION} and {@link
          *  Wiki#CURRENT_REVISION} can be used here for obvious effect.
+         *  @param difftype how the diff is rendered, one of "table", "inline", or 
+         *  "unified"
          *  @return the difference between this and the other revision
          *  @throws IOException if a network error occurs
          *  @throws SecurityException if this or the other revision is
          *  RevisionDeleted and the user lacks the necessary privileges
          *  @since 0.26
          */
-        public String diff(long oldid) throws IOException
+        public String diff(long oldid, String difftype) throws IOException
         {
             Map<String, Object> from = new HashMap<>();
             from.put("revision", this);
             Map<String, Object> to = new HashMap<>();
             to.put("revid", oldid);
-            return Wiki.this.diff(from, to);
+            return Wiki.this.diff(from, to, difftype);
         }
 
         /**

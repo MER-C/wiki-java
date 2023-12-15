@@ -1128,7 +1128,7 @@ public class WikiTest
         // must specify from/to content
         try
         {
-            enWiki.diff(Map.of("xxx", "yyy"), Map.of("revid", 738178354L));
+            enWiki.diff(Map.of("xxx", "yyy"), Map.of("revid", 738178354L), "unified");
             fail("Failed to specify from content.");
         }
         catch (IllegalArgumentException | NoSuchElementException expected)
@@ -1136,7 +1136,7 @@ public class WikiTest
         }
         try
         {
-            enWiki.diff(Map.of("revid", 738178354L), Map.of("xxx", "yyy"));
+            enWiki.diff(Map.of("revid", 738178354L), Map.of("xxx", "yyy"), "unified");
             fail("Failed to specify to content.");
         }
         catch (IllegalArgumentException | NoSuchElementException expected)
@@ -1144,28 +1144,28 @@ public class WikiTest
         }
 
         // https://en.wikipedia.org/w/index.php?title=Dayo_Israel&oldid=738178354&diff=prev
-        String diff = enWiki.diff(Map.of("revid", 738178354L), Map.of("revid", Wiki.PREVIOUS_REVISION))
+        String diff = enWiki.diff(Map.of("revid", 738178354L), Map.of("revid", Wiki.PREVIOUS_REVISION), "unified")
             .replaceAll("<!--.*-->", "").trim();
         assertEquals("", diff, "dummy edit");
         // https://en.wikipedia.org/w/index.php?title=Source_Filmmaker&diff=804972897&oldid=803731343
         // The MediaWiki API does not distinguish between a dummy edit and no
         // difference. Both are now set to the empty string.
-        diff = enWiki.diff(Map.of("revid", 803731343L), Map.of("revid", 804972897L))
+        diff = enWiki.diff(Map.of("revid", 803731343L), Map.of("revid", 804972897L), "unified")
             .replaceAll("<!--.*-->", "").trim();
         assertEquals("", diff, "no difference");
         // no deleted pages allowed
-        assertNull(enWiki.diff(Map.of("title", "Create a page"), Map.of("revid", 804972897L)), "from deleted");
-        assertNull(enWiki.diff(Map.of("revid", 804972897L), Map.of("title", "Create a page")), "to deleted");
+        assertNull(enWiki.diff(Map.of("title", "Create a page"), Map.of("revid", 804972897L), "unified"), "from deleted");
+        assertNull(enWiki.diff(Map.of("revid", 804972897L), Map.of("title", "Create a page"), "unified"), "to deleted");
         // no RevisionDeleted revisions allowed (also broken)
         // https://en.wikipedia.org/w/index.php?title=Imran_Khan_%28singer%29&oldid=596714684
-        assertNull(enWiki.diff(Map.of("revid", 596714684L), Map.of("revid", Wiki.NEXT_REVISION)), "from deleted revision");
+        assertNull(enWiki.diff(Map.of("revid", 596714684L), Map.of("revid", Wiki.NEXT_REVISION), "unified"), "from deleted revision");
 
         // bad revids
-        assertNull(enWiki.diff(Map.of("revid", 1L << 62), Map.of("revid", 803731343L)), "bad from revid");
-        assertNull(enWiki.diff(Map.of("revid", 803731343L), Map.of("revid", 1L << 62)), "bad to revid");
+        assertNull(enWiki.diff(Map.of("revid", 1L << 62), Map.of("revid", 803731343L), "unified"), "bad from revid");
+        assertNull(enWiki.diff(Map.of("revid", 803731343L), Map.of("revid", 1L << 62), "unified"), "bad to revid");
         
         // new article
-        diff = enWiki.diff(Map.of("revid", 154400451L), Map.of("revid", Wiki.PREVIOUS_REVISION));
+        diff = enWiki.diff(Map.of("revid", 154400451L), Map.of("revid", Wiki.PREVIOUS_REVISION), "unified");
         assertTrue(diff.contains("'''Urmitz''' is a municipality in the [[Mayen-Koblenz|district of Mayen-Koblenz]] "
             + "in [[Rhineland-Palatinate]], western [[Germany]]"));
     }
