@@ -54,7 +54,7 @@ public class CCIAnalyzer
     private static int MAX_EDIT_SIZE = 150;
     
     // lazy initialized stuff
-    private static Pattern targs_pattern;
+    private static Pattern targs_pattern, quoterefs_pattern, cite_template_pattern;
        
     /**
      *  Runs this program.
@@ -626,8 +626,9 @@ public class CCIAnalyzer
     /**
      *  Removes references from the given wikitext. The use of reference removal
      *  is an aggressive filtering option that should not be used unless it has
-     *  been verified that the CCIed editor does not dump large quotes into
-     *  references.
+     *  been verified that the CCIed editor does not dump large amounts of text
+     *  into references. References containing quotes in citation templates are
+     *  not removed.
      * 
      *  @param wikitext wikitext for which references should be removed
      *  @return the wikitext with references removed
@@ -635,11 +636,19 @@ public class CCIAnalyzer
      */
     public static String removeReferences(String wikitext)
     {
-        // Requires extension Cite, and therefore not in WikitextUtils
-        return wikitext.replaceAll("<ref name=.{0,15}/>", "")
-                       .replaceAll("<ref[ >].+?</ref>", "")
-        // Lists of citation templates
-                       .replaceAll("^\\*\\s*\\{\\{\\s*cite (web|book|news|journal)\\s*\\|.{0,200}\\}\\}\\s*$", "");
+        if (quoterefs_pattern == null)
+            quoterefs_pattern = Pattern.compile("\\|\\s*quote\\s*=\\s*");
+        if (cite_template_pattern == null)
+            cite_template_pattern = Pattern.compile("^\\*\\s*\\{\\{\\s*cite (web|book|news|journal)\\s*\\|.{0,200}\\}\\}\\s*$");
+        if (!quoterefs_pattern.matcher(wikitext).find())
+        {
+            // Requires extension Cite, and therefore not in WikitextUtils
+            wikitext = wikitext.replaceAll("<ref name=.{0,15}/>", "")
+                .replaceAll("<ref[ >].+?</ref>", "");
+            // Lists of citation templates
+            wikitext = cite_template_pattern.matcher(wikitext).replaceAll("");   
+        }
+        return wikitext;
     }
     
     /**

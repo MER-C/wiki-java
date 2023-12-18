@@ -102,16 +102,23 @@ public class CCIAnalyzerTest
         assertEquals("Test: combined before. Sentence 2.", CCIAnalyzer.removeReferences(
             "Test: combined before<ref name=\"Before\" />. Sentence 2<ref>Test reference</ref>."));
         assertEquals("Test: multiple.", CCIAnalyzer.removeReferences("Test: multiple<ref>Reference 1</ref><ref>Reference 2</ref>."));
+        assertEquals("Test<ref>{{cite web | quote = blah}}</ref>", CCIAnalyzer.removeReferences("Test<ref>{{cite web | quote = blah}}</ref>"));
         
         // INTEGRATION TEST
         // the second diff contains references only
-        String cci = "*[[:Smiley (1956 film)]] (2 edits): [[Special:Diff/476809081|(+460)]][[Special:Diff/446793589|(+205)]]";
+        String cci = "*[[:Smiley (1956 film)]] (3 edits): [[Special:Diff/476809081|(+460)]][[Special:Diff/446793589|(+205)]]";
         analyzer.setFilteringFunction(CCIAnalyzer::removeReferences);
         analyzer.setCullingFunction(diff -> analyzer.wordCountCull(diff, 9));
         CCIAnalyzer.CCIPage page = analyzer.loadString(enWiki, cci);
         analyzer.loadDiffs(page);
         analyzer.analyzeDiffs(page);
         assertEquals(List.of("[[Special:Diff/446793589|(+205)]]"), page.getMinorEdits());
+        // quote ref
+        cci = "*[[:John Maynard Keynes]] (1 edit): [[Special:Diff/343215718|(+589)]]";
+        page = analyzer.loadString(enWiki, cci);
+        analyzer.loadDiffs(page);
+        analyzer.analyzeDiffs(page);
+        assertTrue(page.getMinorEdits().isEmpty());
     }
     
     @Test
