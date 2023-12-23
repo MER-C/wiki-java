@@ -538,8 +538,8 @@ public class CCIAnalyzer
         if (footer != null)
             out.append(footer);
         out.append("\n");
-        System.err.printf("%d of %d diffs and %d articles removed.%n", page.baseremoveddiffs + page.minoredits.size(), 
-            page.diffcount, page.baseremovedarticles + removedarticles);
+        System.err.printf("%d of %d diffs and %d of %d articles removed.%n", page.baseremoveddiffs + page.minoredits.size(), 
+            page.diffcount, page.baseremovedarticles + removedarticles, page.pagecount);
         return out.toString();
     }
     
@@ -798,6 +798,7 @@ public class CCIAnalyzer
         private String title;
         private String cci;
         private int diffcount;
+        private int pagecount;
         private int baseremoveddiffs;
         private int baseremovedarticles;
         private List<String> diffshort, diffs, minoredits;
@@ -811,9 +812,18 @@ public class CCIAnalyzer
             diffs = new ArrayList<>(1000);
             minoredits = new ArrayList<>(500);
             
-            // count diffs
-            for (int i = cci.indexOf("[[Special:Diff/"); i >= 0; i = cci.indexOf("[[Special:Diff/", ++i))
-                diffcount++;
+            // count articles and diffs
+            String[] x = cci.split("\n");
+            Pattern p = Pattern.compile("\\*.+\\(\\d+ edits?.*\\).+Special:Diff.+");
+            for (String line : x)
+            {
+                if (p.matcher(line).matches())
+                {
+                    for (int i = line.indexOf("[[Special:Diff/"); i >= 0; i = line.indexOf("[[Special:Diff/", ++i))
+                        diffcount++;
+                    pagecount++;
+                }
+            }
         }
         
        /**
