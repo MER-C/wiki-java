@@ -306,7 +306,7 @@ public class Wiki implements Comparable<Wiki>
     public static final String SEMI_PROTECTION = "autoconfirmed";
 
     /**
-     *  Denotes full protection (only admins can perfom a particular action).
+     *  Denotes full protection (only admins can perform a particular action).
      *  @since 0.09
      */
     public static final String FULL_PROTECTION = "sysop";
@@ -352,25 +352,25 @@ public class Wiki implements Comparable<Wiki>
     // REVISION OPTIONS
 
     /**
-     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()},
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long, String) Revision.diff()},
      *  denotes the next revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(long)
+     *  @see org.wikipedia.Wiki.Revision#diff(long, String)
      *  @since 0.21
      */
     public static final long NEXT_REVISION = -1L;
 
     /**
-     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()},
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long, String) Revision.diff()},
      *  denotes the current revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(long)
+     *  @see org.wikipedia.Wiki.Revision#diff(long, String)
      *  @since 0.21
      */
     public static final long CURRENT_REVISION = -2L;
 
     /**
-     *  In {@link org.wikipedia.Wiki.Revision#diff(long) Revision.diff()},
+     *  In {@link org.wikipedia.Wiki.Revision#diff(long, String) Revision.diff()},
      *  denotes the previous revision.
-     *  @see org.wikipedia.Wiki.Revision#diff(long)
+     *  @see org.wikipedia.Wiki.Revision#diff(long, String)
      *  @since 0.21
      */
     public static final long PREVIOUS_REVISION = -3L;
@@ -1378,7 +1378,7 @@ public class Wiki implements Comparable<Wiki>
      *  </ul>
      *
      *  @param content a Map following the same scheme as specified by {@link 
-     *  #diff(Map, Map)}
+     *  #diff(Map, Map, String)}
      *  @param section parse only this section (optional, use -1 to skip)
      *  @param nolimitreport do not include the HTML comment detailing limits
      *  @return the parsed wikitext
@@ -4863,7 +4863,8 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets contributions for all users starting with <var>prefix</var>. See
-     *  {@link #contribs(List, String, RequestHelper)} for full documentation.
+     *  {@link #contribs(SequencedCollection, String, RequestHelper)} for full
+     *  documentation.
      *
      *  @param prefix a prefix of usernames.
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
@@ -4878,8 +4879,8 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the contributions for a user, an IP address or a range of IP
-     *  addresses. See {@link #contribs(List, String, RequestHelper)} for full
-     *  documentation.
+     *  addresses. See {@link #contribs(SequencedCollection, String, RequestHelper)}
+     *  for full documentation.
      *
      *  @param user the user, IP address or IP range to get contributions for
      *  @param helper a {@link Wiki.RequestHelper} (optional, use null to not
@@ -7454,7 +7455,7 @@ public class Wiki implements Comparable<Wiki>
          *  <p><b>Warnings:</b>
          *  <ul>
          *  <li>Not available through {@link #watchlist(RequestHelper)} or {@link
-         *      #contribs(List, String, RequestHelper)}.
+         *      #contribs(SequencedCollection, String, RequestHelper)}.
          *  </ul>
          *
          *  @return (see above)
@@ -7467,7 +7468,7 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Returns a HTML rendered diff table of this revision to <var>other</var>.
-         *  See {@link #diff(Map, Map)} for full documentation.
+         *  See {@link #diff(Map, Map, String)} for full documentation.
          *
          *  @param other another revision on the same page.
          *  @param difftype how the diff is rendered, one of "table", "inline", or 
@@ -7505,7 +7506,8 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Returns a HTML rendered diff table from this revision to the given
-         *  <var>oldid</var>. See {@link #diff(Map, Map)} for full documentation.
+         *  <var>oldid</var>. See {@link #diff(Map, Map, String)} for full 
+         *  documentation.
          *
          *  @param oldid the oldid of a revision on the same page. {@link
          *  Wiki#NEXT_REVISION}, {@link Wiki#PREVIOUS_REVISION} and {@link
@@ -7802,7 +7804,8 @@ public class Wiki implements Comparable<Wiki>
 
         /**
          *  Limits query results to Events triggered by the given user. If a query
-         *  mandates a user parameter (e.g. {@link #contribs(List, String, RequestHelper)},
+         *  mandates a user parameter (e.g. {@link #contribs(SequencedCollection,
+         *  String, RequestHelper)},
          *  don't use this. Use the parameter in the query method instead.
          *  @param byuser some username or IP address
          *  @return this RequestHelper

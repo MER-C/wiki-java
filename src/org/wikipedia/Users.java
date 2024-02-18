@@ -30,6 +30,7 @@ import javax.security.auth.login.FailedLoginException;
  *  Utility methods for wiki users.
  *  @author MER-C
  *  @version 0.01
+ *  @see org.wikipedia.Wiki.User
  */
 public class Users
 {
@@ -128,13 +129,13 @@ public class Users
      *  with full revision metadata.
      *  @param users the users to fetch page creations for
      *  @param rh a {@link Wiki.RequestHelper} object that is passed to {@link
-     *  Wiki#contribs(List, String, Wiki.RequestHelper)}
+     *  Wiki#contribs(SequencedCollection, String, Wiki.RequestHelper)}
      *  @return the list of pages created by this user with revision metadata
      *  for the corresponding revisions
      *  @throws IOException if a network error occurs
-     *  @see #createdPagesWithText(List, Wiki.RequestHelper) 
+     *  @see #createdPagesWithText(SequencedCollection, Wiki.RequestHelper) 
      */
-    public List<Wiki.Revision> createdPages(List<String> users, Wiki.RequestHelper rh) throws IOException
+    public List<Wiki.Revision> createdPages(SequencedCollection<String> users, Wiki.RequestHelper rh) throws IOException
     {
         rh = Objects.requireNonNullElse(rh, wiki.new RequestHelper())
             .filterBy(Map.of("new", Boolean.TRUE));
@@ -150,13 +151,13 @@ public class Users
      *  revision of those pages.
      *  @param users the users to fetch page creations for
      *  @param rh a {@link Wiki.RequestHelper} object that is passed to {@link
-     *  Wiki#contribs(List, String, Wiki.RequestHelper)}
+     *  Wiki#contribs(SequencedCollection, String, Wiki.RequestHelper)}
      *  @return a map containing revision the page was created &#8594; current 
      *  text of that page
      *  @throws IOException if a network error occurs
-     *  @see #createdPages(List, Wiki.RequestHelper) 
+     *  @see #createdPages(SequencedCollection, Wiki.RequestHelper) 
      */
-    public Map<Wiki.Revision, String> createdPagesWithText(List<String> users, Wiki.RequestHelper rh) throws IOException
+    public Map<Wiki.Revision, String> createdPagesWithText(SequencedCollection<String> users, Wiki.RequestHelper rh) throws IOException
     {
         rh = Objects.requireNonNullElse(rh, wiki.new RequestHelper())
             .filterBy(Map.of("new", Boolean.TRUE));

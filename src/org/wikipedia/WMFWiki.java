@@ -206,7 +206,7 @@ public class WMFWiki extends Wiki
      *  @param titles a list of pages to get plain text for
      *  @return the first section of those pages, as plain text
      *  @throws IOException if a network error occurs
-     *  @see #getPlainText(List) 
+     *  @see #getPlainText(SequencedCollection) 
      */
     public List<String> getLedeAsPlainText(SequencedCollection<String> titles) throws IOException
     {
@@ -231,7 +231,7 @@ public class WMFWiki extends Wiki
      *  Renders articles as plain text. Requires extension CirrusSearch. Output 
      *  order is the same as input order, and a missing page will correspond to 
      *  {@code null}.The returned plain text has the following characteristics
-     *  additional to those mentioned in {@link #getLedeAsPlainText(List)}:
+     *  additional to those mentioned in {@link #getLedeAsPlainText(SequencedCollection)}:
      *  
      *  <ul>
      *  <li>There are no sections or section headers.
@@ -245,7 +245,7 @@ public class WMFWiki extends Wiki
      *  @param titles a list of pages to get plain text for
      *  @return those pages rendered as plain text
      *  @throws IOException if a network error occurs
-     *  @see #getLedeAsPlainText(List)
+     *  @see #getLedeAsPlainText(SequencedCollection)
      */
     public List<String> getPlainText(SequencedCollection<String> titles) throws IOException
     {

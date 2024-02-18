@@ -159,7 +159,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
             {
                 editcount = creator.countEdits();
                 registrationdate = creator.getRegistrationDate();
-                blocked = creator.isBlocked();
+                blocked = creator.getBlockDetails() != null;
                 if (registrationdate != null)
                     dt_user = Duration.between(registrationdate, createdate);
             }

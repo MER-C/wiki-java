@@ -24,6 +24,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.*;
 
+/**
+ *  Utility classes for dealing with (lists of) wiki revisions.
+ *  @author MER-C
+ *  @version 0.01
+ *  @see org.wikipedia.Wiki.Revision
+ */
 public class Revisions
 {
     private final Wiki wiki;

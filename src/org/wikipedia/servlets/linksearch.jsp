@@ -77,7 +77,7 @@ reasons, results are limited to <%= limit %> links per wiki.
 <%@ include file="footer.jspf" %>
 <%
     }
-    Map<Wiki, List<String[]>> results = null;
+    Map<WMFWiki, List<String[]>> results = null;
     if (mode.equals("multi"))
     {
         results = switch (set)
@@ -102,9 +102,9 @@ reasons, results are limited to <%= limit %> links per wiki.
             List.of(sessions.sharedSession(wikiinput)), mailto, ns);
 
     out.println("<hr>");
-    for (Map.Entry<Wiki, List<String[]>> entry : results.entrySet())
+    for (Map.Entry<WMFWiki, List<String[]>> entry : results.entrySet())
     {
-        Wiki wiki = entry.getKey();
+        WMFWiki wiki = entry.getKey();
         Pages pageutils = Pages.of(wiki);   
         List<String[]> value = entry.getValue();
         out.println("<h3>" + wiki.getDomain() + "</h3>");
