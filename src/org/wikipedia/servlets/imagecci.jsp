@@ -23,6 +23,7 @@
     String user = request.getParameter("user");
     if (user != null)
         request.setAttribute("contenttype", "text");
+    boolean transferred = (request.getParameter("transferred") != null);
 %>
 <%@ include file="header.jspf" %>
 <%
@@ -33,6 +34,7 @@
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveyor.setFooter("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+        surveyor.setSurveyingTransferredFiles(transferred);
         survey = surveyor.outputContributionSurvey(List.of(user), false, false, true);
 
         // TODO: output as ZIP (not straightforward: requires rewrite as Java Servlet)
@@ -61,6 +63,9 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
     <td><input type=date name=earliest value="<%= earliest %>"> to 
         <input type=date name=latest value="<%= latest %>"> (inclusive)
 </table>
+<input type=checkbox name=transferred value="<%= transferred ? " checked" : "" %>">Include transferred files 
+    (may be inaccurate depending on username)
+<br>
 <input type=submit value="Survey user">
 </form>
 

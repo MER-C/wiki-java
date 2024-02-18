@@ -268,6 +268,26 @@ public class ContributionSurveyorTest
     }
     
     @Test
+    public void setSurveyingTransferredFiles() throws Exception
+    {
+        // default is false
+        assertFalse(surveyor.isSurveyingTransferredFiles());
+        
+        // https://en.wikipedia.org/wiki/Special:CentralAuth/Pochta
+        // no uploads but pochta (Почта) is Russian for post, which means this
+        // is one of the cases where transferred files do not work well
+        String un = "Pochta";
+        List<String> users = List.of(un);
+        assertTrue(surveyor.imageContributionSurvey(users).get(un).get("transferred").isEmpty());
+        
+        // verify get/set works
+        surveyor.setSurveyingTransferredFiles(true);
+        assertTrue(surveyor.isSurveyingTransferredFiles());
+        
+        assertFalse(surveyor.imageContributionSurvey(users).get(un).get("transferred").isEmpty());
+    }
+    
+    @Test
     public void setFooter()
     {
         String f = "Test123";

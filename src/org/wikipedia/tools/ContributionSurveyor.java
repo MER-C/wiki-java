@@ -1,6 +1,6 @@
 /**
- *  @(#)ContributionSurveyor.java 0.08 07/08/2021
- *  Copyright (C) 2011-2021 MER-C
+ *  @(#)ContributionSurveyor.java 0.09 10/02/2024
+ *  Copyright (C) 2011-2024 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -40,7 +40,7 @@ import org.wikipedia.*;
  *  contribution surveyor (online version)</a>
  *  @see <a href="https://en.wikipedia.org/wiki/WP:CCI">Contributor Copyright
  *  Investigations</a>
- *  @version 0.08
+ *  @version 0.09
  */
 public class ContributionSurveyor
 {
@@ -49,6 +49,7 @@ public class ContributionSurveyor
     private String footer;
     private boolean nominor = true, noreverts = true, newonly = false;
     private boolean comingle;
+    private boolean transferredfiles;
     private int minsizediff = 150;
     private final int articlesperpage = 1000;
     private final int articlespersection = 20;
@@ -79,6 +80,7 @@ public class ContributionSurveyor
         clp = addSharedOptions(clp);
         Map<String, String> parsedargs = clp
             .addBooleanFlag("--images", "Survey images both on the home wiki and Commons.")
+            .addBooleanFlag("--notransfer", "Do not include transferred files to Commons.")
             .addBooleanFlag("--deleted", "Survey deleted edits (requires admin privileges)")
             .addBooleanFlag("--skiplive", "Don't survey live edits (for image/deleted only surveys)")
             .parse(args);
@@ -203,7 +205,7 @@ public class ContributionSurveyor
     /**
      *  Makes a new ContributionSurveyor for the given wiki based on parsed 
      *  command line arguments. Currently supports date, minsize, includeminor, 
-     *  includereverts, and newonly.
+     *  includereverts, newonly, and notransfer.
      *  @param wiki a wiki
      *  @param parsedargs parsed command line arguments
      *  @return a ContributionSurveyor object
@@ -221,6 +223,7 @@ public class ContributionSurveyor
         cs.setIgnoringMinorEdits(!parsedargs.containsKey("--includeminor"));
         cs.setIgnoringReverts(!parsedargs.containsKey("--includereverts"));
         cs.setComingled(parsedargs.containsKey("--comingle"));
+        cs.setSurveyingTransferredFiles(!parsedargs.containsKey("--notransfer"));
         return cs;
     }
 
@@ -407,6 +410,32 @@ public class ContributionSurveyor
     }
     
     /**
+     *  Include (or not) files uploaded by the user on a local wiki but later 
+     *  transferred to in image contribution surveys. This can be prone to
+     *  inaccuracies because it performs a search of file namespace for the 
+     *  username of the surveyed user.
+     *  @param transferredfiles (see above)
+     *  @since 0.09
+     */
+    public void setSurveyingTransferredFiles(boolean transferredfiles)
+    {
+        this.transferredfiles = transferredfiles;
+    }
+    
+    /**
+     *  Returns whether this surveyor includes files uploaded by the user on a 
+     *  local wiki but later transferred to in image contribution surveys. This 
+     *  can be prone to inaccuracies because it performs a search of file 
+     *  namespace for the  username of the surveyed user.
+     *  @return (see above)
+     *  @since 0.09
+     */
+    public boolean isSurveyingTransferredFiles()
+    {
+        return transferredfiles;
+    }
+    
+    /**
      *  Sets a custom footer to appear after the time the survey was generated.
      *  @param footer a footer
      *  @since 0.08
@@ -531,11 +560,13 @@ public class ContributionSurveyor
      *  @param users a list of users on the wiki
      *  @return for each user: first element = local uploads, second element = 
      *  uploads on Wikimedia Commons by the user, third element = images 
-     *  transferred to Commons (may be inaccurate depending on username).
+     *  transferred to Commons (may be inaccurate depending on username or empty
+     *  if disabled).
      *  @throws IOException if a network error occurs
      */
     public Map<String, Map<String, List<String>>> imageContributionSurvey(Iterable<String> users) throws IOException
     {
+        // TODO: expose common repository somewhere
         Wiki commons = Wiki.newSession("commons.wikimedia.org");
         Wiki.RequestHelper rh = wiki.new RequestHelper().withinDateRange(earliestdate, latestdate);
         Map<String, Map<String, List<String>>> ret = new HashMap<>();
@@ -554,9 +585,12 @@ public class ContributionSurveyor
 
             // fetch transferred commons uploads
             HashSet<String> commonsTransfer = new HashSet<>(10000);
-            List<Map<String, Object>> temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
-            for (Map<String, Object> x : temp)
-                commonsTransfer.add((String)x.get("title"));
+            if (transferredfiles)
+            {
+                List<Map<String, Object>> temp = commons.search("\"" + user + "\"", Wiki.FILE_NAMESPACE);
+                for (Map<String, Object> x : temp)
+                    commonsTransfer.add((String)x.get("title"));
+            }
 
             // remove all files that have been reuploaded to Commons
             localuploads.removeAll(comuploads);

@@ -114,13 +114,12 @@ public class XWikiContributionSurveyor
             for (String wiki : wikis)
             {
                 WMFWiki wikisession = sessions.sharedSession(wiki);
-                outwriter.write("==" + wiki + "==\n\n");
                 ContributionSurveyor cs = ContributionSurveyor.makeContributionSurveyor(wikisession, parsedargs);
                 cs.setFooter(temp.toString());
                 
                 String prefix = wiki.substring(0, wiki.indexOf("."));
                 List<String> pages;
-                switch (wiki)
+                switch (wiki) // FIXME: this information is available via the MW API meta=siteinfo
                 {
                     case "commons.wikimedia.org":
                     {
@@ -130,18 +129,27 @@ public class XWikiContributionSurveyor
                     }
                     case "www.wikidata.org":
                         prefix = "d";
-                        // fall through
+                        pages = cs.outputContributionSurvey(users, true, false, false, ns);
+                        break;
+                    case "meta.wikimedia.org":
+                        prefix = "m";
+                        pages = cs.outputContributionSurvey(users, true, false, false, ns);
+                        break;
                     default:
                         pages = cs.outputContributionSurvey(users, true, false, false, ns);
                         break;
                 }
-                
-                for (String page : pages)
-                {    
-                    page = page.replace("[[:", "[[:" + prefix + ":");
-                    page = page.replace("[[Special", "[[:" + prefix + ":Special");
-                    outwriter.write(page);
-                    outwriter.write("\n\n");
+                                
+                if (!pages.isEmpty())
+                {
+                    outwriter.write("=" + wiki + "=\n\n");
+                    for (String page : pages)
+                    {    
+                        page = page.replace("[[:", "[[:" + prefix + ":");
+                        page = page.replace("[[Special", "[[:" + prefix + ":Special");
+                        outwriter.write(page);
+                        outwriter.write("\n\n");
+                    }
                 }
             }
         }
