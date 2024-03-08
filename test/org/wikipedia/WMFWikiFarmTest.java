@@ -46,6 +46,17 @@ public class WMFWikiFarmTest
     }
     
     @Test
+    public void invertInterWikiMap()
+    {
+        Map<String, String> iwmap0 = WMFWikiFarm.instance().sharedSession("en.wikipedia.org").interWikiMap();
+        Map<String, String> iwmap = WMFWikiFarm.invertInterWikiMap(iwmap0);
+        assertEquals("m", iwmap.get("meta.wikimedia.org"));
+        assertEquals("ja", iwmap.get("ja.wikipedia.org"));
+        assertEquals("d", iwmap.get("www.wikidata.org"));
+        assertEquals("mw", iwmap.get("www.mediawiki.org"));
+    }
+    
+    @Test
     public void getGlobalUserInfo() throws Exception
     {
         // locked account with local block

@@ -80,6 +80,29 @@ public class WMFWikiFarm
     }
     
     /**
+     *  Inverts the results of {@link Wiki#interWikiMap()} to return a Map from
+     *  domain name to prefix. When there are multiple prefixes for one domain,
+     *  choose the prefix with the shortest length.
+     *  @param iwmap an interwiki mapping
+     *  @return (see above)
+     */
+    public static Map<String, String> invertInterWikiMap(Map<String, String> iwmap)
+    {
+        Map<String, String> ret = new LinkedHashMap<>();
+        for (Map.Entry<String, String> entry : iwmap.entrySet())
+        {
+            String prefix = entry.getKey();
+            String target = entry.getValue();
+            String domain = ExternalLinks.extractDomain(target);
+            ret.merge(domain, prefix, (oldval, newval) -> (oldval.length() > newval.length()) ? newval : oldval);
+        }
+        // reinsert the www in special cases (the interwiki map omits them)
+        ret.put("www.wikidata.org", "d");
+        ret.put("www.mediawiki.org", "mw");
+        return ret;
+    }
+    
+    /**
      *  Returns a shared session manager. Note that multiple instances - i.e.
      *  multiple groups of sessions - are still permitted.
      *  @return a shared session manager

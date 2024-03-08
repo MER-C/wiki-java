@@ -964,19 +964,29 @@ public class WikiTest
     }
 
     @Test
-    public void getLocale()
+    public void locale()
     {
         assertEquals(Locale.ENGLISH, enWiki.locale());
         assertEquals(Locale.GERMAN, deWiki.locale());
     }
 
     @Test
-    public void getInstalledExtensions()
+    public void installedExtensions()
     {
         List<String> extensions = enWiki.installedExtensions();
         assertTrue(extensions.contains("Math"));
         assertTrue(extensions.contains("SpamBlacklist"));
         assertFalse(extensions.contains("NotAnExtension"));
+    }
+    
+    @Test
+    public void interWikiMap()
+    {
+        Map<String, String> iwmap = enWiki.interWikiMap();
+        assertEquals("https://meta.wikimedia.org/wiki/$1", iwmap.get("m"));
+        assertEquals("https://meta.wikimedia.org/wiki/$1", iwmap.get("meta"));
+        assertEquals("https://www.wikidata.org/wiki/$1", iwmap.get("d"));
+        assertNull(iwmap.get("245"));
     }
 
     @Test

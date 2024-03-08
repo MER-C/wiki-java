@@ -36,7 +36,7 @@
     String useragent = request.getHeader("User-Agent");
     if (useragent.contains("Tweetmeme") || useragent.contains("Apache-HttpClient") || 
         useragent.contains("bing.com")  || useragent.contains("Wget") ||
-        useragent.contains("archive.org"))
+        useragent.contains("archive.org") || useragent.contains("Amazonbot"))
     {
         response.setStatus(403);
         return;

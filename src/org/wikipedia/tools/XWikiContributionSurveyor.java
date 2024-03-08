@@ -111,34 +111,17 @@ public class XWikiContributionSurveyor
             "Error: No output file selected.", true);
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
         {
+            Map<String, String> iwmap = WMFWikiFarm.invertInterWikiMap(meta.interWikiMap());
             for (String wiki : wikis)
             {
                 WMFWiki wikisession = sessions.sharedSession(wiki);
                 ContributionSurveyor cs = ContributionSurveyor.makeContributionSurveyor(wikisession, parsedargs);
+                cs.setSurveyingTransferredFiles(false);
                 cs.setFooter(temp.toString());
                 
-                String prefix = wiki.substring(0, wiki.indexOf("."));
-                List<String> pages;
-                switch (wiki) // FIXME: this information is available via the MW API meta=siteinfo
-                {
-                    case "commons.wikimedia.org":
-                    {
-                        pages = cs.outputContributionSurvey(users, true, false, true, ns);
-                        prefix = "c";
-                        break;
-                    }
-                    case "www.wikidata.org":
-                        prefix = "d";
-                        pages = cs.outputContributionSurvey(users, true, false, false, ns);
-                        break;
-                    case "meta.wikimedia.org":
-                        prefix = "m";
-                        pages = cs.outputContributionSurvey(users, true, false, false, ns);
-                        break;
-                    default:
-                        pages = cs.outputContributionSurvey(users, true, false, false, ns);
-                        break;
-                }
+                String prefix = iwmap.get(wiki);
+                List<String> pages = cs.outputContributionSurvey(users, true, false, 
+                    wiki.equals("commons.wikimedia.org"), ns);
                                 
                 if (!pages.isEmpty())
                 {

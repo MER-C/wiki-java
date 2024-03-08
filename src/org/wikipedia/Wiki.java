@@ -441,6 +441,7 @@ public class Wiki implements Comparable<Wiki>
     private List<String> extensions = Collections.emptyList();
     private LinkedHashMap<String, Integer> namespaces = null;
     private ArrayList<Integer> ns_subpages = null;
+    private LinkedHashMap<String, String> iwmap = new LinkedHashMap<>();
 
     // user management
     private HttpClient client;
@@ -748,7 +749,7 @@ public class Wiki implements Comparable<Wiki>
             Map<String, String> getparams = new HashMap<>();
             getparams.put("action", "query");
             getparams.put("meta", "siteinfo");
-            getparams.put("siprop", "namespaces|namespacealiases|general|extensions");
+            getparams.put("siprop", "namespaces|namespacealiases|general|extensions|interwikimap");
             String line = makeApiCall(getparams, null, "getSiteInfo");
             detectUncheckedErrors(line, null, null);
 
@@ -794,6 +795,12 @@ public class Wiki implements Comparable<Wiki>
                 if (items[i].contains("subpages=\"\""))
                     ns_subpages.add(ns);
             }
+            
+            // interwiki map
+            bits = line.substring(line.indexOf("<interwikimap>"), line.indexOf("</interwikimap>"));
+            unparsed = bits.split("<iw ");
+            for (int i = 1; i < unparsed.length; i++)
+                iwmap.put(parseAttribute(unparsed[i], "prefix", 0), parseAttribute(unparsed[i], "url", 0));
             siteinfofetched = true;
             log(Level.INFO, "getSiteInfo", "Successfully retrieved site info for " + getDomain());
         }
@@ -877,6 +884,21 @@ public class Wiki implements Comparable<Wiki>
     {
         ensureNamespaceCache();
         return locale;
+    }
+    
+    /**
+     *  Gets the interwiki map of this wiki. The return type is a many to one
+     *  map between interwiki link prefixes (e.g. "m" for meta.wikimedia.org) 
+     *  and the target URL with placeholders (e.g. https://meta.wikimedia.org/wiki/$1 ).
+     *  @return a Map prefix &#8594; URL with placeholders
+     *  @throws UncheckedIOException if the site info cache has not been
+     *  populated and a network error occurred when populating it
+     *  @since 0.39
+     */
+    public Map<String, String> interWikiMap()
+    {
+        ensureNamespaceCache();
+        return iwmap;
     }
 
     /**
