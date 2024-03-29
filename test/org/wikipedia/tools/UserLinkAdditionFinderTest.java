@@ -64,7 +64,7 @@ public class UserLinkAdditionFinderTest
         // remainder of users with one edit, one link
 
         List<String> users = List.of("Helonty", "ReteNsep", "Reyeilint", "Shittipa", "EDPerfect");
-        Map<Wiki.Revision, List<String>> linksadded = finder_en.getLinksAdded(users, null);
+        Map<Wiki.Revision, List<String>> linksadded = finder_en.getLinksAdded(users, null, null);
         Set<String> actual = linksadded.keySet().stream().map(rev -> String.valueOf(rev.getID())).collect(Collectors.toSet());
         assertEquals(4, actual.size());
         assertTrue(actual.containsAll(List.of("834061933", "823758919", "833871994", "834097191")));
@@ -89,7 +89,7 @@ public class UserLinkAdditionFinderTest
         }
         
         // check date cutoff (all users indeffed prior to this date, therefore empty)
-        linksadded = finder_en.getLinksAdded(users, OffsetDateTime.parse("2018-06-01T00:00:00Z"));
+        linksadded = finder_en.getLinksAdded(users, OffsetDateTime.parse("2018-06-01T00:00:00Z"), null);
         assertTrue(linksadded.isEmpty());
     }
 

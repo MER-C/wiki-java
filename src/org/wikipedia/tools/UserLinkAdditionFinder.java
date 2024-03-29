@@ -35,7 +35,6 @@ import org.wikipedia.*;
  */
 public class UserLinkAdditionFinder
 {
-    private static int threshold = 50;
     private final WMFWiki wiki;
     private static final WMFWikiFarm sessions = WMFWikiFarm.instance();
     
@@ -57,16 +56,18 @@ public class UserLinkAdditionFinder
             .addSingleArgumentFlag("--category", "category", "Get links for all users from this category (recursive).")
             .addSingleArgumentFlag("--infile", "users.txt", "Get links for all users in this file")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
+            .addSingleArgumentFlag("--threshold", "50", "If filtering commonly used domains, the threshold number of links (default: 50)")
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
+            .addSingleArgumentFlag("--fetchbefore", "date", "Fetch only edits before this date")
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
 
         WMFWiki thiswiki = sessions.sharedSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         boolean linksearch = parsedargs.containsKey("--linksearch");
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
-        String datestring = parsedargs.get("--fetchafter");
-        OffsetDateTime date = datestring == null ? null : OffsetDateTime.parse(datestring);
+        List<OffsetDateTime> dates = CommandLineParser.parseDateRange(parsedargs, "--fetchafter", "--fetchbefore");
+        int threshold = Integer.parseInt(parsedargs.getOrDefault("--threshold", "50"));
         
         UserLinkAdditionFinder finder = new UserLinkAdditionFinder(thiswiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(thiswiki);
@@ -85,7 +86,7 @@ public class UserLinkAdditionFinder
         // * linkdomains: link -> domain
         // * linkcounts: domain -> count of links
         // * stillthere: page name -> link -> whether it is still there
-        Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, date);
+        Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, dates.get(0), dates.get(1));
         if (results.isEmpty())
         {
             System.out.println("No links found.");
@@ -99,7 +100,14 @@ public class UserLinkAdditionFinder
             {
                 String domain = ExternalLinks.extractDomain(link);
                 if (domain != null) // must be parseable
-                    linkdomains.put(link, domain);
+                {
+                    boolean nomatch = true;
+                    for (String wmfsite : WMFWikiFarm.WMF_DOMAINS)
+                        if (domain.endsWith(wmfsite))
+                            nomatch = false;
+                    if (nomatch)
+                        linkdomains.put(link, domain);
+                }
             }
         }
         
@@ -168,14 +176,16 @@ public class UserLinkAdditionFinder
      *  must be a list of usernames only, no User: prefix or wikilinks allowed.
      *  @param users the list of users to get link additions for
      *  @param earliest return edits no earlier than this date
+     *  @param latest return edits no later than this date
      *  @return a Map: revision &#8594; added links
      *  @throws IOException if a network error occurs
      */
-    public Map<Wiki.Revision, List<String>> getLinksAdded(List<String> users, OffsetDateTime earliest) throws IOException
+    public Map<Wiki.Revision, List<String>> getLinksAdded(List<String> users, OffsetDateTime earliest, 
+        OffsetDateTime latest) throws IOException
     {
         Wiki.RequestHelper rh = wiki.new RequestHelper()
             .inNamespaces(Wiki.MAIN_NAMESPACE)
-            .withinDateRange(earliest, null);
+            .withinDateRange(earliest, latest);
         Map<Wiki.Revision, List<String>> results = new HashMap<>();
         List<List<Wiki.Revision>> contribs = wiki.contribs(users, null, rh);
         List<Wiki.Revision> revisions = contribs.stream()
@@ -196,7 +206,7 @@ public class UserLinkAdditionFinder
      *  For a map that contains revision data &#8594; links added in that 
      *  revision, check whether the links still exist in the current version of
      *  the article. Such a map can be obtained by calling {@link 
-     *  #getLinksAdded(List, OffsetDateTime)}.
+     *  #getLinksAdded(List, OffsetDateTime, OffsetDateTime)}.
      *  @param data a map containing revision data &#8594; links added in that 
      *  revision
      *  @return a map containing page &#8594; link &#8594; whether it is still 

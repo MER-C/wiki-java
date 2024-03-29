@@ -60,7 +60,7 @@ public class XWikiUserLinkAdditionFinder
             for (WMFWiki wiki : wikisedited)
             {
                 UserLinkAdditionFinder finder = new UserLinkAdditionFinder(wiki);
-                Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, null);
+                Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, null, null);
                 if (results.isEmpty())
                     continue;
 

@@ -40,6 +40,15 @@ public class WMFWikiFarm
     private Consumer<WMFWiki> setupfn;
     
     /**
+     *  List of Wikimedia domains. I am surprised this is not available by some 
+     *  API.
+     */
+    public static final List<String> WMF_DOMAINS = List.of("wikimedia.org", "wikipedia.org",
+        "wiktionary.org", "wikibooks.org", "wikisource.org", "wikivoyage.org",
+        "wikinews.org", "wikiquote.org", "wikidata.org", "wikifunctions.org", "wikiversity.org",
+        "wikimediafoundation.org", "mediawiki.org", "toolforge.org");
+    
+    /**
      *  Computes the domain name (to use in {@link WMFWiki#newSession}) the 
      *  WMF wiki that has the given database name (e.g. "enwiki" for the English 
      *  Wikipedia, "nlwikisource"  for the Dutch Wikisource and "wikidatawiki" 
