@@ -74,8 +74,8 @@ public class ContributionSurveyor
             .addSection("Users to scan:")
             .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
             .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits).")
-            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the wiki page [[Main Page]].")
             .addSingleArgumentFlag("--sourcewiki", "example.com", "Use a different wiki than --wiki as a source of users.")
+            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the source wiki page [[Main Page]].")
             .addSingleArgumentFlag("--blockedafter", "date", "Only survey unblocked users or those blocked on the target wiki after a certain date.");
         clp = addSharedOptions(clp);
         Map<String, String> parsedargs = clp
@@ -91,20 +91,11 @@ public class ContributionSurveyor
             sourcewiki = Wiki.newSession(parsedargs.get("--sourcewiki"));
         if (parsedargs.containsKey("--login"))
             Users.of(homewiki).cliLogin();
-        String wikipage = parsedargs.get("--wikipage");
         String blockedafterstring = parsedargs.get("--blockedafter");
         OffsetDateTime blockedafter = (blockedafterstring == null) ? null : OffsetDateTime.parse(blockedafterstring);
 
         // fetch user list
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, sourcewiki);
-        if (wikipage != null)
-        {
-            String text = sourcewiki.getPageText(List.of(wikipage)).get(0);
-            List<String> list = Pages.parseWikitextList(text);
-            for (String temp : list)
-                if (sourcewiki.namespace(temp) == Wiki.USER_NAMESPACE)
-                    users.add(sourcewiki.removeNamespace(temp));
-        }
         if (users.isEmpty()) // file IO
         {
             Path path = CommandLineParser.parseFileOption(parsedargs, "--infile", "Select user list", 

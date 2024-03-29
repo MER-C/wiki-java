@@ -25,6 +25,7 @@ import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.*;
 import javax.swing.JFileChooser;
+import org.wikipedia.Pages;
 import org.wikipedia.Wiki;
 
 /**
@@ -266,8 +267,16 @@ public class CommandLineParser
     }
     
     /**
-     *  Fetches a list of users specified on the command line with the options
-     *  <kbd>--user</kbd> (singular) or <kbd>--category</kbd> (an entire category).
+     *  Fetches a list of users specified on the command line with the options:
+     * 
+     *  <ul>
+     *    <li><kbd>--user</kbd> (single user)
+     *    <li><kbd>--category</kbd> (an entire category, recursive)
+     *    <li><kbd>--wikipage</kbd> (users listed on a wiki page)
+     *  </ul>
+     * 
+     *  <p>Each flag adds to the users already obtained.
+     * 
      *  @param parsedargs parsed arguments from {@link #parse}
      *  @param wiki the wiki to fetch category members from
      *  @return a list of users
@@ -278,12 +287,26 @@ public class CommandLineParser
         List<String> users = new ArrayList<>();
         String category = parsedargs.get("--category");
         String user = parsedargs.get("--user");
+        String wikipage = parsedargs.get("--wikipage");
         
         if (category != null)
             for (String member : wiki.getCategoryMembers(category, true, Wiki.USER_NAMESPACE))
                 users.add(wiki.removeNamespace(member));
         if (user != null)
             users.add(user);
+        if (wikipage != null)
+        {
+            String text = wiki.getPageText(List.of(wikipage)).get(0);
+            if (text == null)
+                System.err.println("Ignoring --wikipage, page [[" + wikipage + "]] does not exist.");
+            else
+            {
+                List<String> list = Pages.parseWikitextList(text);
+                for (String temp : list)
+                    if (wiki.namespace(temp) == Wiki.USER_NAMESPACE)
+                        users.add(wiki.removeNamespace(temp));
+            }
+        }
         return users;
     }
     

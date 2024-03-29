@@ -52,7 +52,8 @@ public class XWikiContributionSurveyor
             .description("Survey the contributions of a large number of wiki editors across all wikis.")
             .addVersion("XWikiContributionSurveyor v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s).")
-            .addSingleArgumentFlag("--lockedafter", "date", "Only survey unlocked users or those locked after a certain date.");
+            .addSingleArgumentFlag("--lockedafter", "date", "Only survey unlocked users or those locked after a certain date.")
+            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the en.wp page [[Main Page]].");
         Map<String, String> parsedargs = ContributionSurveyor.addSharedOptions(clp).parse(args);
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, enWiki);
         String lockedafterstring = parsedargs.get("--lockedafter");

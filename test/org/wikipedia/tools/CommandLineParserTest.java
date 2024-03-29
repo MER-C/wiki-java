@@ -186,6 +186,18 @@ public class CommandLineParserTest
         users = CommandLineParser.parseUserOptions(args, enWiki);
         assertFalse(users.contains("Bodiadub"));
         assertTrue(users.size() > 30);
+        
+        args.remove("--category");
+        Wiki testWiki = Wiki.newSession("test.wikipedia.org");
+        args.put("--wikipage", "User:MER-C/UnitTests/UserList");
+        users = CommandLineParser.parseUserOptions(args, testWiki);
+        assertTrue(users.containsAll(List.of("TestUser1", "TestUser2", "TestUser3", "TestUser4")));
+        assertEquals(4, users.size());
+        
+        // wikipage (non-existant)
+        args.put("--wikipage", "Invalid title[]");
+        users = CommandLineParser.parseUserOptions(args, enWiki);
+        assertTrue(users.isEmpty());
     }
     
     @Test

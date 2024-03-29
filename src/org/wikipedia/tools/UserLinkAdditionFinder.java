@@ -54,6 +54,7 @@ public class UserLinkAdditionFinder
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--user", "user", "Get links for this user.")
             .addSingleArgumentFlag("--category", "category", "Get links for all users from this category (recursive).")
+            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Get links for all users listed on the wiki page [[Main Page]].")
             .addSingleArgumentFlag("--infile", "users.txt", "Get links for all users in this file")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addSingleArgumentFlag("--threshold", "50", "If filtering commonly used domains, the threshold number of links (default: 50)")
