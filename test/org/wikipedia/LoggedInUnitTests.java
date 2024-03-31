@@ -19,7 +19,7 @@
 package org.wikipedia;
 
 import java.io.File;
-import java.net.URL;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.*;
 import org.junit.jupiter.api.*;
@@ -87,7 +87,8 @@ public class LoggedInUnitTests
             description = "Test image. Source (PD-NASA): [[:File:(Tsander) Large Impact Crater, Lunar Surface.jpg]]";
             uploadDest = "Wiki.java test5.jpg";
             reason = "Testing upload via URL";
-            testWiki.upload(new URL("https://upload.wikimedia.org/wikipedia/commons/b/bc/%28Tsander%29_Large_Impact_Crater%2C_Lunar_Surface.jpg"), 
+            testWiki.upload(
+                new URI("https://upload.wikimedia.org/wikipedia/commons/b/bc/%28Tsander%29_Large_Impact_Crater%2C_Lunar_Surface.jpg").toURL(),
                 uploadDest, description, reason);
             // verify file uploaded is identical to copied image
             expected = File.createTempFile("wikijava_upload3", null);
@@ -105,6 +106,40 @@ public class LoggedInUnitTests
             // Requires admin rights... otherwise find an admin to delete manually.
             testWiki.delete("File:Wiki.java test4.jpg", "Test cleanup", false);
             testWiki.delete("File:Wiki.java test5.jpg", "Test cleanup", false);
+        }
+    }
+    
+    @Test
+    public void fileRevert() throws Exception
+    {
+        String fname = "File:Wiki.java test6.jpg";
+        try
+        {
+            File expected = File.createTempFile("wikijava_filerevert1", null);
+            testWiki.upload(
+                new URI("https://upload.wikimedia.org/wikipedia/commons/b/bc/%28Tsander%29_Large_Impact_Crater%2C_Lunar_Surface.jpg").toURL(),
+                fname, "testing file reversion", "Test image. Source (PD-NASA): [[:File:(Tsander) Large Impact Crater, Lunar Surface.jpg]]");
+            testWiki.getImage(fname, expected);
+            testWiki.upload(new URI("https://upload.wikimedia.org/wikipedia/commons/0/00/PIA21465_-_North_Polar_Layers.jpg").toURL(),
+                fname, "overwriting", "overwriting");
+            List<Wiki.LogEntry> le = testWiki.getFileHistory(List.of(fname)).get(0);
+            String comment = "test file revert";
+            testWiki.fileRevert(fname, le.get(1), comment);
+            le = testWiki.getFileHistory(List.of(fname)).get(0);
+            
+            assertEquals(3, le.size());
+            Wiki.LogEntry top = le.get(0);
+            assertEquals(comment, top.getComment());
+            assertEquals(fname, top.getTitle());
+            File actual = File.createTempFile("wikijava_filerevert2", null);
+            testWiki.getImage(fname, actual);
+            assertArrayEquals(Files.readAllBytes(expected.toPath()), 
+                Files.readAllBytes(actual.toPath()), "file revert: image");
+        }
+        finally
+        {
+            // Requires admin rights... otherwise find an admin to delete manually.
+            testWiki.delete(fname, "Test cleanup", false);
         }
     }
     

@@ -433,10 +433,33 @@ public class WikiTest
     }
 
     @Test
-    public void getImageHistory() throws Exception
+    public void getFileHistory() throws Exception
     {
-        assertTrue(enWiki.getImageHistory("File:Sdfjgh&sld.jpg").isEmpty(), "non-existent file");
-        assertTrue(enWiki.getImageHistory("File:WikipediaSignpostIcon.svg").isEmpty(), "commons image");
+        String fname = "File:Example.svg";
+        List<String> files = List.of("File:Sdfjgh&sld.jpg", fname);
+        List<List<Wiki.LogEntry>> fhist = commons.getFileHistory(files);
+        assertTrue(fhist.get(0).isEmpty(), "non-existent file");
+        assertTrue(enWiki.getFileHistory(List.of("File:WikipediaSignpostIcon.svg")).get(0).isEmpty(), "commons image");
+        
+        List<Wiki.LogEntry> example = fhist.get(1);
+        int size = example.size();
+        assertNull(example.get(0).getDetails().get("archivename"));
+        Wiki.LogEntry le = example.get(size - 1);
+        assertEquals(fname, le.getTitle());
+        assertEquals("upload", le.getAction());
+        assertEquals("Nethac DIU", le.getUser());
+        assertEquals(OffsetDateTime.parse("2006-07-12T21:14:45Z"), le.getTimestamp());
+        assertEquals("", le.getComment());
+        assertEquals("20070525200009!Example.svg", le.getDetails().get("archivename"));
+        le = example.get(size - 2);
+        assertEquals(fname, le.getTitle());
+        assertEquals("overwrite", le.getAction());
+        assertEquals("Gmaxwell", le.getUser());
+        assertEquals(OffsetDateTime.parse("2007-09-03T23:17:16Z"), le.getTimestamp());
+        assertEquals("This is a straightforward resize.. the image is being used as an example in enwp [[w:Wikipedia:10" +
+            "_things_you_did_not_know_about_images_on_Wikipedia]].. but it's a poor example without this change because the " +
+            "image page image is ''smaller'' than the thumbn", le.getComment());
+        assertEquals("20080323205329!Example.svg", le.getDetails().get("archivename"));
     }
 
     @Test

@@ -3656,7 +3656,7 @@ public class Wiki implements Comparable<Wiki>
             if (!temp.getClass().equals(clazz))
                 throw new IllegalArgumentException("All Events to be RevisionDeleted must be of the same type.");
             // TODO: Apparently you can RevisionDelete old files (i.e.
-            // pseudo-LogEntries from getImageHistory and the file archive, but
+            // pseudo-LogEntries from getFileHistory and the file archive, but
             // I have no idea how to get the necessary ID parameter.
             // You can also RevisionDelete deleted revisions, but I need to
             // test this first.
@@ -4203,7 +4203,7 @@ public class Wiki implements Comparable<Wiki>
      *  Commons).
      *
      *  @param files the files for checking duplicates (may contain "File")
-     *  @return the duplicates of those files
+     *  @return the duplicates of those files, in order of input
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws IllegalArgumentException if any of the files has an invalid title
      *  @since 0.18
@@ -4231,25 +4231,28 @@ public class Wiki implements Comparable<Wiki>
     }
 
     /**
-     *  Returns the upload history of an image. This is not the same as
+     *  Returns the upload histories of a list of files. This is not the same as
      *  {@linkplain #getLogEntries(String, String, Wiki.RequestHelper) fetching
-     *  a page's upload log}, as the image may have been deleted. This returns
-     *  only the live history of an image.
+     *  each file's upload log individually}, as the file may have been deleted. 
+     *  This returns only the live history of the files. The log entries so 
+     *  returned have the archive filename as details.
      *
-     *  @param title the title of the image (may contain File)
-     *  @return the image history of the image
+     *  @param titles a bunch of file titles (may contain File)
+     *  @return the history of the files, in order of input
      *  @throws IOException or UncheckedIOException if a network error occurs
-     *  @since 0.20
+     *  @since 0.39
+     *  @see #fileRevert(String, String)
      */
-    public List<LogEntry> getImageHistory(String title) throws IOException
+    public List<List<LogEntry>> getFileHistory(SequencedCollection<String> titles) throws IOException
     {
         Map<String, String> getparams = new HashMap<>();
+        List<String> files2 = new ArrayList<>(titles.size());
+        for (String title : titles)
+            files2.add("File:" + removeNamespace(normalize(title), FILE_NAMESPACE));
         getparams.put("prop", "imageinfo");
-        getparams.put("iiprop", "timestamp|user|comment|parsedcomment");
-        getparams.put("titles", "File:" + removeNamespace(normalize(title), FILE_NAMESPACE));
+        getparams.put("iiprop", "timestamp|user|comment|parsedcomment|archivename");
 
-        String prefixtitle = namespaceIdentifier(FILE_NAMESPACE) + ":" + title;
-        List<LogEntry> history = makeListQuery("ii", getparams, null, "getImageHistory", -1, (line, results) ->
+        List<List<LogEntry>> history = makeVectorizedQuery("ii", getparams, files2, "getFileHistory", -1, (line, results) ->
         {
             if (line.contains("missing=\"\""))
                 return;
@@ -4259,18 +4262,24 @@ public class Wiki implements Comparable<Wiki>
             {
                 int b = line.indexOf('>', a);
                 String temp = line.substring(a, b);
-                LogEntry le = parseLogEntry(temp, null, UPLOAD_LOG, "overwrite", prefixtitle);
+                LogEntry le = parseLogEntry(temp, null, UPLOAD_LOG, "overwrite", parseAttribute(line, "title", 0));
+                le.details = new HashMap<>();
+                le.details.put("archivename", parseAttribute(temp, "archivename", 0));
                 results.add(le);
             }
         });
 
-        // crude hack: action adjusting for first image (in the history, not our list)
-        int size = history.size();
-        if (size == 0)
-            return Collections.emptyList();
-        LogEntry last = history.get(size - 1);
-        last.action = "upload";
-        history.set(size - 1, last);
+        // adjust actions
+        for (int i = 0; i < history.size(); i++)
+        {
+            List<Wiki.LogEntry> history2 = history.get(i);
+            int size = history2.size();
+            if (size == 0)
+                continue;
+            LogEntry last = history2.get(size - 1);
+            last.action = "upload";
+            history2.set(size - 1, last);
+        }
         return history;
     }
 
@@ -4546,6 +4555,48 @@ public class Wiki implements Comparable<Wiki>
         String response = makeApiCall(getparams, postparams, "upload");
         checkErrorsAndUpdateStatus(response, "upload", null, null);
         log(Level.INFO, "upload", "Successfully uploaded to File:" + filename + ".");
+    }
+    
+    /**
+     *  Reverts a file to the given previous revision.
+     *  @param filename the target file name (may contain File)
+     *  @param filerev a file revision LogEntry from {@link #getFileHistory(List)}
+     *  @param reason the reason for reverting the file
+     *  @throws IOException or UncheckedIOException if a network error occurs
+     *  @throws SecurityException if not logged in
+     *  @throws CredentialException if (page is protected OR file is on a central
+     *  repository) and we can't revert the file
+     *  @throws CredentialExpiredException if cookies have expired
+     *  @throws AccountLockedException if user is blocked
+     *  @since 0.39
+     */
+    public synchronized void fileRevert(String filename, Wiki.LogEntry filerev, String reason) throws IOException, LoginException
+    {
+        filename = removeNamespace(filename, FILE_NAMESPACE);
+        checkPermissions("upload", "upload_by_url");
+        throttle();
+
+        // protection
+        Map<String, Object> info = getPageInfo(List.of("File:" + filename)).get(0);
+        if (!checkRights(info, "upload"))
+        {
+            CredentialException ex = new CredentialException("Permission denied: page is protected.");
+            log(Level.WARNING, "upload", "Cannot revert file - permission denied." + ex);
+            throw ex;
+        }
+
+        // send and build request
+        Map<String, String> getparams = new HashMap<>();
+        getparams.put("action", "filerevert");
+        getparams.put("filename", normalize(filename));
+        Map<String, Object> postparams = new HashMap<>();
+        postparams.put("token", getToken("csrf"));
+        postparams.put("comment", reason);
+        postparams.put("archivename", filerev.getDetails().get("archivename"));
+        
+        String response = makeApiCall(getparams, postparams, "fileRevert");
+        checkErrorsAndUpdateStatus(response, "fileRevert", null, null);
+        log(Level.INFO, "fileRevert", "Successfully reverted File:" + filename + ".");
     }
 
     // USER METHODS
@@ -6042,7 +6093,7 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Parses xml generated by <code>getLogEntries()</code>,  
-     *  <code>getImageHistory()</code> and <code>getBlockList()</code> into {@link Wiki.LogEntry}
+     *  <code>getFileHistory()</code> and <code>getBlockList()</code> into {@link Wiki.LogEntry}
      *  objects. Override this if you want custom log types. NOTE: if
      *  RevisionDelete was used on a log entry, the relevant values will be
      *  null.
@@ -6090,7 +6141,8 @@ public class Wiki implements Comparable<Wiki>
         }
         else
         {
-            reason = parseAttribute(xml, "comment", 0);
+            // space is important, if comment comes after parsedcomment
+            reason = parseAttribute(xml, " comment", 0); 
             parsedreason = parseAttribute(xml, "parsedcomment", 0);
         }
 
@@ -6102,7 +6154,7 @@ public class Wiki implements Comparable<Wiki>
             user = Wiki.Event.USER_DELETED;
 
         // generic target name
-        // space is important -- commons.getImageHistory("File:Chief1.gif");
+        // space is important -- commons.getFileHistory("File:Chief1.gif");
         if (target == null && xml.contains(" title=\""))
             target = parseAttribute(xml, "title", 0);
         else if (actionhidden)

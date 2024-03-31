@@ -134,10 +134,6 @@ public class WikiTests
         for (Wiki.Revision revision : enWiki.contribs("", "127.0.", c, null))
             System.out.println(revision);
 
-        // getImageHistory
-        for (Wiki.LogEntry entry : enWiki.getImageHistory("Davis Motor Car Company logo.jpg"))
-            System.out.println(entry);
-
         // Revision.diff
         System.out.println(enWiki.getRevision(473467375L).diff(Wiki.PREVIOUS_REVISION));
 
@@ -172,7 +168,7 @@ public class WikiTests
 /*
 
         // getOldImage/image history
-        Wiki.LogEntry[] entries = enWiki.getImageHistory("File:Bohemian Rhapsody.png");
+        Wiki.LogEntry[] entries = enWiki.getFileHistory("File:Bohemian Rhapsody.png");
         for (Wiki.LogEntry entry : entries)
             System.out.println(entry);
         FileOutputStream out2 = new FileOutputStream("hello.png");
