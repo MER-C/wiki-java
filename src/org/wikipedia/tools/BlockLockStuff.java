@@ -19,7 +19,6 @@
  */
 package org.wikipedia.tools;
 
-import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.*;
 import org.wikipedia.*;
@@ -41,21 +40,14 @@ public class BlockLockStuff
     public static void main(String[] args) throws Exception
     {
         Map<String, String> parsedargs = new CommandLineParser()
-            .addSingleArgumentFlag("--sockcat", "Category:Socks of user", "Fetch block/lock status of socks in this category (recursive)")
-            .addSingleArgumentFlag("--infile", "spam.txt", "List of spammers to be read in from a file")
-            .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "")
+            .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "Fetch socks from this wiki")
+            .addUserInputOptions("Fetch sock info for")
             .addHelp()
             .parse(args);
         String wikistring = parsedargs.getOrDefault("--wiki", "en.wikipedia.org");
         Wiki wiki = sessions.sharedSession(wikistring);
-        
-        List<String> socks = new ArrayList<>();
-        if (parsedargs.containsKey("--sockcat"))
-            socks.addAll(wiki.getCategoryMembers(parsedargs.get("--sockcat"), true, Wiki.USER_NAMESPACE));
-        else
-            socks.addAll(Files.readAllLines(CommandLineParser.parseFileOption(parsedargs, "--infile", "Open account list", 
-                "Error: accounts not specified", false)));
-        
+        List<String> socks = CommandLineParser.parseUserOptions(parsedargs, wiki);
+
         lockFinder(socks);
         blockFinder(wiki, socks);
         staleScreener(wiki, socks);

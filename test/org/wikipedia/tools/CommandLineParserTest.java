@@ -101,6 +101,7 @@ public class CommandLineParserTest
             .addSection("Options:")
             .addBooleanFlag("--boolean", "A boolean flag.")
             .addSingleArgumentFlag("--flag", "[string]", "Set some value to string.")
+            .addUserInputOptions("X")
             .buildHelpString();
         String expected = """
             SYNOPSIS:
@@ -119,6 +120,14 @@ public class CommandLineParserTest
                     A boolean flag.
                 --flag [string]
                     Set some value to string.
+                --user user 
+                    X this user.
+                --category category 
+                    X all users from this category (recursive).
+                --wikipage 'Main Page'
+                    X all users listed on the wiki page [[Main Page]].
+                --infile users.txt 
+                    X all users in this file.
             """.replace("    ", "\t");
         System.out.println(expected);
         System.out.println(actual);
@@ -168,7 +177,8 @@ public class CommandLineParserTest
     {
         Map<String, String> args = new HashMap<>();
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
-        List<String> users = CommandLineParser.parseUserOptions(args, enWiki);
+        // parseUserOptions2 because otherwise it will show a filechooser and potentially exit
+        List<String> users = CommandLineParser.parseUserOptions2(args, enWiki);
         assertTrue(users.isEmpty());
         
         args.put("--user", "Bodiadub");
@@ -196,7 +206,7 @@ public class CommandLineParserTest
         
         // wikipage (non-existant)
         args.put("--wikipage", "Invalid title[]");
-        users = CommandLineParser.parseUserOptions(args, enWiki);
+        users = CommandLineParser.parseUserOptions2(args, enWiki);
         assertTrue(users.isEmpty());
     }
     

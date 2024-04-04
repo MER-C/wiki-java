@@ -66,8 +66,6 @@ public class ContributionSurveyor
             .synopsis("org.wikipedia.tools.ContributionSurveyor", "[options]")
             .description("Survey the contributions of a large number of wiki editors.")
             .addVersion("ContributionSurveyor v0.08\n" + CommandLineParser.GPL_VERSION_STRING)
-            .addSingleArgumentFlag("--infile", "file", "Use file as the list of users. "
-                + "Shows a filechooser if not specified.")
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s). "
                 + "Shows a filechooser if not specified. If multiple files output, use this as a prefix.")
             .addBooleanFlag("--zip", "Write a zip file instead of individual file(s).")
@@ -75,7 +73,6 @@ public class ContributionSurveyor
             .addSingleArgumentFlag("--wiki", "example.org", "Use example.org as the home wiki (default: en.wikipedia.org).")
             .addBooleanFlag("--login", "Shows a CLI login prompt (use for high limits).")
             .addSingleArgumentFlag("--sourcewiki", "example.com", "Use a different wiki than --wiki as a source of users.")
-            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Fetch a list of users from the source wiki page [[Main Page]].")
             .addSingleArgumentFlag("--blockedafter", "date", "Only survey unblocked users or those blocked on the target wiki after a certain date.");
         clp = addSharedOptions(clp);
         Map<String, String> parsedargs = clp
@@ -94,19 +91,8 @@ public class ContributionSurveyor
         String blockedafterstring = parsedargs.get("--blockedafter");
         OffsetDateTime blockedafter = (blockedafterstring == null) ? null : OffsetDateTime.parse(blockedafterstring);
 
-        // fetch user list
-        List<String> users = CommandLineParser.parseUserOptions(parsedargs, sourcewiki);
-        if (users.isEmpty()) // file IO
-        {
-            Path path = CommandLineParser.parseFileOption(parsedargs, "--infile", "Select user list", 
-                "Error: No input file selected.", false);
-            List<String> templist = Files.readAllLines(path);
-            for (String line : templist)
-                if (sourcewiki.namespace(line) == Wiki.USER_NAMESPACE)
-                    users.add(sourcewiki.removeNamespace(line));
-        }
-        
         // filter for users blocked after __ (for persistent sockfarms)
+        List<String> users = CommandLineParser.parseUserOptions(parsedargs, sourcewiki);
         if (blockedafter != null)
         {
             List<Wiki.User> userobjs = homewiki.getUsers(users);
@@ -180,8 +166,7 @@ public class ContributionSurveyor
     static CommandLineParser addSharedOptions(CommandLineParser parser)
     {
         return parser.addHelp()
-            .addSingleArgumentFlag("--user", "user", "Survey the given user.")
-            .addSingleArgumentFlag("--category", "category", "Fetch a list of users from the given category (recursive).")
+            .addUserInputOptions("Survey")
             .addBooleanFlag("--comingle", "If there are multiple users, combine their edits into the one survey (edits/uploads only).")
             .addSection("Survey options:")
             .addBooleanFlag("--includeminor", "Include minor edits.")

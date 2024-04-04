@@ -19,7 +19,6 @@
  */
 package org.wikipedia.tools;
 
-import java.nio.file.*;
 import java.util.*;
 import org.wikipedia.*;
 
@@ -33,17 +32,26 @@ public class XWikiUserLinkAdditionFinder
 {
     /**
      *  Runs this program.
-     *  @param args the command line arguments, args[0] = list of spammers
+     *  @param args the command line arguments
      */
     public static void main(String[] args) throws Exception
     {
-        Path fp = Paths.get(args[0]);
-        List<String> users = Files.readAllLines(fp);
+        CommandLineParser clp = new CommandLineParser()
+            .synopsis("org.wikipedia.tools.XWikiUserLinkAdditionFinder", "[options]")
+            .description("Searches for all links added by users across all wikis.")
+            .addVersion("XWikiUserLinkAdditionFinder v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
+            .addHelp()
+            .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
+            .addUserInputOptions("Get links");
+        Map<String, String> parsedargs = clp.parse(args);
+        
+        WMFWikiFarm wmf = WMFWikiFarm.instance();
+        WMFWiki thiswiki = wmf.sharedSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
+        List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
         TreeSet<String> domains = new TreeSet<>();
         
         for (String user : users)
         {
-            WMFWikiFarm wmf = WMFWikiFarm.instance();
             Map<String, Object> userinfo = wmf.getGlobalUserInfo(user);
             Map<?, ?> m = (Map)userinfo.get("wikis");
             System.out.println("==" + user + "==");

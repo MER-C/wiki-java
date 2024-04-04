@@ -477,6 +477,33 @@ public class WikiTest
             "%064x".formatted(new BigInteger(1, hash)));
         Files.delete(tempfile.toPath());
     }
+    
+    @Test
+    public void getOldImage() throws Exception
+    {
+        // https://commons.wikimedia.org/wiki/File:Black_hole_-_Messier_87.jpg
+        // first revision
+        String expected = "dab5b595f1ee7c24c638402f385184ca3677ca9181d0ce7d39625e87af6da446";
+        
+        // comparison 1: generic upload log
+        Wiki.RequestHelper rh = commons.new RequestHelper().byTitle("File:Black hole - Messier 87.jpg");
+        List<Wiki.LogEntry> le = commons.getLogEntries(Wiki.UPLOAD_LOG, "upload", rh);
+        File actual_1 = File.createTempFile("wiki-java_getOldImage_1", null);
+        commons.getOldImage(le.get(le.size() - 1), actual_1);
+        byte[] imageData = Files.readAllBytes(actual_1.toPath());
+        byte[] hash = sha256.digest(imageData);
+        assertEquals(expected, "%064x".formatted(new BigInteger(1, hash)), "getOldImage/upload log");
+        Files.delete(actual_1.toPath());
+
+        // comparison 2: image history
+        le = commons.getFileHistory(List.of("File:Black hole - Messier 87.jpg")).get(0);
+        File actual_2 = File.createTempFile("wiki-java_getOldImage_2", null);
+        commons.getOldImage(le.get(le.size() - 1), actual_2);
+        imageData = Files.readAllBytes(actual_2.toPath());
+        hash = sha256.digest(imageData);
+        assertEquals(expected, "%064x".formatted(new BigInteger(1, hash)), "getOldImage/file history");
+        Files.delete(actual_2.toPath());
+    }
 
     @Test
     public void getPageHistory() throws Exception

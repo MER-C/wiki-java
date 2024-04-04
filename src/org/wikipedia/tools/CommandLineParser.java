@@ -1,6 +1,6 @@
 /**
- *  @(#)CommandLineParser.java 0.02 19/03/2023
- *  Copyright (C) 2018-2023 MER-C
+ *  @(#)CommandLineParser.java 0.03 02/04/2024
+ *  Copyright (C) 2018-2024 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -25,13 +25,12 @@ import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.*;
 import javax.swing.JFileChooser;
-import org.wikipedia.Pages;
-import org.wikipedia.Wiki;
+import org.wikipedia.*;
 
 /**
  *  Helper class that parses command line arguments.
  *  @author MER-C
- *  @version 0.02
+ *  @version 0.03
  */
 public class CommandLineParser
 {
@@ -167,6 +166,28 @@ public class CommandLineParser
     }
     
     /**
+     *  Adds four standard user input options. The added options are:
+     *  <ul>
+     *    <li><kbd>--user</kbd> do something for that user
+     *    <li><kbd>--category</kbd> do something for all users in this category
+     *    <li><kbd>--wikipage</kbd> do something for all users listed on this wikipage
+     *    <li><kbd>--infile</kbd> do something for all users listed in this file
+     *  </ul>
+     *  @param action text describing the action to be taken, for inclusion in
+     *  help text
+     *  @return this CommandLineParser
+     *  @see #parseUserOptions(Map, Wiki) 
+     *  @since 0.03
+     */
+    public CommandLineParser addUserInputOptions(String action)
+    {
+        return addSingleArgumentFlag("--user", "user", action + " this user.")
+            .addSingleArgumentFlag("--category", "category", action + " all users from this category (recursive).")
+            .addSingleArgumentFlag("--wikipage", "'Main Page'", action + " all users listed on the wiki page [[Main Page]].")
+            .addSingleArgumentFlag("--infile", "users.txt", action + " all users in this file.");
+    }
+    
+    /**
      *  Sets a list of required arguments. If any of these are not found, then
      *  the program will exit when {@link #parse(java.lang.String[])} is called.
      *  @param arg a required argument
@@ -273,6 +294,7 @@ public class CommandLineParser
      *    <li><kbd>--user</kbd> (single user)
      *    <li><kbd>--category</kbd> (an entire category, recursive)
      *    <li><kbd>--wikipage</kbd> (users listed on a wiki page)
+     *    <li><kbd>--infile</kbd> (users listed in a file, last resort)
      *  </ul>
      * 
      *  <p>Each flag adds to the users already obtained.
@@ -281,8 +303,34 @@ public class CommandLineParser
      *  @param wiki the wiki to fetch category members from
      *  @return a list of users
      *  @throws IOException if a network error occurs
+     *  @see #addUserInputOptions(String) 
+     *  @since 0.03
      */
     public static List<String> parseUserOptions(Map<String, String> parsedargs, Wiki wiki) throws IOException
+    {
+        List<String> users = parseUserOptions2(parsedargs, wiki);
+        if (users.isEmpty()) // file IO
+        {
+            Path path = CommandLineParser.parseFileOption(parsedargs, "--infile", "Select user list", 
+                "Error: No input file selected.", false);
+            List<String> templist = Files.readAllLines(path);
+            for (String line : templist)
+                if (wiki.namespace(line) == Wiki.USER_NAMESPACE)
+                    users.add(wiki.removeNamespace(line));
+        }
+        return users;
+    }
+
+    /**
+     *  Internal method for testing purposes - will not trigger a file chooser or
+     *  exit the VM if empty = safe for JUnit.
+     *  @param parsedargs parsed arguments from {@link #parse}
+     *  @param wiki the wiki to fetch category members from
+     *  @return a list of users
+     *  @throws IOException if a network error occurs
+     *  @since 0.03
+     */
+    static List<String> parseUserOptions2(Map<String, String> parsedargs, Wiki wiki) throws IOException
     {
         List<String> users = new ArrayList<>();
         String category = parsedargs.get("--category");
@@ -309,6 +357,9 @@ public class CommandLineParser
         }
         return users;
     }
+
+    
+
     
     /**
      *  Parses and validates an interval between two dates specified on the 

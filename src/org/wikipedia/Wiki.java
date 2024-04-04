@@ -3656,8 +3656,7 @@ public class Wiki implements Comparable<Wiki>
             if (!temp.getClass().equals(clazz))
                 throw new IllegalArgumentException("All Events to be RevisionDeleted must be of the same type.");
             // TODO: Apparently you can RevisionDelete old files (i.e.
-            // pseudo-LogEntries from getFileHistory and the file archive, but
-            // I have no idea how to get the necessary ID parameter.
+            // pseudo-LogEntries from getFileHistory and the file archive.
             // You can also RevisionDelete deleted revisions, but I need to
             // test this first.
             if (temp.getID() < 0)
@@ -4285,8 +4284,10 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets an old image revision and writes the image data in a file.
-     *  Warning: This does overwrite any file content!
-     *  You will have to do the thumbnailing yourself.
+     *  Warning: This does overwrite any file content! You will have to do the 
+     *  thumbnailing yourself. Works for normal upload log entries and file 
+     *  history entries.
+     *  
      *  @param entry the upload log entry that corresponds to the image being
      *  uploaded
      *  @param file the file to write the image to

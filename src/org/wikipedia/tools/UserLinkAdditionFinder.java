@@ -22,8 +22,6 @@ package org.wikipedia.tools;
 import java.io.*;
 import java.util.*;
 import java.util.regex.*;
-import java.nio.charset.Charset;
-import java.nio.file.*;
 import java.time.OffsetDateTime;
 import java.util.stream.Collectors;
 import org.wikipedia.*;
@@ -52,10 +50,7 @@ public class UserLinkAdditionFinder
             .addHelp()
             .addVersion("UserLinkAdditionFinder v0.02\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
-            .addSingleArgumentFlag("--user", "user", "Get links for this user.")
-            .addSingleArgumentFlag("--category", "category", "Get links for all users from this category (recursive).")
-            .addSingleArgumentFlag("--wikipage", "'Main Page'", "Get links for all users listed on the wiki page [[Main Page]].")
-            .addSingleArgumentFlag("--infile", "users.txt", "Get links for all users in this file")
+            .addUserInputOptions("Get links for")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addSingleArgumentFlag("--threshold", "50", "If filtering commonly used domains, the threshold number of links (default: 50)")
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
@@ -69,18 +64,11 @@ public class UserLinkAdditionFinder
         boolean removeblacklisted = parsedargs.containsKey("--removeblacklisted");
         List<OffsetDateTime> dates = CommandLineParser.parseDateRange(parsedargs, "--fetchafter", "--fetchbefore");
         int threshold = Integer.parseInt(parsedargs.getOrDefault("--threshold", "50"));
+        List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
         
         UserLinkAdditionFinder finder = new UserLinkAdditionFinder(thiswiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(thiswiki);
         elp.setMaxLinks(threshold);
-
-        // read in from file
-        List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
-        if (users.isEmpty())
-        {
-            Path fp = CommandLineParser.parseFileOption(parsedargs, "--infile", "Open user list", "No users specified", false);
-            users = Files.readAllLines(fp, Charset.forName("UTF-8"));
-        }
 
         // Map structure:
         // * results: revid -> links added in that revision
