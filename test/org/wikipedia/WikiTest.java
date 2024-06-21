@@ -369,7 +369,7 @@ public class WikiTest
         List<String> expected = List.of("Main Page", "Main Page", "Sdkghsdklg",
             "Goatse.cx", "Main Page", "Fish and chips", "Fish and chips");
         assertEquals(expected, enWiki.resolveRedirects(titles));
-        assertEquals(List.of("الصفحة الرئيسية"), arWiki.resolveRedirects(List.of("الصفحه الرئيسيه")), "rtl");
+        assertEquals(List.of("الصفحة الرئيسة"), arWiki.resolveRedirects(List.of("الصفحه الرئيسيه")), "rtl");
     }
 
     @Test

@@ -78,7 +78,7 @@ public class XWikiUserLinkAdditionFinder
                     for (String link : entry.getValue())
                     {
                         String domain = ExternalLinks.extractDomain(link);
-                        if (domain != null) // must be parseable
+                        if (domain != null && !finder.canSkipDomain(domain, false)) // must be parseable
                             linkdomains.put(link, domain);
                     }
                 }

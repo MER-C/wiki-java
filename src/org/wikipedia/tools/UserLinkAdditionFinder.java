@@ -1,6 +1,6 @@
 /**
- *  @(#)UserLinkAdditionFinder.java 0.02 05/11/2017
- *  Copyright (C) 2015-2017 MER-C
+ *  @(#)UserLinkAdditionFinder.java 0.03 15/06/2024
+ *  Copyright (C) 2015-2024 MER-C
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -29,12 +29,15 @@ import org.wikipedia.*;
 /**
  *  Finds links added by a user in the main namespace.
  *  @author MER-C
- *  @version 0.02
+ *  @version 0.03
  */
 public class UserLinkAdditionFinder
 {
     private final WMFWiki wiki;
+    private final Pages pages;
+    private final ExternalLinks el;
     private static final WMFWikiFarm sessions = WMFWikiFarm.instance();
+    private final List<Pattern> whitelist_regexes = new ArrayList<>();
     
     /**
      *  Runs this program.
@@ -81,40 +84,19 @@ public class UserLinkAdditionFinder
             System.out.println("No links found.");
             System.exit(0);
         }
-        
         Map<String, String> linkdomains = new HashMap<>();
         for (Map.Entry<Wiki.Revision, List<String>> entry : results.entrySet())
         {
             for (String link : entry.getValue())
             {
                 String domain = ExternalLinks.extractDomain(link);
-                if (domain != null) // must be parseable
-                {
-                    boolean nomatch = true;
-                    for (String wmfsite : WMFWikiFarm.WMF_DOMAINS)
-                        if (domain.endsWith(wmfsite))
-                            nomatch = false;
-                    if (nomatch)
-                        linkdomains.put(link, domain);
-                }
+                if (domain != null && !finder.canSkipDomain(domain, removeblacklisted))
+                    linkdomains.put(link, domain);
             }
         }
-        
-        // remove blacklisted links
-        Collection<String> domains = new TreeSet(linkdomains.values());
-        ExternalLinks el = ExternalLinks.of(thiswiki);
-        if (removeblacklisted)
-        {
-            Iterator<String> iter = domains.iterator();
-            while (iter.hasNext())
-            {
-                String link = iter.next();
-                if (el.isSpamBlacklisted(linkdomains.get(link)))
-                    iter.remove();
-            }
-        }
-        
+                
         // remove commonly used domains
+        Collection<String> domains = new TreeSet(linkdomains.values());
         Map<String, Integer> linkcounts = null;
         if (linksearch)
         {
@@ -149,6 +131,21 @@ public class UserLinkAdditionFinder
     public UserLinkAdditionFinder(WMFWiki wiki)
     {
         this.wiki = wiki;
+        this.pages = Pages.of(wiki);
+        this.el = ExternalLinks.of(wiki);
+        
+        String[] regex = new String[] 
+        {
+            ".*\\.(?:gov|int|mil)$",
+            "(.*\\.)?gov\\.(?:au|br|cn|ie|in|il|ph|ru|scot|sg|ua|uk|wales|za)$",
+            "(.*\\.)?gob\\.(?:ar|cl|es|mx|pe)$",
+            "(.*\\.)?(?:bl|judiciary|mod|nhs|parliament|police|royal)\\.uk$",
+            "(.*\\.)?\\bgouv\\.fr",
+            "(.*\\.)?\\bgovt\\.nz$",
+            "(.*\\.)?\\beuropa\\.eu$"
+        };
+        for (String r : regex)
+            whitelist_regexes.add(Pattern.compile(r));
     }
     
     /**
@@ -192,6 +189,33 @@ public class UserLinkAdditionFinder
     }
     
     /**
+     *  Filters added links for inclusion in search results. 
+     * 
+     *  @param domain the domain to check
+     *  @param removeblacklisted remove already blacklisted links
+     *  @return whether this domain can be skipped for the purpose of this
+     *  search
+     *  @throws IOException if a network error occurs when fetching the spam
+     *  blacklist (highly unlikely)
+     *  @since 0.03
+     */
+    public boolean canSkipDomain(String domain, boolean removeblacklisted) throws IOException
+    {
+        // WMF domains
+        for (String wmfsite : WMFWikiFarm.WMF_DOMAINS)
+            if (domain.endsWith(wmfsite))
+                return true;
+        // government domains
+        for (Pattern p : whitelist_regexes)
+            if (p.matcher(domain).matches())
+                return true;
+        // blacklisted domains
+        if (removeblacklisted && el.isSpamBlacklisted(domain))
+            return true;
+        return false;
+    }
+    
+    /**
      *  For a map that contains revision data &#8594; links added in that 
      *  revision, check whether the links still exist in the current version of
      *  the article. Such a map can be obtained by calling {@link 
@@ -216,7 +240,7 @@ public class UserLinkAdditionFinder
             }
             list.addAll(listoflinks);
         });
-        return Pages.of(wiki).containExternalLinks(resultsbypage);
+        return pages.containExternalLinks(resultsbypage);
     }
     
     public String outputWikitableResults(Map<Wiki.Revision, List<String>> data, 
