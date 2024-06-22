@@ -31,11 +31,11 @@ import java.util.stream.Stream;
  */
 public class ExternalLinks
 {
-    private Wiki wiki;
-    private Pages pageutils;
+    private final Wiki wiki;
+    private final Pages pageutils;
     private static String globalblacklist; // cache
     private String localblacklist;
-    private WMFWikiFarm sessions = WMFWikiFarm.instance();
+    private final WMFWikiFarm sessions = WMFWikiFarm.instance();
 
     private ExternalLinks(Wiki wiki)
     {
@@ -161,12 +161,8 @@ public class ExternalLinks
      */
     public boolean isSpamBlacklisted(String site) throws IOException
     {
-        wiki.requiresExtension("SpamBlacklist");
-        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
-        if (globalblacklist == null)
-            globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
-        if (localblacklist == null)
-            localblacklist = wiki.getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
+        if (globalblacklist == null || localblacklist == null)
+            loadSpamBlacklists(globalblacklist == null, localblacklist == null);
         
         // yes, I know about the spam whitelist, but I primarily intend to use
         // this to check entire domains whereas the spam whitelist tends to 
@@ -184,5 +180,23 @@ public class ExternalLinks
         }).map(String::trim)
         .filter(str -> !str.isEmpty())
         .anyMatch(str -> site.matches(str));
+    }
+    
+    /**
+     *  Loads spam blacklist caches.
+     *  @param global (re)load the global blacklist (shared across instances)
+     *  @param local (re)load the local blacklist
+     *  @throws IOException if a network error occurs
+     */
+    public void loadSpamBlacklists(boolean global, boolean local) throws IOException
+    {
+        wiki.requiresExtension("SpamBlacklist");
+        if (global)
+        {
+            WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
+            globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
+        }
+        if (local)
+            localblacklist = wiki.getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
     }
 }
