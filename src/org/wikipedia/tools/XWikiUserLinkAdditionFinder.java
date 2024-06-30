@@ -19,6 +19,7 @@
  */
 package org.wikipedia.tools;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.wikipedia.*;
 
@@ -42,8 +43,15 @@ public class XWikiUserLinkAdditionFinder
             .addVersion("XWikiUserLinkAdditionFinder v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
+            .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
+            .addSingleArgumentFlag("--fetchbefore", "date", "Fetch only edits before this date")
             .addUserInputOptions("Get links");
         Map<String, String> parsedargs = clp.parse(args);
+        List<OffsetDateTime> dates = CommandLineParser.parseDateRange(parsedargs, "--fetchafter", "--fetchbefore");
+        // features: 
+        // linksearch/threshold = apply locally or globally? Globally makes most sense. 
+        // How to determine which wikis to search? Defined set? Try to figure out based on users?
+        // removeblacklisted = apply locally or globally? Globally makes most sense.
         
         WMFWikiFarm wmf = WMFWikiFarm.instance();
         WMFWiki thiswiki = wmf.sharedSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
@@ -68,7 +76,7 @@ public class XWikiUserLinkAdditionFinder
             for (WMFWiki wiki : wikisedited)
             {
                 UserLinkAdditionFinder finder = new UserLinkAdditionFinder(wiki);
-                Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, null, null);
+                Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, dates.get(0), dates.get(1));
                 if (results.isEmpty())
                     continue;
 
