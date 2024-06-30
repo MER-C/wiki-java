@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ExternalLinksTest
 {
-    private Wiki enWiki = Wiki.newSession("en.wikipedia.org");
-    private ExternalLinks el = ExternalLinks.of(enWiki);
+    private final Wiki enWiki = WMFWikiFarm.instance().sharedSession("en.wikipedia.org");
+    private final ExternalLinks el = ExternalLinks.of(enWiki);
     
     @Test
     public void extractDomain()
@@ -55,5 +55,6 @@ public class ExternalLinksTest
     {
         assertFalse(el.isSpamBlacklisted("example.com"));
         assertTrue(el.isSpamBlacklisted("youtu.be"));
+        assertTrue(el.isSpamBlacklisted("testinvalid.invalid")); // blocked external domains
     }
 }

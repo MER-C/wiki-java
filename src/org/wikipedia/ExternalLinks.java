@@ -22,7 +22,6 @@ package org.wikipedia;
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
-import java.util.stream.Stream;
 
 /**
  *  Utility methods to deal with external links and lists of external links.
@@ -33,8 +32,9 @@ public class ExternalLinks
 {
     private final Wiki wiki;
     private final Pages pageutils;
-    private static String globalblacklist; // cache
-    private String localblacklist;
+    private static final List<String> globalblacklist = new ArrayList<>();
+    private final List<String> localblacklist = new ArrayList<>();
+    private final List<String> blocked_domains = new ArrayList<>();
     private final WMFWikiFarm sessions = WMFWikiFarm.instance();
 
     private ExternalLinks(Wiki wiki)
@@ -155,38 +155,34 @@ public class ExternalLinks
      *  @param site the site to check
      *  @return whether a site is on the spam blacklist
      *  @throws IOException if a network error occurs
-     *  @throws UnsupportedOperationException if the SpamBlacklist extension
-     *  is not installed
+     *  @throws UnsupportedOperationException if the SpamBlacklist and 
+     *  AbuseFilter extensions are not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
      */
     public boolean isSpamBlacklisted(String site) throws IOException
     {
-        if (globalblacklist == null || localblacklist == null)
-            loadSpamBlacklists(globalblacklist == null, localblacklist == null);
+        if (globalblacklist.isEmpty() || localblacklist.isEmpty())
+            loadSpamBlacklists(globalblacklist.isEmpty(), localblacklist.isEmpty());
         
         // yes, I know about the spam whitelist, but I primarily intend to use
         // this to check entire domains whereas the spam whitelist tends to 
         // contain individual pages on websites
-        
-        Stream<String> global = Arrays.stream(globalblacklist.split("\n"));
-        Stream<String> local = Arrays.stream(localblacklist.split("\n"));
-        
-        return Stream.concat(global, local).map(str ->
-        {
-            if (str.contains("#"))
-                return str.substring(0, str.indexOf('#'));
-            else 
-                return str;
-        }).map(String::trim)
-        .filter(str -> !str.isEmpty())
-        .anyMatch(str -> site.matches(str));
+        for (String entry : globalblacklist)
+            if (site.matches(entry))
+                return true;
+        for (String entry : localblacklist)
+            if (site.matches(entry))
+                return true;
+        return blocked_domains.contains(site);
     }
     
     /**
-     *  Loads spam blacklist caches.
+     *  (Re)loads spam blacklist caches.
      *  @param global (re)load the global blacklist (shared across instances)
-     *  @param local (re)load the local blacklist
+     *  @param local (re)load the local blacklist and blocked external domains
      *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if the SpamBlacklist and 
+     *  AbuseFilter extensions are not installed
      */
     public void loadSpamBlacklists(boolean global, boolean local) throws IOException
     {
@@ -194,9 +190,39 @@ public class ExternalLinks
         if (global)
         {
             WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
-            globalblacklist = meta.getPageText(List.of("Spam blacklist")).get(0);
+            globalblacklist.clear();
+            String[] gbl = meta.getPageText(List.of("Spam blacklist")).get(0).split("\\n");
+            for (String entry : gbl)
+            {
+                if (entry.contains("#"))
+                    entry = entry.substring(0, entry.indexOf('#'));
+                entry = entry.trim();
+                if (!entry.isEmpty())
+                    globalblacklist.add(entry);
+            }
         }
         if (local)
-            localblacklist = wiki.getPageText(List.of("MediaWiki:Spam-blacklist")).get(0);
+        {
+            List<String> pages = wiki.getPageText(List.of("MediaWiki:Spam-blacklist", "MediaWiki:BlockedExternalDomains.json"));
+            localblacklist.clear();
+            for (String entry : pages.get(0).split("\\n"))
+            {
+                if (entry.contains("#"))
+                    entry = entry.substring(0, entry.indexOf('#'));
+                entry = entry.trim();
+                if (!entry.isEmpty())
+                    localblacklist.add(entry);
+            }
+            blocked_domains.clear();
+            for (String entry : pages.get(1).split("\\n"))
+            {
+                if (entry.contains("\"domain\":"))
+                {
+                    int x1 = entry.indexOf("\": \"") + 4;
+                    int x2 = entry.length() - 2;
+                    blocked_domains.add(entry.substring(x1, x2));
+                }
+            }
+        }
     }
 }
