@@ -408,7 +408,7 @@ public class Wiki implements Comparable<Wiki>
     private static final String version = "0.39";
 
     // fundamental URL strings
-    private final String protocol, domain, scriptPath;
+    private final String protocol, domain, articlePath, scriptPath;
     private String base, articleUrl;
 
     /**
@@ -483,13 +483,15 @@ public class Wiki implements Comparable<Wiki>
      *  specified protocol.
      *
      *  @param domain the wiki domain name
+     *  @param articlePath the article path
      *  @param scriptPath the script path
      *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
-     *  @since 0.31
+     *  @since 0.39
      */
-    protected Wiki(String domain, String scriptPath, String protocol)
+    protected Wiki(String domain, String articlePath, String scriptPath, String protocol)
     {
         this.domain = Objects.requireNonNull(domain);
+        this.articlePath = Objects.requireNonNull(articlePath);
         this.scriptPath = Objects.requireNonNull(scriptPath);
         this.protocol = Objects.requireNonNull(protocol);
 
@@ -520,9 +522,25 @@ public class Wiki implements Comparable<Wiki>
         read_timeout_msec = Integer.parseInt(props.getProperty("readtimeout", "180000")); // 180 seconds
         cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
         client = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(30))
-            .cookieHandler(cookies)
-            .build();
+                .connectTimeout(Duration.ofSeconds(30))
+                .cookieHandler(cookies)
+                .build();
+    }
+
+    /**
+     *  Creates a new MediaWiki API client for the given wiki with <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
+     *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the
+     *  specified protocol.
+     *
+     *  @param domain the wiki domain name
+     *  @param scriptPath the script path
+     *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
+     *  @since 0.31
+     */
+    protected Wiki(String domain, String scriptPath, String protocol)
+    {
+        this(domain, "/wiki/", scriptPath, protocol);
     }
 
     /**
@@ -544,6 +562,34 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Creates a new MediaWiki API client for the given wiki with <a
      *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
+     *  $wgScriptPath</var></a> set to <var>scriptPath</var> and <a
+     *  href="https://www.mediawiki.org/wiki/Manual:$wgArticlePath">
+     *  <var>$wgArticlePath</var></a> set to <var>articlePath</var> via the
+     *  specified protocol. Depending on the settings of the wiki, you may need
+     *  to call {@link Wiki#getSiteInfo()} on the returned object after this in
+     *  order for some functionality to work correctly.
+     *
+     *  <p>All factory methods in subclasses must call {@link #initVars()}.
+     *
+     *  @param domain the wiki domain name
+     *  @param articlePath the article path
+     *  @param scriptPath the script path
+     *  @param protocol a protocol e.g. "http://", "https://" or "file:///"
+     *  @return the constructed API client object
+     *  @since 0.39
+     */
+    public static Wiki newSession(String domain, String articlePath, String scriptPath, String protocol)
+    {
+        // Don't put network requests here. Servlets cannot afford to make
+        // unnecessary network requests in initialization.
+        Wiki wiki = new Wiki(domain, articlePath, scriptPath, protocol);
+        wiki.initVars();
+        return wiki;
+    }
+
+    /**
+     *  Creates a new MediaWiki API client for the given wiki with <a
+     *  href="https://mediawiki.org/wiki/Manual:$wgScriptPath"><var>
      *  $wgScriptPath</var></a> set to <var>scriptPath</var> and via the
      *  specified protocol. Depending on the settings of the wiki, you may need
      *  to call {@link Wiki#getSiteInfo()} on the returned object after this in
@@ -559,11 +605,7 @@ public class Wiki implements Comparable<Wiki>
      */
     public static Wiki newSession(String domain, String scriptPath, String protocol)
     {
-        // Don't put network requests here. Servlets cannot afford to make
-        // unnecessary network requests in initialization.
-        Wiki wiki = new Wiki(domain, scriptPath, protocol);
-        wiki.initVars();
-        return wiki;
+        return newSession(domain, "/wiki/", scriptPath, protocol);
     }
 
     /**
@@ -575,9 +617,15 @@ public class Wiki implements Comparable<Wiki>
      */
     protected void initVars()
     {
-        base = protocol + domain + scriptPath + "/index.php";
-        apiUrl = protocol + domain + scriptPath + "/api.php";
-        articleUrl = protocol + domain + "/wiki/";
+        try {
+            base = new URI(protocol + domain + scriptPath + "/index.php").normalize().toString();
+            apiUrl = new URI(protocol + domain + scriptPath + "/api.php").normalize().toString();
+            articleUrl = new URI(protocol + domain + articlePath).normalize().toString();
+        } catch(URISyntaxException e) {
+            // Log and throw exception
+            log(Level.SEVERE, "initVars", "Provided URI is invalid: " + e.getMessage());
+            throw new IllegalArgumentException("Invalid URI schema provided.");
+        }
     }
 
     /**
@@ -588,6 +636,17 @@ public class Wiki implements Comparable<Wiki>
     public final String getDomain()
     {
         return domain;
+    }
+
+    /**
+     *  Gets the <a href="https://mediawiki.org/wiki/Manual:$wgArticlePath"><var>
+     *  $wgArticlePath</var></a> variable as supplied on construction.
+     *  @return the article path of the wiki
+     *  @since 0.39
+     */
+    public final String getArticlePath()
+    {
+        return articlePath;
     }
 
     /**
