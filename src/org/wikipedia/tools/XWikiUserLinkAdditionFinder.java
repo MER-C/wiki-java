@@ -45,9 +45,12 @@ public class XWikiUserLinkAdditionFinder
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
             .addSingleArgumentFlag("--fetchbefore", "date", "Fetch only edits before this date")
-            .addUserInputOptions("Get links");
+            .addSingleArgumentFlag("--ignorebelow", "X", "Don't return domains added less than X times")
+            .addUserInputOptions("Get links for");
         Map<String, String> parsedargs = clp.parse(args);
         List<OffsetDateTime> dates = CommandLineParser.parseDateRange(parsedargs, "--fetchafter", "--fetchbefore");
+        int ignorebelow = Integer.parseInt(parsedargs.getOrDefault("--ignorebelow", "-1"));
+        
         // features: 
         // linksearch/threshold = apply locally or globally? Globally makes most sense. 
         // How to determine which wikis to search? Defined set? Try to figure out based on users?
@@ -56,7 +59,7 @@ public class XWikiUserLinkAdditionFinder
         WMFWikiFarm wmf = WMFWikiFarm.instance();
         WMFWiki thiswiki = wmf.sharedSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
-        TreeSet<String> domains = new TreeSet<>();
+        TreeMap<String, Integer> domains = new TreeMap<>();
         
         for (String user : users)
         {
@@ -80,22 +83,25 @@ public class XWikiUserLinkAdditionFinder
                 if (results.isEmpty())
                     continue;
 
-                Map<String, String> linkdomains = new HashMap<>();
+                Map<String, String> linkdomains = new HashMap<>(); // see if I can do something with this?
                 for (Map.Entry<Wiki.Revision, List<String>> entry : results.entrySet())
                 {
                     for (String link : entry.getValue())
                     {
                         String domain = ExternalLinks.extractDomain(link);
                         if (domain != null && !finder.canSkipDomain(domain, false)) // must be parseable
+                        {
                             linkdomains.put(link, domain);
+                            domains.merge(domain, 1, (x, y) -> x + y);
+                        }
                     }
                 }
-                domains.addAll(linkdomains.values());
             }
         }
         System.out.println("==All domains==");
-        for (String domain : domains)
-            System.out.println("*{{spamlink|" + domain + "}}");
+        for (Map.Entry<String, Integer> kv : domains.entrySet())
+            if (kv.getValue() >= ignorebelow)
+                System.out.println("*{{spamlink|" + kv.getKey() + "}} - " + kv.getValue());
     }
     
 }

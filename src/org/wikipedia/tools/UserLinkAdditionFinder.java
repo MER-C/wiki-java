@@ -59,6 +59,7 @@ public class UserLinkAdditionFinder
             .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
             .addSingleArgumentFlag("--fetchbefore", "date", "Fetch only edits before this date")
+            .addSingleArgumentFlag("--ignorebelow", "X", "Don't return domains added less than X times")
             .addSection("If a file is not specified, a dialog box will prompt for one.")
             .parse(args);
 
@@ -68,6 +69,7 @@ public class UserLinkAdditionFinder
         List<OffsetDateTime> dates = CommandLineParser.parseDateRange(parsedargs, "--fetchafter", "--fetchbefore");
         int threshold = Integer.parseInt(parsedargs.getOrDefault("--threshold", "50"));
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
+        int ignorebelow = Integer.parseInt(parsedargs.getOrDefault("--ignorebelow", "-1"));
         
         UserLinkAdditionFinder finder = new UserLinkAdditionFinder(thiswiki);
         ExternalLinkPopularity elp = new ExternalLinkPopularity(thiswiki);
@@ -95,7 +97,7 @@ public class UserLinkAdditionFinder
             }
         }
                 
-        // remove commonly used domains
+        // remove commonly used domains and insignificant domains
         Collection<String> domains = new TreeSet(linkdomains.values());
         Map<String, Integer> linkcounts = null;
         if (linksearch)
@@ -105,7 +107,7 @@ public class UserLinkAdditionFinder
             while (iter.hasNext())
             {
                 Map.Entry<String, Integer> entry = iter.next();
-                if (entry.getValue() >= threshold)
+                if (entry.getValue() >= threshold || entry.getValue() <= ignorebelow)
                 {
                     iter.remove();
                     domains.remove(entry.getKey());
