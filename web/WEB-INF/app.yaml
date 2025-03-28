@@ -1,4 +1,4 @@
-runtime: java17
+runtime: java21
 entrypoint: 'java -jar jetty/start.jar'
 
 error_handlers:

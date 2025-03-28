@@ -2949,13 +2949,12 @@ public class Wiki implements Comparable<Wiki>
 
     /**
      *  Gets the newest page name or the name of a page where the asked pages
-     *  redirect.
+     *  redirect. Originally contributed by Nirvanchik.
      *  @param titles a list of titles. These are normalized in the process.
      *  @return for each title, the page redirected to or the original page
      *  title if not a redirect
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.29
-     *  @author Nirvanchik/MER-C
      */
     public List<String> resolveRedirects(Collection<String> titles) throws IOException
     {
@@ -4299,7 +4298,7 @@ public class Wiki implements Comparable<Wiki>
      *  @return the history of the files, in order of input
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @since 0.39
-     *  @see #fileRevert(String, String)
+     *  @see #fileRevert(String, LogEntry, String)
      */
     public List<List<LogEntry>> getFileHistory(SequencedCollection<String> titles) throws IOException
     {
@@ -4620,7 +4619,7 @@ public class Wiki implements Comparable<Wiki>
     /**
      *  Reverts a file to the given previous revision.
      *  @param filename the target file name (may contain File)
-     *  @param filerev a file revision LogEntry from {@link #getFileHistory(List)}
+     *  @param filerev a file revision LogEntry from {@link #getFileHistory(SequencedCollection)}
      *  @param reason the reason for reverting the file
      *  @throws IOException or UncheckedIOException if a network error occurs
      *  @throws SecurityException if not logged in
@@ -6282,28 +6281,34 @@ public class Wiki implements Comparable<Wiki>
         else if (type.equals(USER_RIGHTS_LOG))
         {
             int a = xml.indexOf("<oldgroups>");
-            if (a != -1) {
-	            int b = xml.indexOf("</oldgroups>", a);
-	            var oldgroups = xml.substring(a + 11, b);
-	            var old_list = new ArrayList<String>();
-	            for (int end = 0, start = oldgroups.indexOf("<g>"); start != -1; start = oldgroups.indexOf("<g>", end)) {
-	                end = oldgroups.indexOf("</g>", start);
-	                old_list.add(oldgroups.substring(start + 3, end));
-	            }
-	            details.put("oldgroups", String.join(",", old_list));
-            } else // self-closing empty "<oldgroups />" tag
+            if (a != -1) 
+            {
+                int b = xml.indexOf("</oldgroups>", a);
+                var oldgroups = xml.substring(a + 11, b);
+                var old_list = new ArrayList<String>();
+                for (int end = 0, start = oldgroups.indexOf("<g>"); start != -1; start = oldgroups.indexOf("<g>", end)) 
+                {
+                    end = oldgroups.indexOf("</g>", start);
+                    old_list.add(oldgroups.substring(start + 3, end));
+                }
+                details.put("oldgroups", String.join(",", old_list));
+            } 
+            else // self-closing empty "<oldgroups />" tag
                 details.put("oldgroups", "");
             int c = xml.indexOf("<newgroups>");
-            if (c != -1) {
-	            int d = xml.indexOf("</newgroups>", c);
-	            var newgroups = xml.substring(c + 11, d);
-	            var new_list = new ArrayList<String>();
-	            for (int end = 0, start = newgroups.indexOf("<g>"); start != -1; start = newgroups.indexOf("<g>", end)) {
-	                end = newgroups.indexOf("</g>", start);
-	                new_list.add(newgroups.substring(start + 3, end));
-	            }
-	            details.put("newgroups", String.join(",", new_list));
-            } else // self-closing empty "<newgroups />" tag
+            if (c != -1) 
+            {
+                int d = xml.indexOf("</newgroups>", c);
+                var newgroups = xml.substring(c + 11, d);
+                var new_list = new ArrayList<String>();
+                for (int end = 0, start = newgroups.indexOf("<g>"); start != -1; start = newgroups.indexOf("<g>", end))
+                {
+                    end = newgroups.indexOf("</g>", start);
+                    new_list.add(newgroups.substring(start + 3, end));
+                }
+                details.put("newgroups", String.join(",", new_list));
+            } 
+            else // self-closing empty "<newgroups />" tag
                 details.put("newgroups", "");
         }
 
