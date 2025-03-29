@@ -8413,9 +8413,9 @@ public class Wiki implements Comparable<Wiki>
     {
         // build the URL
         StringBuilder urlbuilder = new StringBuilder(apiUrl + "?");
-        getparams = new HashMap<>(getparams); // ensure this map is mutable
-        getparams.putAll(defaultApiParams);
-        for (Map.Entry<String, String> entry : getparams.entrySet())
+        HashMap<String, String> getparams2 = new HashMap<>(defaultApiParams);
+        getparams2.putAll(getparams);
+        for (Map.Entry<String, String> entry : getparams2.entrySet())
         {
             urlbuilder.append(entry.getKey());
             urlbuilder.append('=');
