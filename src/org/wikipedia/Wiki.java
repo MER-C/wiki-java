@@ -8417,12 +8417,12 @@ public class Wiki implements Comparable<Wiki>
         getparams.putAll(defaultApiParams);
         for (Map.Entry<String, String> entry : getparams.entrySet())
         {
-            urlbuilder.append('&');
             urlbuilder.append(entry.getKey());
             urlbuilder.append('=');
             urlbuilder.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
+            urlbuilder.append('&');
         }
-        String url = urlbuilder.toString();
+        String url = urlbuilder.deleteCharAt(urlbuilder.length() - 1).toString();
 
         // POST stuff
         boolean isPOST = (postparams != null && !postparams.isEmpty());

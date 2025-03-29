@@ -410,7 +410,7 @@ public class WikiTest
 
         pages = List.of(pages.get(1));
         assertTrue(testWiki.getTemplates(pages, Wiki.MAIN_NAMESPACE).get(0).isEmpty(), "namespace filter");
-        assertEquals(List.of("Template:La"), testWiki.getTemplates(pages, Wiki.TEMPLATE_NAMESPACE).get(0), "namespace filter");
+        assertEquals(List.of("Template:!="), testWiki.getTemplates(pages, Wiki.TEMPLATE_NAMESPACE).get(0), "namespace filter");
     }
 
     @Test

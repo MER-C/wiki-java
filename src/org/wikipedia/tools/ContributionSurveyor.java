@@ -112,6 +112,7 @@ public class ContributionSurveyor
             ns = new int[] { Wiki.MAIN_NAMESPACE };
         
         ContributionSurveyor surveyor = makeContributionSurveyor(homewiki, parsedargs);
+        homewiki.setMaxLag(-1);
         StringBuilder temp = new StringBuilder("Command line: <kbd>java org.wikipedia.tools.ContributionSurveyor");
         for (String arg : args)
         {

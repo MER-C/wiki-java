@@ -86,6 +86,7 @@ public class CCIAnalyzer
 
         // load CCIs
         Wiki enWiki = Wiki.newSession("en.wikipedia.org");
+        enWiki.setMaxLag(-1);
         enWiki.setLogLevel(Level.WARNING);
         String ccipage = parsedargs.get("default");
         List<CCIPage> pages;

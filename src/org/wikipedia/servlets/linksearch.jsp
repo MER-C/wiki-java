@@ -82,11 +82,11 @@ reasons, results are limited to <%= limit %> links per wiki.
     {
         results = switch (set)
         {
-            case "top25" -> AllWikiLinksearch.crossWikiLinksearch(limit, 1, 
+            case "top25" -> AllWikiLinksearch.crossWikiLinksearch(limit, 3, 
                 domain, AllWikiLinksearch.TOP25, mailto, ns);
-            case "top50" -> AllWikiLinksearch.crossWikiLinksearch(limit, 1, 
+            case "top50" -> AllWikiLinksearch.crossWikiLinksearch(limit, 3, 
                 domain, AllWikiLinksearch.TOP50, mailto, ns);
-            case "major" -> AllWikiLinksearch.crossWikiLinksearch(limit, 1, 
+            case "major" -> AllWikiLinksearch.crossWikiLinksearch(limit, 3, 
                 domain, AllWikiLinksearch.MAJOR_WIKIS, mailto, ns);
             default -> 
             {

@@ -1,5 +1,5 @@
 runtime: java21
-entrypoint: 'java -jar jetty/start.jar'
+entrypoint: 'java -jar -Djava.util.logging.config.file=WEB-INF/logging.properties jetty/start.jar'
 
 error_handlers:
   - file: timeout.html
