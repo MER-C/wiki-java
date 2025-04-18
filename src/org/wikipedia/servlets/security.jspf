@@ -19,6 +19,7 @@
 <%@ page import="java.io.*" %>
 <%@ page import="java.net.*" %>
 <%@ page import="java.nio.charset.StandardCharsets" %>
+<%@ page import="java.security.SecureRandom" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.util.stream.*" %>
 <%@ page import="java.time.*" %>
@@ -46,6 +47,12 @@
     WMFWikiFarm sessions = WMFWikiFarm.instance();
     sessions.setInitializer(wiki_ -> wiki_.setMaxLag(-1));
     response.setCharacterEncoding("UTF-8");
+    
+    // compute nonce for inline script setting captcha challenge string
+    SecureRandom sr = new SecureRandom();
+    byte[] barrtemp = new byte[32];
+    sr.nextBytes(barrtemp);
+    String captcha_script_nonce = new String(Base64.getEncoder().encode(barrtemp));
 
     // Set security headers
 
@@ -53,9 +60,9 @@
     response.setHeader("Strict-Transport-Security", "max-age=31536000");
     response.setHeader("Content-Security-Policy", 
         "frame-ancestors 'none'; " + // disable framing
-        "default-src 'none'; " +     // disable everything by default
-        "script-src 'self'; " +      // allow only scripts from this domain
-        "style-src 'self'");         // allow only stylesheets from this domain
+        "default-src 'none'; " + // disable everything by default
+        "script-src 'self' 'nonce-" + captcha_script_nonce + "'; " + // allow only scripts from this domain
+        "style-src 'self'"); // allow only stylesheets from this domain
     // disable the Referer header
     response.setHeader("Referrer-Policy", "no-referrer");
 %>

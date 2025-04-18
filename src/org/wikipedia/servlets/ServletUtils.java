@@ -1,6 +1,6 @@
 /**
- *  @(#)ServletUtils.java 0.01 22/02/2011
- *  Copyright (C) 2011 - 2023 MER-C
+ *  @(#)ServletUtils.java 0.02 13/04/2025
+ *  Copyright (C) 2011 - 2025 MER-C
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as
@@ -18,13 +18,20 @@
 
 package org.wikipedia.servlets;
 
+import java.io.*;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.net.URLEncoder;
-import java.util.Objects;
+import java.security.*;
+import java.time.OffsetDateTime;
+import java.util.*;
+
+import jakarta.servlet.http.*;
 
 /**
  *  Common servlet code so that I can maintain it easier.
  *  @author MER-C
+ *  @since 0.02
  */
 public class ServletUtils
 {
@@ -160,5 +167,109 @@ public class ServletUtils
         if (max - current > amount)
             sb.append("</a>");
         return sb.toString();
+    }
+    
+    /**
+     *  Presents a SHA-256 proof of work CAPTCHA. To pass the CAPTCHA, the  
+     *  client needs to compute a nonce such that 
+     *  sha256(nonce + timestamp + selected concatenated HTTP parameters) begins 
+     *  with some quantity of zeros (difficulty is customisable, default 3).
+     *  A CAPTCHA page is shown when the user submits a request. When complete, 
+     *  the CAPTCHA page redirects to the expected results. A solved CAPTCHA
+     *  adds URL parameters <code>powans</code> (the solution), <code>powts</code>,
+     *  <code>nonce</code> and <code>powdif</code> (the difficulty). The CAPTCHA 
+     *  expires after five minutes.
+     * 
+     *  @param req a servlet request
+     *  @param response the corresponding response
+     *  @param params the request parameters to concatenate to form the challenge
+     *  string. The challenge string cannot contain new lines.
+     *  @param captcha_string_nonce a nonce, for Content Security Policy purposes,
+     *  to protect an inline script that defines the challenge string only
+     *  @return whether to continue servlet execution
+     *  @throws IOException if a network error occurs
+     *  @see captcha.js
+     *  @since 0.02
+     */
+    public static boolean showCaptcha(HttpServletRequest req, HttpServletResponse response, List<String> params, String captcha_string_nonce) throws IOException
+    {
+        // no captcha for the initial input
+        if (req.getParameterMap().isEmpty())
+            return true;
+        
+        // TODO: captcha.js does not propagate POST parameters
+        
+        PrintWriter out = response.getWriter();
+        String answer = req.getParameter("powans");
+        String timestamp = req.getParameter("powts");
+        String nonce = req.getParameter("nonce");
+        String difficulty = req.getParameter("powdif");
+        
+        StringBuilder paramstr = new StringBuilder();
+        for (String param : params)
+            paramstr.append(req.getParameter(param));
+        String challenge = sanitizeForAttribute(paramstr.toString());
+        String tohash = nonce + timestamp + challenge;
+
+        // captcha not attempted, show CAPTCHA screen
+        if (answer == null && timestamp == null && nonce == null && difficulty == null)
+        {
+            out.println("""
+                    <!doctype html>
+                    <html>
+                    <head>
+                    <title>CAPTCHA</title>""");
+            out.println("<script nonce=\"" + captcha_string_nonce + "\">");
+            out.println("    window.chl = \"" + challenge + "\";");
+            out.println("""
+                    </script>
+                    <script src="captcha.js" defer></script>
+                    </head>
+                    <body>
+                    <h1>Verifying you are not a bot</h1>
+                    <p>You should be redirected to your results shortly. Unfortunately JavaScript is required for this to work.
+                    </body>
+                    </html>
+                    """);
+            return false;
+        }
+        // incomplete parameters = fail
+        else if (answer == null || timestamp == null || nonce == null || difficulty == null)
+        {
+            response.setStatus(403);
+            out.println("Incomplete CAPTCHA parameters");
+            return false;
+        }
+        
+        // not recent = fail
+        OffsetDateTime odt = OffsetDateTime.parse(timestamp);
+        if (OffsetDateTime.now().minusMinutes(5).isAfter(odt))
+        {
+            response.setStatus(403);
+            out.println("CAPTCHA expired");
+            return false;
+        }
+                        
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(tohash.getBytes(StandardCharsets.UTF_8));
+            String expected = "%064x".formatted(new BigInteger(1, hash));
+            String prefix = "0".repeat(Integer.parseInt(difficulty));
+            if (answer.startsWith(prefix) && expected.equals(answer))
+                return true;
+            
+            response.setStatus(403);
+            out.println("CAPTCHA failed");
+            return false;
+            
+        }
+        catch (NoSuchAlgorithmException ex)
+        {
+            response.setStatus(302);
+            response.setHeader("Location", "/timeout.html");
+            response.getWriter().close();
+            return false;
+        }
     }
 }

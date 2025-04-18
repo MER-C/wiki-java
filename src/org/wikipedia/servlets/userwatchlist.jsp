@@ -8,6 +8,8 @@
 -->
 <%@ include file="security.jspf" %>
 <%
+    if (!ServletUtils.showCaptcha(request, response, List.of("page"), captcha_script_nonce))
+        throw new SkipPageException();
     request.setAttribute("toolname", "User watchlist");
     request.setAttribute("earliest_default", LocalDate.now(ZoneOffset.UTC).minusDays(30));
 
@@ -26,7 +28,7 @@
     boolean newonly = (request.getParameter("newonly") != null);
     
     Wiki enWiki = sessions.sharedSession("en.wikipedia.org");
-    enWiki.setQueryLimit(30000); // 60 network requests
+    enWiki.setQueryLimit(20000); // 40 network requests
     Users userUtils = Users.of(enWiki);
     Revisions revisionUtils = Revisions.of(enWiki);
     Pages pageUtils = Pages.of(enWiki);

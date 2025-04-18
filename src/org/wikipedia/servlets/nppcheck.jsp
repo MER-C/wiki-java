@@ -9,7 +9,8 @@
 <%@ include file="security.jspf" %>
 <%@ include file="datevalidate.jspf" %>
 <%
-    request.setAttribute("toolname", "NPP/AFC checker");
+    if (!ServletUtils.showCaptcha(request, response, List.of("username"), captcha_script_nonce))
+        throw new SkipPageException();    request.setAttribute("toolname", "NPP/AFC checker");
 
     String username = ServletUtils.sanitizeForAttribute(request.getParameter("username"));
     NPPCheck.Mode mode = NPPCheck.Mode.fromString(request.getParameter("mode"));
