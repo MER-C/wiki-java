@@ -1,6 +1,6 @@
 /**
- *  @(#)ServletUtilsTest.java 0.01 26/08/2018
- *  Copyright (C) 2018-20XX MER-C and contributors
+ *  @(#)ServletUtilsTest.java 0.02 20/04/2025
+ *  Copyright (C) 2018-2025 MER-C and contributors
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -47,20 +47,20 @@ public class ServletUtilsTest
     public void generatePagination()
     {
         // failure states
-        String urlbase = "https://example.com/test.jsp?offset=";
+        String urlbase = "https://example.com/test.jsp?x=1";
         assertThrows(IllegalArgumentException.class, () -> ServletUtils.generatePagination(urlbase, -1, 10, 100));
         assertThrows(IllegalArgumentException.class, () -> ServletUtils.generatePagination(urlbase, 0, 0, 100));
         assertThrows(IllegalArgumentException.class, () -> ServletUtils.generatePagination(urlbase, 0, 0, 0));
         
         // test start from zero
-        assertEquals("<p>Previous 50 | <a href=\"" + urlbase + "50\">Next 50</a>", 
+        assertEquals("<p>Previous 50 | <a href=\"" + urlbase + "&offset=50\">Next 50</a>", 
             ServletUtils.generatePagination(urlbase, 0, 50, 149));
         // test intermediate
-        assertEquals("<p><a href=\"" + urlbase + "1\">Previous 50</a> | " 
-            + "<a href=\"" + urlbase + "101\">Next 50</a>", 
+        assertEquals("<p><a href=\"" + urlbase + "&offset=1\">Previous 50</a> | " 
+            + "<a href=\"" + urlbase + "&offset=101\">Next 50</a>", 
             ServletUtils.generatePagination(urlbase, 51, 50, 149));
         // test final
-        assertEquals("<p><a href=\"" + urlbase + "50\">Previous 50</a> | Next 50",
+        assertEquals("<p><a href=\"" + urlbase + "&offset=50\">Previous 50</a> | Next 50",
             ServletUtils.generatePagination(urlbase, 100, 50, 149));
     }
 }

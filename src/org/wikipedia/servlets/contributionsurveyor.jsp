@@ -18,6 +18,9 @@
 <%@ include file="security.jspf" %>
 <%@ include file="datevalidate.jspf" %>
 <%
+    if (!ServletUtils.showCaptcha(request, response, List.of("user"), captcha_script_nonce))
+        throw new SkipPageException();
+        
     request.setAttribute("toolname", "Contribution surveyor");
     request.setAttribute("scripts", new String[] { "common.js", "ContributionSurveyor.js" });
 
@@ -59,7 +62,7 @@
         surveyor.setComingled(comingle);
         surveyor.setDateRange(earliest_odt, latest_odt);
         surveyor.setMinimumSizeDiff(Integer.parseInt(bytefloor));
-        surveyor.setFooter("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+        surveyor.setFooter("Survey URL: " + ServletUtils.getRequestURL(request));
         
         // ns 118 = draft namespace on en.wikipedia
         int[] ns = nodrafts ? new int[] { Wiki.MAIN_NAMESPACE } : new int[] { Wiki.MAIN_NAMESPACE, Wiki.USER_NAMESPACE, 118 };

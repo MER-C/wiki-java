@@ -149,7 +149,7 @@ public class ServletUtils
         if (current > 0)
         {
             sb.append("""
-                <a href="%s%d">""".formatted(urlbase, Math.max(0, current - amount)));
+                <a href="%s&offset=%d">""".formatted(urlbase, Math.max(0, current - amount)));
         }
         sb.append("Previous ");
         sb.append(amount);
@@ -160,7 +160,7 @@ public class ServletUtils
         if (max - current > amount)
         {
             sb.append("""
-                <a href="%s%d">""".formatted(urlbase, current + amount));
+                <a href="%s&offset=%d">""".formatted(urlbase, current + amount));
         }
         sb.append("Next ");
         sb.append(amount);
@@ -271,5 +271,38 @@ public class ServletUtils
             response.getWriter().close();
             return false;
         }
+    }
+    
+    /**
+     *  Reconstructs the request URL without transient parameters (e.g. CAPTCHA,
+     *  pagination).
+     *  @param req the request to construct the URL for
+     *  @return the constructed URL
+     *  @since 0.02
+     */
+    public static String getRequestURL(HttpServletRequest req)
+    {
+        StringBuilder sb = new StringBuilder(req.getRequestURL());
+        sb.append("?");
+        Map<String, String[]> params = new LinkedHashMap(req.getParameterMap());
+        // CAPTCHA parameters
+        params.remove("powans");
+        params.remove("nonce");
+        params.remove("powts");
+        params.remove("powdif");
+        // pagination
+        params.remove("offset");
+        int i = 0;
+        int last = params.size() - 1;
+        for (var entry : params.entrySet())
+        {
+            sb.append(entry.getKey());
+            sb.append("=");
+            sb.append(entry.getValue()[0]);
+            if (i != last)
+                sb.append("&");
+            i++;
+        }
+        return sb.toString();
     }
 }

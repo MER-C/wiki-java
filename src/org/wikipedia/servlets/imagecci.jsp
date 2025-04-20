@@ -18,6 +18,9 @@
 <%@ include file="security.jspf" %>
 <%@ include file="datevalidate.jspf" %>
 <%
+    if (!ServletUtils.showCaptcha(request, response, List.of("user"), captcha_script_nonce))
+        throw new SkipPageException();
+        
     request.setAttribute("toolname", "Image contribution surveyor");
     String homewiki = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String user = request.getParameter("user");
@@ -33,7 +36,7 @@
         WMFWiki wiki = sessions.sharedSession(homewiki);
         ContributionSurveyor surveyor = new ContributionSurveyor(wiki);
         surveyor.setDateRange(earliest_odt, latest_odt);
-        surveyor.setFooter("Survey URL: " + request.getRequestURL() + "?" + request.getQueryString());
+        surveyor.setFooter("Survey URL: " + ServletUtils.getRequestURL(request));
         surveyor.setSurveyingTransferredFiles(transferred);
         survey = surveyor.outputContributionSurvey(List.of(user), false, false, true);
 

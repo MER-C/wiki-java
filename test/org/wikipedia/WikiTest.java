@@ -404,7 +404,7 @@ public class WikiTest
         List<List<String>> results = testWiki.getTemplates(pages);
         assertTrue(results.get(0).isEmpty(), "non-existent page");
         assertEquals(1, results.get(1).size());
-        assertEquals("Template:La", results.get(1).get(0));
+        assertEquals("Template:!=", results.get(1).get(0));
         assertTrue(results.get(2).isEmpty(), "page with no templates");
         assertEquals(results.get(1), results.get(3), "duplicate");
 

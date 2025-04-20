@@ -10,8 +10,9 @@
 <%@ include file="datevalidate.jspf" %>
 <%
     if (!ServletUtils.showCaptcha(request, response, List.of("username"), captcha_script_nonce))
-        throw new SkipPageException();    request.setAttribute("toolname", "NPP/AFC checker");
+        throw new SkipPageException();
 
+    request.setAttribute("toolname", "NPP/AFC checker");
     String username = ServletUtils.sanitizeForAttribute(request.getParameter("username"));
     NPPCheck.Mode mode = NPPCheck.Mode.fromString(request.getParameter("mode"));
     String offsetparam = Objects.requireNonNullElse(request.getParameter("offset"), "0");  
@@ -93,8 +94,7 @@ main space for a given user (or for all users) and page metadata. A query limit 
         draftinfo = enWiki.getPageInfo(drafts);    
     }
 
-    String requesturl = "./nppcheck.jsp?username=" + username + "&earliest=" + earliest
-        + "&latest=" + latest + "&mode=" + request.getParameter("mode") + "&offset=";
+    String requesturl = ServletUtils.getRequestURL(request);
     out.println(ServletUtils.generatePagination(requesturl, offset, 50, logs.size()));
 
     // output table to HTML

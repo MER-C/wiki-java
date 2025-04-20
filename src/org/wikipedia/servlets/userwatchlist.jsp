@@ -22,7 +22,7 @@
         inputpage_attribute = ServletUtils.sanitizeForAttribute(inputpage);
     }
 
-    String temp = request.getParameter("skip");
+    String temp = request.getParameter("offset");
     int skip = (temp == null) ? 0 : Integer.parseInt(temp);
     skip = Math.max(skip, 0);
     boolean newonly = (request.getParameter("newonly") != null);
@@ -150,8 +150,7 @@ Someone # Spam
     }
 
     // top pagination
-    String requesturl = "./userwatchlist.jsp?page=" +  inputpage_url + "&earliest=" + earliest
-        + "&latest=" + latest + "&skip=";
+    String requesturl = ServletUtils.getRequestURL(request);
     out.println("<hr>");
     out.println(ServletUtils.generatePagination(requesturl, skip, 50, input.size()));
 
