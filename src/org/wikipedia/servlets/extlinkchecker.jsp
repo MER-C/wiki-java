@@ -8,7 +8,7 @@
 -->
 <%@ include file="security.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("title", "wiki"), captcha_script_nonce))
+    if (!ServletUtils.showCaptcha(request, response, List.of("title", "wiki"), captcha_script_nonce, 3))
         throw new SkipPageException();
     request.setAttribute("toolname", "External link checker");
 

@@ -99,7 +99,7 @@ async function solvePoWCaptchaSHA256(challenge, difficulty = 3)
 
 // Everything above is courtesy of Gemini 2.5 Pro
 const date = new Date().toISOString();
-var captcha = solvePoWCaptchaSHA256(date + window.chl);
+var captcha = solvePoWCaptchaSHA256(date + window.chl, window.difficulty);
 const temp = new URL(window.location.href);
 captcha.then((result) => {
     temp.searchParams.set("powans", result.hash);

@@ -8,7 +8,7 @@
 -->
 <%@ include file="security.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("link"), captcha_script_nonce))
+    if (!ServletUtils.showCaptcha(request, response, List.of("link"), captcha_script_nonce, 3))
         throw new SkipPageException();
     request.setAttribute("toolname", "Cross-wiki linksearch");
     request.setAttribute("scripts", new String[] { "common.js", "XWikiLinksearch.js" });

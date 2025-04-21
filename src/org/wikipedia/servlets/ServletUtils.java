@@ -173,12 +173,12 @@ public class ServletUtils
      *  Presents a SHA-256 proof of work CAPTCHA. To pass the CAPTCHA, the  
      *  client needs to compute a nonce such that 
      *  sha256(nonce + timestamp + selected concatenated HTTP parameters) begins 
-     *  with some quantity of zeros (difficulty is customisable, default 3).
-     *  A CAPTCHA page is shown when the user submits a request. When complete, 
-     *  the CAPTCHA page redirects to the expected results. A solved CAPTCHA
-     *  adds URL parameters <code>powans</code> (the solution), <code>powts</code>,
-     *  <code>nonce</code> and <code>powdif</code> (the difficulty). The CAPTCHA 
-     *  expires after five minutes.
+     *  with some quantity of zeros (difficulty is customisable, default 3 for
+     *  a runtime of about 0.1 s). A CAPTCHA page is shown when the user submits 
+     *  a request. When complete, the CAPTCHA page redirects to the expected 
+     *  results. A solved CAPTCHA adds URL parameters <code>powans</code> (the 
+     *  solution), <code>powts</code>, <code>nonce</code> and <code>powdif</code> 
+     *  (the difficulty). The CAPTCHA expires after five minutes.
      * 
      *  @param req a servlet request
      *  @param response the corresponding response
@@ -186,24 +186,28 @@ public class ServletUtils
      *  string. The challenge string cannot contain new lines.
      *  @param captcha_string_nonce a nonce, for Content Security Policy purposes,
      *  to protect an inline script that defines the challenge string only
+     *  @param difficulty the difficulty of the CAPTCHA
      *  @return whether to continue servlet execution
      *  @throws IOException if a network error occurs
      *  @see captcha.js
      *  @since 0.02
      */
-    public static boolean showCaptcha(HttpServletRequest req, HttpServletResponse response, List<String> params, String captcha_string_nonce) throws IOException
+    public static boolean showCaptcha(HttpServletRequest req, HttpServletResponse response, List<String> params, String captcha_string_nonce,
+        int difficulty) throws IOException
     {
         // no captcha for the initial input
         if (req.getParameterMap().isEmpty())
             return true;
         
-        // TODO: captcha.js does not propagate POST parameters
+        // TODO: 
+        // *captcha.js does not propagate POST parameters
+        // *inject CSP nonce header only when required
         
         PrintWriter out = response.getWriter();
         String answer = req.getParameter("powans");
         String timestamp = req.getParameter("powts");
         String nonce = req.getParameter("nonce");
-        String difficulty = req.getParameter("powdif");
+        String reqdifficulty = req.getParameter("powdif");
         
         StringBuilder paramstr = new StringBuilder();
         for (String param : params)
@@ -212,7 +216,7 @@ public class ServletUtils
         String tohash = nonce + timestamp + challenge;
 
         // captcha not attempted, show CAPTCHA screen
-        if (answer == null && timestamp == null && nonce == null && difficulty == null)
+        if (answer == null && timestamp == null && nonce == null && reqdifficulty == null)
         {
             out.println("""
                     <!doctype html>
@@ -221,6 +225,7 @@ public class ServletUtils
                     <title>CAPTCHA</title>""");
             out.println("<script nonce=\"" + captcha_string_nonce + "\">");
             out.println("    window.chl = \"" + challenge + "\";");
+            out.println("    window.difficulty = " + difficulty + ";");
             out.println("""
                     </script>
                     <script src="captcha.js" defer></script>
@@ -234,19 +239,20 @@ public class ServletUtils
             return false;
         }
         // incomplete parameters = fail
-        else if (answer == null || timestamp == null || nonce == null || difficulty == null)
+        else if (answer == null || timestamp == null || nonce == null || reqdifficulty == null)
         {
             response.setStatus(403);
             out.println("Incomplete CAPTCHA parameters");
             return false;
         }
         
-        // not recent = fail
+        // not recent = show another CAPTCHA
         OffsetDateTime odt = OffsetDateTime.parse(timestamp);
         if (OffsetDateTime.now().minusMinutes(5).isAfter(odt))
         {
-            response.setStatus(403);
-            out.println("CAPTCHA expired");
+            response.setStatus(302);
+            response.setHeader("Location", ServletUtils.getRequestURL(req));
+            response.getWriter().close();
             return false;
         }
                         
@@ -255,8 +261,9 @@ public class ServletUtils
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(tohash.getBytes(StandardCharsets.UTF_8));
             String expected = "%064x".formatted(new BigInteger(1, hash));
-            String prefix = "0".repeat(Integer.parseInt(difficulty));
-            if (answer.startsWith(prefix) && expected.equals(answer))
+            int zeroes = Integer.parseInt(reqdifficulty);
+            String prefix = "0".repeat(zeroes);
+            if (answer.startsWith(prefix) && expected.equals(answer) && zeroes == difficulty)
                 return true;
             
             response.setStatus(403);
@@ -282,9 +289,11 @@ public class ServletUtils
      */
     public static String getRequestURL(HttpServletRequest req)
     {
+        Map<String, String[]> params = new LinkedHashMap(req.getParameterMap());
+        if (params.isEmpty())
+            return req.getRequestURL().toString();
         StringBuilder sb = new StringBuilder(req.getRequestURL());
         sb.append("?");
-        Map<String, String[]> params = new LinkedHashMap(req.getParameterMap());
         // CAPTCHA parameters
         params.remove("powans");
         params.remove("nonce");

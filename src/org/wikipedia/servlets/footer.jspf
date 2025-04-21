@@ -31,6 +31,8 @@
 <br>
 <br>
 <hr>
+<p><a href="<%= ServletUtils.getRequestURL(request) %>">Permanent link</a> to this query.
+    
 <p><%= request.getAttribute("toolname") %>: Copyright &copy; MER-C 2007-
 <%= OffsetDateTime.now().getYear() %>. This tool is free software: 
 you can redistribute it and/or modify it under the  terms of the 
