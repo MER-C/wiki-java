@@ -48,8 +48,8 @@ public class ExternalLinkPopularity
      */
     public static void main(String[] args) throws IOException
     {
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.ExternalLinkPopularity", "[options]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.ExternalLinkPopularity")
+            .synopsis("[options]")
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--category", "Example category", "Analyze all articles in [[Category:Example category]] (not recursive)")
             .addSingleArgumentFlag("--title", "wikipage", "The wiki page to get links from")

@@ -50,13 +50,17 @@ public class CommandLineParser
     private final HashSet<String> boolean_params;
     private final List<String> descriptions;
     private final List<String> required_params;
+    private final String classname;
     private String synopsis, description, version;
 
     /**
      *  Initiates this command line parser.
+     *  @param classname the class name that command line arguments are parsed
+     *  for
      */
-    public CommandLineParser()
+    public CommandLineParser(String classname)
     {
+        this.classname = classname;
         params = new HashSet<>();
         boolean_params = new HashSet<>();
         descriptions = new ArrayList<>();
@@ -69,13 +73,11 @@ public class CommandLineParser
     /**
      *  Sets the one line synopsis of the program. The synopsis line is the very 
      *  first line output when <kbd>--help</kbd> is specified as an argument.
-     *  @param classname the class name that command line arguments are parsed
-     *  for
      *  @param argumentString a short string describing the command line 
      *  arguments
      *  @return this CommandLineParser
      */
-    public CommandLineParser synopsis(String classname, String argumentString)
+    public CommandLineParser synopsis(String argumentString)
     {
         synopsis = "SYNOPSIS:\n\tjava " + classname + " " + argumentString;
         return this;
@@ -285,6 +287,17 @@ public class CommandLineParser
         if (defaultargs.length() != 0)
             ret.put("default", defaultargs.toString());
         return ret;
+    }
+    
+    /**
+     *  Reconstructs the command line invocation of an application.
+     *  @param args the command line arguments
+     *  @return the command line invocation
+     *  @since 0.03
+     */
+    public String commandString(String[] args)
+    {
+        return "java " + classname + " " + String.join(" ", args);
     }
     
     /**

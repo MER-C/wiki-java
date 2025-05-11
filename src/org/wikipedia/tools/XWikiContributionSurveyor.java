@@ -47,8 +47,8 @@ public class XWikiContributionSurveyor
         WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
         WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
 
-        CommandLineParser clp = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.XWikiContributionSurveyor", "[options]")
+        CommandLineParser clp = new CommandLineParser("org.wikipedia.tools.XWikiContributionSurveyor")
+            .synopsis("[options]")
             .description("Survey the contributions of a large number of wiki editors across all wikis.")
             .addVersion("XWikiContributionSurveyor v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s).")
@@ -58,14 +58,6 @@ public class XWikiContributionSurveyor
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, enWiki);
         String lockedafterstring = parsedargs.get("--lockedafter");
         OffsetDateTime lockedafter = (lockedafterstring == null) ? null : OffsetDateTime.parse(lockedafterstring);
-        
-        StringBuilder temp = new StringBuilder("Command line: <kbd>java org.wikipedia.tools.XWikiContributionSurveyor");
-        for (String arg : args)
-        {
-            temp.append(" ");
-            temp.append(arg);
-        }
-        temp.append("</kbd>");
         
         Set<String> wikis = new HashSet<>();
         wikis.add("en.wikipedia.org");
@@ -113,12 +105,13 @@ public class XWikiContributionSurveyor
         try (BufferedWriter outwriter = Files.newBufferedWriter(path))
         {
             Map<String, String> iwmap = WMFWikiFarm.invertInterWikiMap(meta.interWikiMap());
+            String footer = "Command line: <kbd>" + clp.commandString(args) + "</kbd>";
             for (String wiki : wikis)
             {
                 WMFWiki wikisession = sessions.sharedSession(wiki);
                 ContributionSurveyor cs = ContributionSurveyor.makeContributionSurveyor(wikisession, parsedargs);
                 cs.setSurveyingTransferredFiles(false);
-                cs.setFooter(temp.toString());
+                cs.setFooter(footer);
                 
                 String prefix = iwmap.get(wiki);
                 List<String> pages = cs.outputContributionSurvey(users, true, false, 

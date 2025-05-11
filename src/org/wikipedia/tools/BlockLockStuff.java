@@ -39,7 +39,7 @@ public class BlockLockStuff
      */
     public static void main(String[] args) throws Exception
     {
-        Map<String, String> parsedargs = new CommandLineParser()
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.BlockLockStuff")
             .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "Fetch socks from this wiki")
             .addUserInputOptions("Fetch sock info for")
             .addHelp()

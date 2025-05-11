@@ -47,8 +47,8 @@ public class UserLinkAdditionFinder
     public static void main(String[] args) throws IOException
     {
         // parse command line args
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.UserLinkAdditionFinder", "[options] [file]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.UserLinkAdditionFinder")
+            .synopsis("[options] [file]")
             .description("Finds the set of links added by a list of users.")
             .addHelp()
             .addVersion("UserLinkAdditionFinder v0.02\n" + CommandLineParser.GPL_VERSION_STRING)

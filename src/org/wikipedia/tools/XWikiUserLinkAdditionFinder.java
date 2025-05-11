@@ -37,8 +37,8 @@ public class XWikiUserLinkAdditionFinder
      */
     public static void main(String[] args) throws Exception
     {
-        CommandLineParser clp = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.XWikiUserLinkAdditionFinder", "[options]")
+        CommandLineParser clp = new CommandLineParser("org.wikipedia.tools.XWikiUserLinkAdditionFinder")
+            .synopsis("[options]")
             .description("Searches for all links added by users across all wikis.")
             .addVersion("XWikiUserLinkAdditionFinder v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()

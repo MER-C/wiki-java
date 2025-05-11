@@ -45,8 +45,8 @@ public class XWikiHistory
         // (3) page logs
         // (4) Wikidata item input - this is harder than it seems, it is not obvious what to do with the item number
         
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.XWikiHistory", "[options]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.XWikiHistory")
+            .synopsis("[options]")
             .description("Fetches information about other language versions of an article")
             .addVersion("0.01")
             .addHelp()

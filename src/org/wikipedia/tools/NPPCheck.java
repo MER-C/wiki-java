@@ -114,8 +114,8 @@ public class NPPCheck
      */
     public static void main(String[] args) throws IOException
     {
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.NPPCheck", "[options]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.NPPCheck")
+            .synopsis("[options]")
             .description("Tool for reviewing the work of new page patrollers")
             .addBooleanFlag("--unpatrolled", "Output results for unpatrolled new articles (REQUIRES NPP RIGHTS)")
             .addBooleanFlag("--patrols", "Output results from new pages patrol")

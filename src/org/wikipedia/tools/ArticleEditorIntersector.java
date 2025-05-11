@@ -62,8 +62,8 @@ public class ArticleEditorIntersector
         // parse command line arguments
         if (args.length == 0)
             args = new String[] { "--help" };
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.ArticleEditorIntersector", "[options] [source] [pages]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.ArticleEditorIntersector")
+            .synopsis("[options] [source] [pages]")
             .description("For a given set of pages, finds the common set of editors and lists the edits made.")
             .addHelp()
             .addVersion("ArticleEditorIntersector v0.02\n" + CommandLineParser.GPL_VERSION_STRING)

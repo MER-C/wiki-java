@@ -52,7 +52,7 @@ public class AdminStats
      */
     public static void main(String[] args) throws Exception
     {
-        Map<String, String> options = new CommandLineParser()
+        Map<String, String> options = new CommandLineParser("org.wikipedia.tools.AdminStats")
             .addSingleArgumentFlag("--start", "2019-04-01T00:00:00Z", "Start date (ISO 8601) (required)")
             .addSingleArgumentFlag("--end", "2019-07-01T00:00:00Z", "End date (ISO 8601) (required)")
             .addBooleanFlag("--printfull", "Dump histograms without grouping reasons")

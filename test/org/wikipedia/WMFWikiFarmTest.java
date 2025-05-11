@@ -191,11 +191,12 @@ public class WMFWikiFarmTest
             wl.add(wiki);
             expected.put(wiki, w);
         }
+        long st = 300;
         Function<WMFWiki, String> fn = wiki ->
         { 
             try
             {
-                Thread.sleep(301); // to test parallelism
+                Thread.sleep(st + 1); // to test parallelism
             }
             catch (InterruptedException ex)
             {
@@ -205,12 +206,14 @@ public class WMFWikiFarmTest
         long time = System.currentTimeMillis();
         assertEquals(expected, sessions.forAllWikis(wl, fn, 1));
         long td = System.currentTimeMillis() - time;
-        assertTrue(td > 300 * wd.size());
-        time = System.currentTimeMillis();
-        assertEquals(expected, sessions.forAllWikis(wl, fn, 2));
-        td = System.currentTimeMillis() - time;
-        // parallelism is not configurable...
-        assertTrue(/*td >= 150 * wd.size() && */ td < 300 * wd.size());
+        assertTrue(td > st * wd.size());
+        for (int i = 2; i <= 3; i++)
+        {
+            time = System.currentTimeMillis();
+            assertEquals(expected, sessions.forAllWikis(wl, fn, i));
+            td = System.currentTimeMillis() - time;
+            assertTrue(td >= st/i * wd.size() && td < st/(i-1) * wd.size());
+        }
     }
     
     @AfterEach

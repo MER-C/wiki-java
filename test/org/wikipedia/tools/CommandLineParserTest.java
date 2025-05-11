@@ -37,21 +37,21 @@ public class CommandLineParserTest
     @Test
     public void synopsis()
     {
-        CommandLineParser clp = new CommandLineParser().synopsis("TestProgram", "[test arguments]");
+        CommandLineParser clp = new CommandLineParser("TestProgram").synopsis("[test arguments]");
         assertEquals("SYNOPSIS:\n\tjava TestProgram [test arguments]\n\n", clp.buildHelpString());
     }
     
     @Test
     public void description()
     {
-        CommandLineParser clp = new CommandLineParser().description("Test description");
+        CommandLineParser clp = new CommandLineParser("").description("Test description");
         assertEquals("DESCRIPTION:\n\tTest description\n\n", clp.buildHelpString());
     }
     
     @Test
     public void addHelp()
     {
-        CommandLineParser clp = new CommandLineParser().addHelp();
+        CommandLineParser clp = new CommandLineParser("").addHelp();
         assertEquals("\t--help\n\t\tPrints this screen and exits.\n", clp.buildHelpString());
     }
     
@@ -59,7 +59,7 @@ public class CommandLineParserTest
     public void version()
     {
         String version = "Test Program v0.01: Copyright (C) MER-C 2018.\n";
-        CommandLineParser clp = new CommandLineParser().addVersion(version);
+        CommandLineParser clp = new CommandLineParser("").addVersion(version);
         assertEquals("\t--version\n\t\tOutputs version information and exits.\n", clp.buildHelpString());
         assertEquals(version, clp.buildVersionString());
     }
@@ -68,7 +68,7 @@ public class CommandLineParserTest
     public void addSingleArgumentFlag()
     {
         String description = "Test flag";
-        CommandLineParser clp = new CommandLineParser()
+        CommandLineParser clp = new CommandLineParser("")
             .addSingleArgumentFlag("--test", "[something]", description);
         assertEquals("\t--test [something]\n\t\t" + description + "\n", clp.buildHelpString());
     }
@@ -77,7 +77,7 @@ public class CommandLineParserTest
     public void addBooleanFlag()
     {
         String description = "Test Boolean flag";
-        CommandLineParser clp = new CommandLineParser().addBooleanFlag("--test", description);
+        CommandLineParser clp = new CommandLineParser("").addBooleanFlag("--test", description);
         assertEquals("\t--test\n\t\t" + description + "\n", clp.buildHelpString());
     }
     
@@ -85,7 +85,7 @@ public class CommandLineParserTest
     public void addSection()
     {
         String title = "Test section:";
-        CommandLineParser clp = new CommandLineParser().addSection(title);
+        CommandLineParser clp = new CommandLineParser("").addSection(title);
         assertEquals("\n" + title + "\n", clp.buildHelpString());
     }
     
@@ -93,8 +93,8 @@ public class CommandLineParserTest
     public void buildHelpString()
     {
         // Integration test
-        String actual = new CommandLineParser()
-            .synopsis("TestProgram", "[test arguments]")
+        String actual = new CommandLineParser("TestProgram")
+            .synopsis("[test arguments]")
             .description("A description of the program")
             .addHelp()
             .addVersion("Test Program v0.01: Copyright (C) MER-C 2018.")
@@ -138,14 +138,14 @@ public class CommandLineParserTest
     public void buildVersionString()
     {
         String version = "Test Program v0.01: Copyright (C) MER-C 2018.\n";
-        String actual = new CommandLineParser().addVersion(version).buildVersionString();
+        String actual = new CommandLineParser("").addVersion(version).buildVersionString();
         assertEquals(version, actual);
     }
     
     @Test
     public void parse()
     {
-        CommandLineParser clp = new CommandLineParser()
+        CommandLineParser clp = new CommandLineParser("")
             .addBooleanFlag("--true", "A true boolean variable.")
             .addBooleanFlag("--false", "A false boolean variable.")
             .addSingleArgumentFlag("--string", "SomeString", "A String variable.");
@@ -170,6 +170,14 @@ public class CommandLineParserTest
         assertEquals("default1 default2", entry.getValue(), "default argument");
         
         // cannot test --help and --version because of VM exit
+    }
+    
+    @Test
+    public void commandString()
+    {
+        String[] args = new String[] { "--a", "b", "--c", "d", "e"};
+        CommandLineParser clp = new CommandLineParser("TestApp");
+        assertEquals("java TestApp --a b --c d e", clp.commandString(args));
     }
     
     @Test

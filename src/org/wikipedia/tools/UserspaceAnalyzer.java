@@ -42,8 +42,8 @@ public class UserspaceAnalyzer
         // parse command line arguments
         if (args.length == 0)
             args = new String[] { "--help" };
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.UserspaceAnalyzer", "[search term]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.UserspaceAnalyzer")
+            .synopsis("[search term]")
             .description("Searches userspace for pages eligible for deletion per [[WP:CSD#U5]]")
             .addHelp()
             .addVersion("UserspaceAnalyzer v0.01\n" + CommandLineParser.GPL_VERSION_STRING)

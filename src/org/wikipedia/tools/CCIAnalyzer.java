@@ -63,8 +63,8 @@ public class CCIAnalyzer
      */
     public static void main(String[] args) throws IOException
     {
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("CCIAnalyzer", "[options] \"[CCI page]\"")
+        CommandLineParser clp = new CommandLineParser("org.wikipedia.tools.CCIAnalyzer")
+            .synopsis("[options] \"[CCI page]\"")
             .description("Filters minor edits from [[Wikipedia:Contributor copyright investigations]].")
             .addBooleanFlag("--references", "Remove all references (aggressive)")
             .addBooleanFlag("--lists", "Remove all list items (aggressive)")
@@ -78,8 +78,8 @@ public class CCIAnalyzer
             .addSingleArgumentFlag("--infile", "example.txt", "Read in the CCI from a file.")
             .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt, example.txt.001, example.txt.002, ...")
             .addVersion("CCIAnalyzer v0.06\n" + CommandLineParser.GPL_VERSION_STRING)
-            .addHelp()
-            .parse(args);
+            .addHelp();
+        Map<String, String> parsedargs = clp.parse(args);
         
         CCIAnalyzer analyzer = new CCIAnalyzer();
         int wordcount = Integer.parseInt(parsedargs.getOrDefault("--numwords", "10"));
@@ -143,12 +143,13 @@ public class CCIAnalyzer
         String outfile = parsedargs.get("--outfile");
         Path path = CommandLineParser.parseFileOption(parsedargs, "--outfile", "Select output file", 
             "Error: No output file selected.", true);
+        String footer = "\nCulled using: <kbd>" + clp.commandString(args) + "</kbd>";
         for (int i = 0; i < pages.size(); i++)
         {
             CCIPage page = pages.get(i);
             analyzer.loadDiffs(page);
             analyzer.analyzeDiffs(page);
-            Files.writeString(path, analyzer.createOutput(page));
+            Files.writeString(path, analyzer.createOutput(page) + footer);
             path = path.resolveSibling("%s.%03d".formatted(outfile, i));
         }
     }

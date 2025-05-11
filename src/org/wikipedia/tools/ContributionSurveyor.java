@@ -62,8 +62,8 @@ public class ContributionSurveyor
     public static void main(String[] args) throws IOException
     {
         // parse arguments
-        CommandLineParser clp = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.ContributionSurveyor", "[options]")
+        CommandLineParser clp = new CommandLineParser("org.wikipedia.tools.ContributionSurveyor")
+            .synopsis("[options]")
             .description("Survey the contributions of a large number of wiki editors.")
             .addVersion("ContributionSurveyor v0.08\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--outfile", "file", "Save results to file(s). "
@@ -113,14 +113,7 @@ public class ContributionSurveyor
         
         ContributionSurveyor surveyor = makeContributionSurveyor(homewiki, parsedargs);
         homewiki.setMaxLag(-1);
-        StringBuilder temp = new StringBuilder("Command line: <kbd>java org.wikipedia.tools.ContributionSurveyor");
-        for (String arg : args)
-        {
-            temp.append(" ");
-            temp.append(arg);
-        }
-        temp.append("</kbd>");
-        surveyor.setFooter(temp.toString());
+        surveyor.setFooter("Command line: <kbd>" + clp.commandString(args) + "</kbd>");
        
         List<String> output = surveyor.outputContributionSurvey(users, !parsedargs.containsKey("--skiplive"),
             parsedargs.containsKey("--deleted"), parsedargs.containsKey("--images"), ns);

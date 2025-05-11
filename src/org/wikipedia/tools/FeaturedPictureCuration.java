@@ -45,8 +45,8 @@ public class FeaturedPictureCuration
      */
     public static void main(String[] args) throws IOException
     {   
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.FeaturedPictureCuration", "[options]")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.FeaturedPictureCuration")
+            .synopsis("[options]")
             .description("A tool for curating featured pictures.")
             .addHelp()
             .addVersion("FeaturedPictureCuration v0.01\n" + CommandLineParser.GPL_VERSION_STRING)

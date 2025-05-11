@@ -113,13 +113,14 @@ public class AllWikiLinksearch
     public static void main(String[] args) throws IOException
     {
         // parse command line options
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.AllWikiLinksearch", "[options] domains")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.AllWikiLinksearch")
+            .synopsis("[options] domains")
             .description("Searches Wikimedia projects for links.")
             .addHelp()
             .addVersion("AllWikiLinksearch v0.04\n" + CommandLineParser.GPL_VERSION_STRING)
             .addSingleArgumentFlag("--numthreads", "n", "Use n threads.")
             .addSingleArgumentFlag("--domainlist", "domains.txt", "Search for this list of domains")
+            .addSingleArgumentFlag("--wiki", "en.wikipedia.org", "Search a single wiki, en.wikipedia.org. Additive to --wikiset.")
             .addSingleArgumentFlag("--wikiset", "TOP25", "Search this list of wikis, valid sets are TOP25, TOP50, MAJOR, default: ALL")
             .addSingleArgumentFlag("--outfile", "example.txt", "Write output to example.txt")
             .addSection("A dialog box will pop up if domain is not specified.")
@@ -146,13 +147,16 @@ public class AllWikiLinksearch
             System.exit(0);
         }
         
-        List<WMFWiki> wikis = switch (parsedargs.get("--wikiset"))
+        List<WMFWiki> wikis = new ArrayList<>();
+        if (parsedargs.get("--wiki") != null)
+            wikis.add(sessions.sharedSession(parsedargs.get("--wiki")));
+        wikis.addAll(switch (parsedargs.get("--wikiset"))
         {
             case "TOP25" -> TOP25;
             case "TOP50" -> TOP50;
             case "MAJOR" -> MAJOR_WIKIS;
             case null, default -> sessions.getSiteMatrix();
-        };
+        });
         
         // output results
         try (BufferedWriter out = Files.newBufferedWriter(outfile))
@@ -177,7 +181,7 @@ public class AllWikiLinksearch
                     int linknumber = links.size();
                     if (linknumber != 0)
                     {
-                        temp.append(ExternalLinks.of(wiki).linksearchResultsToHTML(links, domain));
+                        temp.append(ExternalLinks.of(wiki).linksearchResultsToWikitext(links, domain));
                         out.write(temp.toString());
                     }
                 }

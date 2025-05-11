@@ -23,6 +23,7 @@ package org.wikipedia;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.*;
 import java.util.logging.*;
 import java.util.stream.*;
@@ -388,17 +389,28 @@ public class WMFWikiFarm
      */
     public <W extends Wiki, R> Map<W, R> forAllWikis(Collection<W> wikis, Function<W, R> fn, int threads)
     {
-        Stream<W> stream = wikis.stream();
-        // set concurrency if desired (FIXME: the thread count is ignored)
-        if (threads > 1)
+        Map<W, R> ret = new TreeMap<>();
+        if (threads == 1)
         {
-            System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "" + threads);
-            stream = stream.parallel();
+            for (W wiki : wikis)
+                ret.put(wiki, fn.apply(wiki));
+            return ret;
         }
-        Map<W, R> ret = stream.collect(Collectors.toMap(Function.identity(), wiki ->
+        ForkJoinPool pool = null;
+        try
         {
-            return fn.apply(wiki);
-        }, (wiki1, wiki2) -> { throw new RuntimeException("Duplicate wikis!"); }, TreeMap::new));
+            pool = new ForkJoinPool(threads - 1);
+            ConcurrentMap<W, R> cm = new ConcurrentHashMap<>();
+            for (W wiki : wikis)
+                pool.execute(() -> cm.put(wiki, fn.apply(wiki)));
+            while (!pool.awaitQuiescence(1000, TimeUnit.SECONDS)); // wait until complete, this counts as an extra thread
+            ret.putAll(cm);
+        }
+        finally
+        {
+            if (pool != null)
+                pool.shutdown();
+        }
         return ret;
     }
 }

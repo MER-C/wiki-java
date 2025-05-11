@@ -51,8 +51,8 @@ public class GapFillingTextSearch
      */
     public static void main(String[] args) throws Exception
     {
-        Map<String, String> parsedargs = new CommandLineParser()
-            .synopsis("org.wikipedia.tools.GapFillingTextSearch", "[options] query")
+        Map<String, String> parsedargs = new CommandLineParser("org.wikipedia.tools.GapFillingTextSearch")
+            .synopsis("[options] query")
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
             .addSingleArgumentFlag("--user", "Username", "Search articles created by Username")
             .addSingleArgumentFlag("--linksfrom", "wikipage", "The wiki page to get links from")
