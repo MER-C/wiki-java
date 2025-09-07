@@ -8,7 +8,7 @@
 -->
 <%@ include file="security.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("query"), captcha_script_nonce, 3))
+    if (!ServletUtils.showCaptcha(request, response, List.of("query"), difficulty))
         throw new SkipPageException();
     request.setAttribute("toolname", "Spam archive search");
     String query = request.getParameter("query");

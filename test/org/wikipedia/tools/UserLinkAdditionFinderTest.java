@@ -62,12 +62,20 @@ public class UserLinkAdditionFinderTest
             "army.mil", "www.consilium.europa.eu", "gov.uk", "wa.gov.au", "europa.eu",
             "govt.nz", "www.govt.nz", "bl.uk", "parliament.uk", "un.int");
         for (String domain : domains)
-            assertTrue(finder_en.canSkipDomain(domain, true), "domain: " + domain);
+            assertTrue(finder_en.canSkipDomain(domain, UserLinkAdditionFinder.RemovalMode.NO_BLACKLISTS), "domain: " + domain);
         
         domains = List.of("www.example.com", "blah.gov.invalid", "fakegov.uk", "blahbl.uk",
             "fake-gov.uk");
         for (String domain : domains)
-            assertFalse(finder_en.canSkipDomain(domain, true), "domain: " + domain);
+            assertFalse(finder_en.canSkipDomain(domain, UserLinkAdditionFinder.RemovalMode.NO_BLACKLISTS), "domain: " + domain);
+        
+        domains = List.of("youtu.be", "goo.gl");
+        for (String domain : domains)
+        {
+            assertFalse(finder_en.canSkipDomain(domain, UserLinkAdditionFinder.RemovalMode.NO_BLACKLISTS), "domain: " + domain);
+            assertTrue(finder_en.canSkipDomain(domain, UserLinkAdditionFinder.RemovalMode.GLOBAL_BLACKLIST), "domain: " + domain);
+            assertTrue(finder_en.canSkipDomain(domain, UserLinkAdditionFinder.RemovalMode.ALL_BLACKLISTS), "domain: " + domain);
+        }
     }
 
     @Test

@@ -51,10 +51,18 @@ public class ExternalLinksTest
     }
     
     @Test
-    public void isSpamBlacklisted() throws Exception
+    public void isGloballyBlacklisted() throws Exception
     {
-        assertFalse(el.isSpamBlacklisted("example.com"));
-        assertTrue(el.isSpamBlacklisted("youtu.be"));
-        assertTrue(el.isSpamBlacklisted("testinvalid.invalid")); // blocked external domains
+        assertFalse(ExternalLinks.isGloballyBlacklisted("example.com"));
+        assertTrue(ExternalLinks.isGloballyBlacklisted("youtu.be"));
+    }
+    
+    @Test
+    public void isLocallyBlacklisted() throws Exception
+    {
+        assertFalse(el.isLocallyBlacklisted("example.com")); 
+        assertTrue(el.isLocallyBlacklisted("youtu.be")); // local includes global blacklist
+        assertTrue(el.isLocallyBlacklisted("roblox.com")); // local only
+        assertTrue(el.isLocallyBlacklisted("testinvalid.invalid")); // blocked external domains
     }
 }

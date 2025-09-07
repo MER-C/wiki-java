@@ -18,7 +18,7 @@
 <%@ include file="security.jspf" %>
 <%@ include file="datevalidate.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("user"), captcha_script_nonce, 3))
+    if (!ServletUtils.showCaptcha(request, response, List.of("user"), difficulty))
         throw new SkipPageException();
         
     request.setAttribute("toolname", "Contribution surveyor");

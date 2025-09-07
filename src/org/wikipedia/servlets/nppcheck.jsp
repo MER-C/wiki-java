@@ -9,7 +9,7 @@
 <%@ include file="security.jspf" %>
 <%@ include file="datevalidate.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("username"), captcha_script_nonce, 3))
+    if (!ServletUtils.showCaptcha(request, response, List.of("username"), difficulty))
         throw new SkipPageException();
 
     request.setAttribute("toolname", "NPP/AFC checker");

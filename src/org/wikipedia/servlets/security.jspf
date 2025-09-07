@@ -35,24 +35,22 @@
 <%
     // Disallow bad robots
     String useragent = request.getHeader("User-Agent");
-    if (useragent.contains("Tweetmeme") || useragent.contains("Apache-HttpClient") || 
-        useragent.contains("bing.com")  || useragent.contains("Wget") ||
-        useragent.contains("archive.org") || useragent.contains("Amazonbot"))
+    if (useragent.contains("Apache-HttpClient") || useragent.contains("Wget") || 
+        useragent.contains("archive.org"))
     {
         response.setStatus(403);
         return;
     }
     
-    // stuff here is only here because it gets executed first
-    WMFWikiFarm sessions = WMFWikiFarm.instance();
-    sessions.setInitializer(wiki_ -> wiki_.setMaxLag(-1));
-    response.setCharacterEncoding("UTF-8");
-    
-    // compute nonce for inline script setting captcha challenge string
+    // set up CAPTCHA
     SecureRandom sr = new SecureRandom();
     byte[] barrtemp = new byte[32];
     sr.nextBytes(barrtemp);
-    String captcha_script_nonce = new String(Base64.getEncoder().encode(barrtemp));
+    request.setAttribute("scriptnonce", new String(Base64.getEncoder().encode(barrtemp))); // CSP script nonce
+    //barrtemp = new byte[32];
+    //sr.nextBytes(barrtemp);
+    //request.setAttribute("servernonce", new String(Base64.getEncoder().encode(barrtemp))); // server-side nonce
+    int difficulty = 3;
 
     // Set security headers
 
@@ -61,8 +59,14 @@
     response.setHeader("Content-Security-Policy", 
         "frame-ancestors 'none'; " + // disable framing
         "default-src 'none'; " + // disable everything by default
-        "script-src 'self' 'nonce-" + captcha_script_nonce + "'; " + // allow only scripts from this domain
+        "script-src 'self' 'nonce-" + request.getAttribute("scriptnonce") + "'; " + // allow only scripts from this domain
         "style-src 'self'"); // allow only stylesheets from this domain
     // disable the Referer header
     response.setHeader("Referrer-Policy", "no-referrer");
+
+    
+    // stuff here is only here because it gets executed first
+    WMFWikiFarm sessions = WMFWikiFarm.instance();
+    sessions.setInitializer(wiki_ -> wiki_.setMaxLag(-1));
+    response.setCharacterEncoding("UTF-8");
 %>

@@ -172,27 +172,26 @@ public class ServletUtils
     /**
      *  Presents a SHA-256 proof of work CAPTCHA. To pass the CAPTCHA, the  
      *  client needs to compute a nonce such that 
-     *  sha256(nonce + timestamp + selected concatenated HTTP parameters) begins 
-     *  with some quantity of zeros (difficulty is customisable, default 3 for
-     *  a runtime of about 0.1 s). A CAPTCHA page is shown when the user submits 
-     *  a request. When complete, the CAPTCHA page redirects to the expected 
-     *  results. A solved CAPTCHA adds URL parameters <code>powans</code> (the 
-     *  solution), <code>powts</code>, <code>nonce</code> and <code>powdif</code> 
-     *  (the difficulty). The CAPTCHA expires after five minutes.
+     *  sha256(nonce + timestamp + selected concatenated 
+     *  HTTP parameters) begins with some quantity of zeros (difficulty is 
+     *  customisable, default 4 for a runtime of about 1.5 s). A CAPTCHA page is
+     *  shown when the user submits a request. When complete, the CAPTCHA page 
+     *  redirects to the expected results. A solved CAPTCHA adds URL parameters
+     *  <code>powans</code> (the solution), <code>powts</code>, <code>nonce</code>
+     *  and <code>powdif</code> (the difficulty). The CAPTCHA expires after five 
+     *  minutes.
      * 
-     *  @param req a servlet request
+     *  @param req a servlet request with scriptnonce attribute
      *  @param response the corresponding response
      *  @param params the request parameters to concatenate to form the challenge
      *  string. The challenge string cannot contain new lines.
-     *  @param captcha_string_nonce a nonce, for Content Security Policy purposes,
-     *  to protect an inline script that defines the challenge string only
      *  @param difficulty the difficulty of the CAPTCHA
      *  @return whether to continue servlet execution
      *  @throws IOException if a network error occurs
      *  @see captcha.js
      *  @since 0.02
      */
-    public static boolean showCaptcha(HttpServletRequest req, HttpServletResponse response, List<String> params, String captcha_string_nonce,
+    public static boolean showCaptcha(HttpServletRequest req, HttpServletResponse response, List<String> params, 
         int difficulty) throws IOException
     {
         // no captcha for the initial input
@@ -202,6 +201,7 @@ public class ServletUtils
         // TODO: 
         // *captcha.js does not propagate POST parameters
         // *inject CSP nonce header only when required
+        // *server side nonce
         
         PrintWriter out = response.getWriter();
         String answer = req.getParameter("powans");
@@ -213,6 +213,7 @@ public class ServletUtils
         for (String param : params)
             paramstr.append(req.getParameter(param));
         String challenge = sanitizeForAttribute(paramstr.toString());
+        // String snonce = (String)req.getAttribute("servernonce");
         String tohash = nonce + timestamp + challenge;
 
         // captcha not attempted, show CAPTCHA screen
@@ -223,7 +224,7 @@ public class ServletUtils
                     <html>
                     <head>
                     <title>CAPTCHA</title>""");
-            out.println("<script nonce=\"" + captcha_string_nonce + "\">");
+            out.println("<script nonce=\"" + req.getAttribute("scriptnonce") + "\">");
             out.println("    window.chl = \"" + challenge + "\";");
             out.println("    window.difficulty = " + difficulty + ";");
             out.println("""

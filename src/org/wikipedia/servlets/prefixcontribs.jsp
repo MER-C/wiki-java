@@ -8,7 +8,7 @@
 -->
 <%@ include file="security.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("prefix"), captcha_script_nonce, 3))
+    if (!ServletUtils.showCaptcha(request, response, List.of("prefix"), difficulty))
         throw new SkipPageException();
     request.setAttribute("toolname", "Prefix contributions");
     request.setAttribute("earliest_default", LocalDate.now(ZoneOffset.UTC).minusDays(7));

@@ -8,7 +8,7 @@
 -->
 <%@ include file="security.jspf" %>
 <%
-    if (!ServletUtils.showCaptcha(request, response, List.of("page"), captcha_script_nonce, 3))
+    if (!ServletUtils.showCaptcha(request, response, List.of("page"), difficulty))
         throw new SkipPageException();
     request.setAttribute("toolname", "User watchlist");
     request.setAttribute("earliest_default", LocalDate.now(ZoneOffset.UTC).minusDays(30));

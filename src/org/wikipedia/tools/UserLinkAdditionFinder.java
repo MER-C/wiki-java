@@ -40,6 +40,34 @@ public class UserLinkAdditionFinder
     private final List<Pattern> whitelist_regexes = new ArrayList<>();
     
     /**
+     *  Determines which blacklisted domains are removed from search results.
+     *  @see #canSkipDomain(java.lang.String, org.wikipedia.tools.UserLinkAdditionFinder.RemovalMode) 
+     *  @since 0.03
+     */
+    public enum RemovalMode
+    {
+        /**
+         *  Removes all domains on the global spam blacklist.
+         *  @see <a href="https://meta.wikimedia.org/wiki/Spam_blacklist">Spam blacklist</a>
+         *  @since 0.03
+         */
+        GLOBAL_BLACKLIST,
+        
+        /** 
+         *  Removes all domains on the global spam blacklist, local spam blacklist and
+         *  Special:BlockedExternalDomains.
+         *  @since 0.03
+         */
+        ALL_BLACKLISTS,
+        
+        /**
+         *  Does not remove blacklisted domains.
+         *  @since 0.03
+         */
+        NO_BLACKLISTS;
+    };
+    
+    /**
      *  Runs this program.
      *  @param args the command line arguments (see code for documentation)
      *  @throws IOException if a network error occurs
@@ -56,7 +84,7 @@ public class UserLinkAdditionFinder
             .addUserInputOptions("Get links for")
             .addBooleanFlag("--linksearch", "Conduct a linksearch to count links and filter commonly used domains.")
             .addSingleArgumentFlag("--threshold", "50", "If filtering commonly used domains, the threshold number of links (default: 50)")
-            .addBooleanFlag("--removeblacklisted", "Remove blacklisted links")
+            .addBooleanFlag("--removeblacklisted", "Remove (globally and locally) blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
             .addSingleArgumentFlag("--fetchbefore", "date", "Fetch only edits before this date")
             .addSingleArgumentFlag("--ignorebelow", "X", "Don't return domains added less than X times")
@@ -92,7 +120,7 @@ public class UserLinkAdditionFinder
             for (String link : entry.getValue())
             {
                 String domain = ExternalLinks.extractDomain(link);
-                if (domain != null && !finder.canSkipDomain(domain, removeblacklisted))
+                if (domain != null && !finder.canSkipDomain(domain, removeblacklisted ? RemovalMode.ALL_BLACKLISTS : RemovalMode.NO_BLACKLISTS))
                     linkdomains.put(link, domain);
             }
         }
@@ -194,14 +222,14 @@ public class UserLinkAdditionFinder
      *  Filters added links for inclusion in search results. 
      * 
      *  @param domain the domain to check
-     *  @param removeblacklisted remove already blacklisted links
+     *  @param rm which blacklists to check
      *  @return whether this domain can be skipped for the purpose of this
      *  search
      *  @throws IOException if a network error occurs when fetching the spam
      *  blacklist (highly unlikely)
      *  @since 0.03
      */
-    public boolean canSkipDomain(String domain, boolean removeblacklisted) throws IOException
+    public boolean canSkipDomain(String domain, RemovalMode rm) throws IOException
     {
         // WMF domains
         for (String wmfsite : WMFWikiFarm.WMF_DOMAINS)
@@ -212,9 +240,12 @@ public class UserLinkAdditionFinder
             if (p.matcher(domain).matches())
                 return true;
         // blacklisted domains
-        if (removeblacklisted && el.isSpamBlacklisted(domain))
-            return true;
-        return false;
+        return switch (rm)
+        {
+            case RemovalMode.GLOBAL_BLACKLIST -> ExternalLinks.isGloballyBlacklisted(domain);
+            case RemovalMode.ALL_BLACKLISTS -> el.isLocallyBlacklisted(domain);
+            case RemovalMode.NO_BLACKLISTS -> false;
+        };
     }
     
     /**

@@ -43,6 +43,7 @@ public class XWikiUserLinkAdditionFinder
             .addVersion("XWikiUserLinkAdditionFinder v0.01\n" + CommandLineParser.GPL_VERSION_STRING)
             .addHelp()
             .addSingleArgumentFlag("--wiki", "example.org", "The wiki to fetch data from (default: en.wikipedia.org)")
+            .addBooleanFlag("--removeblacklisted", "Remove globally blacklisted links")
             .addSingleArgumentFlag("--fetchafter", "date", "Fetch only edits after this date.")
             .addSingleArgumentFlag("--fetchbefore", "date", "Fetch only edits before this date")
             .addSingleArgumentFlag("--ignorebelow", "X", "Don't return domains added less than X times")
@@ -50,23 +51,20 @@ public class XWikiUserLinkAdditionFinder
         Map<String, String> parsedargs = clp.parse(args);
         List<OffsetDateTime> dates = CommandLineParser.parseDateRange(parsedargs, "--fetchafter", "--fetchbefore");
         int ignorebelow = Integer.parseInt(parsedargs.getOrDefault("--ignorebelow", "-1"));
-        
-        // features: 
-        // linksearch/threshold = apply locally or globally? Globally makes most sense. 
-        // How to determine which wikis to search? Defined set? Try to figure out based on users?
-        // removeblacklisted = apply locally or globally? Globally makes most sense.
+        var rm = parsedargs.containsKey("--removeblacklisted") ? UserLinkAdditionFinder.RemovalMode.GLOBAL_BLACKLIST : UserLinkAdditionFinder.RemovalMode.NO_BLACKLISTS;
         
         WMFWikiFarm wmf = WMFWikiFarm.instance();
         WMFWiki thiswiki = wmf.sharedSession(parsedargs.getOrDefault("--wiki", "en.wikipedia.org"));
         List<String> users = CommandLineParser.parseUserOptions(parsedargs, thiswiki);
         TreeMap<String, Integer> domains = new TreeMap<>();
-        
+        Set<WMFWiki> wikisedited = new HashSet<>();
+
+        // determine set of wikis edited
         for (String user : users)
         {
             Map<String, Object> userinfo = wmf.getGlobalUserInfo(user);
             Map<?, ?> m = (Map)userinfo.get("wikis");
             System.out.println("==" + user + "==");
-            List<WMFWiki> wikisedited = new ArrayList<>();
             for (var entry : m.entrySet())
             {
                 Map<?, ?> wikimap = (Map)entry.getValue();
@@ -76,24 +74,25 @@ public class XWikiUserLinkAdditionFinder
                 if (edits > 0)
                     wikisedited.add(wmf.sharedSession(url));
             }
-            for (WMFWiki wiki : wikisedited)
-            {
-                UserLinkAdditionFinder finder = new UserLinkAdditionFinder(wiki);
-                Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, dates.get(0), dates.get(1));
-                if (results.isEmpty())
-                    continue;
+        }
+        // fetch and count the links
+        for (WMFWiki wiki : wikisedited)
+        {
+            UserLinkAdditionFinder finder = new UserLinkAdditionFinder(wiki);
+            Map<Wiki.Revision, List<String>> results = finder.getLinksAdded(users, dates.get(0), dates.get(1));
+            if (results.isEmpty())
+                continue;
 
-                Map<String, String> linkdomains = new HashMap<>(); // see if I can do something with this?
-                for (Map.Entry<Wiki.Revision, List<String>> entry : results.entrySet())
+            Map<String, String> linkdomains = new HashMap<>(); // see if I can do something with this?
+            for (Map.Entry<Wiki.Revision, List<String>> entry : results.entrySet())
+            {
+                for (String link : entry.getValue())
                 {
-                    for (String link : entry.getValue())
+                    String domain = ExternalLinks.extractDomain(link);
+                    if (domain != null && !finder.canSkipDomain(domain, rm)) // must be parseable
                     {
-                        String domain = ExternalLinks.extractDomain(link);
-                        if (domain != null && !finder.canSkipDomain(domain, false)) // must be parseable
-                        {
-                            linkdomains.put(link, domain);
-                            domains.merge(domain, 1, (x, y) -> x + y);
-                        }
+                        linkdomains.put(link, domain);
+                        domains.merge(domain, 1, (x, y) -> x + y);
                     }
                 }
             }

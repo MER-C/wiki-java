@@ -35,7 +35,7 @@ public class ExternalLinks
     private static final List<String> globalblacklist = new ArrayList<>();
     private final List<String> localblacklist = new ArrayList<>();
     private final List<String> blocked_domains = new ArrayList<>();
-    private final WMFWikiFarm sessions = WMFWikiFarm.instance();
+    private static final WMFWikiFarm sessions = WMFWikiFarm.instance();
 
     private ExternalLinks(Wiki wiki)
     {
@@ -150,19 +150,19 @@ public class ExternalLinks
     }
     
     /**
-     *  Determines whether a site is on the spam blacklist, modulo Java/PHP 
-     *  regex differences.
+     *  Determines whether a site is on the global spam blacklist, modulo 
+     *  Java/PHP regex differences.
      *  @param site the site to check
      *  @return whether a site is on the spam blacklist
      *  @throws IOException if a network error occurs
-     *  @throws UnsupportedOperationException if the SpamBlacklist and 
-     *  AbuseFilter extensions are not installed
+     *  @throws UnsupportedOperationException if the SpamBlacklist extension is
+     *  not installed
      *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
      */
-    public boolean isSpamBlacklisted(String site) throws IOException
+    public static boolean isGloballyBlacklisted(String site) throws IOException
     {
-        if (globalblacklist.isEmpty() || localblacklist.isEmpty())
-            loadSpamBlacklists(globalblacklist.isEmpty(), localblacklist.isEmpty());
+        if (globalblacklist.isEmpty())
+            loadGlobalSpamBlacklist();
         
         // yes, I know about the spam whitelist, but I primarily intend to use
         // this to check entire domains whereas the spam whitelist tends to 
@@ -170,6 +170,28 @@ public class ExternalLinks
         for (String entry : globalblacklist)
             if (site.matches(entry))
                 return true;
+        return false;
+    }
+    
+    /**
+     *  Determines whether a site is on the global or local spam blacklist or 
+     *  Blocked External Domains, modulo Java/PHP regex differences.
+     *  @param site the site to check
+     *  @return whether a site is on the spam blacklist
+     *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if the SpamBlacklist and 
+     *  AbuseFilter extensions are not installed
+     *  @see <a href="https://mediawiki.org/wiki/Extension:SpamBlacklist">Extension:SpamBlacklist</a>
+     */
+    public boolean isLocallyBlacklisted(String site) throws IOException
+    {
+        // yes, I know about the spam whitelist, but I primarily intend to use
+        // this to check entire domains whereas the spam whitelist tends to 
+        // contain individual pages on websites
+        if (isGloballyBlacklisted(site))
+            return true;
+        if (localblacklist.isEmpty())
+            loadLocalSpamBlacklists();
         for (String entry : localblacklist)
             if (site.matches(entry))
                 return true;
@@ -177,51 +199,53 @@ public class ExternalLinks
     }
     
     /**
-     *  (Re)loads spam blacklist caches.
-     *  @param global (re)load the global blacklist (shared across instances)
-     *  @param local (re)load the local blacklist and blocked external domains
+     *  (Re)loads the global spam blacklist cache.
+     *  @throws IOException if a network error occurs
+     *  @throws UnsupportedOperationException if the SpamBlacklist extension is
+     *  not installed
+     */
+    public static void loadGlobalSpamBlacklist() throws IOException
+    {
+        WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
+        meta.requiresExtension("SpamBlacklist");
+        globalblacklist.clear();
+        String[] gbl = meta.getPageText(List.of("Spam blacklist")).get(0).split("\\n");
+        for (String entry : gbl)
+        {
+            if (entry.contains("#"))
+                entry = entry.substring(0, entry.indexOf('#'));
+            entry = entry.trim();
+            if (!entry.isEmpty())
+                globalblacklist.add(entry);
+        }
+    }
+    
+    /**
+     *  (Re)loads the local spam blacklist cache (including Blocked External Domains).
      *  @throws IOException if a network error occurs
      *  @throws UnsupportedOperationException if the SpamBlacklist and 
      *  AbuseFilter extensions are not installed
      */
-    public void loadSpamBlacklists(boolean global, boolean local) throws IOException
+    public void loadLocalSpamBlacklists() throws IOException
     {
-        wiki.requiresExtension("SpamBlacklist");
-        if (global)
+        List<String> pages = wiki.getPageText(List.of("MediaWiki:Spam-blacklist", "MediaWiki:BlockedExternalDomains.json"));
+        localblacklist.clear();
+        for (String entry : pages.get(0).split("\\n"))
         {
-            WMFWiki meta = sessions.sharedSession("meta.wikimedia.org");
-            globalblacklist.clear();
-            String[] gbl = meta.getPageText(List.of("Spam blacklist")).get(0).split("\\n");
-            for (String entry : gbl)
-            {
-                if (entry.contains("#"))
-                    entry = entry.substring(0, entry.indexOf('#'));
-                entry = entry.trim();
-                if (!entry.isEmpty())
-                    globalblacklist.add(entry);
-            }
+            if (entry.contains("#"))
+                entry = entry.substring(0, entry.indexOf('#'));
+            entry = entry.trim();
+            if (!entry.isEmpty())
+                localblacklist.add(entry);
         }
-        if (local)
+        blocked_domains.clear();
+        for (String entry : pages.get(1).split("\\n"))
         {
-            List<String> pages = wiki.getPageText(List.of("MediaWiki:Spam-blacklist", "MediaWiki:BlockedExternalDomains.json"));
-            localblacklist.clear();
-            for (String entry : pages.get(0).split("\\n"))
+            if (entry.contains("\"domain\":"))
             {
-                if (entry.contains("#"))
-                    entry = entry.substring(0, entry.indexOf('#'));
-                entry = entry.trim();
-                if (!entry.isEmpty())
-                    localblacklist.add(entry);
-            }
-            blocked_domains.clear();
-            for (String entry : pages.get(1).split("\\n"))
-            {
-                if (entry.contains("\"domain\":"))
-                {
-                    int x1 = entry.indexOf("\": \"") + 4;
-                    int x2 = entry.length() - 2;
-                    blocked_domains.add(entry.substring(x1, x2));
-                }
+                int x1 = entry.indexOf("\": \"") + 4;
+                int x2 = entry.length() - 2;
+                blocked_domains.add(entry.substring(x1, x2));
             }
         }
     }
