@@ -36,24 +36,6 @@ import jakarta.servlet.http.*;
 public class ServletUtils
 {
     /**
-     *  Sanitizes untrusted input for XSS destined for inclusion in the HTML
-     *  body.
-     *  @param input an input string
-     *  @see <a href="https://www.owasp.org/index.php/XSS_Prevention">OWASP XSS 
-     *  Prevention Cheat Sheet Rule 1</a>
-     *  @return the sanitized input or the empty string if input is null
-     */
-    public static String sanitizeForHTML(String input)
-    {
-        if (input == null)
-            return "";
-        return input.replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
-            .replaceAll("'", "&#x27;").replaceAll("\"", "&quot;")
-            .replaceAll("/", "&#x2F;");
-    }
-    
-    /**
      *  Sanitizes untrusted input for XSS destined for inclusion in boring
      *  HTML attributes.
      *  @param input the input to be sanitized

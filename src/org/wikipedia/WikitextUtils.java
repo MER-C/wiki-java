@@ -1,5 +1,5 @@
 /**
- *  @(#)ParserUtils.java 0.02 23/12/2016
+ *  @(#)WikitextUtils.java 0.02 23/12/2016
  *  Copyright (C) 2012-2018 MER-C
  *
  *  This program is free software; you can redistribute it and/or

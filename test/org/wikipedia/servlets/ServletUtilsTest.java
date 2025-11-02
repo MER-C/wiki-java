@@ -38,12 +38,6 @@ public class ServletUtilsTest
     }
     
     @Test
-    public void sanitizeForHTML()
-    {
-        assertEquals("", ServletUtils.sanitizeForHTML(null));
-    }
-    
-    @Test
     public void generatePagination()
     {
         // failure states

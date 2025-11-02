@@ -74,6 +74,6 @@ href="//en.wikipedia.org/wiki/WP:CCI">Contributor copyright investigations.</a>
 
 <%
     if (user != null && survey.isEmpty())
-        request.setAttribute("error", "ERROR: User " + ServletUtils.sanitizeForHTML(user) + " does not exist!");
+        request.setAttribute("error", "ERROR: User " + HTMLUtils.sanitizeForHTML(user) + " does not exist!");
 %>
 <%@ include file="footer.jspf" %>

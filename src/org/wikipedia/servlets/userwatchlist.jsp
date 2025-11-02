@@ -107,7 +107,7 @@ Someone # Spam
         String text = enWiki.getPageText(List.of(inputpage)).get(0);
         if (text == null)
         {
-            request.setAttribute("error", "ERROR: page &quot;" + ServletUtils.sanitizeForHTML(inputpage) + "&quot; does not exist!");
+            request.setAttribute("error", "ERROR: page &quot;" + HTMLUtils.sanitizeForHTML(inputpage) + "&quot; does not exist!");
 %>
 <%@ include file="footer.jspf" %>
 <%
@@ -166,7 +166,7 @@ Someone # Spam
     for (int i = 0; i < userstofetch.size(); i++)
     {
         String user = userstofetch.get(i);
-        String reason = ServletUtils.sanitizeForHTML(input.get(user));
+        String reason = HTMLUtils.sanitizeForHTML(input.get(user));
         // user links
         %>
 <h3><%= user %></h3>

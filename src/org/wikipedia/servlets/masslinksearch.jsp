@@ -16,7 +16,7 @@
     String inputdomains = request.getParameter("domains");
     if (inputdomains != null)
     {
-        inputdomains = ServletUtils.sanitizeForHTML(inputdomains).trim().toLowerCase()
+        inputdomains = HTMLUtils.sanitizeForHTML(inputdomains).trim().toLowerCase()
         // \\bexample\\.com\\b to example.com
             .replace("\\b", "").replace("\\.", ".")
         // *{{LinkSummary|example.com}} to example.com

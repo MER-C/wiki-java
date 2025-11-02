@@ -26,7 +26,7 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- *  Unit tests for org.wikipedia.ParserUtils
+ *  Unit tests for org.wikipedia.WikitextUtils
  *  @author MER-C
  */
 public class WikitextUtilsTest

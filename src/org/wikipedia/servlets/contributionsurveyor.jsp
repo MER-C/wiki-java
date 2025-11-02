@@ -45,7 +45,7 @@
     {
         List<String> catmembers = wiki.getCategoryMembers(category, Wiki.USER_NAMESPACE);
         if (catmembers.isEmpty())
-            request.setAttribute("error", "Category \"" + ServletUtils.sanitizeForHTML(category) + "\" contains no users!");
+            request.setAttribute("error", "Category \"" + HTMLUtils.sanitizeForHTML(category) + "\" contains no users!");
         else
             for (String tempstring : catmembers)
                 users.add(wiki.removeNamespace(tempstring));

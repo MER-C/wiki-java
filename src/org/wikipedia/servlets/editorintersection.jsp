@@ -14,7 +14,7 @@
 
     String wikiparam = ServletUtils.sanitizeForAttributeOrDefault(request.getParameter("wiki"), "en.wikipedia.org");
     String mode = Objects.requireNonNullElse(request.getParameter("mode"), "none");
-    String pages = ServletUtils.sanitizeForHTML(request.getParameter("pages"));    
+    String pages = HTMLUtils.sanitizeForHTML(request.getParameter("pages"));    
     String category = ServletUtils.sanitizeForAttribute(request.getParameter("category"));
     String user = ServletUtils.sanitizeForAttribute(request.getParameter("user"));
         
