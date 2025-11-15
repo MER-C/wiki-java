@@ -21,7 +21,6 @@
 package org.wikipedia.tools;
 
 import java.util.*;
-import java.util.function.Predicate;
 import org.wikipedia.*;
 
 /**
@@ -34,6 +33,13 @@ public class Unpatroller
     static WMFWikiFarm sessions = WMFWikiFarm.instance();
     static WMFWiki enWiki = sessions.sharedSession("en.wikipedia.org");
     
+    // TODO: 
+    // (1) formalise command line arguments
+    // (2) remove redirects
+    // (3) preview edit summary and confirm
+    // (4) multiple users?
+    // (5) depatrol autopatrolled creations
+
     /**
      *  Runs this program.
      *  @param args the command line arguments: [0] user to unpatrol [1] reason
